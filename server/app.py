@@ -35,7 +35,7 @@ class ChatRequest(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """Serve la dashboard web dell'assistente."""
-    return templates.TemplateResponse("index.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request=request, name="index.html", context={"settings": settings})
 
 @app.post("/api/chat")
 async def chat_endpoint(payload: ChatRequest):
