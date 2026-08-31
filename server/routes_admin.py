@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from core.user_manager import user_manager, UserProfile
 from core.data_store import data_store
 from core.tools.ha_tools import activate_mode
-from config.settings import settings, save_config, AppConfig
+from config.settings import settings, save_config, AppConfig, reload_settings
 
 logger = logging.getLogger("Shinra.Admin")
 router = APIRouter(prefix="/api", tags=["Admin & Management"])

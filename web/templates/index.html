@@ -23,8 +23,13 @@
             }
         }
     </script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Lucide Icons with CDN Fallback -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+    <script>
+        if (typeof lucide === 'undefined') {
+            document.write('<script src="https://unpkg.com/lucide@latest"><\/script>');
+        }
+    </script>
     <style>
         .glow { box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.4); }
         .mic-active { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
@@ -341,7 +346,14 @@
 
     <!-- Script Logico Dashboard -->
     <script>
-        lucide.createIcons();
+        function safeCreateIcons() {
+            try {
+                if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                    lucide.createIcons();
+                }
+            } catch (e) { console.warn('Lucide icon render:', e); }
+        }
+        safeCreateIcons();
 
         let activeUserId = "alessio";
         let usersData = [];
@@ -478,7 +490,7 @@
                 </div>
             `;
             container.appendChild(div);
-            lucide.createIcons();
+            safeCreateIcons();
             container.scrollTop = container.scrollHeight;
             speakText(text);
         }
@@ -547,7 +559,7 @@
                     </button>
                 </div>
             `).join('');
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         function openAddKnowledgeModal() {
@@ -599,7 +611,7 @@
                     </button>
                 </div>
             `).join('');
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         function openAddSourceModal() {
@@ -649,7 +661,7 @@
                     <div class="text-[10px] text-slate-500">Stanza: ${a.room || 'Generale'}</div>
                 </div>
             `).join('');
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         function openAddAliasModal() {
@@ -702,7 +714,7 @@
                     </button>
                 </div>
             `).join('');
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         async function triggerMode(name) {
@@ -733,7 +745,7 @@
                     <p class="text-[11px] text-slate-400">${u.notes || 'Nessuna nota aggiuntiva.'}</p>
                 </div>
             `).join('');
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         function openAddUserModal() {
@@ -857,7 +869,7 @@
             const modal = document.getElementById('modal-container');
             modal.innerHTML = contentHtml;
             document.getElementById('modal-backdrop').classList.remove('hidden');
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         function closeModal() {
