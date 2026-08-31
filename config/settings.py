@@ -43,13 +43,22 @@ class AppConfig(BaseModel):
 
 def load_config() -> AppConfig:
     if CONFIG_PATH.exists():
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-            return AppConfig(**data)
+        try:
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+                return AppConfig(**data)
+        except Exception:
+            pass
     return AppConfig()
+
+def reload_settings() -> AppConfig:
+    global settings
+    settings = load_config()
+    return settings
 
 def save_config(config: AppConfig) -> None:
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         yaml.safe_dump(config.model_dump(), f, default_flow_style=False, allow_unicode=True)
+    reload_settings()
 
 settings = load_config()

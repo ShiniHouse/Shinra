@@ -297,15 +297,21 @@
 
                     <!-- Home Assistant -->
                     <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
-                        <h3 class="font-semibold text-indigo-300">Home Assistant Hub</h3>
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-semibold text-indigo-300">Home Assistant Hub</h3>
+                            <button type="button" onclick="testHaConnection()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/40 rounded-lg text-[11px] font-semibold transition">
+                                🔌 Testa Connessione
+                            </button>
+                        </div>
                         <div>
-                            <label class="text-slate-400 block mb-1">URL Home Assistant:</label>
+                            <label class="text-slate-400 block mb-1">URL Home Assistant (es. http://192.168.1.xxx:8123):</label>
                             <input type="text" id="cfg-ha-url" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                         <div>
-                            <label class="text-slate-400 block mb-1">Token Accesso a Lungo Termine:</label>
-                            <input type="password" id="cfg-ha-token" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
+                            <label class="text-slate-400 block mb-1">Token Accesso a Lungo Termine (Long-Lived Token):</label>
+                            <input type="password" id="cfg-ha-token" placeholder="eyJhbGci..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
                         </div>
+                        <div id="ha-test-result" class="hidden p-2.5 rounded-lg text-xs"></div>
                     </div>
 
                     <!-- Assistente -->
@@ -771,13 +777,15 @@
 
         // ==================== SETTINGS ====================
         async function loadSettings() {
-            const res = await fetch('/api/settings');
-            const cfg = await res.json();
-            document.getElementById('cfg-ollama-url').value = cfg.llm.ollama_url || '';
-            document.getElementById('cfg-model').value = cfg.llm.model || '';
-            document.getElementById('cfg-ha-url').value = cfg.home_assistant.url || '';
-            document.getElementById('cfg-ha-token').value = cfg.home_assistant.token || '';
-            document.getElementById('cfg-default-city').value = cfg.assistant.default_city || '';
+            try {
+                const res = await fetch('/api/settings');
+                const cfg = await res.json();
+                document.getElementById('cfg-ollama-url').value = cfg.llm.ollama_url || '';
+                document.getElementById('cfg-model').value = cfg.llm.model || '';
+                document.getElementById('cfg-ha-url').value = cfg.home_assistant.url || '';
+                document.getElementById('cfg-ha-token').value = cfg.home_assistant.token || '';
+                document.getElementById('cfg-default-city').value = cfg.assistant.default_city || '';
+            } catch (e) { console.error('Errore loadSettings:', e); }
         }
 
         async function saveSettings(e) {
@@ -790,12 +798,58 @@
             cfg.home_assistant.token = document.getElementById('cfg-ha-token').value.trim();
             cfg.assistant.default_city = document.getElementById('cfg-default-city').value.trim();
 
+            const saveRes = await fetch('/api/settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(cfg)
+            });
+            
+            if (saveRes.ok) {
+                alert('Impostazioni salvate con successo.');
+                await checkSystemHealth();
+                await loadSettings();
+            } else {
+                alert('Errore nel salvataggio delle impostazioni.');
+            }
+        }
+
+        async function testHaConnection() {
+            const resultBox = document.getElementById('ha-test-result');
+            resultBox.classList.remove('hidden', 'bg-emerald-950', 'text-emerald-300', 'bg-rose-950', 'text-rose-300', 'bg-yellow-950', 'text-yellow-300');
+            resultBox.classList.add('bg-slate-800', 'text-slate-300');
+            resultBox.innerHTML = '<span class="animate-pulse">Test di connessione a Home Assistant in corso...</span>';
+
+            // Prima salviamo le credenziali inserite
+            const res = await fetch('/api/settings');
+            const cfg = await res.json();
+            cfg.home_assistant.url = document.getElementById('cfg-ha-url').value.trim();
+            cfg.home_assistant.token = document.getElementById('cfg-ha-token').value.trim();
             await fetch('/api/settings', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(cfg)
             });
-            alert('Impostazioni salvate con successo.');
+
+            // Poi verifichiamo lo stato
+            const statusRes = await fetch('/api/status');
+            const statusData = await statusRes.json();
+            const ha = statusData.home_assistant || {};
+
+            resultBox.classList.remove('bg-slate-800', 'text-slate-300');
+            if (ha.status === 'ok') {
+                resultBox.classList.add('bg-emerald-950', 'text-emerald-300', 'border', 'border-emerald-800');
+                resultBox.innerHTML = `✅ <strong>Connessione riuscita!</strong> Home Assistant risponde correttamente su ${ha.url || ''}.`;
+            } else if (ha.status === 'unauthorized') {
+                resultBox.classList.add('bg-rose-950', 'text-rose-300', 'border', 'border-rose-800');
+                resultBox.innerHTML = `❌ <strong>Token non valido (401 Unauthorized):</strong> Genera un nuovo Long-Lived Token dal tuo profilo Home Assistant e incollalo qui.`;
+            } else if (ha.status === 'unconfigured') {
+                resultBox.classList.add('bg-yellow-950', 'text-yellow-300', 'border', 'border-yellow-800');
+                resultBox.innerHTML = `⚠️ <strong>Token non inserito:</strong> Incolla il tuo Long-Lived Token.`;
+            } else {
+                resultBox.classList.add('bg-rose-950', 'text-rose-300', 'border', 'border-rose-800');
+                resultBox.innerHTML = `❌ <strong>Home Assistant non raggiungibile:</strong> ${ha.message || 'Verifica l\\'indirizzo IP e la porta 8123'}.`;
+            }
+            await checkSystemHealth();
         }
 
         // Modal Helpers
@@ -827,15 +881,21 @@
                 const haBadge = document.getElementById('ha-status');
                 if (data.home_assistant && data.home_assistant.status === 'ok') {
                     haBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>HA: Connesso</span>`;
+                    haBadge.className = 'hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-950/70 border border-emerald-800 text-emerald-300';
                 } else {
-                    haBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500"></span><span>HA: Non configurato</span>`;
+                    const msg = (data.home_assistant && data.home_assistant.message) ? data.home_assistant.message : 'Non configurato';
+                    haBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-400"></span><span>HA: ${msg}</span>`;
+                    haBadge.className = 'hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-yellow-950/70 border border-yellow-800 text-yellow-300';
                 }
             } catch (e) {}
         }
 
+        // Inizializzazione automatica
         loadUsersDropdown();
+        loadSettings();
         checkSystemHealth();
-        setInterval(checkSystemHealth, 10000);
+        setInterval(checkSystemHealth, 8000);
     </script>
 </body>
 </html>
+

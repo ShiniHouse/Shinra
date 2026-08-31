@@ -199,9 +199,9 @@ async def trigger_mode(mode_name: str):
 # --- SETTINGS ENDPOINTS ---
 @router.get("/settings")
 async def get_app_settings():
-    return settings.model_dump()
+    return reload_settings().model_dump()
 
 @router.post("/settings")
 async def update_app_settings(new_settings: AppConfig):
     save_config(new_settings)
-    return {"success": True, "settings": new_settings}
+    return {"success": True, "settings": reload_settings().model_dump()}

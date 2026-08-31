@@ -1,40 +1,94 @@
 import httpx
 import logging
 from typing import Any, Dict, List, Optional
+from config.settings import reload_settings
 
 logger = logging.getLogger(__name__)
 
 class HomeAssistantClient:
-    def __init__(self, base_url: str, token: str):
-        self.base_url = base_url.rstrip("/")
-        self.token = token
-        self.headers = {
+    def __init__(self, base_url: Optional[str] = None, token: Optional[str] = None):
+        self._base_url = base_url
+        self._token = token
+
+    @property
+    def base_url(self) -> str:
+        if self._base_url:
+            return self._base_url.rstrip("/")
+        cfg = reload_settings()
+        return cfg.home_assistant.url.rstrip("/")
+
+    @property
+    def token(self) -> str:
+        if self._token:
+            return self._token
+        cfg = reload_settings()
+        return cfg.home_assistant.token
+
+    @property
+    def headers(self) -> Dict[str, str]:
+        return {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
         }
 
     async def check_connection(self) -> Dict[str, Any]:
         """Verifica se il server Home Assistant è raggiungibile e il token è valido."""
-        if not self.token or self.token.startswith("INSERISCI_QUI"):
-            return {"status": "unconfigured", "message": "Token Home Assistant non impostato"}
+        curr_token = self.token
+        curr_url = self.base_url
+
+        if not curr_token or curr_token.startswith("INSERISCI_QUI") or len(curr_token) < 20:
+            return {
+                "status": "unconfigured",
+                "message": "Token non inserito",
+                "url": curr_url
+            }
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                res = await client.get(f"{self.base_url}/api/", headers=self.headers)
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                res = await client.get(f"{curr_url}/api/", headers=self.headers)
                 if res.status_code == 200:
-                    return {"status": "ok", "message": "Connesso a Home Assistant", "data": res.json()}
+                    return {
+                        "status": "ok",
+                        "message": "Connesso",
+                        "url": curr_url,
+                        "data": res.json()
+                    }
                 elif res.status_code == 401:
-                    return {"status": "unauthorized", "message": "Token Home Assistant non valido (401)"}
+                    return {
+                        "status": "unauthorized",
+                        "message": "Token errato / non valido (401)",
+                        "url": curr_url
+                    }
                 else:
-                    return {"status": "error", "message": f"Errore HTTP {res.status_code}"}
+                    return {
+                        "status": "error",
+                        "message": f"Errore HTTP {res.status_code}",
+                        "url": curr_url
+                    }
+        except httpx.ConnectError:
+            return {
+                "status": "unreachable",
+                "message": f"IP/URL non raggiungibile ({curr_url})",
+                "url": curr_url
+            }
+        except httpx.TimeoutException:
+            return {
+                "status": "timeout",
+                "message": f"Timeout di connessione verso {curr_url}",
+                "url": curr_url
+            }
         except Exception as e:
-            return {"status": "unreachable", "message": f"Home Assistant non raggiungibile ({str(e)})"}
+            return {
+                "status": "unreachable",
+                "message": f"Errore: {str(e)}",
+                "url": curr_url
+            }
 
     async def get_states(self) -> List[Dict[str, Any]]:
         """Recupera lo stato di tutte le entità su Home Assistant."""
-        if not self.token or self.token.startswith("INSERISCI_QUI"):
+        if not self.token or self.token.startswith("INSERISCI_QUI") or len(self.token) < 20:
             return []
         try:
-            async with httpx.AsyncClient(timeout=8.0) as client:
+            async with httpx.AsyncClient(timeout=6.0) as client:
                 res = await client.get(f"{self.base_url}/api/states", headers=self.headers)
                 if res.status_code == 200:
                     return res.json()
@@ -61,7 +115,6 @@ class HomeAssistantClient:
                 state = entity.get("state", "unknown")
                 unit = entity.get("attributes", {}).get("unit_of_measurement", "")
                 
-                # Ignora sensori di diagnostica troppo specifici o poco utili per il parlato
                 if domain == "sensor" and any(x in entity_id for x in ["uptime", "ip_address", "last_boot"]):
                     continue
 
@@ -70,7 +123,6 @@ class HomeAssistantClient:
                 else:
                     summary_lines.append(f"- {friendly_name} (`{entity_id}`): {state}")
 
-        # Limita alle prime 60 entità per non saturare il context window
         return "\n".join(summary_lines[:60])
 
     async def call_service(self, domain: str, service: str, service_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -79,7 +131,7 @@ class HomeAssistantClient:
             return {"success": False, "error": "Token Home Assistant non configurato."}
         try:
             url = f"{self.base_url}/api/services/{domain}/{service}"
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient(timeout=8.0) as client:
                 res = await client.post(url, headers=self.headers, json=service_data or {})
                 if res.status_code == 200:
                     return {"success": True, "result": res.json()}
