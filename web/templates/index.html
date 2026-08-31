@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shinra — Assistente Domestico & Console di Controllo</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#1e1b4b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .glow { box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.4); }
+        .mic-active { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center glow">
+                    <i data-lucide="bot" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">Shinra</h1>
+                    <p class="text-[11px] text-slate-400">Hub Domestico Intelligente</p>
+                </div>
+            </div>
+
+            <!-- Active User Selector & Status -->
+            <div class="flex items-center gap-3">
+                <!-- User Selector Dropdown -->
+                <div class="flex items-center gap-2 bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-1.5 text-xs">
+                    <i data-lucide="user" class="w-4 h-4 text-indigo-400"></i>
+                    <span class="text-slate-400">Parli come:</span>
+                    <select id="user-select" onchange="changeActiveUser(this.value)" class="bg-transparent text-indigo-300 font-semibold focus:outline-none cursor-pointer">
+                        <option value="alessio">Caricamento...</option>
+                    </select>
+                </div>
+
+                <!-- Ollama & HA Badges -->
+                <div id="ollama-status" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800 border border-slate-700 text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                    <span>Ollama</span>
+                </div>
+                <div id="ha-status" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800 border border-slate-700 text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                    <span>HA</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs Bar -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 flex gap-2 border-t border-slate-800/60 overflow-x-auto text-xs font-medium py-1.5">
+            <button onclick="switchTab('console')" id="tab-btn-console" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 transition">
+                <i data-lucide="message-square" class="w-4 h-4"></i> Console Vocale
+            </button>
+            <button onclick="switchTab('knowledge')" id="tab-btn-knowledge" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+                <i data-lucide="book-open" class="w-4 h-4"></i> Conoscenza Casa
+            </button>
+            <button onclick="switchTab('sources')" id="tab-btn-sources" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+                <i data-lucide="globe" class="w-4 h-4"></i> Fonti & Notizie
+            </button>
+            <button onclick="switchTab('aliases')" id="tab-btn-aliases" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i> Mappa Dispositivi
+            </button>
+            <button onclick="switchTab('modes')" id="tab-btn-modes" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+                <i data-lucide="sparkles" class="w-4 h-4"></i> Modalità & Routine
+            </button>
+            <button onclick="switchTab('users')" id="tab-btn-users" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+                <i data-lucide="users" class="w-4 h-4"></i> Gestione Utenti
+            </button>
+            <button onclick="switchTab('settings')" id="tab-btn-settings" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+                <i data-lucide="settings" class="w-4 h-4"></i> Impostazioni
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+
+        <!-- ==================== TAB 1: CONSOLE CHAT & VOCE ==================== -->
+        <div id="tab-console" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left & Center: Chat (2 cols) -->
+            <div class="lg:col-span-2 flex flex-col h-[75vh] bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur">
+                <!-- User Banner -->
+                <div id="active-user-banner" class="px-4 py-2 bg-indigo-950/40 border-b border-slate-800 text-xs flex items-center justify-between text-indigo-300">
+                    <span>Sessione attiva: <strong id="banner-user-name">Alessio</strong> (<span id="banner-user-role">admin</span>)</span>
+                    <span class="text-slate-500">Linguaggio: Calibrato automaticamente</span>
+                </div>
+
+                <!-- Quick Prompts Pills -->
+                <div class="p-2.5 border-b border-slate-800 bg-slate-900/40 flex items-center gap-2 overflow-x-auto text-xs whitespace-nowrap">
+                    <button onclick="sendQuickPrompt('Che tempo farà domani a Roma?')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">🌤️ Meteo domani</button>
+                    <button onclick="sendQuickPrompt('Cosa significa il termine olocausto?')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">📚 Definizione</button>
+                    <button onclick="sendQuickPrompt('Quali sono le ultime notizie dal mondo?')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">📰 Notizie del mondo</button>
+                    <button onclick="sendQuickPrompt('Attiva la modalità cinema')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">🎬 Modalità cinema</button>
+                    <button onclick="sendQuickPrompt('Qual è lo stato dei dispositivi in casa?')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">🏠 Stato casa</button>
+                </div>
+
+                <!-- Messages Area -->
+                <div id="messages-container" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
+                    <div class="flex gap-3 max-w-2xl">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
+                            <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200">
+                            <p class="font-medium text-indigo-400 mb-1">Shinra</p>
+                            <p id="welcome-text">Alessio. Sono online. Gestisco i dispositivi, il meteo, le notizie e la tua conoscenza domestica.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Bar -->
+                <div class="p-4 border-t border-slate-800 bg-slate-900/80">
+                    <form id="chat-form" onsubmit="handleSend(event)" class="flex items-center gap-2">
+                        <button type="button" id="mic-btn" onclick="toggleSpeechRecognition()" title="Parla con la voce" class="w-11 h-11 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition border border-slate-700">
+                            <i data-lucide="mic" id="mic-icon" class="w-5 h-5"></i>
+                        </button>
+                        <div class="flex-1">
+                            <input type="text" id="user-input" placeholder="Scrivi un messaggio o parla al microfono..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                        <button type="submit" id="send-btn" class="w-11 h-11 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition shadow-lg shadow-indigo-600/30">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                        </button>
+                    </form>
+                    <div id="recording-status" class="hidden mt-2 text-xs text-rose-400 flex items-center gap-1.5 animate-pulse">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> In ascolto... Parla adesso!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Activity Logs -->
+            <div class="flex flex-col gap-5">
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 backdrop-blur">
+                    <h2 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <i data-lucide="activity" class="w-4 h-4 text-indigo-400"></i> Stato Sistema
+                    </h2>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between p-2 rounded bg-slate-800/50">
+                            <span class="text-slate-400">Modello:</span>
+                            <span id="model-name-badge" class="font-mono text-indigo-300 font-semibold">gemma2:9b</span>
+                        </div>
+                        <div class="flex justify-between p-2 rounded bg-slate-800/50">
+                            <span class="text-slate-400">Alexa Invocazione:</span>
+                            <span class="font-mono text-emerald-400">"Alexa, apri Shinra"</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-1 bg-slate-900/60 border border-slate-800 rounded-2xl p-4 backdrop-blur flex flex-col">
+                    <h2 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <i data-lucide="cpu" class="w-4 h-4 text-violet-400"></i> Tool Invocati da Shinra
+                    </h2>
+                    <div id="tool-logs" class="flex-1 min-h-[200px] max-h-[350px] overflow-y-auto font-mono text-[11px] p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 text-slate-400 space-y-2">
+                        <div class="text-slate-600">Nessuna azione recente. Invia un comando per vedere i tool in esecuzione.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 2: CONOSCENZA CASA ==================== -->
+        <div id="tab-knowledge" class="tab-content hidden space-y-6">
+            <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="book-open" class="w-5 h-5 text-indigo-400"></i> Base di Conoscenza Personale
+                    </h2>
+                    <p class="text-xs text-slate-400">Scrivi fatti, abitudini, numeri o preferenze che Shinra deve sempre conoscere e ricordare.</p>
+                </div>
+                <button onclick="openAddKnowledgeModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Aggiungi Fatto
+                </button>
+            </div>
+
+            <div id="knowledge-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Caricato dinamicamente -->
+            </div>
+        </div>
+
+        <!-- ==================== TAB 3: FONTI & NOTIZIE ==================== -->
+        <div id="tab-sources" class="tab-content hidden space-y-6">
+            <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="globe" class="w-5 h-5 text-indigo-400"></i> Fonti di Informazione & RSS
+                    </h2>
+                    <p class="text-xs text-slate-400">Gestisci i feed RSS e i siti da cui Shinra attinge per notizie dell'ultima ora ed economia.</p>
+                </div>
+                <button onclick="openAddSourceModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Aggiungi Fonte RSS
+                </button>
+            </div>
+
+            <div id="sources-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Caricato dinamicamente -->
+            </div>
+        </div>
+
+        <!-- ==================== TAB 4: MAPPA DISPOSITIVI ==================== -->
+        <div id="tab-aliases" class="tab-content hidden space-y-6">
+            <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="layout-grid" class="w-5 h-5 text-indigo-400"></i> Mappa Nomi Umani Dispositivi
+                    </h2>
+                    <p class="text-xs text-slate-400">Assegna nomi naturali (es. "lampadario salotto") ai dispositivi tecnici di Home Assistant.</p>
+                </div>
+                <button onclick="openAddAliasModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Nuovo Alias
+                </button>
+            </div>
+
+            <div id="aliases-list" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Caricato dinamicamente -->
+            </div>
+        </div>
+
+        <!-- ==================== TAB 5: MODALITÀ & ROUTINE ==================== -->
+        <div id="tab-modes" class="tab-content hidden space-y-6">
+            <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-indigo-400"></i> Modalità & Routine Personalizzate
+                    </h2>
+                    <p class="text-xs text-slate-400">Crea o attiva routine complesse con un solo comando vocale.</p>
+                </div>
+            </div>
+
+            <div id="modes-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Caricato dinamicamente -->
+            </div>
+        </div>
+
+        <!-- ==================== TAB 6: GESTIONE UTENTI ==================== -->
+        <div id="tab-users" class="tab-content hidden space-y-6">
+            <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="users" class="w-5 h-5 text-indigo-400"></i> Profili Famiglia & Accesso Minori
+                    </h2>
+                    <p class="text-xs text-slate-400">Registra i membri della famiglia: Shinra adatterà automaticamente il linguaggio e i filtri di sicurezza.</p>
+                </div>
+                <button onclick="openAddUserModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Nuovo Utente
+                </button>
+            </div>
+
+            <div id="users-list" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Caricato dinamicamente -->
+            </div>
+        </div>
+
+        <!-- ==================== TAB 7: IMPOSTAZIONI ==================== -->
+        <div id="tab-settings" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl max-w-3xl mx-auto space-y-6">
+                <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                    <i data-lucide="settings" class="w-5 h-5 text-indigo-400"></i> Impostazioni Generali
+                </h2>
+
+                <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-5 text-xs">
+                    <!-- LLM -->
+                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
+                        <h3 class="font-semibold text-indigo-300">Intelligenza Artificiale (Ollama / Gemma)</h3>
+                        <div>
+                            <label class="text-slate-400 block mb-1">URL Server Ollama:</label>
+                            <input type="text" id="cfg-ollama-url" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Nome Modello Gemma:</label>
+                            <input type="text" id="cfg-model" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                        </div>
+                    </div>
+
+                    <!-- Home Assistant -->
+                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
+                        <h3 class="font-semibold text-indigo-300">Home Assistant Hub</h3>
+                        <div>
+                            <label class="text-slate-400 block mb-1">URL Home Assistant:</label>
+                            <input type="text" id="cfg-ha-url" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Token Accesso a Lungo Termine:</label>
+                            <input type="password" id="cfg-ha-token" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
+                        </div>
+                    </div>
+
+                    <!-- Assistente -->
+                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
+                        <h3 class="font-semibold text-indigo-300">Assistente & Meteo</h3>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Città Predefinita:</label>
+                            <input type="text" id="cfg-default-city" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition">
+                        Salva Tutte le Impostazioni
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Generic Modal Dialog -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div id="modal-container" class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <!-- Modal Content Injection -->
+        </div>
+    </div>
+
+    <!-- Script Logico Dashboard -->
+    <script>
+        lucide.createIcons();
+
+        let activeUserId = "alessio";
+        let usersData = [];
+
+        // Tab Navigation
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-indigo-600/30', 'text-indigo-300', 'border-indigo-500/40');
+                el.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const btn = document.getElementById(`tab-btn-${tabId}`);
+            btn.classList.add('bg-indigo-600/30', 'text-indigo-300', 'border-indigo-500/40');
+            btn.classList.remove('text-slate-400');
+
+            if (tabId === 'knowledge') loadKnowledge();
+            if (tabId === 'sources') loadSources();
+            if (tabId === 'aliases') loadAliases();
+            if (tabId === 'modes') loadModes();
+            if (tabId === 'users') loadUsers();
+            if (tabId === 'settings') loadSettings();
+        }
+
+        // Active User Management
+        async function loadUsersDropdown() {
+            try {
+                const res = await fetch('/api/users');
+                usersData = await res.json();
+                const select = document.getElementById('user-select');
+                select.innerHTML = usersData.map(u => `<option value="${u.id}" ${u.id === activeUserId ? 'selected' : ''}>${u.name} (${u.role})</option>`).join('');
+                updateActiveUserBanner();
+            } catch (e) { console.error(e); }
+        }
+
+        function changeActiveUser(userId) {
+            activeUserId = userId;
+            updateActiveUserBanner();
+        }
+
+        function updateActiveUserBanner() {
+            const user = usersData.find(u => u.id === activeUserId) || { name: 'Utente', role: 'adult', age_group: 'adult' };
+            document.getElementById('banner-user-name').innerText = user.name;
+            document.getElementById('banner-user-role').innerText = `${user.role} - ${user.age_group}`;
+        }
+
+        // Speech Recognition Setup
+        let recognition = null;
+        let isRecording = false;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'it-IT';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isRecording = true;
+                document.getElementById('mic-btn').classList.add('bg-rose-600', 'text-white', 'mic-active');
+                document.getElementById('recording-status').classList.remove('hidden');
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('user-input').value = transcript;
+                handleSend();
+            };
+
+            recognition.onerror = () => stopRecording();
+            recognition.onend = () => stopRecording();
+        }
+
+        function toggleSpeechRecognition() {
+            if (!recognition) return alert("Riconoscimento vocale non supportato.");
+            if (isRecording) recognition.stop();
+            else recognition.start();
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            document.getElementById('mic-btn').classList.remove('bg-rose-600', 'text-white', 'mic-active');
+            document.getElementById('recording-status').classList.add('hidden');
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'it-IT';
+                utterance.rate = 1.05;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Messages Handling
+        function appendUserMessage(text) {
+            const container = document.getElementById('messages-container');
+            const div = document.createElement('div');
+            div.className = 'flex justify-end gap-3';
+            div.innerHTML = `<div class="bg-indigo-600 text-white rounded-2xl rounded-tr-none p-3.5 text-sm max-w-xl shadow-md">${text}</div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function appendAssistantMessage(text, actions = []) {
+            const container = document.getElementById('messages-container');
+            const div = document.createElement('div');
+            div.className = 'flex gap-3 max-w-2xl';
+
+            let actionsHtml = '';
+            if (actions && actions.length > 0) {
+                actionsHtml = `
+                    <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex flex-wrap gap-1.5">
+                        ${actions.map(a => `<span class="px-2 py-0.5 rounded bg-indigo-950/70 border border-indigo-700/50 text-indigo-300 text-xs font-mono">⚡ ${a.tool}</span>`).join('')}
+                    </div>
+                `;
+            }
+
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                </div>
+                <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 flex-1">
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="font-medium text-indigo-400">Shinra</p>
+                        <button onclick="speakText('${text.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-indigo-300 p-1" title="Riascolta">
+                            <i data-lucide="volume-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <p class="whitespace-pre-line">${text}</p>
+                    ${actionsHtml}
+                </div>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
+            container.scrollTop = container.scrollHeight;
+            speakText(text);
+        }
+
+        function logAction(tool, args, result) {
+            const logContainer = document.getElementById('tool-logs');
+            const item = document.createElement('div');
+            item.className = 'p-2 rounded bg-slate-900 border border-slate-800';
+            item.innerHTML = `
+                <div class="text-indigo-400 font-bold flex items-center justify-between">
+                    <span>▶ Tool: ${tool}</span>
+                    <span class="text-[10px] text-slate-500">${new Date().toLocaleTimeString()}</span>
+                </div>
+                <div class="text-slate-400 mt-0.5">Argomenti: <span class="text-slate-300">${JSON.stringify(args)}</span></div>
+                <div class="text-emerald-400 mt-0.5 truncate">Risultato: ${JSON.stringify(result)}</div>
+            `;
+            logContainer.prepend(item);
+        }
+
+        async function handleSend(e) {
+            if (e) e.preventDefault();
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            appendUserMessage(text);
+            input.value = '';
+
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: text, user_id: activeUserId })
+                });
+                const data = await res.json();
+                appendAssistantMessage(data.response, data.actions);
+                if (data.actions) data.actions.forEach(a => logAction(a.tool, a.args, a.result));
+            } catch (err) {
+                appendAssistantMessage("Connessione a Shinra non riuscita.");
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        function sendQuickPrompt(promptText) {
+            document.getElementById('user-input').value = promptText;
+            handleSend();
+        }
+
+        // ==================== KNOWLEDGE CRUD ====================
+        async function loadKnowledge() {
+            const res = await fetch('/api/knowledge');
+            const items = await res.json();
+            const container = document.getElementById('knowledge-list');
+            container.innerHTML = items.map(k => `
+                <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex justify-between items-start gap-3">
+                    <div>
+                        <span class="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-800 text-[10px] text-indigo-300 font-mono">${k.category || 'generale'}</span>
+                        <p class="text-xs text-slate-200 mt-2">${k.text}</p>
+                    </div>
+                    <button onclick="deleteKnowledge('${k.id}')" class="text-slate-500 hover:text-rose-400 transition p-1">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function openAddKnowledgeModal() {
+            showModal(`
+                <h3 class="font-bold text-sm text-slate-100 mb-3">Aggiungi Fatto alla Conoscenza</h3>
+                <input type="text" id="new-k-text" placeholder="Es: Il cane di casa si chiama Rex" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3">
+                <input type="text" id="new-k-cat" placeholder="Categoria (es. famiglia, preferenze)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-4">
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Annulla</button>
+                    <button onclick="saveNewKnowledge()" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-xs text-white">Salva</button>
+                </div>
+            `);
+        }
+
+        async function saveNewKnowledge() {
+            const text = document.getElementById('new-k-text').value.trim();
+            const category = document.getElementById('new-k-cat').value.trim() || 'generale';
+            if (!text) return;
+            await fetch('/api/knowledge', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ text, category, enabled: true })
+            });
+            closeModal();
+            loadKnowledge();
+        }
+
+        async function deleteKnowledge(id) {
+            await fetch(`/api/knowledge/${id}`, { method: 'DELETE' });
+            loadKnowledge();
+        }
+
+        // ==================== SOURCES CRUD ====================
+        async function loadSources() {
+            const res = await fetch('/api/sources');
+            const items = await res.json();
+            const container = document.getElementById('sources-list');
+            container.innerHTML = items.map(s => `
+                <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="font-semibold text-xs text-slate-200">${s.name}</h4>
+                            <span class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400 font-mono">${s.category}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 truncate max-w-sm mt-1">${s.url}</p>
+                    </div>
+                    <button onclick="deleteSource('${s.id}')" class="text-slate-500 hover:text-rose-400 p-1">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function openAddSourceModal() {
+            showModal(`
+                <h3 class="font-bold text-sm text-slate-100 mb-3">Aggiungi Nuova Fonte RSS</h3>
+                <input type="text" id="new-s-name" placeholder="Nome (es. Il Sole 24 Ore)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3">
+                <input type="text" id="new-s-cat" placeholder="Categoria (es. economia, sport, italia)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3">
+                <input type="text" id="new-s-url" placeholder="URL Feed RSS (https://...)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-4">
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Annulla</button>
+                    <button onclick="saveNewSource()" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-xs text-white">Salva Fonte</button>
+                </div>
+            `);
+        }
+
+        async function saveNewSource() {
+            const name = document.getElementById('new-s-name').value.trim();
+            const category = document.getElementById('new-s-cat').value.trim() || 'generale';
+            const url = document.getElementById('new-s-url').value.trim();
+            if (!name || !url) return;
+            await fetch('/api/sources', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name, category, url, enabled: true })
+            });
+            closeModal();
+            loadSources();
+        }
+
+        async function deleteSource(id) {
+            await fetch(`/api/sources/${id}`, { method: 'DELETE' });
+            loadSources();
+        }
+
+        // ==================== ALIASES CRUD ====================
+        async function loadAliases() {
+            const res = await fetch('/api/aliases');
+            const items = await res.json();
+            const container = document.getElementById('aliases-list');
+            container.innerHTML = items.map(a => `
+                <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                    <div class="flex justify-between items-start">
+                        <span class="font-bold text-xs text-indigo-300">"${a.alias}"</span>
+                        <button onclick="deleteAlias('${a.id}')" class="text-slate-500 hover:text-rose-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                    <div class="text-[11px] text-slate-400 font-mono">→ ${a.entity_id}</div>
+                    <div class="text-[10px] text-slate-500">Stanza: ${a.room || 'Generale'}</div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function openAddAliasModal() {
+            showModal(`
+                <h3 class="font-bold text-sm text-slate-100 mb-3">Mappa Nuovo Dispositivo</h3>
+                <input type="text" id="new-a-alias" placeholder="Nome Naturale (es. lampadario salotto)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3">
+                <input type="text" id="new-a-entity" placeholder="Entity ID Home Assistant (es. light.salotto_main)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3">
+                <input type="text" id="new-a-room" placeholder="Stanza (es. Salotto)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-4">
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Annulla</button>
+                    <button onclick="saveNewAlias()" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-xs text-white">Salva</button>
+                </div>
+            `);
+        }
+
+        async function saveNewAlias() {
+            const alias = document.getElementById('new-a-alias').value.trim();
+            const entity_id = document.getElementById('new-a-entity').value.trim();
+            const room = document.getElementById('new-a-room').value.trim();
+            if (!alias || !entity_id) return;
+            await fetch('/api/aliases', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ alias, entity_id, room })
+            });
+            closeModal();
+            loadAliases();
+        }
+
+        async function deleteAlias(id) {
+            await fetch(`/api/aliases/${id}`, { method: 'DELETE' });
+            loadAliases();
+        }
+
+        // ==================== MODES ====================
+        async function loadModes() {
+            const res = await fetch('/api/modes');
+            const items = await res.json();
+            const container = document.getElementById('modes-list');
+            container.innerHTML = items.map(m => `
+                <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-bold text-xs text-slate-100 flex items-center gap-2">
+                            <i data-lucide="${m.icon || 'zap'}" class="w-4 h-4 text-indigo-400"></i> ${m.name}
+                        </h4>
+                        <p class="text-[11px] text-slate-400 mt-1">${m.description || ''}</p>
+                    </div>
+                    <button onclick="triggerMode('${m.name}')" class="px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 text-xs font-semibold transition">
+                        Attiva Ora
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        async function triggerMode(name) {
+            const res = await fetch(`/api/modes/${encodeURIComponent(name)}/activate`, { method: 'POST' });
+            const data = await res.json();
+            alert(data.messaggio || `Modalità ${name} eseguita.`);
+        }
+
+        // ==================== USERS CRUD ====================
+        async function loadUsers() {
+            const res = await fetch('/api/users');
+            const items = await res.json();
+            const container = document.getElementById('users-list');
+            container.innerHTML = items.map(u => `
+                <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-600/40 flex items-center justify-center text-xs font-bold text-indigo-300">
+                                ${u.name.charAt(0)}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-xs text-slate-100">${u.name}</h4>
+                                <span class="px-1.5 py-0.2 rounded bg-indigo-950 border border-indigo-800 text-[10px] text-indigo-300 font-mono">${u.role} (${u.age_group})</span>
+                            </div>
+                        </div>
+                        ${u.id !== 'alessio' ? `<button onclick="deleteUser('${u.id}')" class="text-slate-500 hover:text-rose-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : ''}
+                    </div>
+                    <p class="text-[11px] text-slate-400">${u.notes || 'Nessuna nota aggiuntiva.'}</p>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function openAddUserModal() {
+            showModal(`
+                <h3 class="font-bold text-sm text-slate-100 mb-3">Registra Nuovo Membro della Famiglia</h3>
+                <input type="text" id="new-u-name" placeholder="Nome (es. Marco, Sofia)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3">
+                <select id="new-u-age" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3">
+                    <option value="adult">Adulto (Linguaggio Jarvis)</option>
+                    <option value="teen">Ragazzo (13-17 anni)</option>
+                    <option value="child">Bambino (< 13 anni - Filtri protetti)</option>
+                </select>
+                <input type="text" id="new-u-notes" placeholder="Note (es. Figlio, camera dei giochi)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-4">
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Annulla</button>
+                    <button onclick="saveNewUser()" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-xs text-white">Crea Profilo</button>
+                </div>
+            `);
+        }
+
+        async function saveNewUser() {
+            const name = document.getElementById('new-u-name').value.trim();
+            const age_group = document.getElementById('new-u-age').value;
+            const notes = document.getElementById('new-u-notes').value.trim();
+            if (!name) return;
+            const id = name.toLowerCase().replace(/\s+/g, '_');
+            await fetch('/api/users', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ id, name, role: age_group === 'child' ? 'child' : 'adult', age_group, notes })
+            });
+            closeModal();
+            loadUsers();
+            loadUsersDropdown();
+        }
+
+        async function deleteUser(id) {
+            await fetch(`/api/users/${id}`, { method: 'DELETE' });
+            loadUsers();
+            loadUsersDropdown();
+        }
+
+        // ==================== SETTINGS ====================
+        async function loadSettings() {
+            const res = await fetch('/api/settings');
+            const cfg = await res.json();
+            document.getElementById('cfg-ollama-url').value = cfg.llm.ollama_url || '';
+            document.getElementById('cfg-model').value = cfg.llm.model || '';
+            document.getElementById('cfg-ha-url').value = cfg.home_assistant.url || '';
+            document.getElementById('cfg-ha-token').value = cfg.home_assistant.token || '';
+            document.getElementById('cfg-default-city').value = cfg.assistant.default_city || '';
+        }
+
+        async function saveSettings(e) {
+            e.preventDefault();
+            const res = await fetch('/api/settings');
+            const cfg = await res.json();
+            cfg.llm.ollama_url = document.getElementById('cfg-ollama-url').value.trim();
+            cfg.llm.model = document.getElementById('cfg-model').value.trim();
+            cfg.home_assistant.url = document.getElementById('cfg-ha-url').value.trim();
+            cfg.home_assistant.token = document.getElementById('cfg-ha-token').value.trim();
+            cfg.assistant.default_city = document.getElementById('cfg-default-city').value.trim();
+
+            await fetch('/api/settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(cfg)
+            });
+            alert('Impostazioni salvate con successo.');
+        }
+
+        // Modal Helpers
+        function showModal(contentHtml) {
+            const modal = document.getElementById('modal-container');
+            modal.innerHTML = contentHtml;
+            document.getElementById('modal-backdrop').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            document.getElementById('modal-backdrop').classList.add('hidden');
+        }
+
+        // Status Health Check
+        async function checkSystemHealth() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+
+                const ollamaBadge = document.getElementById('ollama-status');
+                if (data.ollama && data.ollama.status === 'online') {
+                    ollamaBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Ollama: Online</span>`;
+                    document.getElementById('model-name-badge').innerText = data.ollama.active_model;
+                } else {
+                    ollamaBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span><span>Ollama: Offline</span>`;
+                }
+
+                const haBadge = document.getElementById('ha-status');
+                if (data.home_assistant && data.home_assistant.status === 'ok') {
+                    haBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>HA: Connesso</span>`;
+                } else {
+                    haBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500"></span><span>HA: Non configurato</span>`;
+                }
+            } catch (e) {}
+        }
+
+        loadUsersDropdown();
+        checkSystemHealth();
+        setInterval(checkSystemHealth, 10000);
+    </script>
+</body>
+</html>

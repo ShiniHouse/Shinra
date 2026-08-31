@@ -1,0 +1,76 @@
+[
+  {
+    "id": "mode_cinema",
+    "name": "Cinema",
+    "icon": "film",
+    "trigger_phrases": ["modalità cinema", "prepara il salotto per il film", "mettiamo su un film"],
+    "description": "Abbassa le luci e imposta l'ambiente per guardare un film",
+    "enabled": true,
+    "actions": [
+      {
+        "type": "ha_service",
+        "domain": "light",
+        "service": "turn_on",
+        "data": { "entity_id": "light.salotto_main", "brightness_pct": 10 }
+      },
+      {
+        "type": "tts",
+        "message": "Modalità cinema attivata. Buona visione."
+      }
+    ]
+  },
+  {
+    "id": "mode_buonanotte",
+    "name": "Buonanotte",
+    "icon": "moon",
+    "trigger_phrases": ["buonanotte", "modalità notte", "vado a dormire"],
+    "description": "Spegne tutte le luci, verifica i dispositivi e imposta il clima notte",
+    "enabled": true,
+    "actions": [
+      {
+        "type": "ha_service",
+        "domain": "light",
+        "service": "turn_off",
+        "data": { "entity_id": "all" }
+      },
+      {
+        "type": "tts",
+        "message": "Luci spente e impostazioni notturne applicate. Buonanotte."
+      }
+    ]
+  },
+  {
+    "id": "mode_buongiorno",
+    "name": "Buongiorno",
+    "icon": "sun",
+    "trigger_phrases": ["buongiorno", "modalità mattina", "mi sono svegliato"],
+    "description": "Accende le prime luci e fornisce il buongiorno",
+    "enabled": true,
+    "actions": [
+      {
+        "type": "tts",
+        "message": "Buongiorno. Sono online e la casa è pronta."
+      }
+    ]
+  },
+  {
+    "id": "mode_lavoro",
+    "name": "Lavoro / Studio",
+    "icon": "briefcase",
+    "trigger_phrases": ["modalità lavoro", "modalità studio", "inizio a lavorare"],
+    "description": "Ottimizza l'illuminazione dello studio e riduce le distrazioni",
+    "enabled": true,
+    "actions": [
+      {
+        "type": "ha_service",
+        "domain": "light",
+        "service": "turn_on",
+        "data": { "entity_id": "light.studio", "brightness_pct": 80 }
+      },
+      {
+        "type": "tts",
+        "message": "Modalità lavoro attiva."
+      }
+    ]
+  }
+]

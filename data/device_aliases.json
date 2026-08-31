@@ -1,0 +1,30 @@
+[
+  {
+    "id": "alias_1",
+    "alias": "lampadario salotto",
+    "entity_id": "light.salotto_main",
+    "room": "Salotto",
+    "domain": "light"
+  },
+  {
+    "id": "alias_2",
+    "alias": "luce cucina",
+    "entity_id": "light.cucina",
+    "room": "Cucina",
+    "domain": "light"
+  },
+  {
+    "id": "alias_3",
+    "alias": "clima camera",
+    "entity_id": "climate.camera_padronale",
+    "room": "Camera da Letto",
+    "domain": "climate"
+  },
+  {
+    "id": "alias_4",
+    "alias": "presa tv",
+    "entity_id": "switch.presa_tv",
+    "room": "Salotto",
+    "domain": "switch"
+  }
+]

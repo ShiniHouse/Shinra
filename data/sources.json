@@ -1,0 +1,8 @@
+[
+  {"id": "ansa_mondo",      "name": "ANSA — Mondo",      "category": "mondo",      "url": "https://www.ansa.it/sito/notizie/mondo/mondo_rss.xml",           "enabled": true},
+  {"id": "ansa_italia",     "name": "ANSA — Italia",     "category": "italia",     "url": "https://www.ansa.it/sito/notizie/cronaca/cronaca_rss.xml",        "enabled": true},
+  {"id": "ansa_economia",   "name": "ANSA — Economia",   "category": "economia",   "url": "https://www.ansa.it/sito/notizie/economia/economia_rss.xml",      "enabled": true},
+  {"id": "ansa_politica",   "name": "ANSA — Politica",   "category": "politica",   "url": "https://www.ansa.it/sito/notizie/politica/politica_rss.xml",      "enabled": false},
+  {"id": "ansa_tecnologia", "name": "ANSA — Tecnologia", "category": "tecnologia", "url": "https://www.ansa.it/sito/notizie/tecnologia/tecnologia_rss.xml",  "enabled": true},
+  {"id": "ansa_generale",   "name": "ANSA — Generale",   "category": "generale",   "url": "https://www.ansa.it/sito/ansait_rss.xml",                         "enabled": true}
+]

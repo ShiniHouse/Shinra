@@ -1,0 +1,30 @@
+# Shinra Configuration Template
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  debug: true
+
+llm:
+  # URL dell'istanza Ollama locale
+  ollama_url: "http://localhost:11434"
+  # Nome del modello (es. gemma2:9b, gemma2:2b, gemma2)
+  model: "gemma2:9b"
+  temperature: 0.4
+  timeout_seconds: 60
+
+home_assistant:
+  enabled: true
+  url: "http://homeassistant.local:8123"
+  token: "INSERISCI_QUI_IL_TUO_LONG_LIVED_ACCESS_TOKEN"
+  alexa_media_player_entity: ""
+
+alexa:
+  enabled: true
+  skill_id: ""
+  invocation_name: "shinra"
+
+assistant:
+  name: "Shinra"
+  language: "it"
+  default_city: "Roma"

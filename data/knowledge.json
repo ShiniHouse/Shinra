@@ -1,0 +1,14 @@
+[
+  {
+    "id": "k1",
+    "text": "Il proprietario della casa si chiama Alessio Guidelli.",
+    "category": "persone",
+    "enabled": true
+  },
+  {
+    "id": "k2",
+    "text": "La città di residenza è Roma.",
+    "category": "luogo",
+    "enabled": true
+  }
+]
