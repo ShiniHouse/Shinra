@@ -890,7 +890,8 @@
                 resultBox.innerHTML = `⚠️ <strong>Token non inserito:</strong> Incolla il tuo Long-Lived Token.`;
             } else {
                 resultBox.classList.add('bg-rose-950', 'text-rose-300', 'border', 'border-rose-800');
-                resultBox.innerHTML = `❌ <strong>Home Assistant non raggiungibile:</strong> ${ha.message || 'Verifica l\\'indirizzo IP e la porta 8123'}.`;
+                const errMsg = ha.message || "Verifica l'indirizzo IP e la porta 8123";
+                resultBox.innerHTML = `❌ <strong>Home Assistant non raggiungibile:</strong> ${errMsg}.`;
             }
             await checkSystemHealth();
         }
