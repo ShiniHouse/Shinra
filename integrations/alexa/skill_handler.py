@@ -43,11 +43,16 @@ async def handle_alexa_request(request_data: Dict[str, Any]) -> Dict[str, Any]:
     session = request_data.get("session", {})
     session_attributes = session.get("attributes", {})
 
-    # 1. Apertura della Skill ("Alexa, apri Shinra") -> Chiede l'interlocutore
+    # 1. Apertura della Skill ("Alexa, apri Shinra")
     if req_type == "LaunchRequest":
-        welcome_msg = "Shinra online. Con chi parlo?"
-        reprompt_msg = "Dimmi il tuo nome per iniziare."
-        session_attributes["waiting_for_user"] = True
+        users = user_manager.get_users()
+        admin_user = users[0] if users else None
+        user_name = admin_user.name if admin_user else "Alessio"
+        user_id = admin_user.id if admin_user else "alessio"
+        session_attributes["user_id"] = user_id
+        
+        welcome_msg = f"Shinra online, {user_name}. Dimmi pure."
+        reprompt_msg = "Puoi chiedermi il meteo, una curiosità, le notizie o di controllare i dispositivi."
         return build_alexa_response(
             welcome_msg,
             reprompt_msg,
@@ -90,31 +95,15 @@ async def handle_alexa_request(request_data: Dict[str, Any]) -> Dict[str, Any]:
 
         logger.info(f"[Alexa] Ricevuto: '{user_query}' | Attributi: {session_attributes}")
 
-        # Se siamo in attesa del nome dell'utente
-        if session_attributes.get("waiting_for_user"):
-            profile = user_manager.find_user_by_name(user_query)
-            session_attributes["waiting_for_user"] = False
+        # Cambio utente vocale esplicito ("sono Marco" / "parla con Sara")
+        if user_query.lower().startswith(("sono ", "parla con ", "cambia utente ")):
+            clean_name = re.sub(r"^(sono|parla con|cambia utente)\s+", "", user_query, flags=re.IGNORECASE).strip()
+            profile = user_manager.find_user_by_name(clean_name)
             session_attributes["user_id"] = profile.id
+            reply = f"Profilo impostato su {profile.name}. A tua disposizione."
+            return build_alexa_response(reply, "Cosa posso fare per te?", should_end_session=False, session_attributes=session_attributes)
 
-            if profile.age_group == "child":
-                reply = f"Ciao {profile.name}! Come posso aiutarti oggi?"
-                reprompt = "Puoi chiedermi una curiosità, il meteo o cosa c'è acceso."
-            elif profile.role == "admin":
-                reply = f"{profile.name}. Dimmi."
-                reprompt = "In cosa posso esserti utile?"
-            else:
-                reply = f"Ciao {profile.name}. A tua disposizione."
-                reprompt = "Cosa vorresti fare?"
-
-            return build_alexa_response(
-                reply,
-                reprompt,
-                should_end_session=False,
-                session_attributes=session_attributes
-            )
-
-        # Se l'utente è già stato identificato o ha fatto direttamente una domanda
-        current_user_id = session_attributes.get("user_id")
+        current_user_id = session_attributes.get("user_id") or "alessio"
         result = await agent.process_user_input(user_query, user_id=current_user_id)
         raw_reply = result.get("response", "Operazione completata.")
         reply = clean_text_for_tts(raw_reply) or "Operazione completata."
