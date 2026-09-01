@@ -353,23 +353,46 @@
                 }
             } catch (e) { console.warn('Lucide icon render:', e); }
         }
-        safeCreateIcons();
 
         let activeUserId = "alessio";
         let usersData = [];
 
-        // Tab Navigation
+
+        // Store del display originale per ogni tab
+        const tabDisplayMap = {
+            'console':   'grid',
+            'knowledge': 'block',
+            'sources':   'block',
+            'aliases':   'block',
+            'modes':     'block',
+            'users':     'block',
+            'settings':  'block',
+        };
+
+        // Tab Navigation — usa style.display invece di hidden class (evita conflitti Tailwind JIT)
         function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            // Nasconde tutti i tab
+            Object.keys(tabDisplayMap).forEach(id => {
+                const el = document.getElementById(`tab-${id}`);
+                if (el) el.style.display = 'none';
+            });
+
+            // Resetta tutti i pulsanti
             document.querySelectorAll('.tab-btn').forEach(el => {
-                el.classList.remove('bg-indigo-600/30', 'text-indigo-300', 'border-indigo-500/40');
+                el.classList.remove('bg-indigo-600/30', 'text-indigo-300', 'border-indigo-500/40', 'border');
                 el.classList.add('text-slate-400');
             });
 
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            // Mostra il tab selezionato
+            const targetEl = document.getElementById(`tab-${tabId}`);
+            if (targetEl) targetEl.style.display = tabDisplayMap[tabId] || 'block';
+
+            // Attiva il pulsante selezionato
             const btn = document.getElementById(`tab-btn-${tabId}`);
-            btn.classList.add('bg-indigo-600/30', 'text-indigo-300', 'border-indigo-500/40');
-            btn.classList.remove('text-slate-400');
+            if (btn) {
+                btn.classList.add('bg-indigo-600/30', 'text-indigo-300', 'border-indigo-500/40', 'border');
+                btn.classList.remove('text-slate-400');
+            }
 
             if (tabId === 'knowledge') loadKnowledge();
             if (tabId === 'sources') loadSources();
@@ -377,6 +400,14 @@
             if (tabId === 'modes') loadModes();
             if (tabId === 'users') loadUsers();
             if (tabId === 'settings') loadSettings();
+        }
+
+        // Inizializzazione del layout tab all'avvio
+        function initTabs() {
+            Object.keys(tabDisplayMap).forEach(id => {
+                const el = document.getElementById(`tab-${id}`);
+                if (el) el.style.display = id === 'console' ? tabDisplayMap['console'] : 'none';
+            });
         }
 
         // Active User Management
@@ -885,28 +916,34 @@
                 const ollamaBadge = document.getElementById('ollama-status');
                 if (data.ollama && data.ollama.status === 'online') {
                     ollamaBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Ollama: Online</span>`;
-                    document.getElementById('model-name-badge').innerText = data.ollama.active_model;
+                    ollamaBadge.style.cssText = 'display:flex; align-items:center; gap:0.375rem; padding:0.25rem 0.625rem; border-radius:9999px; font-size:11px; font-weight:500; background:rgba(6,46,37,0.7); border:1px solid #065f46; color:#6ee7b7';
+                    const badge = document.getElementById('model-name-badge');
+                    if (badge) badge.innerText = data.ollama.active_model;
                 } else {
                     ollamaBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span><span>Ollama: Offline</span>`;
+                    ollamaBadge.style.cssText = 'display:flex; align-items:center; gap:0.375rem; padding:0.25rem 0.625rem; border-radius:9999px; font-size:11px; font-weight:500; background:rgba(69,10,10,0.7); border:1px solid #7f1d1d; color:#fca5a5';
                 }
 
                 const haBadge = document.getElementById('ha-status');
                 if (data.home_assistant && data.home_assistant.status === 'ok') {
                     haBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>HA: Connesso</span>`;
-                    haBadge.className = 'hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-950/70 border border-emerald-800 text-emerald-300';
+                    haBadge.style.cssText = 'display:flex; align-items:center; gap:0.375rem; padding:0.25rem 0.625rem; border-radius:9999px; font-size:11px; font-weight:500; background:rgba(6,46,37,0.7); border:1px solid #065f46; color:#6ee7b7';
                 } else {
                     const msg = (data.home_assistant && data.home_assistant.message) ? data.home_assistant.message : 'Non configurato';
                     haBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-400"></span><span>HA: ${msg}</span>`;
-                    haBadge.className = 'hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-yellow-950/70 border border-yellow-800 text-yellow-300';
+                    haBadge.style.cssText = 'display:flex; align-items:center; gap:0.375rem; padding:0.25rem 0.625rem; border-radius:9999px; font-size:11px; font-weight:500; background:rgba(66,32,6,0.7); border:1px solid #92400e; color:#fde68a';
                 }
-            } catch (e) {}
+            } catch (e) { console.warn('Health check error:', e); }
         }
 
-        // Inizializzazione automatica
-        loadUsersDropdown();
-        loadSettings();
-        checkSystemHealth();
-        setInterval(checkSystemHealth, 8000);
+        // Inizializzazione — eseguita dopo il caricamento completo della pagina
+        window.addEventListener('load', function() {
+            initTabs();
+            safeCreateIcons();
+            loadUsersDropdown();
+            checkSystemHealth();
+            setInterval(checkSystemHealth, 8000);
+        });
     </script>
 </body>
 </html>
