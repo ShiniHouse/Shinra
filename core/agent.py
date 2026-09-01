@@ -117,12 +117,21 @@ class ShinraAgent:
         conversation_messages.extend(mem.get_messages())
 
         # 6. Ciclo di Tool Calling con Gemma / Qwen
+        # Attiva i tools complessi solo se il messaggio contiene richieste di domotica o ricerca web attiva
+        ACTION_KEYWORDS = [
+            "accend", "spegn", "attiva", "disattiva", "imposta", "regola", "alza", "abbassa",
+            "chiudi", "apri", "luce", "luci", "lampad", "termostato", "presa", "interruttore",
+            "modalità", "routine", "stato casa", "cerca sul web", "cerca su internet", "trova online",
+            "dispositivi", "entità"
+        ]
+        needs_action_tools = any(kw in user_lower for kw in ACTION_KEYWORDS)
+
         for iteration in range(max_tool_iterations):
             user_label = profile.name if profile else 'Utente'
             logger.info(f"[Shinra] ({user_label}) Iterazione {iteration + 1} per: '{user_text}'")
             
-            # Se i dati live sono già stati recuperati, non passare i tools per evitare confusione nel modello
-            current_tools = None if (live_context or iteration > 0) else TOOLS_SCHEMA
+            # Passa i tools solo se strettamente necessari e solo alla prima iterazione
+            current_tools = TOOLS_SCHEMA if (needs_action_tools and not live_context and iteration == 0) else None
             response = await self.ollama.chat(
                 messages=conversation_messages,
                 tools=current_tools
