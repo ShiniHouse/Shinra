@@ -69,6 +69,13 @@ async def handle_alexa_request(request_data: Dict[str, Any]) -> Dict[str, Any]:
                 "notizie in tempo reale, spiegazioni e promemoria. Cosa ti serve?"
             )
             return build_alexa_response(help_text, "Dimmi pure.", should_end_session=False, session_attributes=session_attributes)
+        elif intent_name == "AMAZON.FallbackIntent":
+            return build_alexa_response(
+                "Non ho capito bene la richiesta. Puoi chiedermi il meteo, una definizione, o di controllare i dispositivi.",
+                "Cosa vorresti fare?",
+                should_end_session=False,
+                session_attributes=session_attributes
+            )
 
         # Estrazione del testo della richiesta dell'utente
         slots = intent.get("slots", {})
