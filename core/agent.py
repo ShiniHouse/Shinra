@@ -71,14 +71,16 @@ class ShinraAgent:
         ]
         conversation_messages.extend(mem.get_messages())
 
-        # 6. Ciclo di Tool Calling con Gemma
+        # 6. Ciclo di Tool Calling con Gemma / Qwen
         for iteration in range(max_tool_iterations):
             user_label = profile.name if profile else 'Utente'
             logger.info(f"[Shinra] ({user_label}) Iterazione {iteration + 1} per: '{user_text}'")
             
+            # Passa i tools solo alla prima iterazione: alle successive genera la sintesi finale ad alta velocità
+            current_tools = TOOLS_SCHEMA if iteration == 0 else None
             response = await self.ollama.chat(
                 messages=conversation_messages,
-                tools=TOOLS_SCHEMA
+                tools=current_tools
             )
 
             if not response.get("success"):
