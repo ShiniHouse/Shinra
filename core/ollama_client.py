@@ -8,6 +8,9 @@ from config.settings import reload_settings
 
 logger = logging.getLogger(__name__)
 
+# Set dei modelli che non supportano tools nativi via API Ollama
+_NON_TOOL_MODELS = {"gemma", "gemma2", "gemma3", "deepseek-r1", "phi", "phi3"}
+
 class OllamaClient:
     def __init__(self, base_url: Optional[str] = None, model: Optional[str] = None):
         self._base_url = base_url
@@ -30,12 +33,12 @@ class OllamaClient:
     @property
     def timeout(self) -> float:
         cfg = reload_settings()
-        return float(cfg.llm.timeout_seconds or 120)
+        return float(cfg.llm.timeout_seconds or 180)
 
     async def get_available_models(self) -> List[str]:
         """Recupera la lista dei modelli installati su Ollama."""
         try:
-            async with httpx.AsyncClient(timeout=6.0) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(6.0, connect=3.0)) as client:
                 res = await client.get(f"{self.base_url}/api/tags")
                 if res.status_code == 200:
                     data = res.json()
@@ -83,39 +86,40 @@ class OllamaClient:
         curr_temp = temperature if temperature is not None else cfg.llm.temperature
         url = f"{self.base_url}/api/chat"
 
+        # Verifica se il modello è noto per non supportare tools (evita richiesta inutile che fallisce con 400)
+        model_family = curr_model.split(":")[0].lower()
+        supports_tools = tools and (model_family not in _NON_TOOL_MODELS) and not any(k in curr_model.lower() for k in ["gemma", "deepseek-r1", "phi"])
+
         payload = {
             "model": curr_model,
             "messages": messages,
             "stream": False,
             "options": {
-                "temperature": curr_temp
+                "temperature": curr_temp,
+                "num_ctx": 2048
             }
         }
-        if tools:
+        if supports_tools and tools:
             payload["tools"] = tools
 
+        req_timeout = httpx.Timeout(timeout=max(self.timeout, 180.0), connect=10.0)
+
         try:
-            async with httpx.AsyncClient(timeout=max(self.timeout, 120.0)) as client:
+            async with httpx.AsyncClient(timeout=req_timeout) as client:
                 res = await client.post(url, json=payload)
-                
-                # Se il modello non supporta tools via API (es. gemma3:4b), esegui fallback senza payload tools
-                if res.status_code == 400 and "does not support tools" in res.text and tools:
-                    logger.warning(f"Il modello {curr_model} non supporta tools nativi. Retry chat standard.")
-                    payload_no_tools = {
-                        "model": curr_model,
-                        "messages": messages,
-                        "stream": False,
-                        "options": {
-                            "temperature": curr_temp
-                        }
-                    }
-                    res = await client.post(url, json=payload_no_tools)
+
+                # Fallback di sicurezza se un modello inatteso restituisce 'does not support tools'
+                if res.status_code == 400 and "does not support tools" in res.text and "tools" in payload:
+                    logger.warning(f"Il modello {curr_model} non supporta tools nativi. Retry immediato senza tools.")
+                    _NON_TOOL_MODELS.add(model_family)
+                    del payload["tools"]
+                    res = await client.post(url, json=payload)
 
                 if res.status_code == 200:
                     data = res.json()
                     message = data.get("message", {})
                     content = message.get("content", "") or data.get("response", "")
-                    
+
                     # Rimuovi eventuali tag <thought> o estrai il testo se necessario
                     if "<thought>" in content and "</thought>" in content:
                         content = re.sub(r"<thought>.*?</thought>", "", content, flags=re.DOTALL).strip()
