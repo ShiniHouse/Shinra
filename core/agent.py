@@ -63,6 +63,32 @@ class ShinraAgent:
             modes_summary=modes_summary
         )
 
+        # 4b. Arricchimento proattivo per dati live (Meteo & Notizie)
+        user_lower = user_text.lower()
+        live_context = ""
+
+        if any(w in user_lower for w in ["meteo", "tempo a", "tempo fa", "tempo farà", "previsioni", "pioverà", "piove", "temperatura"]):
+            target_city = settings.assistant.default_city or "Roma"
+            city_match = re.search(r"\b(?:a|ad|per|di)\s+([a-zA-Zàèéìòù]+)", user_text, re.IGNORECASE)
+            if city_match:
+                cand = city_match.group(1).strip()
+                if cand.lower() not in ["oggi", "domani", "casa", "adesso", "questo", "questa", "sera", "mattina"]:
+                    target_city = cand
+
+            logger.info(f"[Shinra] Auto-recupero meteo in tempo reale per: {target_city}")
+            w_res = await execute_tool("get_weather", {"location": target_city, "days": 2})
+            actions_taken.append({"tool": "get_weather", "args": {"location": target_city, "days": 2}, "result": w_res})
+            live_context += f"\n[DATI METEO IN TEMPO REALE PER {target_city.upper()}]: {json.dumps(w_res, ensure_ascii=False)}"
+
+        elif any(w in user_lower for w in ["notizie", "ultime notizie", "rassegna stampa", "cosa succede"]):
+            logger.info(f"[Shinra] Auto-recupero notizie in tempo reale")
+            n_res = await execute_tool("get_latest_news", {"category": "generale"})
+            actions_taken.append({"tool": "get_latest_news", "args": {"category": "generale"}, "result": n_res})
+            live_context += f"\n[NOTIZIE IN TEMPO REALE]: {json.dumps(n_res, ensure_ascii=False)}"
+
+        if live_context:
+            system_prompt += f"\n\n### INFORMAZIONI IN TEMPO REALE APPENA ACQUISITE:\n{live_context}\nRispondi all'utente usando direttamente questi dati reali in 1-2 frasi chiare e adatte alla voce."
+
         # 5. Aggiornamento memoria e messaggi
         mem.add_user_message(user_text)
         
