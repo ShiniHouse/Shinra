@@ -188,40 +188,65 @@
         </div>
 
         <!-- ==================== TAB 2: CONOSCENZA CASA ==================== -->
-        <div id="tab-knowledge" class="tab-content hidden space-y-6">
-            <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
-                <div>
-                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-                        <i data-lucide="book-open" class="w-5 h-5 text-indigo-400"></i> Base di Conoscenza Personale
-                    </h2>
-                    <p class="text-xs text-slate-400">Scrivi fatti, abitudini, numeri o preferenze che Shinra deve sempre conoscere e ricordare.</p>
+        <div id="tab-knowledge" class="tab-content hidden space-y-5">
+            <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="book-open" class="w-5 h-5 text-indigo-400"></i> Base di Conoscenza Personale
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Insegna a Shinra la tua casa, la tua famiglia e le tue abitudini. Shinra userà queste informazioni in ogni conversazione.</p>
+                    </div>
+                    <button onclick="openAddKnowledgeModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Fatto Libero
+                    </button>
                 </div>
-                <button onclick="openAddKnowledgeModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
-                    <i data-lucide="plus" class="w-4 h-4"></i> Aggiungi Fatto
-                </button>
             </div>
 
-            <div id="knowledge-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Caricato dinamicamente -->
+            <!-- Sezioni predefinite -->
+            <div id="knowledge-templates-section" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Generato da JS -->
+            </div>
+
+            <!-- Fatti salvati -->
+            <div class="space-y-2">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide px-1">Fatti già memorizzati</p>
+                <div id="knowledge-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Caricato dinamicamente -->
+                </div>
             </div>
         </div>
 
         <!-- ==================== TAB 3: FONTI & NOTIZIE ==================== -->
-        <div id="tab-sources" class="tab-content hidden space-y-6">
-            <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
-                <div>
-                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-                        <i data-lucide="globe" class="w-5 h-5 text-indigo-400"></i> Fonti di Informazione & RSS
-                    </h2>
-                    <p class="text-xs text-slate-400">Gestisci i feed RSS e i siti da cui Shinra attinge per notizie dell'ultima ora ed economia.</p>
+        <div id="tab-sources" class="tab-content hidden space-y-5">
+            <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="globe" class="w-5 h-5 text-indigo-400"></i> Fonti di Informazione & RSS
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Scegli da dove Shinra attinge notizie, economia e aggiornamenti. Più fonti aggiungi, più Shinra è informata.</p>
+                    </div>
+                    <button onclick="openAddSourceModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0">
+                        <i data-lucide="plus" class="w-4 h-4"></i> URL Personalizzato
+                    </button>
                 </div>
-                <button onclick="openAddSourceModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
-                    <i data-lucide="plus" class="w-4 h-4"></i> Aggiungi Fonte RSS
-                </button>
             </div>
 
-            <div id="sources-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Caricato dinamicamente -->
+            <!-- Fonti attive -->
+            <div class="space-y-2">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide px-1">Fonti attive</p>
+                <div id="sources-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Caricato dinamicamente -->
+                </div>
+            </div>
+
+            <!-- Catalogo fonti consigliate -->
+            <div class="space-y-2">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide px-1">Catalogo fonti consigliate</p>
+                <div id="sources-catalog" class="space-y-4">
+                    <!-- Generato da JS -->
+                </div>
             </div>
         </div>
 
@@ -595,40 +620,190 @@
             handleSend();
         }
 
-        // ==================== KNOWLEDGE CRUD ====================
+        // ==================== KNOWLEDGE TEMPLATES ====================
+        const KNOWLEDGE_TEMPLATES = [
+            {
+                id: 'casa', icon: '🏠', label: 'Casa & Indirizzo',
+                fields: [
+                    { key: 'indirizzo',   label: 'Indirizzo completo',     placeholder: 'es. Via Roma 10, Arezzo, 52100' },
+                    { key: 'piano',       label: 'Piano / Interno',         placeholder: 'es. Piano 2, interno 4' },
+                    { key: 'citofono',    label: 'Citofono / Campanello',   placeholder: 'es. Guidelli' },
+                    { key: 'wifi_nome',   label: 'Nome rete WiFi',          placeholder: 'es. CasaMia_5G' },
+                ]
+            },
+            {
+                id: 'famiglia', icon: '👨‍👩‍👧', label: 'Famiglia & Conviventi',
+                fields: [
+                    { key: 'componenti',  label: 'Componenti del nucleo',   placeholder: 'es. Alessio (admin), Giulia (adulto), Marco (10 anni)' },
+                    { key: 'animali',     label: 'Animali domestici',        placeholder: 'es. Rex, cane labrador 3 anni' },
+                    { key: 'compleanni',  label: 'Compleanni importanti',    placeholder: 'es. Giulia il 15 marzo, Marco il 8 luglio' },
+                ]
+            },
+            {
+                id: 'abitudini', icon: '📅', label: 'Abitudini & Routine',
+                fields: [
+                    { key: 'sveglia',     label: 'Orario sveglia solito',   placeholder: 'es. 7:00 nei giorni feriali, 9:00 weekend' },
+                    { key: 'lavoro',      label: 'Orari lavoro / scuola',   placeholder: 'es. Alessio lavora 9-18, Marco scuola 8-16' },
+                    { key: 'rientro',     label: 'Orario rientro a casa',   placeholder: 'es. solitamente verso le 19:00' },
+                    { key: 'hobby',       label: 'Hobby & passioni',         placeholder: 'es. calcio, lettura, videogiochi' },
+                    { key: 'cibo',        label: 'Cucina / piatti preferiti',placeholder: 'es. pasta al pomodoro, pizza margherita' },
+                ]
+            },
+            {
+                id: 'salute', icon: '🏥', label: 'Salute & Emergenze',
+                fields: [
+                    { key: 'medico',      label: 'Medico di base',          placeholder: 'es. Dr. Rossi, tel. 0123-456789' },
+                    { key: 'pronto_soc', label: 'Pronto soccorso vicino',   placeholder: 'es. Ospedale San Donato, Via X' },
+                    { key: 'farmacia',    label: 'Farmacia di fiducia',      placeholder: 'es. Farmacia Centrale, aperta 24h' },
+                    { key: 'allergie',    label: 'Allergie / intolleranze',  placeholder: 'es. Giulia allergica alle arachidi' },
+                    { key: 'gruppo_sg',   label: 'Gruppo sanguigno',         placeholder: 'es. Alessio A+, Giulia 0-' },
+                ]
+            },
+            {
+                id: 'casa_tecnica', icon: '🔧', label: 'Contatti & Tecnici',
+                fields: [
+                    { key: 'idraulico',   label: 'Idraulico di fiducia',    placeholder: 'es. Mario Verdi, tel. 333-1234567' },
+                    { key: 'elettricista',label: 'Elettricista',             placeholder: 'es. Luigi Bianchi, tel. 347-7654321' },
+                    { key: 'portiere',    label: 'Portiere / Amministratore',placeholder: 'es. Sig. Ferrari, tel. 0575-123456' },
+                    { key: 'assicurazione',label: 'Assicurazione casa',     placeholder: 'es. Unipol polizza n. 12345, tel. 800-xxx' },
+                ]
+            },
+            {
+                id: 'veicoli', icon: '🚗', label: 'Veicoli & Spostamenti',
+                fields: [
+                    { key: 'auto1',       label: 'Auto principale',          placeholder: 'es. Fiat Panda, targa EF123GH, colore bianco' },
+                    { key: 'auto2',       label: 'Secondo veicolo',          placeholder: 'es. Vespa 125, targa AA000AA' },
+                    { key: 'parcheggio',  label: 'Box / Parcheggio',         placeholder: 'es. Box n. 12 in Via Roma' },
+                ]
+            },
+            {
+                id: 'digitale', icon: '📱', label: 'Preferenze Digitali',
+                fields: [
+                    { key: 'streaming',   label: 'Servizi streaming',        placeholder: 'es. Netflix, Disney+, Spotify' },
+                    { key: 'musica',      label: 'Generi musicali preferiti',placeholder: 'es. rock anni 80, jazz, musica italiana' },
+                    { key: 'smart_tv',    label: 'TV principale',            placeholder: 'es. Samsung 55" in salotto, entity: media_player.tv_salotto' },
+                    { key: 'voce_alexa',  label: 'Echo Alexa principale',    placeholder: 'es. Echo Show in cucina, Echo Dot in camera' },
+                ]
+            },
+            {
+                id: 'note_libere', icon: '📝', label: 'Note & Preferenze Varie',
+                fields: [
+                    { key: 'lingua',      label: 'Lingua preferita risposta',placeholder: 'es. sempre in italiano, tono informale' },
+                    { key: 'privacy',     label: 'Note sulla privacy',        placeholder: 'es. non leggere messaggi ad alta voce se ci sono ospiti' },
+                    { key: 'note',        label: 'Altre note importanti',     placeholder: 'es. il campanello è rotto dal 2024, intercome non funziona' },
+                ]
+            },
+        ];
+
         async function loadKnowledge() {
-            const res = await fetch('/api/knowledge');
-            const items = await res.json();
-            const container = document.getElementById('knowledge-list');
-            container.innerHTML = items.map(k => `
-                <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex justify-between items-start gap-3">
-                    <div>
-                        <span class="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-800 text-[10px] text-indigo-300 font-mono">${k.category || 'generale'}</span>
-                        <p class="text-xs text-slate-200 mt-2">${k.text}</p>
+            try {
+                const res = await fetch('/api/knowledge');
+                const items = await res.json();
+                const container = document.getElementById('knowledge-list');
+
+                if (!items.length) {
+                    container.innerHTML = `<p class="text-xs text-slate-500 col-span-2 py-3 text-center">Nessun fatto memorizzato. Compila i campi qui sopra o aggiungi un fatto libero.</p>`;
+                } else {
+                    const catColors = { casa:'indigo', famiglia:'violet', abitudini:'sky', salute:'rose', casa_tecnica:'amber', veicoli:'green', digitale:'purple', note_libere:'slate', generale:'slate' };
+                    container.innerHTML = items.map(k => {
+                        const cat = k.category || 'generale';
+                        const col = catColors[cat] || 'slate';
+                        return `
+                        <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex justify-between items-start gap-3 group">
+                            <div class="flex-1 min-w-0">
+                                <span class="px-2 py-0.5 rounded bg-${col}-950/60 border border-${col}-800 text-[10px] text-${col}-300 font-mono">${cat}</span>
+                                <p class="text-xs text-slate-200 mt-1.5 leading-relaxed">${k.text}</p>
+                            </div>
+                            <button onclick="deleteKnowledge('${k.id}')" class="text-slate-600 hover:text-rose-400 transition p-1 opacity-0 group-hover:opacity-100 shrink-0">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>`;
+                    }).join('');
+                }
+                safeCreateIcons();
+                renderKnowledgeTemplates(items);
+            } catch(e) { console.error('loadKnowledge:', e); }
+        }
+
+        function renderKnowledgeTemplates(existingItems) {
+            const container = document.getElementById('knowledge-templates-section');
+            // Identifica le chiavi già salvate per pre-compilare i campi
+            const savedKeys = {};
+            existingItems.forEach(k => { if (k._key) savedKeys[k._key] = k.text; });
+
+            container.innerHTML = KNOWLEDGE_TEMPLATES.map(section => `
+                <div class="rounded-xl border border-slate-800 overflow-hidden bg-slate-900/40">
+                    <div class="bg-slate-800/50 px-4 py-2.5 flex items-center gap-2">
+                        <span class="text-base">${section.icon}</span>
+                        <span class="text-xs font-semibold text-slate-200">${section.label}</span>
                     </div>
-                    <button onclick="deleteKnowledge('${k.id}')" class="text-slate-500 hover:text-rose-400 transition p-1">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
+                    <div class="p-3 space-y-2">
+                        ${section.fields.map(f => `
+                            <div class="flex gap-2 items-center">
+                                <div class="flex-1">
+                                    <label class="text-[10px] text-slate-500 block mb-0.5">${f.label}</label>
+                                    <input type="text" id="kt-${section.id}-${f.key}"
+                                        placeholder="${f.placeholder}"
+                                        class="w-full bg-slate-950/60 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+                                </div>
+                                <button onclick="saveKnowledgeField('${section.id}', '${f.key}', '${f.label}', '${section.label}')"
+                                    class="mt-4 px-2.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-xs font-semibold transition shrink-0">
+                                    Salva
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             `).join('');
-            safeCreateIcons();
+        }
+
+        async function saveKnowledgeField(sectionId, fieldKey, fieldLabel, sectionLabel) {
+            const input = document.getElementById(`kt-${sectionId}-${fieldKey}`);
+            const value = input?.value?.trim();
+            if (!value) { input?.focus(); return; }
+
+            // Genera testo naturale per il prompt
+            const text = `${fieldLabel}: ${value}`;
+            await fetch('/api/knowledge', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ text, category: sectionId, enabled: true, _key: `${sectionId}.${fieldKey}` })
+            });
+            input.value = '';
+            input.style.borderColor = '#10b981';
+            setTimeout(() => { input.style.borderColor = ''; }, 1500);
+            loadKnowledge();
         }
 
         function openAddKnowledgeModal() {
             showModal(`
-                <h3 class="font-bold text-sm text-slate-100 mb-3">Aggiungi Fatto alla Conoscenza</h3>
-                <input type="text" id="new-k-text" placeholder="Es: Il cane di casa si chiama Rex" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3">
-                <input type="text" id="new-k-cat" placeholder="Categoria (es. famiglia, preferenze)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-4">
+                <h3 class="font-bold text-sm text-slate-100 mb-1">Aggiungi Fatto Libero</h3>
+                <p class="text-xs text-slate-400 mb-4">Scrivi qualsiasi informazione in forma di frase naturale.</p>
+                <label class="text-xs text-slate-400 block mb-1">Fatto / Informazione</label>
+                <textarea id="new-k-text" rows="3" placeholder="es. La combinazione del cancello è 1234. Il gatto si chiama Micio ed è ipoallergenico."
+                    class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3 resize-none focus:outline-none focus:border-indigo-500"></textarea>
+                <label class="text-xs text-slate-400 block mb-1">Categoria</label>
+                <select id="new-k-cat" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 mb-4 focus:outline-none focus:border-indigo-500">
+                    <option value="generale">generale</option>
+                    <option value="casa">casa</option>
+                    <option value="famiglia">famiglia</option>
+                    <option value="abitudini">abitudini</option>
+                    <option value="salute">salute</option>
+                    <option value="casa_tecnica">tecnici & contatti</option>
+                    <option value="veicoli">veicoli</option>
+                    <option value="digitale">digitale</option>
+                </select>
                 <div class="flex justify-end gap-2">
-                    <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Annulla</button>
-                    <button onclick="saveNewKnowledge()" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-xs text-white">Salva</button>
+                    <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300 hover:bg-slate-700">Annulla</button>
+                    <button onclick="saveNewKnowledge()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold">Salva</button>
                 </div>
             `);
+            setTimeout(() => document.getElementById('new-k-text')?.focus(), 100);
         }
 
         async function saveNewKnowledge() {
             const text = document.getElementById('new-k-text').value.trim();
-            const category = document.getElementById('new-k-cat').value.trim() || 'generale';
+            const category = document.getElementById('new-k-cat').value || 'generale';
             if (!text) return;
             await fetch('/api/knowledge', {
                 method: 'POST',
@@ -640,43 +815,135 @@
         }
 
         async function deleteKnowledge(id) {
+            if (!confirm('Rimuovere questo fatto?')) return;
             await fetch(`/api/knowledge/${id}`, { method: 'DELETE' });
             loadKnowledge();
         }
 
-        // ==================== SOURCES CRUD ====================
+        // ==================== SOURCES CATALOG ====================
+        const SOURCES_CATALOG = [
+            { category: '📰 Notizie Italia', items: [
+                { id: 'corriere', name: 'Corriere della Sera', cat: 'italia', url: 'https://www.corriere.it/rss/homepage.xml' },
+                { id: 'repubblica', name: 'La Repubblica', cat: 'italia', url: 'https://www.repubblica.it/rss/homepage/rss2.0.xml' },
+                { id: 'skytg24', name: 'Sky TG24', cat: 'italia', url: 'https://tg24.sky.it/feed/rss' },
+                { id: 'lastampa', name: 'La Stampa', cat: 'italia', url: 'https://www.lastampa.it/rss.xml' },
+                { id: 'ilmessaggero', name: 'Il Messaggero', cat: 'italia', url: 'https://www.ilmessaggero.it/rss/home.xml' },
+            ]},
+            { category: '💹 Economia & Finanza', items: [
+                { id: 'sole24ore', name: 'Il Sole 24 Ore', cat: 'economia', url: 'https://www.ilsole24ore.com/rss/home.xml' },
+                { id: 'milanofinanza', name: 'Milano Finanza', cat: 'economia', url: 'https://www.milanofinanza.it/rss' },
+                { id: 'reuters_biz', name: 'Reuters Business', cat: 'economia', url: 'https://feeds.reuters.com/reuters/businessNews' },
+            ]},
+            { category: '🖥️ Tecnologia & AI', items: [
+                { id: 'wired_it', name: 'Wired Italia', cat: 'tecnologia', url: 'https://www.wired.it/feed/rss' },
+                { id: 'tomshw', name: "Tom's Hardware Italia", cat: 'tecnologia', url: 'https://www.tomshw.it/feed' },
+                { id: 'hwupgrade', name: 'Hardware Upgrade', cat: 'tecnologia', url: 'https://www.hwupgrade.it/rss/news.xml' },
+                { id: 'techcrunch', name: 'TechCrunch', cat: 'tecnologia', url: 'https://techcrunch.com/feed/' },
+                { id: 'theverge', name: 'The Verge', cat: 'tecnologia', url: 'https://www.theverge.com/rss/index.xml' },
+                { id: 'hn', name: 'Hacker News Top', cat: 'tecnologia', url: 'https://hnrss.org/frontpage' },
+            ]},
+            { category: '🌍 Notizie Internazionali', items: [
+                { id: 'bbc_world', name: 'BBC World News', cat: 'mondo', url: 'http://feeds.bbci.co.uk/news/world/rss.xml' },
+                { id: 'guardian', name: 'The Guardian', cat: 'mondo', url: 'https://www.theguardian.com/world/rss' },
+                { id: 'reuters_top', name: 'Reuters Top News', cat: 'mondo', url: 'https://feeds.reuters.com/reuters/topNews' },
+            ]},
+            { category: '🔬 Scienza & Spazio', items: [
+                { id: 'nasa', name: 'NASA Breaking News', cat: 'scienza', url: 'https://www.nasa.gov/rss/dyn/breaking_news.rss' },
+                { id: 'lescienze', name: 'Le Scienze', cat: 'scienza', url: 'https://www.lescienze.it/rss/rss.xml' },
+                { id: 'natgeo', name: 'National Geographic IT', cat: 'scienza', url: 'https://www.nationalgeographic.it/feed' },
+                { id: 'sciencedaily', name: 'Science Daily', cat: 'scienza', url: 'https://www.sciencedaily.com/rss/top.xml' },
+            ]},
+            { category: '🏠 Smart Home & Domotica', items: [
+                { id: 'smarthome_it', name: 'Domotica Plus', cat: 'domotica', url: 'https://www.domoticaplus.it/feed/' },
+                { id: 'ha_blog', name: 'Home Assistant Blog', cat: 'domotica', url: 'https://www.home-assistant.io/atom.xml' },
+            ]},
+        ];
+
         async function loadSources() {
-            const res = await fetch('/api/sources');
-            const items = await res.json();
-            const container = document.getElementById('sources-list');
-            container.innerHTML = items.map(s => `
-                <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex justify-between items-start">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h4 class="font-semibold text-xs text-slate-200">${s.name}</h4>
-                            <span class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400 font-mono">${s.category}</span>
+            try {
+                const res = await fetch('/api/sources');
+                const items = await res.json();
+                const container = document.getElementById('sources-list');
+
+                if (!items.length) {
+                    container.innerHTML = `<p class="text-xs text-slate-500 col-span-2 py-3 text-center">Nessuna fonte attiva. Aggiungine dal catalogo qui sotto.</p>`;
+                } else {
+                    container.innerHTML = items.map(s => `
+                        <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex justify-between items-start gap-2 group">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-semibold text-xs text-slate-200">${s.name}</h4>
+                                    <span class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400">${s.category}</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 truncate mt-1">${s.url}</p>
+                            </div>
+                            <button onclick="deleteSource('${s.id}')" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
                         </div>
-                        <p class="text-[11px] text-slate-500 truncate max-w-sm mt-1">${s.url}</p>
+                    `).join('');
+                }
+                safeCreateIcons();
+
+                // Rende il catalogo con stato "già aggiunto"
+                const activeUrls = new Set(items.map(s => s.url));
+                renderSourcesCatalog(activeUrls);
+            } catch(e) { console.error('loadSources:', e); }
+        }
+
+        function renderSourcesCatalog(activeUrls) {
+            const container = document.getElementById('sources-catalog');
+            container.innerHTML = SOURCES_CATALOG.map(group => `
+                <div class="rounded-xl border border-slate-800 overflow-hidden">
+                    <div class="bg-slate-800/50 px-4 py-2 text-xs font-semibold text-slate-300">${group.category}</div>
+                    <div class="divide-y divide-slate-800/60">
+                        ${group.items.map(src => {
+                            const added = activeUrls.has(src.url);
+                            return `
+                            <div class="flex items-center justify-between px-4 py-2.5 hover:bg-slate-800/20 transition">
+                                <div class="flex-1 min-w-0">
+                                    <span class="text-xs font-medium text-slate-200">${src.name}</span>
+                                    <span class="text-[11px] text-slate-600 ml-2 font-mono hidden sm:inline">${src.url.replace('https://','').split('/')[0]}</span>
+                                </div>
+                                ${added
+                                    ? `<span class="text-[11px] text-emerald-400 font-semibold px-2.5 py-1 bg-emerald-950/40 border border-emerald-800 rounded-full">✓ Attiva</span>`
+                                    : `<button onclick="addCatalogSource('${src.id}','${src.name.replace(/'/g,"\\'")}','${src.cat}','${src.url}')"
+                                        class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-indigo-600/20 border border-indigo-600/40 text-indigo-300 hover:bg-indigo-600 hover:text-white transition">
+                                        + Aggiungi
+                                       </button>`
+                                }
+                            </div>`;
+                        }).join('')}
                     </div>
-                    <button onclick="deleteSource('${s.id}')" class="text-slate-500 hover:text-rose-400 p-1">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
                 </div>
             `).join('');
-            safeCreateIcons();
+        }
+
+        async function addCatalogSource(id, name, category, url) {
+            await fetch('/api/sources', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ id, name, category, url, enabled: true })
+            });
+            loadSources();
         }
 
         function openAddSourceModal() {
             showModal(`
-                <h3 class="font-bold text-sm text-slate-100 mb-3">Aggiungi Nuova Fonte RSS</h3>
-                <input type="text" id="new-s-name" placeholder="Nome (es. Il Sole 24 Ore)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3">
-                <input type="text" id="new-s-cat" placeholder="Categoria (es. economia, sport, italia)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3">
-                <input type="text" id="new-s-url" placeholder="URL Feed RSS (https://...)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-4">
+                <h3 class="font-bold text-sm text-slate-100 mb-1">Aggiungi URL RSS Personalizzato</h3>
+                <p class="text-xs text-slate-400 mb-4">Inserisci l'URL di qualsiasi feed RSS che vuoi aggiungere.</p>
+                <label class="text-xs text-slate-400 block mb-1">Nome Fonte</label>
+                <input type="text" id="new-s-name" placeholder="es. Il Fatto Quotidiano" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3 focus:outline-none focus:border-indigo-500">
+                <label class="text-xs text-slate-400 block mb-1">Categoria</label>
+                <input type="text" id="new-s-cat" placeholder="es. politica, sport, cultura" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3 focus:outline-none focus:border-indigo-500">
+                <label class="text-xs text-slate-400 block mb-1">URL Feed RSS</label>
+                <input type="url" id="new-s-url" placeholder="https://..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-4 focus:outline-none focus:border-indigo-500">
                 <div class="flex justify-end gap-2">
-                    <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Annulla</button>
-                    <button onclick="saveNewSource()" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-xs text-white">Salva Fonte</button>
+                    <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300 hover:bg-slate-700">Annulla</button>
+                    <button onclick="saveNewSource()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold">Salva Fonte</button>
                 </div>
             `);
+            setTimeout(() => document.getElementById('new-s-name')?.focus(), 100);
         }
 
         async function saveNewSource() {
@@ -694,6 +961,7 @@
         }
 
         async function deleteSource(id) {
+            if (!confirm('Rimuovere questa fonte?')) return;
             await fetch(`/api/sources/${id}`, { method: 'DELETE' });
             loadSources();
         }
