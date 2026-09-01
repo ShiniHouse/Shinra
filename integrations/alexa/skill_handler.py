@@ -3,6 +3,8 @@ from typing import Dict, Any, Optional
 from core.agent import agent
 from core.user_manager import user_manager
 
+from core.tts_engine import clean_text_for_tts
+
 logger = logging.getLogger("Shinra.Alexa")
 
 def build_alexa_response(
@@ -107,7 +109,8 @@ async def handle_alexa_request(request_data: Dict[str, Any]) -> Dict[str, Any]:
         # Se l'utente è già stato identificato o ha fatto direttamente una domanda
         current_user_id = session_attributes.get("user_id")
         result = await agent.process_user_input(user_query, user_id=current_user_id)
-        reply = result.get("response", "Operazione completata.")
+        raw_reply = result.get("response", "Operazione completata.")
+        reply = clean_text_for_tts(raw_reply) or "Operazione completata."
 
         return build_alexa_response(reply, should_end_session=True, session_attributes=session_attributes)
 
