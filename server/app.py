@@ -32,6 +32,9 @@ class ChatRequest(BaseModel):
     message: str
     user_id: Optional[str] = None
 
+from fastapi.responses import HTMLResponse, JSONResponse, Response
+from core.tts_engine import generate_speech_mp3, NEURAL_VOICES
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """Serve la dashboard web dell'assistente."""
@@ -47,7 +50,33 @@ async def chat_endpoint(payload: ChatRequest):
         user_text=payload.message,
         user_id=payload.user_id
     )
-    return result
+class TTSRequest(BaseModel):
+    text: str
+    voice: Optional[str] = "it-IT-DiegoNeural"
+    rate: Optional[str] = "+0%"
+    pitch: Optional[str] = "+0Hz"
+
+@app.post("/api/tts")
+async def tts_endpoint(payload: TTSRequest):
+    """Genera audio vocale neurale MP3 in alta definizione."""
+    if not payload.text.strip():
+        raise HTTPException(status_code=400, detail="Il testo per il TTS non può essere vuoto.")
+    try:
+        audio_bytes = await generate_speech_mp3(
+            text=payload.text,
+            voice=payload.voice or "it-IT-DiegoNeural",
+            rate=payload.rate or "+0%",
+            pitch=payload.pitch or "+0Hz"
+        )
+        return Response(content=audio_bytes, media_type="audio/mpeg")
+    except Exception as e:
+        logger.error(f"Errore generazione TTS neurale: {e}")
+        raise HTTPException(status_code=500, detail=f"Errore generazione audio: {e}")
+
+@app.get("/api/tts/voices")
+async def tts_voices_endpoint():
+    """Restituisce le voci neurali disponibili nel server."""
+    return NEURAL_VOICES
 
 @app.post("/api/alexa")
 async def alexa_skill_endpoint(request: Request):
