@@ -85,6 +85,32 @@ class OllamaClient:
                         "content": message.get("content", ""),
                         "tool_calls": message.get("tool_calls", [])
                     }
+                elif res.status_code == 400 and "does not support tools" in res.text and tools:
+                    # Fallback per modelli come gemma3 che non hanno tool-calling nativo in Ollama
+                    logger.warning(f"Il modello {self.model} non supporta tools nativi in Ollama. Retry in modalità standard.")
+                    payload_no_tools = {
+                        "model": self.model,
+                        "messages": messages,
+                        "stream": False,
+                        "options": {
+                            "temperature": temperature if temperature is not None else settings.llm.temperature
+                        }
+                    }
+                    res_fallback = await client.post(url, json=payload_no_tools)
+                    if res_fallback.status_code == 200:
+                        data = res_fallback.json()
+                        message = data.get("message", {})
+                        return {
+                            "success": True,
+                            "message": message,
+                            "content": message.get("content", ""),
+                            "tool_calls": []
+                        }
+                    else:
+                        return {
+                            "success": False,
+                            "error": f"Ollama HTTP {res_fallback.status_code}: {res_fallback.text}"
+                        }
                 else:
                     logger.error(f"Errore risposta Ollama {res.status_code}: {res.text}")
                     return {
