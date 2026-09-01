@@ -8,10 +8,12 @@ from pydantic import BaseModel
 from core.user_manager import user_manager, UserProfile
 from core.data_store import data_store
 from core.tools.ha_tools import activate_mode
+from core.ha_client import HomeAssistantClient
 from config.settings import settings, save_config, AppConfig, reload_settings
 
 logger = logging.getLogger("Shinra.Admin")
 router = APIRouter(prefix="/api", tags=["Admin & Management"])
+ha_client = HomeAssistantClient()
 
 # --- User Models ---
 class IdentifyRequest(BaseModel):
@@ -130,6 +132,69 @@ async def test_source(url: str = Query(...)):
         }
     except Exception as e:
         return {"valid": False, "error": str(e)}
+
+# --- HOME ASSISTANT ENTITIES ---
+CONTROLLABLE_DOMAINS = ["light", "switch", "climate", "cover", "media_player", "fan", "scene", "script", "automation", "input_boolean", "vacuum", "lock"]
+ALL_VISIBLE_DOMAINS = CONTROLLABLE_DOMAINS + ["sensor", "binary_sensor", "camera", "weather", "person", "device_tracker"]
+
+DOMAIN_LABELS = {
+    "light": "💡 Luci",
+    "switch": "🔌 Interruttori",
+    "climate": "🌡️ Clima",
+    "cover": "🪟 Tapparelle / Coperture",
+    "media_player": "📺 Media Player",
+    "fan": "💨 Ventilatori",
+    "scene": "🎭 Scene",
+    "script": "📜 Script",
+    "automation": "⚡ Automazioni",
+    "input_boolean": "🔘 Interruttori Virtuali",
+    "vacuum": "🤖 Robot Aspirapolvere",
+    "lock": "🔒 Serrature",
+    "sensor": "📡 Sensori",
+    "binary_sensor": "🔔 Sensori Binari",
+    "weather": "☁️ Meteo",
+    "person": "👤 Persone",
+    "device_tracker": "📍 Tracker",
+}
+
+@router.get("/ha/entities")
+async def get_ha_entities(domain: Optional[str] = None):
+    """Restituisce tutte le entità HA raggruppate per dominio."""
+    states = await ha_client.get_states()
+    if not states:
+        conn = await ha_client.check_connection()
+        return {"error": True, "status": conn.get("status"), "message": conn.get("message"), "groups": {}}
+
+    groups: Dict[str, List[Dict]] = {}
+    current_aliases = {a.get("entity_id"): a.get("alias") for a in data_store.get_aliases()}
+
+    for entity in states:
+        entity_id = entity.get("entity_id", "")
+        d = entity_id.split(".")[0]
+        if domain and d != domain:
+            continue
+        if d not in ALL_VISIBLE_DOMAINS:
+            continue
+        groups.setdefault(d, [])
+        groups[d].append({
+            "entity_id": entity_id,
+            "friendly_name": entity.get("attributes", {}).get("friendly_name", entity_id),
+            "state": entity.get("state", "unknown"),
+            "unit": entity.get("attributes", {}).get("unit_of_measurement", ""),
+            "domain": d,
+            "domain_label": DOMAIN_LABELS.get(d, d),
+            "controllable": d in CONTROLLABLE_DOMAINS,
+            "alias": current_aliases.get(entity_id),
+        })
+
+    # Ordina i gruppi per priorità (controllabili prima)
+    ordered = {}
+    for d in CONTROLLABLE_DOMAINS + [x for x in ALL_VISIBLE_DOMAINS if x not in CONTROLLABLE_DOMAINS]:
+        if d in groups:
+            ordered[d] = sorted(groups[d], key=lambda x: x["friendly_name"])
+
+    return {"error": False, "groups": ordered, "total": sum(len(v) for v in ordered.values())}
+
 
 # --- DEVICE ALIASES ENDPOINTS ---
 @router.get("/aliases")
