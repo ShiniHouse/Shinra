@@ -338,7 +338,7 @@
     </main>
 
     <!-- Generic Modal Dialog -->
-    <div id="modal-backdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div id="modal-backdrop" style="display:none" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 items-center justify-center p-4">
         <div id="modal-container" class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
             <!-- Modal Content Injection -->
         </div>
@@ -868,12 +868,12 @@
         function showModal(contentHtml) {
             const modal = document.getElementById('modal-container');
             modal.innerHTML = contentHtml;
-            document.getElementById('modal-backdrop').classList.remove('hidden');
+            document.getElementById('modal-backdrop').style.display = 'flex';
             safeCreateIcons();
         }
 
         function closeModal() {
-            document.getElementById('modal-backdrop').classList.add('hidden');
+            document.getElementById('modal-backdrop').style.display = 'none';
         }
 
         // Status Health Check
