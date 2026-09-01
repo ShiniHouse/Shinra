@@ -605,11 +605,16 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ message: text, user_id: activeUserId })
                 });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({ detail: res.statusText }));
+                    appendAssistantMessage(`Errore dal server (${res.status}): ${errData.detail || 'Impossibile elaborare il messaggio'}`);
+                    return;
+                }
                 const data = await res.json();
                 appendAssistantMessage(data.response, data.actions);
                 if (data.actions) data.actions.forEach(a => logAction(a.tool, a.args, a.result));
             } catch (err) {
-                appendAssistantMessage("Connessione a Shinra non riuscita.");
+                appendAssistantMessage(`Errore di comunicazione con Shinra: ${err.message || 'Server non raggiungibile'}`);
             } finally {
                 sendBtn.disabled = false;
             }

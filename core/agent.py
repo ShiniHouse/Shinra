@@ -16,10 +16,7 @@ logger = logging.getLogger("Shinra")
 class ShinraAgent:
     def __init__(self):
         self.ollama = OllamaClient()
-        self.ha = HomeAssistantClient(
-            base_url=settings.home_assistant.url,
-            token=settings.home_assistant.token
-        )
+        self.ha = HomeAssistantClient()
 
     async def process_user_input(
         self,

@@ -80,10 +80,7 @@ async def status_endpoint():
     ollama = OllamaClient()
     ollama_health = await ollama.check_health()
     
-    ha = HomeAssistantClient(
-        base_url=settings.home_assistant.url,
-        token=settings.home_assistant.token
-    )
+    ha = HomeAssistantClient()
     ha_health = await ha.check_connection()
     
     return {
@@ -93,12 +90,3 @@ async def status_endpoint():
         "alexa_endpoint": "/api/alexa"
     }
 
-@app.get("/api/ha/entities")
-async def get_ha_entities():
-    """Restituisce le entità caricate da Home Assistant."""
-    ha = HomeAssistantClient(
-        base_url=settings.home_assistant.url,
-        token=settings.home_assistant.token
-    )
-    states = await ha.get_states()
-    return {"count": len(states), "entities": states}
