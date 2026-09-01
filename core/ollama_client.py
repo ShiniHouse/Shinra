@@ -96,7 +96,9 @@ class OllamaClient:
             "stream": False,
             "options": {
                 "temperature": curr_temp,
-                "num_ctx": 2048
+                "num_ctx": 1024,
+                "num_predict": 120,
+                "top_p": 0.9
             }
         }
         if supports_tools and tools:

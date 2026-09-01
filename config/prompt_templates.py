@@ -25,6 +25,7 @@ def get_system_prompt(
     parts = [
         f"Sei Shinra, assistente domestico di casa. Oggi è {now_str}. Città: {default_city}.",
         persona,
+        "REGOLE: Rispondi sempre in italiano, in modo conciso e diretto (massimo 1-2 frasi brevi adatte alla sintesi vocale). Non scrivere elenchi lunghi né preamboli.",
     ]
 
     if custom_knowledge:
