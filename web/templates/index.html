@@ -65,13 +65,24 @@
                 </div>
             </div>
 
-            <!-- Active User Selector & Status -->
-            <div class="flex items-center gap-3">
+            <!-- Active User Selector, Voice Selector & Status -->
+            <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+                <!-- Voice Selector & Mute Toggle -->
+                <div class="flex items-center gap-1 bg-slate-800/80 border border-slate-700 rounded-xl px-2.5 py-1 text-xs">
+                    <button onclick="toggleVoiceMute()" id="voice-mute-btn" type="button" title="Attiva/Disattiva voce audio" class="text-indigo-400 hover:text-indigo-300 p-0.5">
+                        <i data-lucide="volume-2" id="voice-mute-icon" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <select id="voice-gender-select" onchange="setVoiceGender(this.value)" class="bg-transparent text-indigo-300 font-semibold focus:outline-none cursor-pointer text-xs">
+                        <option value="female">👩 Femminile (Shinra)</option>
+                        <option value="male">👨 Maschile (Jarvis)</option>
+                    </select>
+                </div>
+
                 <!-- User Selector Dropdown -->
-                <div class="flex items-center gap-2 bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-1.5 text-xs">
-                    <i data-lucide="user" class="w-4 h-4 text-indigo-400"></i>
-                    <span class="text-slate-400">Parli come:</span>
-                    <select id="user-select" onchange="changeActiveUser(this.value)" class="bg-transparent text-indigo-300 font-semibold focus:outline-none cursor-pointer">
+                <div class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700 rounded-xl px-2.5 py-1 text-xs">
+                    <i data-lucide="user" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    <span class="text-slate-400 hidden sm:inline">Parli come:</span>
+                    <select id="user-select" onchange="changeActiveUser(this.value)" class="bg-transparent text-indigo-300 font-semibold focus:outline-none cursor-pointer text-xs">
                         <option value="alessio">Caricamento...</option>
                     </select>
                 </div>
@@ -384,6 +395,47 @@
                         </div>
                     </div>
 
+                    <!-- Sintesi Vocale & Umanizzazione -->
+                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-semibold text-indigo-300">Sintesi Vocale & Umanizzazione Voce</h3>
+                            <button type="button" onclick="testVoicePreview()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/40 rounded-lg text-[11px] font-semibold transition flex items-center gap-1">
+                                🔊 Ascolta Anteprima
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-slate-400 block mb-1">Genere Voce Predefinito:</label>
+                                <select id="cfg-voice-gender" onchange="setVoiceGender(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                                    <option value="female">👩 Femminile (Shinra)</option>
+                                    <option value="male">👨 Maschile (Jarvis)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-slate-400 block mb-1">Voce Sistema Browser:</label>
+                                <select id="cfg-browser-voice" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                                    <option value="auto">Selezione Automatica Naturale</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <div class="flex justify-between text-slate-400 mb-1">
+                                    <span>Velocità parlato:</span>
+                                    <span id="rate-val" class="text-indigo-400 font-mono">1.0x</span>
+                                </div>
+                                <input type="range" id="cfg-voice-rate" min="0.8" max="1.3" step="0.05" value="1.0" oninput="document.getElementById('rate-val').textContent = this.value + 'x'" class="w-full accent-indigo-500 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-slate-400 mb-1">
+                                    <span>Tonalità (Pitch):</span>
+                                    <span id="pitch-val" class="text-indigo-400 font-mono">1.0</span>
+                                </div>
+                                <input type="range" id="cfg-voice-pitch" min="0.7" max="1.3" step="0.05" value="1.0" oninput="document.getElementById('pitch-val').textContent = this.value" class="w-full accent-indigo-500 cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+
                     <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition">
                         Salva Tutte le Impostazioni
                     </button>
@@ -521,21 +573,187 @@
             else recognition.start();
         }
 
-        function stopRecording() {
-            isRecording = false;
-            document.getElementById('mic-btn').classList.remove('bg-rose-600', 'text-white', 'mic-active');
-            document.getElementById('recording-status').classList.add('hidden');
+        // ==================== MOTORE VOCALE UMANIZZATO ====================
+        let voiceGender = localStorage.getItem('shinra_voice_gender') || 'female';
+        let voiceMuted = localStorage.getItem('shinra_voice_muted') === 'true';
+        let voiceRate = parseFloat(localStorage.getItem('shinra_voice_rate')) || 1.0;
+        let voicePitch = parseFloat(localStorage.getItem('shinra_voice_pitch')) || (voiceGender === 'male' ? 0.95 : 1.05);
+        let selectedVoiceURI = localStorage.getItem('shinra_voice_uri') || 'auto';
+        let availableVoices = [];
+
+        function initVoiceEngine() {
+            if (!('speechSynthesis' in window)) return;
+            
+            function loadVoices() {
+                availableVoices = window.speechSynthesis.getVoices();
+                populateVoiceSelect();
+                syncVoiceUI();
+            }
+
+            loadVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+            }
+        }
+
+        function populateVoiceSelect() {
+            const select = document.getElementById('cfg-browser-voice');
+            if (!select) return;
+
+            const itVoices = availableVoices.filter(v => v.lang.startsWith('it') || v.lang.startsWith('IT'));
+            select.innerHTML = '<option value="auto">✨ Selezione Automatica Migliore (Naturale)</option>';
+
+            itVoices.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.voiceURI;
+                opt.textContent = `${v.name} (${v.lang})`;
+                if (v.voiceURI === selectedVoiceURI) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        function syncVoiceUI() {
+            // Header
+            const headerSelect = document.getElementById('voice-gender-select');
+            if (headerSelect) headerSelect.value = voiceGender;
+            
+            const muteIcon = document.getElementById('voice-mute-icon');
+            if (muteIcon) {
+                muteIcon.setAttribute('data-lucide', voiceMuted ? 'volume-x' : 'volume-2');
+                muteIcon.parentElement.classList.toggle('text-rose-400', voiceMuted);
+                muteIcon.parentElement.classList.toggle('text-indigo-400', !voiceMuted);
+                safeCreateIcons();
+            }
+
+            // Settings tab
+            const cfgGender = document.getElementById('cfg-voice-gender');
+            if (cfgGender) cfgGender.value = voiceGender;
+
+            const cfgRate = document.getElementById('cfg-voice-rate');
+            if (cfgRate) {
+                cfgRate.value = voiceRate;
+                const rVal = document.getElementById('rate-val');
+                if (rVal) rVal.textContent = voiceRate + 'x';
+            }
+
+            const cfgPitch = document.getElementById('cfg-voice-pitch');
+            if (cfgPitch) {
+                cfgPitch.value = voicePitch;
+                const pVal = document.getElementById('pitch-val');
+                if (pVal) pVal.textContent = voicePitch;
+            }
+        }
+
+        function setVoiceGender(gender) {
+            voiceGender = gender;
+            localStorage.setItem('shinra_voice_gender', gender);
+            
+            // Calibra pitch naturale in base al genere
+            if (gender === 'male') {
+                voicePitch = 0.92;
+                voiceRate = 1.02;
+            } else {
+                voicePitch = 1.05;
+                voiceRate = 1.04;
+            }
+            localStorage.setItem('shinra_voice_pitch', voicePitch);
+            localStorage.setItem('shinra_voice_rate', voiceRate);
+            
+            syncVoiceUI();
+        }
+
+        function toggleVoiceMute() {
+            voiceMuted = !voiceMuted;
+            localStorage.setItem('shinra_voice_muted', voiceMuted);
+            if (voiceMuted && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            syncVoiceUI();
+        }
+
+        function getBestVoiceForGender(gender) {
+            const itVoices = availableVoices.filter(v => v.lang.startsWith('it') || v.lang.startsWith('IT'));
+            if (!itVoices.length) return null;
+
+            // Se l'utente ha scelto una voce specifica non-auto
+            if (selectedVoiceURI && selectedVoiceURI !== 'auto') {
+                const specific = itVoices.find(v => v.voiceURI === selectedVoiceURI);
+                if (specific) return specific;
+            }
+
+            if (gender === 'male') {
+                // Cerca voci maschili naturali (Microsoft Diego, Cosimo, Luca, Giorgio, Google IT Male)
+                const maleKeywords = ['diego', 'cosimo', 'luca', 'giorgio', 'lorenzo', 'male', 'maschile', 'uomo'];
+                const bestMale = itVoices.find(v => maleKeywords.some(k => v.name.toLowerCase().includes(k)));
+                if (bestMale) return bestMale;
+            } else {
+                // Cerca voci femminili naturali (Microsoft Elsa, Isabella, Alice, Federica, Google IT Female)
+                const femaleKeywords = ['elsa', 'isabella', 'alice', 'federica', 'chiara', 'female', 'femminile', 'donna'];
+                const bestFemale = itVoices.find(v => femaleKeywords.some(k => v.name.toLowerCase().includes(k)));
+                if (bestFemale) return bestFemale;
+            }
+
+            // Fallback: prima voce naturale o prima voce italiana disponibile
+            const natural = itVoices.find(v => v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('online'));
+            return natural || itVoices[0];
+        }
+
+        function cleanTextForSpeech(text) {
+            if (!text) return "";
+            let clean = text
+                // Rimuovi blocchi di codice markdown
+                .replace(/```[\s\S]*?```/g, '')
+                .replace(/`.*?`/g, '')
+                // Rimuovi URL web
+                .replace(/https?:\/\/\S+/g, '')
+                // Rimuovi caratteri di formattazione markdown
+                .replace(/[*_~#>[\]]/g, '')
+                // Rimuovi emoji comuni che disturbano la pronuncia
+                .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+                // Sostituisci abbreviazioni per pronuncia corretta
+                .replace(/\bHA\b/g, 'Home Assistant')
+                .replace(/\bdegli alias\b/gi, 'degli alias')
+                .replace(/\b°C\b/g, 'gradi')
+                // Pulisci spazi multipli
+                .replace(/\s+/g, ' ')
+                .trim();
+            return clean;
         }
 
         function speakText(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'it-IT';
-                utterance.rate = 1.05;
-                window.speechSynthesis.speak(utterance);
-            }
+            if (voiceMuted || !('speechSynthesis' in window)) return;
+            
+            const clean = cleanTextForSpeech(text);
+            if (!clean) return;
+
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(clean);
+            utterance.lang = 'it-IT';
+
+            const bestVoice = getBestVoiceForGender(voiceGender);
+            if (bestVoice) utterance.voice = bestVoice;
+
+            // Applica Pitch e Rate calibrati per massima naturalezza
+            utterance.pitch = voicePitch;
+            utterance.rate = voiceRate;
+
+            window.speechSynthesis.speak(utterance);
         }
+
+        function testVoicePreview() {
+            const gender = document.getElementById('cfg-voice-gender')?.value || voiceGender;
+            const previewText = gender === 'male'
+                ? "Sistemi operativi, Alessio. Voce Jarvis calibrata e pronta all'uso."
+                : "Ciao Alessio, sono Shinra. La mia voce è configurata e pronta.";
+            
+            // Forza lettura per l'anteprima anche se muto
+            const wasMuted = voiceMuted;
+            voiceMuted = false;
+            speakText(previewText);
+            voiceMuted = wasMuted;
+        }
+
 
         // Messages Handling
         function appendUserMessage(text) {
@@ -1431,6 +1649,7 @@
         window.addEventListener('load', function() {
             initTabs();
             safeCreateIcons();
+            initVoiceEngine();
             loadUsersDropdown();
             checkSystemHealth();
             setInterval(checkSystemHealth, 8000);
