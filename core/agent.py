@@ -78,16 +78,26 @@ class ShinraAgent:
             logger.info(f"[Shinra] Auto-recupero meteo in tempo reale per: {target_city}")
             w_res = await execute_tool("get_weather", {"location": target_city, "days": 2})
             actions_taken.append({"tool": "get_weather", "args": {"location": target_city, "days": 2}, "result": w_res})
-            live_context += f"\n[DATI METEO IN TEMPO REALE PER {target_city.upper()}]: {json.dumps(w_res, ensure_ascii=False)}"
+            
+            if w_res.get("success"):
+                adesso = w_res.get("adesso", {})
+                previsioni = w_res.get("previsioni", [])
+                prev_text = "; ".join([f"{p.get('giorno')}: {p.get('condizione')}, max {p.get('temp_max')}°C, min {p.get('temp_min')}°C, probabilità pioggia {p.get('probabilita_pioggia')}" for p in previsioni])
+                live_context = f"DATI METEO REALI ({w_res.get('localita', target_city)}): Adesso {adesso.get('temperatura', '')}, {adesso.get('condizione', '')}. Previsioni -> {prev_text}."
+            else:
+                live_context = f"DATI METEO: Impossibile recuperare il meteo per {target_city}."
 
         elif any(w in user_lower for w in ["notizie", "ultime notizie", "rassegna stampa", "cosa succede"]):
             logger.info(f"[Shinra] Auto-recupero notizie in tempo reale")
             n_res = await execute_tool("get_latest_news", {"category": "generale"})
             actions_taken.append({"tool": "get_latest_news", "args": {"category": "generale"}, "result": n_res})
-            live_context += f"\n[NOTIZIE IN TEMPO REALE]: {json.dumps(n_res, ensure_ascii=False)}"
+            
+            if n_res.get("success"):
+                titoli = [item.get("titolo", "") for item in n_res.get("notizie", [])[:3]]
+                live_context = f"ULTIME NOTIZIE REALI: " + " | ".join(titoli)
 
         if live_context:
-            system_prompt += f"\n\n### INFORMAZIONI IN TEMPO REALE APPENA ACQUISITE:\n{live_context}\nRispondi all'utente usando direttamente questi dati reali in 1-2 frasi chiare e adatte alla voce."
+            system_prompt += f"\n\n### INFORMAZIONI IN TEMPO REALE:\n{live_context}\nRispondi direttamente alla domanda dell'utente comunicando questi dati in modo sintetico e naturale (1-2 frasi). Non menzionare API o funzioni tecniche."
 
         # 5. Aggiornamento memoria e messaggi
         mem.add_user_message(user_text)
@@ -102,8 +112,8 @@ class ShinraAgent:
             user_label = profile.name if profile else 'Utente'
             logger.info(f"[Shinra] ({user_label}) Iterazione {iteration + 1} per: '{user_text}'")
             
-            # Passa i tools solo alla prima iterazione: alle successive genera la sintesi finale ad alta velocità
-            current_tools = TOOLS_SCHEMA if iteration == 0 else None
+            # Se i dati live sono già stati recuperati, non passare i tools per evitare confusione nel modello
+            current_tools = None if (live_context or iteration > 0) else TOOLS_SCHEMA
             response = await self.ollama.chat(
                 messages=conversation_messages,
                 tools=current_tools
