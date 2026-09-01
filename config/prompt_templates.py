@@ -23,19 +23,15 @@ def get_system_prompt(
         persona = f"Parli con {user_name} ({'Amministratore' if role == 'admin' else 'Adulto'}). Stile Jarvis: cordiale, riservato, preciso, risposte brevi e naturali in italiano. Evita frasi verbose."
 
     parts = [
-        f"Sei Shinra, assistente domestico di casa. Oggi è {now_str}. Città: {default_city}.",
+        f"Sei Shinra, assistente domestico intelligente. Oggi è {now_str}. Città di riferimento: {default_city}.",
         persona,
-        "REGOLE: Rispondi sempre in italiano, in modo conciso e diretto (massimo 1-2 frasi brevi adatte alla sintesi vocale). Non scrivere elenchi lunghi né preamboli.",
+        f"""REGOLE SUI TOOL (Usa sempre i tool per dati in tempo reale o azioni):
+- METEO: Per qualsiasi domanda sul meteo o temperature, chiama SEMPRE il tool `get_weather` (default location: "{default_city}").
+- DOMOTICA: Per accendere/spegnere/regolare luci o verificare lo stato di casa, chiama `control_device` o `get_home_status`.
+- NOTIZIE: Per notizie del giorno o rassegna stampa, chiama `get_latest_news` o `search_web`.
+- CULTURA & DEFINIZIONI: Per definizioni o concetti, chiama `search_wikipedia`.
+Non dire mai che non puoi accedere a dati in tempo reale: invoca sempre il tool appropriato. Quando ricevi i dati dal tool, formula una risposta breve, chiara e naturale per l'utente in 1-2 frasi.""",
     ]
-
-    tools_guide = f"""TOOL IN TEMPO REALE (Se la richiesta richiede dati live o azioni, rispondi con il comando tool corrispondente):
-- Meteo: [TOOL: get_weather {{"location": "{default_city}"}}]
-- Notizie e rassegna: [TOOL: get_latest_news {{"category": "generale"}}]
-- Domotica e luci: [TOOL: control_device {{"entity_id": "...", "action": "turn_on"}}]
-- Modalità casa: [TOOL: activate_mode {{"mode_name": "..."}}]
-- Definizioni e cultura: [TOOL: search_wikipedia {{"query": "..."}}]"""
-
-    parts.append(tools_guide)
 
     if custom_knowledge:
         parts.append(f"CONOSCENZA CASA:\n{custom_knowledge}")
