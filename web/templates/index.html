@@ -421,7 +421,7 @@
                             </div>
                             <div>
                                 <label class="text-slate-400 block mb-1">Voce Sistema Browser:</label>
-                                <select id="cfg-browser-voice" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                                <select id="cfg-browser-voice" onchange="setSpecificVoice(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                                     <option value="auto">Selezione Automatica Naturale</option>
                                 </select>
                             </div>
@@ -432,14 +432,14 @@
                                     <span>Velocità parlato:</span>
                                     <span id="rate-val" class="text-indigo-400 font-mono">1.0x</span>
                                 </div>
-                                <input type="range" id="cfg-voice-rate" min="0.8" max="1.3" step="0.05" value="1.0" oninput="document.getElementById('rate-val').textContent = this.value + 'x'" class="w-full accent-indigo-500 cursor-pointer">
+                                <input type="range" id="cfg-voice-rate" min="0.8" max="1.3" step="0.05" value="1.0" oninput="setVoiceRate(this.value)" class="w-full accent-indigo-500 cursor-pointer">
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 mb-1">
                                     <span>Tonalità (Pitch):</span>
                                     <span id="pitch-val" class="text-indigo-400 font-mono">1.0</span>
                                 </div>
-                                <input type="range" id="cfg-voice-pitch" min="0.7" max="1.3" step="0.05" value="1.0" oninput="document.getElementById('pitch-val').textContent = this.value" class="w-full accent-indigo-500 cursor-pointer">
+                                <input type="range" id="cfg-voice-pitch" min="0.7" max="1.3" step="0.05" value="1.0" oninput="setVoicePitch(this.value)" class="w-full accent-indigo-500 cursor-pointer">
                             </div>
                         </div>
                     </div>
@@ -679,29 +679,47 @@
             syncVoiceUI();
         }
 
-        function getBestVoiceForGender(gender) {
-            const itVoices = availableVoices.filter(v => v.lang.startsWith('it') || v.lang.startsWith('IT'));
-            if (!itVoices.length) return null;
+        function setSpecificVoice(uri) {
+            selectedVoiceURI = uri;
+            localStorage.setItem('shinra_voice_uri', uri);
+        }
 
-            // Se l'utente ha scelto una voce specifica non-auto
+        function setVoiceRate(r) {
+            voiceRate = parseFloat(r);
+            localStorage.setItem('shinra_voice_rate', r);
+            const rVal = document.getElementById('rate-val');
+            if (rVal) rVal.textContent = r + 'x';
+        }
+
+        function setVoicePitch(p) {
+            voicePitch = parseFloat(p);
+            localStorage.setItem('shinra_voice_pitch', p);
+            const pVal = document.getElementById('pitch-val');
+            if (pVal) pVal.textContent = p;
+        }
+
+        function getBestVoiceForGender(gender) {
+            if (!availableVoices.length) return null;
+
+            // Se l'utente ha scelto una voce specifica
             if (selectedVoiceURI && selectedVoiceURI !== 'auto') {
-                const specific = itVoices.find(v => v.voiceURI === selectedVoiceURI);
+                const specific = availableVoices.find(v => v.voiceURI === selectedVoiceURI || v.name === selectedVoiceURI);
                 if (specific) return specific;
             }
 
+            const itVoices = availableVoices.filter(v => v.lang.startsWith('it') || v.lang.startsWith('IT'));
+            if (!itVoices.length) return availableVoices[0] || null;
+
             if (gender === 'male') {
-                // Cerca voci maschili naturali (Microsoft Diego, Cosimo, Luca, Giorgio, Google IT Male)
                 const maleKeywords = ['diego', 'cosimo', 'luca', 'giorgio', 'lorenzo', 'male', 'maschile', 'uomo'];
                 const bestMale = itVoices.find(v => maleKeywords.some(k => v.name.toLowerCase().includes(k)));
                 if (bestMale) return bestMale;
             } else {
-                // Cerca voci femminili naturali (Microsoft Elsa, Isabella, Alice, Federica, Google IT Female)
                 const femaleKeywords = ['elsa', 'isabella', 'alice', 'federica', 'chiara', 'female', 'femminile', 'donna'];
                 const bestFemale = itVoices.find(v => femaleKeywords.some(k => v.name.toLowerCase().includes(k)));
                 if (bestFemale) return bestFemale;
             }
 
-            // Fallback: prima voce naturale o prima voce italiana disponibile
             const natural = itVoices.find(v => v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('online'));
             return natural || itVoices[0];
         }

@@ -96,6 +96,15 @@ class ShinraAgent:
                 titoli = [item.get("titolo", "") for item in n_res.get("notizie", [])[:3]]
                 live_context = f"ULTIME NOTIZIE REALI: " + " | ".join(titoli)
 
+        elif any(w in user_lower for w in ["cosa significa", "chi era", "chi è", "definizione di", "cos'è", "che cos'è", "spiegami"]):
+            clean_term = re.sub(r"^(cosa significa|chi era|chi è|definizione di|cos'è|che cos'è|spiegami|il termine|la parola)\s+", "", user_text, flags=re.IGNORECASE).strip(" ?.,\"'")
+            if clean_term:
+                logger.info(f"[Shinra] Auto-recupero Wikipedia per: {clean_term}")
+                wiki_res = await execute_tool("search_wikipedia", {"query": clean_term})
+                actions_taken.append({"tool": "search_wikipedia", "args": {"query": clean_term}, "result": wiki_res})
+                if wiki_res.get("success"):
+                    live_context = f"DEFINIZIONE/ENCICLOPEDIA PER '{clean_term.upper()}': {wiki_res.get('estratto', '')}"
+
         if live_context:
             system_prompt += f"\n\n### INFORMAZIONI IN TEMPO REALE:\n{live_context}\nRispondi direttamente alla domanda dell'utente comunicando questi dati in modo sintetico e naturale (1-2 frasi). Non menzionare API o funzioni tecniche."
 

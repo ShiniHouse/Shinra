@@ -1,5 +1,6 @@
 import httpx
 import logging
+import re
 import urllib.parse
 from typing import Dict, Any
 
@@ -19,7 +20,10 @@ async def search_wikipedia(query: str, language: str = "it") -> Dict[str, Any]:
         query: Il termine, concetto o persona da cercare (es. 'Olocausto', 'Intelligenza Artificiale', 'Teoria della relatività').
         language: Lingua di Wikipedia (default 'it').
     """
-    clean_query = query.strip()
+    # Rimuovi prefissi comuni come "cosa significa", "il termine", "chi è", ecc.
+    clean_query = re.sub(r"^(cosa significa|chi era|chi è|definizione di|cos'è|spiegami|il termine|la parola|che cos'è)\s+", "", query.strip(), flags=re.IGNORECASE).strip(" ?.,\"'")
+    if not clean_query:
+        clean_query = query.strip()
     
     try:
         encoded_query = urllib.parse.quote(clean_query.capitalize().replace(" ", "_"))
