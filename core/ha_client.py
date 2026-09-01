@@ -99,31 +99,24 @@ class HomeAssistantClient:
             return []
 
     async def get_relevant_entities_summary(self) -> str:
-        """Restituisce un riassunto testuale sintetico delle entità rilevanti (luci, clima, sensori, switch) per il prompt di Gemma."""
+        """Restituisce un riassunto sintetico e veloce delle entità controllabili principali."""
         states = await self.get_states()
         if not states:
-            return "Nessuna entità Home Assistant rilevata (controlla connessione e token)."
+            return ""
 
-        domains_of_interest = {"light", "switch", "climate", "cover", "sensor", "media_player", "scene", "script"}
+        controllable_domains = {"light", "switch", "climate", "cover", "media_player"}
         summary_lines = []
 
         for entity in states:
             entity_id = entity.get("entity_id", "")
             domain = entity_id.split(".")[0]
-            if domain in domains_of_interest:
+            if domain in controllable_domains:
                 friendly_name = entity.get("attributes", {}).get("friendly_name", entity_id)
                 state = entity.get("state", "unknown")
-                unit = entity.get("attributes", {}).get("unit_of_measurement", "")
-                
-                if domain == "sensor" and any(x in entity_id for x in ["uptime", "ip_address", "last_boot"]):
-                    continue
+                if state not in ("unavailable", "unknown"):
+                    summary_lines.append(f"{friendly_name} ({entity_id}): {state}")
 
-                if unit:
-                    summary_lines.append(f"- {friendly_name} (`{entity_id}`): {state} {unit}")
-                else:
-                    summary_lines.append(f"- {friendly_name} (`{entity_id}`): {state}")
-
-        return "\n".join(summary_lines[:60])
+        return "; ".join(summary_lines[:15])
 
     async def call_service(self, domain: str, service: str, service_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Chiama un servizio su Home Assistant (es. light.turn_on, climate.set_temperature)."""
