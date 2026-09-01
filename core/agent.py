@@ -84,10 +84,11 @@ class ShinraAgent:
             )
 
             if not response.get("success"):
-                err_msg = response.get("error", "Errore sconosciuto da Ollama")
+                err_msg = response.get("error") or "Errore di elaborazione da Ollama"
+                logger.error(f"[Shinra] Errore Ollama: {err_msg}")
                 fallback = (
                     f"Si è verificato un problema di comunicazione con il motore IA: {err_msg}. "
-                    "Assicurati che Ollama sia avviato."
+                    "Assicurati che Ollama sia avviato e il modello sia pronto."
                 )
                 return {
                     "response": fallback,

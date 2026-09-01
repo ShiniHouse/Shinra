@@ -4,20 +4,38 @@ import re
 from typing import List, Dict, Any, Optional
 import httpx
 
-from config.settings import settings
+from config.settings import reload_settings
 
 logger = logging.getLogger(__name__)
 
 class OllamaClient:
     def __init__(self, base_url: Optional[str] = None, model: Optional[str] = None):
-        self.base_url = (base_url or settings.llm.ollama_url).rstrip("/")
-        self.model = model or settings.llm.model
-        self.timeout = settings.llm.timeout_seconds
+        self._base_url = base_url
+        self._model = model
+
+    @property
+    def base_url(self) -> str:
+        if self._base_url:
+            return self._base_url.rstrip("/")
+        cfg = reload_settings()
+        return cfg.llm.ollama_url.rstrip("/")
+
+    @property
+    def model(self) -> str:
+        if self._model:
+            return self._model
+        cfg = reload_settings()
+        return cfg.llm.model
+
+    @property
+    def timeout(self) -> float:
+        cfg = reload_settings()
+        return float(cfg.llm.timeout_seconds or 120)
 
     async def get_available_models(self) -> List[str]:
         """Recupera la lista dei modelli installati su Ollama."""
         try:
-            async with httpx.AsyncClient(timeout=4.0) as client:
+            async with httpx.AsyncClient(timeout=6.0) as client:
                 res = await client.get(f"{self.base_url}/api/tags")
                 if res.status_code == 200:
                     data = res.json()
@@ -32,7 +50,6 @@ class OllamaClient:
         """Verifica se Ollama è raggiungibile e quali modelli sono pronti."""
         models = await self.get_available_models()
         if models:
-            # Se il modello configurato non è presente, suggeriamo il primo disponibile o un gemma
             selected_model = self.model
             if self.model not in models:
                 gemma_models = [m for m in models if "gemma" in m.lower()]
@@ -61,66 +78,71 @@ class OllamaClient:
         """
         Invia una richiesta di chat a Ollama supportando il passaggio dei tools.
         """
+        cfg = reload_settings()
+        curr_model = self.model
+        curr_temp = temperature if temperature is not None else cfg.llm.temperature
         url = f"{self.base_url}/api/chat"
+
         payload = {
-            "model": self.model,
+            "model": curr_model,
             "messages": messages,
             "stream": False,
             "options": {
-                "temperature": temperature if temperature is not None else settings.llm.temperature
+                "temperature": curr_temp
             }
         }
         if tools:
             payload["tools"] = tools
 
         try:
-            async with httpx.AsyncClient(timeout=float(self.timeout)) as client:
+            async with httpx.AsyncClient(timeout=max(self.timeout, 120.0)) as client:
                 res = await client.post(url, json=payload)
-                if res.status_code == 200:
-                    data = res.json()
-                    message = data.get("message", {})
-                    return {
-                        "success": True,
-                        "message": message,
-                        "content": message.get("content", ""),
-                        "tool_calls": message.get("tool_calls", [])
-                    }
-                elif res.status_code == 400 and "does not support tools" in res.text and tools:
-                    # Fallback per modelli come gemma3 che non hanno tool-calling nativo in Ollama
-                    logger.warning(f"Il modello {self.model} non supporta tools nativi in Ollama. Retry in modalità standard.")
+                
+                # Se il modello non supporta tools via API (es. gemma3:4b), esegui fallback senza payload tools
+                if res.status_code == 400 and "does not support tools" in res.text and tools:
+                    logger.warning(f"Il modello {curr_model} non supporta tools nativi. Retry chat standard.")
                     payload_no_tools = {
-                        "model": self.model,
+                        "model": curr_model,
                         "messages": messages,
                         "stream": False,
                         "options": {
-                            "temperature": temperature if temperature is not None else settings.llm.temperature
+                            "temperature": curr_temp
                         }
                     }
-                    res_fallback = await client.post(url, json=payload_no_tools)
-                    if res_fallback.status_code == 200:
-                        data = res_fallback.json()
-                        message = data.get("message", {})
-                        return {
-                            "success": True,
-                            "message": message,
-                            "content": message.get("content", ""),
-                            "tool_calls": []
-                        }
-                    else:
-                        return {
-                            "success": False,
-                            "error": f"Ollama HTTP {res_fallback.status_code}: {res_fallback.text}"
-                        }
+                    res = await client.post(url, json=payload_no_tools)
+
+                if res.status_code == 200:
+                    data = res.json()
+                    message = data.get("message", {})
+                    content = message.get("content", "") or data.get("response", "")
+                    
+                    # Rimuovi eventuali tag <thought> o estrai il testo se necessario
+                    if "<thought>" in content and "</thought>" in content:
+                        content = re.sub(r"<thought>.*?</thought>", "", content, flags=re.DOTALL).strip()
+
+                    return {
+                        "success": True,
+                        "message": message,
+                        "content": content,
+                        "tool_calls": message.get("tool_calls", [])
+                    }
                 else:
-                    logger.error(f"Errore risposta Ollama {res.status_code}: {res.text}")
+                    err_detail = res.text or f"Status {res.status_code}"
+                    logger.error(f"Errore risposta Ollama {res.status_code}: {err_detail}")
                     return {
                         "success": False,
-                        "error": f"Ollama HTTP {res.status_code}: {res.text}"
+                        "error": f"Ollama HTTP {res.status_code}: {err_detail}"
                     }
+
         except httpx.ConnectError:
             return {
                 "success": False,
-                "error": f"Impossibile connettersi ad Ollama su {self.base_url}. Verifica che Ollama sia in esecuzione sul tuo PC."
+                "error": f"Impossibile connettersi ad Ollama su {self.base_url}."
+            }
+        except httpx.TimeoutException:
+            return {
+                "success": False,
+                "error": f"Timeout durante l'elaborazione del modello {curr_model} (tempo limite superato)."
             }
         except Exception as e:
             logger.error(f"Eccezione chiamata Ollama: {e}")
@@ -128,3 +150,4 @@ class OllamaClient:
                 "success": False,
                 "error": str(e)
             }
+
