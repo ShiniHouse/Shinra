@@ -365,6 +365,14 @@
                             <label class="text-slate-400 block mb-1">Nome Modello Gemma:</label>
                             <input type="text" id="cfg-model" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
+                        <div>
+                            <div class="flex justify-between text-slate-400 mb-1">
+                                <span>Lunghezza Massima Risposta (Token):</span>
+                                <span id="cfg-max-tokens-val" class="text-indigo-400 font-mono font-bold">150 token</span>
+                            </div>
+                            <input type="range" id="cfg-max-tokens" min="50" max="600" step="25" value="150" oninput="updateMaxTokensLabel(this.value)" class="w-full accent-indigo-500 cursor-pointer">
+                            <p class="text-[10px] text-slate-500 mt-1">Valori consigliati: 100-150 per comandi vocali rapidi (8-12s); 300-500 per risposte più lunghe ed elaborate.</p>
+                        </div>
                     </div>
 
                     <!-- Home Assistant -->
@@ -1527,12 +1535,26 @@
         }
 
         // ==================== SETTINGS ====================
+        function updateMaxTokensLabel(val) {
+            const v = parseInt(val);
+            let desc = `${v} token`;
+            if (v <= 120) desc += ' (breve, ~20-30 parole)';
+            else if (v <= 250) desc += ' (medio, ~40-60 parole)';
+            else desc += ' (dettagliato, ~80-120 parole)';
+            document.getElementById('cfg-max-tokens-val').textContent = desc;
+        }
+
         async function loadSettings() {
             try {
                 const res = await fetch('/api/settings');
                 const cfg = await res.json();
                 document.getElementById('cfg-ollama-url').value = cfg.llm.ollama_url || '';
                 document.getElementById('cfg-model').value = cfg.llm.model || '';
+                
+                const maxTok = cfg.llm.max_tokens || 150;
+                document.getElementById('cfg-max-tokens').value = maxTok;
+                updateMaxTokensLabel(maxTok);
+
                 document.getElementById('cfg-ha-url').value = cfg.home_assistant.url || '';
                 document.getElementById('cfg-ha-token').value = cfg.home_assistant.token || '';
                 document.getElementById('cfg-default-city').value = cfg.assistant.default_city || '';
@@ -1545,6 +1567,7 @@
             const cfg = await res.json();
             cfg.llm.ollama_url = document.getElementById('cfg-ollama-url').value.trim();
             cfg.llm.model = document.getElementById('cfg-model').value.trim();
+            cfg.llm.max_tokens = parseInt(document.getElementById('cfg-max-tokens').value) || 150;
             cfg.home_assistant.url = document.getElementById('cfg-ha-url').value.trim();
             cfg.home_assistant.token = document.getElementById('cfg-ha-token').value.trim();
             cfg.assistant.default_city = document.getElementById('cfg-default-city').value.trim();

@@ -17,6 +17,7 @@ class LLMConfig(BaseModel):
     model: str = "gemma2:9b"
     temperature: float = 0.4
     timeout_seconds: int = 60
+    max_tokens: int = 150
 
 class HomeAssistantConfig(BaseModel):
     enabled: bool = True

@@ -90,14 +90,15 @@ class OllamaClient:
         model_family = curr_model.split(":")[0].lower()
         supports_tools = tools and (model_family not in _NON_TOOL_MODELS) and not any(k in curr_model.lower() for k in ["gemma", "deepseek-r1", "phi"])
 
+        max_tok = cfg.llm.max_tokens if hasattr(cfg.llm, 'max_tokens') and cfg.llm.max_tokens else 150
         payload = {
             "model": curr_model,
             "messages": messages,
             "stream": False,
             "options": {
                 "temperature": curr_temp,
-                "num_ctx": 1024,
-                "num_predict": 120,
+                "num_ctx": 2048 if max_tok > 250 else 1024,
+                "num_predict": max_tok,
                 "top_p": 0.9
             }
         }
