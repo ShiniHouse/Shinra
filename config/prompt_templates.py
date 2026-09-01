@@ -28,6 +28,15 @@ def get_system_prompt(
         "REGOLE: Rispondi sempre in italiano, in modo conciso e diretto (massimo 1-2 frasi brevi adatte alla sintesi vocale). Non scrivere elenchi lunghi né preamboli.",
     ]
 
+    tools_guide = f"""TOOL IN TEMPO REALE (Se la richiesta richiede dati live o azioni, rispondi con il comando tool corrispondente):
+- Meteo: [TOOL: get_weather {{"location": "{default_city}"}}]
+- Notizie e rassegna: [TOOL: get_latest_news {{"category": "generale"}}]
+- Domotica e luci: [TOOL: control_device {{"entity_id": "...", "action": "turn_on"}}]
+- Modalità casa: [TOOL: activate_mode {{"mode_name": "..."}}]
+- Definizioni e cultura: [TOOL: search_wikipedia {{"query": "..."}}]"""
+
+    parts.append(tools_guide)
+
     if custom_knowledge:
         parts.append(f"CONOSCENZA CASA:\n{custom_knowledge}")
     if device_aliases:

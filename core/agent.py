@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Dict, Any, List, Optional
 
 from config.settings import settings
@@ -98,16 +99,34 @@ class ShinraAgent:
             tool_calls = message.get("tool_calls", [])
             content = message.get("content", "")
 
-            # Se non ci sono tool calls, risposta finale pronta
+            # Se non ci sono tool calls nativi, cerca comandi testuali [TOOL: nome {...}]
             if not tool_calls:
-                final_text = content.strip() or "Operazione completata."
-                mem.add_assistant_message(final_text)
-                return {
-                    "response": final_text,
-                    "actions": actions_taken,
-                    "user": profile.model_dump() if profile else None,
-                    "success": True
-                }
+                text_tool_match = re.search(r"\[TOOL:\s*(\w+)\s*(\{.*?\})\]", content, flags=re.DOTALL)
+                if text_tool_match:
+                    t_name = text_tool_match.group(1)
+                    t_raw_args = text_tool_match.group(2)
+                    try:
+                        t_args = json.loads(t_raw_args)
+                    except Exception:
+                        t_args = {}
+                    
+                    logger.info(f"[Shinra] Rilevato tool testuale: '{t_name}' con {t_args}")
+                    t_res = await execute_tool(t_name, t_args)
+                    actions_taken.append({"tool": t_name, "args": t_args, "result": t_res})
+                    
+                    # Aggiunge il risultato per consentire a Shinra di formulare la risposta vocale naturale
+                    conversation_messages.append({"role": "assistant", "content": content})
+                    conversation_messages.append({"role": "user", "content": f"Risultato operazione {t_name}: {json.dumps(t_res, ensure_ascii=False)}. Formula ora una risposta breve e naturale per l'utente."})
+                    continue
+                else:
+                    final_text = content.strip() or "Operazione completata."
+                    mem.add_assistant_message(final_text)
+                    return {
+                        "response": final_text,
+                        "actions": actions_taken,
+                        "user": profile.model_dump() if profile else None,
+                        "success": True
+                    }
 
             conversation_messages.append(message)
 
