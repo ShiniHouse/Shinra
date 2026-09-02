@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="shinraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="40%" stop-color="#ec4899"/>
+      <stop offset="75%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <radialGradient id="sparkleGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#shinraGrad)" />
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="1.5" />
+  <circle cx="32" cy="32" r="16" fill="url(#sparkleGlow)" />
+  <path d="M 32 14 C 32 24, 24 32, 14 32 C 24 32, 32 40, 32 50 C 32 40, 40 32, 50 32 C 40 32, 32 24, 32 14 Z" fill="#ffffff" />
+  <circle cx="44" cy="20" r="2.5" fill="#ffffff" opacity="0.9" />
+</svg>

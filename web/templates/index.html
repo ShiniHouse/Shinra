@@ -13,7 +13,9 @@
     <meta name="theme-color" content="#4f46e5">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Shinra">
+    <!-- Favicon & Touch Icons -->
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="alternate icon" href="/static/icons/icon-192.png">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -90,6 +92,29 @@
                 radial-gradient(at 50% 100%, var(--mesh-1) 0px, transparent 60%);
         }
 
+        /* ==================== GLASSMORPHISM 2.0 & AMBIENT SATIN ==================== */
+        .bg-slate-900\/60,
+        .bg-slate-900\/70,
+        .bg-slate-900\/80 {
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+        }
+
+        html.dark .bg-slate-900\/60,
+        html.dark .bg-slate-900\/70,
+        html.dark .bg-slate-900\/80 {
+            background-color: rgba(11, 17, 32, 0.75) !important;
+            border-color: rgba(51, 65, 85, 0.5) !important;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        html.dark .bg-slate-950,
+        html.dark .bg-slate-950\/60,
+        html.dark .bg-slate-950\/80 {
+            background-color: rgba(2, 6, 23, 0.7) !important;
+            border-color: rgba(30, 41, 59, 0.7) !important;
+        }
+
         /* ==================== HIGH-CONTRAST LIGHT THEME FIXES ==================== */
         html.light body {
             background-color: #f1f5f9 !important;
@@ -112,10 +137,12 @@
         html.light .bg-slate-950\/60,
         html.light .bg-slate-950\/80,
         html.light .bg-slate-950\/90 {
-            background-color: #ffffff !important;
+            background-color: rgba(255, 255, 255, 0.9) !important;
             border-color: #e2e8f0 !important;
             color: #0f172a !important;
             box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05) !important;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
         }
 
         html.light .bg-slate-800,
