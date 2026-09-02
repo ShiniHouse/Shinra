@@ -6,15 +6,10 @@ Il nome *Shinra* nasce dall'unione concettuale con **Shinigami** (死神 — ent
 
 ---
 
-## 📸 Anteprima Interfaccia & Dashboard
-
-| ☀️ Modalità Giorno (Glassmorphism Chiaro) | 🌙 Modalità Notte (Dark Atmosphere) |
-| :---: | :---: |
-| ![Shinra Dashboard Light](docs/screenshots/dashboard_light.png) | ![Shinra Dashboard Dark](docs/screenshots/dashboard_dark.png) |
+## 📸 Anteprima Dashboard
 
 <p align="center">
-  <b>🎛️ Editor Visuale a Nodi per Routine (Stile Visio / Node-RED con simulatore di flusso luminoso)</b><br>
-  <img src="docs/screenshots/routine_canvas_flow.png" alt="Shinra Visual Routine Flow" width="920">
+  <img src="docs/screenshots/dashboard.png" alt="Shinra AI Hub Dashboard" width="100%">
 </p>
 
 ---
