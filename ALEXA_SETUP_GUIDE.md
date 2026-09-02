@@ -18,8 +18,8 @@ Questa guida ti spiega passo dopo passo come configurare, testare e **modificare
 
 ## 1. Requisiti e Architettura
 * Un account **[Amazon Developer](https://developer.amazon.com/alexa/console/ask)** (gratuito, registrato con la stessa email dei tuoi dispositivi Amazon Echo).
-* Il backend Shinra attivo su Debian (`https://shinra.guidelli.net/api/alexa`).
-* Certificato SSL valido tramite Cloudflare / Let's Encrypt.
+* Il backend Shinra attivo su server Linux/Debian con HTTPS valido (`https://tuodominio.com/api/alexa` oppure `https://shinra.tuodominio.it/api/alexa`).
+* Certificato SSL valido tramite Cloudflare / Let's Encrypt / Reverse Proxy.
 
 ---
 
@@ -121,9 +121,9 @@ Nel menu a sinistra della console Alexa:
 
 1. Nel menu a sinistra clicca su **Endpoint**.
 2. Seleziona il pallino **HTTPS**.
-3. Incolla il tuo URL in entrambi i campi:
-   * **Default Region**: `https://shinra.guidelli.net/api/alexa`
-   * **Europe and India (Europe)**: `https://shinra.guidelli.net/api/alexa`
+3. Incolla l'URL pubblico HTTPS del tuo server in entrambi i campi:
+   * **Default Region**: `https://tuodominio.com/api/alexa`
+   * **Europe and India (Europe)**: `https://tuodominio.com/api/alexa`
 4. Nel menu a tendina *Select SSL certificate type* seleziona per entrambi la **2ª opzione**:
    * **`My development endpoint is a sub-domain of a domain that has a wildcard certificate from a certificate authority`**
 5. Clicca sul pulsante azzurro **"Save Endpoints"** in alto a destra.
@@ -135,7 +135,7 @@ Nel menu a sinistra della console Alexa:
 Affinché i server di Amazon Alexa possano comunicare con il tuo server di casa senza essere bloccati:
 
 ### A. Su Nginx Proxy Manager (NPM):
-* Nel Proxy Host di `shinra.guidelli.net`:
+* Nel Proxy Host associato al tuo dominio:
 * **Block Common Exploits**: ⚠️ **DISATTIVATO** (evita che Nginx blocchi le chiamate interne di Alexa con un errore 403).
 * **Force SSL**: Attivo.
 * **HTTP/2 Support**: Attivo.
@@ -152,18 +152,17 @@ Affinché i server di Amazon Alexa possano comunicare con il tuo server di casa 
 ## 6. Come Usare e Testare la Skill
 
 ### A. Nel Simulatore Web (Tab "Test"):
-* Vai nella scheda **Test** in alto.
+* Vai nella scheda **Test** in alto nella console Alexa.
 * Imposta il selettore da *Off* a **Development**.
 * Scrivi: **`apri shinra`** *(non scrivere la parola "alexa", il simulatore è già Alexa!)*.
-* Shinra risponderà: *"Shinra online. Con chi parlo?"*.
-* Rispondi con il tuo nome: **`Alessio`** ➔ *"Alessio. Dimmi."*.
+* Shinra risponderà immediatamente salutandoti e mettendosi in ascolto.
 
 ### B. Sui tuoi dispositivi fisici Amazon Echo:
 Tutti gli Echo collegati al tuo account sono già abilitati:
 * **Comando Diretto (One-Shot)**:
   * *"Alexa, chiedi a Shinra che tempo farà domani a Roma"*
-  * *"Alexa, dì a Shinra di accendere la luce in sala"*
-  * *"Alexa, chiedi a Shinra cosa significa il termine olocausto"*
+  * *"Alexa, dì a Shinra di accendere la luce in salotto"*
+  * *"Alexa, chiedi a Shinra cosa significa il termine fotosintesi"*
   * *"Alexa, chiedi a Shinra le ultime notizie"*
 * **Sessione Continua**:
   * Dici *"Alexa, apri Shinra"* ➔ l'anello luminoso resta blu e puoi fare domande consecutive senza dover ripetere la parola "Alexa".
@@ -207,5 +206,5 @@ Se in futuro vuoi aggiornare o personalizzare la Skill:
 | :--- | :--- | :--- |
 | **`Sample utterance "{query}" must include a carrier phrase`** | Amazon non consente lo slot `{query}` isolato. | Usa sempre frasi con prefisso come `dimmi {query}`, `chiedi {query}`, `esegui {query}` nel JSON Editor. |
 | **`Non posso raggiungere la Skill richiesta`** | Cloudflare WAF, Nginx Proxy Manager o certificato SSL errato. | Disattiva *Block Common Exploits* in NPM, crea la regola di bypass WAF su Cloudflare per `/api/alexa` e seleziona la 2ª opzione SSL (*Wildcard certificate*). |
-| **Timeout durante l'elaborazione su Echo** | Alexa richiede risposte entro 8 secondi. | Assicurati che Shinra usi `qwen2.5:3b` con `max_tokens: 150` in modo da rispondere in 1-2 secondi. |
+| **Timeout durante l'elaborazione su Echo** | Alexa richiede risposte entro 8 secondi. | Assicurati che Shinra usi un modello compatto (es. `qwen2.5:3b`) con cache attiva, per rispondere in meno di un secondo. |
 
