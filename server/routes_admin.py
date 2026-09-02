@@ -1,8 +1,12 @@
 import logging
 import feedparser
 import asyncio
+import hmac
+import hashlib
+import time
+import secrets
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Header, Request
 from pydantic import BaseModel
 
 from core.user_manager import user_manager, UserProfile
@@ -14,6 +18,80 @@ from config.settings import settings, save_config, AppConfig, reload_settings
 logger = logging.getLogger("Shinra.Admin")
 router = APIRouter(prefix="/api", tags=["Admin & Management"])
 ha_client = HomeAssistantClient()
+
+# --- AUTH & SESSION SECURITY ENGINE ---
+ACTIVE_SESSIONS: Dict[str, float] = {}
+SESSION_EXPIRY_SECONDS = 7 * 24 * 3600  # 7 giorni di durata sessione
+FAILED_ATTEMPTS: Dict[str, List[float]] = {}
+
+def is_authenticated(auth_header: Optional[str] = None) -> bool:
+    if not settings.security.auth_enabled or not settings.security.admin_pin:
+        return True
+    if not auth_header:
+        return False
+    token = auth_header.replace("Bearer ", "").strip()
+    if token in ACTIVE_SESSIONS:
+        created_at = ACTIVE_SESSIONS[token]
+        if time.time() - created_at < SESSION_EXPIRY_SECONDS:
+            return True
+        else:
+            ACTIVE_SESSIONS.pop(token, None)
+    return False
+
+class LoginRequest(BaseModel):
+    pin: str
+
+@router.get("/auth/status")
+async def auth_status(x_shinra_auth: Optional[str] = Header(None)):
+    """Restituisce lo stato di sicurezza e autenticazione corrente."""
+    auth_enabled = bool(settings.security.auth_enabled and settings.security.admin_pin)
+    authenticated = is_authenticated(x_shinra_auth) if auth_enabled else True
+    return {
+        "auth_enabled": auth_enabled,
+        "authenticated": authenticated,
+        "protect_dashboard": settings.security.protect_dashboard
+    }
+
+@router.post("/auth/login")
+async def auth_login(req: LoginRequest, request: Request):
+    """Verifica il PIN di sicurezza e genera un token di sessione."""
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+
+    # Rate limiting anti-bruteforce
+    attempts = FAILED_ATTEMPTS.get(client_ip, [])
+    # Filtra tentativi negli ultimi 5 minuti
+    attempts = [t for t in attempts if now - t < 300]
+    FAILED_ATTEMPTS[client_ip] = attempts
+
+    if len(attempts) >= 5:
+        logger.warning(f"Troppi tentativi di accesso falliti da {client_ip}")
+        raise HTTPException(
+            status_code=429,
+            detail="Troppi tentativi errati. Accesso temporaneamente bloccato per 5 minuti."
+        )
+
+    expected_pin = (settings.security.admin_pin or "").strip()
+    provided_pin = req.pin.strip()
+
+    if not expected_pin or provided_pin == expected_pin:
+        token = secrets.token_hex(24)
+        ACTIVE_SESSIONS[token] = now
+        logger.info(f"Accesso riuscito per sessione amministratore da {client_ip}")
+        return {"success": True, "token": token}
+    else:
+        attempts.append(now)
+        FAILED_ATTEMPTS[client_ip] = attempts
+        logger.warning(f"Tentativo di accesso con PIN errato da {client_ip}")
+        raise HTTPException(status_code=401, detail="PIN o Password non corretta.")
+
+@router.post("/auth/logout")
+async def auth_logout(x_shinra_auth: Optional[str] = Header(None)):
+    """Invalida il token di sessione attivo."""
+    if x_shinra_auth:
+        token = x_shinra_auth.replace("Bearer ", "").strip()
+        ACTIVE_SESSIONS.pop(token, None)
+    return {"success": True}
 
 # --- User Models ---
 class IdentifyRequest(BaseModel):
@@ -262,14 +340,50 @@ async def trigger_mode(mode_name: str):
     return result
 
 # --- SETTINGS ENDPOINTS ---
+def mask_secret(secret: Optional[str]) -> str:
+    if not secret:
+        return ""
+    if len(secret) <= 8:
+        return "********"
+    return secret[:4] + "••••••••" + secret[-4:]
+
+def is_masked(secret: Optional[str]) -> bool:
+    if not secret:
+        return False
+    return "••••" in secret or "********" in secret or "***" in secret
+
 @router.get("/settings")
-async def get_app_settings():
-    return reload_settings().model_dump()
+async def get_app_settings(x_shinra_auth: Optional[str] = Header(None)):
+    current = reload_settings().model_dump()
+    # Maschera token sensibili
+    if current.get("home_assistant", {}).get("token"):
+        current["home_assistant"]["token"] = mask_secret(current["home_assistant"]["token"])
+    if current.get("security", {}).get("admin_pin"):
+        current["security"]["admin_pin"] = mask_secret(current["security"]["admin_pin"])
+    return current
 
 @router.post("/settings")
-async def update_app_settings(new_settings: AppConfig):
+async def update_app_settings(new_settings: AppConfig, x_shinra_auth: Optional[str] = Header(None)):
+    if settings.security.auth_enabled and settings.security.admin_pin:
+        if not is_authenticated(x_shinra_auth):
+            raise HTTPException(status_code=401, detail="Accesso non autorizzato. Inserisci il PIN di sicurezza.")
+
+    current_cfg = reload_settings()
+
+    # Preserva token Home Assistant se inviato mascherato o vuoto
+    if is_masked(new_settings.home_assistant.token) and current_cfg.home_assistant.token:
+        new_settings.home_assistant.token = current_cfg.home_assistant.token
+    elif not new_settings.home_assistant.token and current_cfg.home_assistant.token:
+        new_settings.home_assistant.token = current_cfg.home_assistant.token
+
+    # Preserva PIN se inviato mascherato o vuoto con auth attiva
+    if is_masked(new_settings.security.admin_pin) and current_cfg.security.admin_pin:
+        new_settings.security.admin_pin = current_cfg.security.admin_pin
+    elif not new_settings.security.admin_pin and current_cfg.security.admin_pin and new_settings.security.auth_enabled:
+        new_settings.security.admin_pin = current_cfg.security.admin_pin
+
     save_config(new_settings)
-    return {"success": True, "settings": reload_settings().model_dump()}
+    return await get_app_settings(x_shinra_auth)
 
 # --- OLLAMA MODELS DISCOVERY ---
 @router.get("/ollama/models")

@@ -332,40 +332,27 @@
                     <span id="theme-toggle-label" class="text-[11px]">Auto</span>
                 </button>
 
-                <!-- PWA Install Button -->
-                <button id="pwa-install-btn" onclick="installPwa()" class="hidden px-2.5 py-1.5 bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
-                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Installa App
+                <!-- Security Lock/Unlock Status Button -->
+                <button id="lock-session-btn" onclick="lockSession()" class="hidden px-2.5 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/70 hover:bg-slate-700 text-amber-400 hover:text-amber-300 transition flex items-center gap-1.5 text-xs font-semibold shadow-sm" title="Blocca Sessione Dashboard">
+                    <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                    <span class="hidden md:inline text-[11px]">Blocca</span>
                 </button>
 
-                <!-- Voice Selector & Mute Toggle -->
-                <div class="flex items-center gap-1 bg-slate-800/70 dark:bg-slate-800/70 light:bg-slate-100 border border-slate-700/80 dark:border-slate-700/80 light:border-slate-300 rounded-xl px-2.5 py-1 text-xs">
-                    <button onclick="toggleVoiceMute()" id="voice-mute-btn" type="button" title="Attiva/Disattiva voce audio" class="text-amber-400 dark:text-amber-400 light:text-amber-600 hover:opacity-80 p-0.5">
-                        <i data-lucide="volume-2" id="voice-mute-icon" class="w-3.5 h-3.5"></i>
-                    </button>
-                    <select id="voice-gender-select" onchange="setNeuralVoice(this.value)" class="bg-transparent text-slate-200 dark:text-slate-200 light:text-slate-800 font-semibold focus:outline-none cursor-pointer text-xs">
-                        <option value="it-IT-ElsaNeural">👩 Elsa (Shinra HD)</option>
-                        <option value="it-IT-DiegoNeural">👨 Diego (Jarvis HD)</option>
-                        <option value="it-IT-IsabellaNeural">👩 Isabella (Dolce HD)</option>
-                        <option value="it-IT-GiuseppeNeural">👨 Giuseppe (Formale HD)</option>
-                        <option value="browser">🌐 Voce Browser Locale</option>
-                    </select>
-                </div>
-
                 <!-- User Selector Dropdown -->
-                <div class="flex items-center gap-1.5 bg-slate-800/70 dark:bg-slate-800/70 light:bg-slate-100 border border-slate-700/80 dark:border-slate-700/80 light:border-slate-300 rounded-xl px-2.5 py-1 text-xs">
-                    <i data-lucide="user" class="w-3.5 h-3.5 text-violet-400 dark:text-violet-400 light:text-violet-600"></i>
-                    <span class="text-slate-400 dark:text-slate-400 light:text-slate-600 hidden sm:inline">Parli come:</span>
-                    <select id="user-select" onchange="changeActiveUser(this.value)" class="bg-transparent text-violet-300 dark:text-violet-300 light:text-violet-700 font-semibold focus:outline-none cursor-pointer text-xs">
+                <div class="flex items-center gap-1.5 bg-slate-800/70 border border-slate-700/80 rounded-xl px-2.5 py-1 text-xs">
+                    <i data-lucide="user" class="w-3.5 h-3.5 text-violet-400"></i>
+                    <span class="text-slate-400 hidden sm:inline">Parli come:</span>
+                    <select id="user-select" onchange="changeActiveUser(this.value)" class="bg-transparent text-violet-300 font-semibold focus:outline-none cursor-pointer text-xs">
                         <option value="alessio">Caricamento...</option>
                     </select>
                 </div>
 
                 <!-- Status Badges -->
-                <div id="ollama-status" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 dark:bg-slate-800/70 light:bg-slate-100 border border-slate-700/80 dark:border-slate-700/80 light:border-slate-300 text-slate-300 dark:text-slate-300 light:text-slate-700">
+                <div id="ollama-status" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 border border-slate-700/80 text-slate-300">
                     <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
                     <span>Ollama</span>
                 </div>
-                <div id="ha-status" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 dark:bg-slate-800/70 light:bg-slate-100 border border-slate-700/80 dark:border-slate-700/80 light:border-slate-300 text-slate-300 dark:text-slate-300 light:text-slate-700">
+                <div id="ha-status" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 border border-slate-700/80 text-slate-300">
                     <span class="w-2 h-2 rounded-full bg-slate-500"></span>
                     <span>HA</span>
                 </div>
@@ -706,7 +693,7 @@
                     <!-- Sintesi Vocale & Umanizzazione -->
                     <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
                         <div class="flex justify-between items-center">
-                            <h3 class="font-semibold text-indigo-300">Sintesi Vocale & Umanizzazione Voce</h3>
+                            <h3 class="font-semibold text-indigo-300">Sintesi Vocale & Audio HD</h3>
                             <button type="button" onclick="testVoicePreview()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/40 rounded-lg text-[11px] font-semibold transition flex items-center gap-1">
                                 🔊 Ascolta Anteprima
                             </button>
@@ -745,9 +732,68 @@
                                 <input type="range" id="cfg-voice-pitch" min="0.7" max="1.3" step="0.05" value="1.0" oninput="setVoicePitch(this.value)" class="w-full accent-indigo-500 cursor-pointer">
                             </div>
                         </div>
+                        <div class="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+                            <input type="checkbox" id="cfg-voice-muted" onchange="setVoiceMuteState(this.checked)" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
+                            <label for="cfg-voice-muted" class="text-slate-300 cursor-pointer font-medium">Disattiva riproduzione audio vocale (Modalità Silenziosa)</label>
+                        </div>
                     </div>
 
-                    <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition">
+                    <!-- App Mobile & PWA -->
+                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                                <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                                    <i data-lucide="smartphone" class="w-4 h-4 text-amber-400"></i> App Mobile & Installazione PWA
+                                </h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Installa Shinra direttamente sullo smartphone o PC come applicazione nativa a schermo intero.</p>
+                            </div>
+                            <button type="button" id="pwa-settings-install-btn" onclick="installPwa()" class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/20 shrink-0">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i> Installa App
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-[11px]">
+                            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800/80">
+                                <span class="font-bold text-slate-200 block mb-1">🍎 Su iPhone & iPad (Safari):</span>
+                                <span class="text-slate-400">Tocca l'icona <strong>Condividi</strong> (quadrato con freccia verso l'alto) e seleziona <strong>"Aggiungi a schermata Home"</strong>.</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800/80">
+                                <span class="font-bold text-slate-200 block mb-1">🤖 Su Android & Chrome/Edge:</span>
+                                <span class="text-slate-400">Clicca sul pulsante arancione sopra o tocca il menu a 3 puntini e scegli <strong>"Installa app"</strong>.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sicurezza & Protezione Accesso -->
+                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                                    <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Sicurezza & Protezione Accesso
+                                </h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Proteggi la dashboard, i dati sensibili della casa e le credenziali da accessi non autorizzati.</p>
+                            </div>
+                            <button type="button" onclick="lockSession()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition">
+                                <i data-lucide="lock" class="w-3 h-3"></i> Blocca Ora
+                            </button>
+                        </div>
+                        <div class="space-y-2.5 pt-1">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="cfg-sec-auth-enabled" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
+                                <label for="cfg-sec-auth-enabled" class="text-slate-300 cursor-pointer font-semibold">Richiedi PIN / Password per accedere alla Dashboard</label>
+                            </div>
+                            <div>
+                                <label class="text-slate-400 block mb-1">PIN di Sicurezza Amministratore (4-8 cifre o password):</label>
+                                <input type="password" id="cfg-sec-admin-pin" placeholder="Inserisci PIN (es. 1234)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono tracking-widest">
+                                <p class="text-[10px] text-slate-500 mt-1">Se abilitato, le richieste API e le impostazioni saranno protette e i token sensibili mascherati automaticamente.</p>
+                            </div>
+                            <div class="flex items-center gap-2 pt-1">
+                                <input type="checkbox" id="cfg-sec-protect-dashboard" class="w-4 h-4 accent-indigo-500 rounded cursor-pointer" checked>
+                                <label for="cfg-sec-protect-dashboard" class="text-slate-400 cursor-pointer text-xs">Blocca l'intera schermata all'apertura (Lock Screen)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition shadow-lg shadow-indigo-600/30">
                         Salva Tutte le Impostazioni
                     </button>
                 </form>
@@ -760,6 +806,29 @@
     <div id="modal-backdrop" style="display:none" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 items-center justify-center p-4">
         <div id="modal-container" class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
             <!-- Modal Content Injection -->
+        </div>
+    </div>
+
+    <!-- Lock Screen Modal -->
+    <div id="lock-screen-modal" style="display:none" class="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-[999] flex items-center justify-center p-4">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-3xl max-w-md w-full p-8 shadow-2xl space-y-6 text-center">
+            <div class="flex justify-center">
+                <div class="living-core !w-16 !h-16 !rounded-2xl">
+                    <div class="living-core-halo"></div>
+                    <i data-lucide="lock" class="w-8 h-8 text-white"></i>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xl font-extrabold text-slate-100">Shinra Sicura</h3>
+                <p class="text-xs text-slate-400 mt-1">Inserisci il PIN di sicurezza per sbloccare la dashboard.</p>
+            </div>
+            <form onsubmit="handleUnlockSubmit(event)" class="space-y-4">
+                <input type="password" id="unlock-pin-input" placeholder="••••" maxlength="12" class="w-full text-center text-2xl font-mono tracking-widest bg-slate-950 border border-slate-700 rounded-2xl p-3 text-amber-400 focus:outline-none focus:border-amber-500 transition">
+                <div id="unlock-error-msg" class="hidden text-xs text-rose-400 font-semibold animate-pulse">PIN non corretto. Riprova.</div>
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-bold rounded-2xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
+                    <i data-lucide="unlock" class="w-4 h-4"></i> Sblocca Sessione
+                </button>
+            </form>
         </div>
     </div>
 
@@ -838,6 +907,117 @@
                 if (btn) btn.title = 'Modalità Notte forzata. Clicca per tornare in Auto.';
             }
             safeCreateIcons();
+        }
+
+        // ==================== SECURITY & AUTH ENGINE ====================
+        function getAuthHeaders(customHeaders = {}) {
+            const token = sessionStorage.getItem('shinra_auth_token') || '';
+            const headers = { 'Content-Type': 'application/json', ...customHeaders };
+            if (token) {
+                headers['X-Shinra-Auth'] = `Bearer ${token}`;
+            }
+            return headers;
+        }
+
+        async function checkAuthStatus() {
+            try {
+                const res = await fetch('/api/auth/status', {
+                    headers: getAuthHeaders()
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                const lockBtn = document.getElementById('lock-session-btn');
+                const lockModal = document.getElementById('lock-screen-modal');
+
+                if (data.auth_enabled) {
+                    if (lockBtn) lockBtn.classList.remove('hidden');
+                    if (!data.authenticated && data.protect_dashboard) {
+                        if (lockModal) lockModal.style.display = 'flex';
+                        const pinInput = document.getElementById('unlock-pin-input');
+                        if (pinInput) setTimeout(() => pinInput.focus(), 200);
+                    } else {
+                        if (lockModal) lockModal.style.display = 'none';
+                    }
+                } else {
+                    if (lockBtn) lockBtn.classList.add('hidden');
+                    if (lockModal) lockModal.style.display = 'none';
+                }
+                safeCreateIcons();
+            } catch (e) {
+                console.warn('Errore verifica stato autenticazione:', e);
+            }
+        }
+
+        async function handleUnlockSubmit(e) {
+            if (e) e.preventDefault();
+            const pinInput = document.getElementById('unlock-pin-input');
+            const errBox = document.getElementById('unlock-error-msg');
+            const pin = (pinInput ? pinInput.value : '').trim();
+            if (!pin) return;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ pin: pin })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    sessionStorage.setItem('shinra_auth_token', data.token);
+                    if (errBox) errBox.classList.add('hidden');
+                    if (pinInput) pinInput.value = '';
+                    const lockModal = document.getElementById('lock-screen-modal');
+                    if (lockModal) lockModal.style.display = 'none';
+                    
+                    // Ricarica i dati protetti
+                    checkSystemHealth();
+                    loadKnowledge();
+                    loadSettings();
+                    loadTimers();
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    if (errBox) {
+                        errBox.innerText = errData.detail || 'PIN o Password errata.';
+                        errBox.classList.remove('hidden');
+                    }
+                    if (pinInput) {
+                        pinInput.value = '';
+                        pinInput.focus();
+                    }
+                }
+            } catch (err) {
+                if (errBox) {
+                    errBox.innerText = 'Errore di connessione al server.';
+                    errBox.classList.remove('hidden');
+                }
+            }
+        }
+
+        async function lockSession() {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+            } catch (e) {}
+            sessionStorage.removeItem('shinra_auth_token');
+            await checkAuthStatus();
+        }
+
+        function setVoiceMuteState(isMuted) {
+            voiceMuted = isMuted;
+            localStorage.setItem('shinra_voice_muted', isMuted);
+            if (voiceMuted) {
+                if (currentAudioPlayer) {
+                    currentAudioPlayer.pause();
+                    currentAudioPlayer = null;
+                }
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
+            }
+            syncVoiceUI();
         }
 
         // ==================== SHINRA LIVING CORE & EMPATHIC GREETING ====================
@@ -1029,21 +1209,12 @@
         }
 
         function syncVoiceUI() {
-            // Header
-            const headerSelect = document.getElementById('voice-gender-select');
-            if (headerSelect) headerSelect.value = neuralVoice;
-            
-            const muteIcon = document.getElementById('voice-mute-icon');
-            if (muteIcon) {
-                muteIcon.setAttribute('data-lucide', voiceMuted ? 'volume-x' : 'volume-2');
-                muteIcon.parentElement.classList.toggle('text-rose-400', voiceMuted);
-                muteIcon.parentElement.classList.toggle('text-indigo-400', !voiceMuted);
-                safeCreateIcons();
-            }
-
             // Settings tab
             const cfgNeural = document.getElementById('cfg-neural-voice');
             if (cfgNeural) cfgNeural.value = neuralVoice;
+
+            const cfgMuted = document.getElementById('cfg-voice-muted');
+            if (cfgMuted) cfgMuted.checked = voiceMuted;
 
             const cfgRate = document.getElementById('cfg-voice-rate');
             if (cfgRate) {
@@ -2792,7 +2963,7 @@
 
         async function loadSettings() {
             try {
-                const res = await fetch('/api/settings');
+                const res = await fetch('/api/settings', { headers: getAuthHeaders() });
                 const cfg = await res.json();
                 document.getElementById('cfg-ollama-url').value = cfg.llm.ollama_url || '';
                 
@@ -2805,12 +2976,25 @@
                 document.getElementById('cfg-ha-url').value = cfg.home_assistant.url || '';
                 document.getElementById('cfg-ha-token').value = cfg.home_assistant.token || '';
                 document.getElementById('cfg-default-city').value = cfg.assistant.default_city || '';
+
+                // Sicurezza
+                const sec = cfg.security || {};
+                const authCb = document.getElementById('cfg-sec-auth-enabled');
+                if (authCb) authCb.checked = Boolean(sec.auth_enabled);
+                const pinInput = document.getElementById('cfg-sec-admin-pin');
+                if (pinInput) pinInput.value = sec.admin_pin || '';
+                const protCb = document.getElementById('cfg-sec-protect-dashboard');
+                if (protCb) protCb.checked = (sec.protect_dashboard !== false);
+
+                // Audio
+                const muteCb = document.getElementById('cfg-voice-muted');
+                if (muteCb) muteCb.checked = voiceMuted;
             } catch (e) { console.error('Errore loadSettings:', e); }
         }
 
         async function saveSettings(e) {
             e.preventDefault();
-            const res = await fetch('/api/settings');
+            const res = await fetch('/api/settings', { headers: getAuthHeaders() });
             const cfg = await res.json();
             cfg.llm.ollama_url = document.getElementById('cfg-ollama-url').value.trim();
             cfg.llm.model = document.getElementById('cfg-model').value.trim();
@@ -2819,18 +3003,25 @@
             cfg.home_assistant.token = document.getElementById('cfg-ha-token').value.trim();
             cfg.assistant.default_city = document.getElementById('cfg-default-city').value.trim();
 
+            if (!cfg.security) cfg.security = {};
+            cfg.security.auth_enabled = Boolean(document.getElementById('cfg-sec-auth-enabled')?.checked);
+            cfg.security.admin_pin = document.getElementById('cfg-sec-admin-pin')?.value.trim() || '';
+            cfg.security.protect_dashboard = Boolean(document.getElementById('cfg-sec-protect-dashboard')?.checked);
+
             const saveRes = await fetch('/api/settings', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: getAuthHeaders(),
                 body: JSON.stringify(cfg)
             });
             
             if (saveRes.ok) {
                 alert('Impostazioni salvate con successo.');
+                await checkAuthStatus();
                 await checkSystemHealth();
                 await loadSettings();
             } else {
-                alert('Errore nel salvataggio delle impostazioni.');
+                const errData = await saveRes.json().catch(() => ({}));
+                alert(`Errore nel salvataggio: ${errData.detail || saveRes.statusText}`);
             }
         }
 
@@ -2925,8 +3116,8 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             _deferredPwaPrompt = e;
-            const btn = document.getElementById('pwa-install-btn');
-            if (btn) btn.classList.remove('hidden');
+            const btn = document.getElementById('pwa-settings-install-btn');
+            if (btn) btn.classList.remove('opacity-50');
         });
 
         async function installPwa() {
@@ -2934,12 +3125,12 @@
                 _deferredPwaPrompt.prompt();
                 const { outcome } = await _deferredPwaPrompt.userChoice;
                 if (outcome === 'accepted') {
-                    const btn = document.getElementById('pwa-install-btn');
-                    if (btn) btn.classList.add('hidden');
+                    const btn = document.getElementById('pwa-settings-install-btn');
+                    if (btn) btn.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i> App Installata';
                 }
                 _deferredPwaPrompt = null;
             } else {
-                alert('Per installare l\'app:\n- Su iPhone: tocca il pulsante Condividi in Safari e scegli "Aggiungi a schermata Home".\n- Su Android / Chrome: tocca il menu (3 puntini) e scegli "Installa app".');
+                alert('Per installare l\'app:\n\n🍎 Su iPhone/iPad (Safari):\nTocca il pulsante Condividi e scegli "Aggiungi a schermata Home".\n\n🤖 Su Android/PC (Chrome/Edge):\nClicca sui 3 puntini in alto a destra e seleziona "Installa app" o "Aggiungi a Home".');
             }
         }
 
@@ -2953,6 +3144,7 @@
         window.addEventListener('load', function() {
             initTheme();
             setInterval(applyTheme, 30000);
+            checkAuthStatus();
             initTabs();
             safeCreateIcons();
             initVoiceEngine();

@@ -35,12 +35,19 @@ class AssistantConfig(BaseModel):
     language: str = "it"
     default_city: str = "Roma"
 
+class SecurityConfig(BaseModel):
+    auth_enabled: bool = False
+    admin_pin: Optional[str] = ""
+    session_secret: Optional[str] = "shinra-secret-key-salt"
+    protect_dashboard: bool = True
+
 class AppConfig(BaseModel):
     server: ServerConfig = Field(default_factory=ServerConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     home_assistant: HomeAssistantConfig = Field(default_factory=HomeAssistantConfig)
     alexa: AlexaConfig = Field(default_factory=AlexaConfig)
     assistant: AssistantConfig = Field(default_factory=AssistantConfig)
+    security: SecurityConfig = Field(default_factory=SecurityConfig)
 
 def load_config() -> AppConfig:
     if CONFIG_PATH.exists():
