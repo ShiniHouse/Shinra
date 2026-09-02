@@ -14,6 +14,8 @@ class UserProfile(BaseModel):
     name: str
     role: str = "adult" # admin, adult, teen, child, guest
     age_group: str = "adult" # adult, teen, child
+    gender: str = "male" # male, female, neutral, unspecified
+    avatar_type: Optional[str] = "male_adult" # male_adult, female_adult, male_child, female_child, neutral, guest
     pin: Optional[str] = None
     preferred_news_categories: List[str] = ["generale"]
     restricted_topics: List[str] = []
@@ -24,6 +26,8 @@ GUEST_PROFILE = UserProfile(
     name="Ospite",
     role="guest",
     age_group="adult",
+    gender="neutral",
+    avatar_type="guest",
     notes="Profilo ospite temporaneo con accesso base."
 )
 

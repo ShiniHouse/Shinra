@@ -178,6 +178,15 @@ async def save_source(source: Dict[str, Any]):
     data_store.save_sources(sources)
     return {"success": True, "source": source}
 
+@router.post("/sources/bulk-toggle")
+async def bulk_toggle_sources(payload: Dict[str, Any]):
+    enabled = bool(payload.get("enabled", True))
+    sources = data_store.get_sources()
+    for s in sources:
+        s["enabled"] = enabled
+    data_store.save_sources(sources)
+    return {"success": True, "count": len(sources), "enabled": enabled}
+
 @router.delete("/sources/{source_id}")
 async def delete_source(source_id: str):
     sources = data_store.get_sources()
