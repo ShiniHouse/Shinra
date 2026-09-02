@@ -444,4 +444,43 @@ async def remove_reminder(reminder_id: str):
     success = timer_engine.delete_reminder(reminder_id)
     return {"success": success}
 
+# --- LEARNING & INTERVIEW ENGINE ENDPOINTS ---
+from core.interview_engine import interview_engine
+
+class StartLearningReq(BaseModel):
+    user_id: str = "alessio"
+
+class AnswerLearningReq(BaseModel):
+    user_id: str = "alessio"
+    answer: str
+
+class ConfirmRoutineReq(BaseModel):
+    routine: Dict[str, Any]
+
+@router.post("/learning/start")
+async def start_learning_session(payload: StartLearningReq):
+    res = interview_engine.start_session(payload.user_id)
+    return res
+
+@router.post("/learning/answer")
+async def answer_learning_question(payload: AnswerLearningReq):
+    res = await interview_engine.process_answer(payload.user_id, payload.answer)
+    return res
+
+@router.post("/learning/confirm-routine")
+async def confirm_learning_routine(payload: ConfirmRoutineReq):
+    res = interview_engine.confirm_routine(payload.routine)
+    return res
+
+@router.post("/learning/stop")
+async def stop_learning_session(payload: StartLearningReq):
+    interview_engine.stop_session(payload.user_id)
+    return {"success": True, "message": "Sessione terminata."}
+
+@router.get("/learning/status")
+async def get_learning_status(user_id: str = "alessio"):
+    session = interview_engine.get_session(user_id)
+    return {"is_active": interview_engine.is_session_active(user_id), "session": session}
+
+
 

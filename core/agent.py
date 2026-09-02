@@ -68,7 +68,47 @@ class ShinraAgent:
         live_context = ""
 
         # ==================== FAST-PATH ULTRA-RAPIDO (<0.2s) ====================
-        # 0. Fast-Path: Timer & Promemoria Vocali
+        # 0a. Fast-Path: Innesco o Sessione Attiva Modalità Apprendimento / Shinra Istruisci
+        from core.interview_engine import interview_engine
+        u_id = profile.id if profile else "alessio"
+        
+        learning_triggers = ["shinra istruisci", "istruisci", "modalità apprendimento", "impara la casa", "intervista casa", "insegna abitudini", "voglio insegnarti", "impara abitudini"]
+        is_start_interview = any(t in user_lower for t in learning_triggers)
+        
+        if is_start_interview:
+            res = interview_engine.start_session(u_id)
+            resp = res["message"]
+            mem.add_user_message(user_text)
+            mem.add_assistant_message(resp)
+            return {
+                "response": resp,
+                "actions": [{"tool": "learning_interview", "args": {"action": "start"}, "result": res}],
+                "user": profile.model_dump() if profile else None,
+                "learning_session": res,
+                "success": True
+            }
+
+        if interview_engine.is_session_active(u_id):
+            if any(w in user_lower for w in ["annulla intervista", "ferma intervista", "esci da apprendimento", "stop intervista", "annulla"]):
+                interview_engine.stop_session(u_id)
+                resp = "Modalità Apprendimento interrotta. Possiamo riprendere quando vuoi."
+                mem.add_user_message(user_text)
+                mem.add_assistant_message(resp)
+                return {"response": resp, "actions": [], "user": profile.model_dump() if profile else None, "success": True}
+            
+            res = await interview_engine.process_answer(u_id, user_text)
+            resp = res["message"]
+            mem.add_user_message(user_text)
+            mem.add_assistant_message(resp)
+            return {
+                "response": resp,
+                "actions": [{"tool": "learning_interview", "args": {"action": "answer", "answer": user_text}, "result": res}],
+                "user": profile.model_dump() if profile else None,
+                "learning_session": res,
+                "success": True
+            }
+
+        # 0b. Fast-Path: Timer & Promemoria Vocali
         from core.timer_engine import timer_engine
         parsed_timer = timer_engine.parse_timer_or_reminder(user_text)
         if parsed_timer:

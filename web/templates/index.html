@@ -550,6 +550,12 @@
                     <span class="hidden md:inline text-[11px]">Blocca</span>
                 </button>
 
+                <!-- Shinra Istruisci Learning Mode Button -->
+                <button onclick="startLearningModal()" class="px-2.5 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 text-xs font-semibold shadow-sm" title="Modalità Apprendimento: Insegna a Shinra le tue abitudini con un'intervista vocale guidata">
+                    <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span class="hidden md:inline text-[11px]">Istruisci</span>
+                </button>
+
                 <!-- User Selector Dropdown -->
                 <div class="flex items-center gap-1.5 bg-slate-800/70 border border-slate-700/80 rounded-xl px-2.5 py-1 text-xs">
                     <i data-lucide="user" class="w-3.5 h-3.5 text-violet-400"></i>
@@ -697,6 +703,25 @@
 
         <!-- ==================== TAB 2: CONOSCENZA CASA ==================== -->
         <div id="tab-knowledge" class="tab-content hidden space-y-5">
+            <!-- Banner Modalità Apprendimento Guidato -->
+            <div class="bg-gradient-to-r from-amber-500/15 via-violet-500/15 to-indigo-500/15 border border-amber-500/30 rounded-2xl p-4.5 backdrop-blur flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shrink-0">
+                        🎓
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+                            Modalità Apprendimento Vocale ("Shinra Istruisci")
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">Interattivo</span>
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Shinra ti guiderà con domande vocali per scoprire le tue abitudini (risveglio, buonanotte, famiglia, relax) e proporre routine automatiche.</p>
+                    </div>
+                </div>
+                <button onclick="startLearningModal()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg transition shrink-0 hover:scale-105">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i> Avvia Intervista Vocale
+                </button>
+            </div>
+
             <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
@@ -1114,6 +1139,97 @@
                     <i data-lucide="unlock" class="w-4 h-4"></i> Sblocca Sessione
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Learning Interview Modal ("Shinra Istruisci") -->
+    <div id="learning-interview-modal" style="display:none" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900/95 border border-slate-700/80 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 text-slate-100 relative max-h-[90vh] overflow-y-auto">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg">
+                        🎓
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-100 flex items-center gap-2">
+                            Shinra Istruisci
+                            <span id="learning-step-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Fase 1 di 6</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Intervista guidata per l'apprendimento delle abitudini domestiche</p>
+                    </div>
+                </div>
+                <button onclick="closeLearningModal()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-800 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
+                <div id="learning-progress-bar" class="bg-gradient-to-r from-amber-500 via-violet-500 to-indigo-500 h-full transition-all duration-500" style="width: 16%"></div>
+            </div>
+
+            <!-- Shinra Dialogue Question Box -->
+            <div class="p-4 rounded-2xl bg-gradient-to-br from-slate-950/80 to-slate-900/80 border border-indigo-500/30 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span id="learning-topic-title" class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Argomento
+                    </span>
+                    <button onclick="replayLearningQuestionAudio()" class="text-xs text-indigo-300 hover:text-indigo-200 flex items-center gap-1 font-semibold">
+                        <i data-lucide="volume-2" class="w-3.5 h-3.5"></i> Riascolta
+                    </button>
+                </div>
+                <p id="learning-question-text" class="text-base font-semibold text-slate-100 leading-relaxed"></p>
+                <p id="learning-hint-text" class="text-xs text-slate-400 italic pt-1"></p>
+            </div>
+
+            <!-- Routine Proposal Card (if detected) -->
+            <div id="learning-routine-box" class="hidden p-4 rounded-2xl bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-500/40 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
+                        <i data-lucide="zap" class="w-4 h-4 text-emerald-400 animate-bounce"></i> Routine Automatica Rilevata!
+                    </span>
+                </div>
+                <p id="learning-routine-desc" class="text-xs text-slate-200"></p>
+                <div class="flex gap-2 pt-1">
+                    <button id="learning-routine-confirm-btn" onclick="acceptProposedRoutine()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i> Crea Routine con 1 Clic
+                    </button>
+                </div>
+            </div>
+
+            <!-- User Answer Input -->
+            <div class="space-y-2">
+                <label class="text-xs text-slate-400 font-semibold flex items-center justify-between">
+                    <span>La tua risposta (a voce o digitata):</span>
+                    <span id="learning-mic-status" class="text-[11px] text-amber-400 hidden animate-pulse">🎙️ In ascolto... parla pure</span>
+                </label>
+                <div class="relative">
+                    <textarea id="learning-answer-input" rows="3" placeholder="Parla al microfono o scrivi qui la tua risposta..." class="w-full bg-slate-950 border border-slate-700/80 rounded-2xl p-3.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition resize-none"></textarea>
+                    <button type="button" id="learning-mic-btn" onclick="toggleLearningMic()" class="absolute right-3 bottom-3 p-2.5 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white transition shadow" title="Attiva/Disattiva Microfono">
+                        <i data-lucide="mic" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Learned Facts for this session -->
+            <div id="learning-facts-container" class="hidden space-y-1.5">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Fatti appena appresi da Shinra:</span>
+                <div id="learning-facts-list" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto"></div>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeLearningModal()" class="px-3.5 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition">
+                    Termina Sessione
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="learning-submit-btn" onclick="submitLearningAnswer()" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-indigo-600/30 flex items-center gap-2">
+                        <span>Invia Risposta</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2111,6 +2227,275 @@
             `);
             setTimeout(() => document.getElementById('new-k-text')?.focus(), 100);
         }
+
+        // ==================== SHINRA ISTRUISCI / LEARNING INTERVIEW ENGINE ====================
+        let currentLearningSession = null;
+        let learningRecognition = null;
+        let isLearningListening = false;
+        let currentProposedRoutine = null;
+        let lastLearningQuestion = "";
+
+        async function startLearningModal() {
+            const modal = document.getElementById('learning-interview-modal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+
+            // Reset UI
+            document.getElementById('learning-facts-container').classList.add('hidden');
+            document.getElementById('learning-facts-list').innerHTML = '';
+            document.getElementById('learning-routine-box').classList.add('hidden');
+            document.getElementById('learning-answer-input').value = '';
+            document.getElementById('learning-question-text').innerText = 'Inizializzazione intervista in corso...';
+            document.getElementById('learning-topic-title').innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Avvio...`;
+            safeCreateIcons();
+
+            try {
+                const res = await fetch('/api/learning/start', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ user_id: activeUserId || 'alessio' })
+                });
+                if (!res.ok) throw new Error('Errore avvio sessione');
+                const data = await res.json();
+                currentLearningSession = data;
+                renderLearningStep(data);
+            } catch (err) {
+                console.error('startLearningModal:', err);
+                document.getElementById('learning-question-text').innerText = 'Impossibile avviare la sessione di apprendimento. Verifica la connessione.';
+            }
+        }
+
+        function renderLearningStep(data) {
+            currentLearningSession = data;
+            const modal = document.getElementById('learning-interview-modal');
+            if (!modal) return;
+
+            const stepBadge = document.getElementById('learning-step-badge');
+            const progBar = document.getElementById('learning-progress-bar');
+            const topicTitle = document.getElementById('learning-topic-title');
+            const qText = document.getElementById('learning-question-text');
+            const hintText = document.getElementById('learning-hint-text');
+            const answerInput = document.getElementById('learning-answer-input');
+            const routineBox = document.getElementById('learning-routine-box');
+            const factsContainer = document.getElementById('learning-facts-container');
+            const factsList = document.getElementById('learning-facts-list');
+            const submitBtn = document.getElementById('learning-submit-btn');
+
+            if (data.is_complete) {
+                stepBadge.innerText = 'Completata! 🎉';
+                progBar.style.width = '100%';
+                topicTitle.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Apprendimento Concluso`;
+                qText.innerText = data.message;
+                hintText.innerText = 'Tutti i fatti e le preferenze sono stati registrati nella tua Conoscenza Casa.';
+                answerInput.parentElement.classList.add('hidden');
+                submitBtn.parentElement.innerHTML = `
+                    <button type="button" onclick="closeLearningModal()" class="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-indigo-600 hover:from-emerald-400 text-white rounded-xl text-xs font-bold transition shadow-lg">
+                        Chiudi e Visualizza Conoscenza
+                    </button>
+                `;
+                playAudioOrSpeak(data.message);
+                safeCreateIcons();
+                loadKnowledge();
+                return;
+            }
+
+            const step = data.step;
+            const currentIdx = (data.step_index || 0) + 1;
+            const total = data.total_steps || 6;
+            const pct = Math.round((currentIdx / total) * 100);
+
+            stepBadge.innerText = `Fase ${currentIdx} di ${total}`;
+            progBar.style.width = `${pct}%`;
+            topicTitle.innerHTML = `<i data-lucide="help-circle" class="w-3.5 h-3.5"></i> ${step.title || 'Domanda'}`;
+            qText.innerText = step.question || data.message;
+            lastLearningQuestion = step.question || data.message;
+            hintText.innerText = step.hint ? `💡 ${step.hint}` : '';
+
+            // Routine Proposal
+            if (data.proposed_routine && data.proposed_routine.name) {
+                currentProposedRoutine = data.proposed_routine;
+                document.getElementById('learning-routine-desc').innerText = `Ho notato una possibile routine "${data.proposed_routine.name}": ${data.proposed_routine.description || 'Automazione personalizzata'}.`;
+                routineBox.classList.remove('hidden');
+            } else {
+                routineBox.classList.add('hidden');
+                currentProposedRoutine = null;
+            }
+
+            // Facts list
+            if (data.new_facts && data.new_facts.length > 0) {
+                factsContainer.classList.remove('hidden');
+                data.new_facts.forEach(f => {
+                    const badge = document.createElement('span');
+                    badge.className = 'px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-700/60 text-emerald-300 text-[11px]';
+                    badge.innerText = `✓ ${f.text}`;
+                    factsList.appendChild(badge);
+                });
+            }
+
+            answerInput.value = '';
+            answerInput.parentElement.classList.remove('hidden');
+            answerInput.focus();
+
+            // Speak question
+            playAudioOrSpeak(step.question || data.message);
+            safeCreateIcons();
+        }
+
+        function replayLearningQuestionAudio() {
+            if (lastLearningQuestion) {
+                playAudioOrSpeak(lastLearningQuestion);
+            }
+        }
+
+        async function submitLearningAnswer() {
+            const input = document.getElementById('learning-answer-input');
+            const text = input ? input.value.trim() : '';
+            if (!text) {
+                alert('Inserisci o detta una risposta prima di proseguire.');
+                return;
+            }
+
+            const submitBtn = document.getElementById('learning-submit-btn');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> <span>Salvataggio...</span>`;
+            safeCreateIcons();
+
+            try {
+                const res = await fetch('/api/learning/answer', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        user_id: activeUserId || 'alessio',
+                        answer: text
+                    })
+                });
+                if (!res.ok) throw new Error('Errore durante il salvataggio');
+                const data = await res.json();
+                renderLearningStep(data);
+                loadKnowledge();
+            } catch (err) {
+                console.error('submitLearningAnswer:', err);
+                alert('Errore durante l\'elaborazione della risposta: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+                safeCreateIcons();
+            }
+        }
+
+        async function acceptProposedRoutine() {
+            if (!currentProposedRoutine) return;
+            const btn = document.getElementById('learning-routine-confirm-btn');
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Creazione in corso...`;
+            safeCreateIcons();
+
+            try {
+                const res = await fetch('/api/learning/confirm-routine', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ routine: currentProposedRoutine })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    btn.className = 'px-3 py-1.5 bg-slate-800 text-emerald-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-emerald-500/40';
+                    btn.innerHTML = `<i data-lucide="check-check" class="w-3.5 h-3.5"></i> Routine Creata con Successo!`;
+                    safeCreateIcons();
+                    if (typeof loadModes === 'function') loadModes();
+                } else {
+                    alert('Errore creazione routine: ' + (data.error || 'Errore sconosciuto'));
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                console.error('acceptProposedRoutine:', err);
+                btn.disabled = false;
+            }
+        }
+
+        function toggleLearningMic() {
+            const micBtn = document.getElementById('learning-mic-btn');
+            const statusLabel = document.getElementById('learning-mic-status');
+            const input = document.getElementById('learning-answer-input');
+
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert('Riconoscimento vocale non supportato dal browser. Puoi digitare la risposta nella casella di testo.');
+                return;
+            }
+
+            if (isLearningListening && learningRecognition) {
+                learningRecognition.stop();
+                isLearningListening = false;
+                if (statusLabel) statusLabel.classList.add('hidden');
+                if (micBtn) {
+                    micBtn.classList.remove('bg-rose-600', 'text-white');
+                    micBtn.classList.add('bg-slate-800', 'text-slate-300');
+                }
+                return;
+            }
+
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            learningRecognition = new SpeechRec();
+            learningRecognition.lang = 'it-IT';
+            learningRecognition.continuous = false;
+            learningRecognition.interimResults = false;
+
+            learningRecognition.onstart = () => {
+                isLearningListening = true;
+                if (statusLabel) statusLabel.classList.remove('hidden');
+                if (micBtn) {
+                    micBtn.classList.add('bg-rose-600', 'text-white');
+                    micBtn.classList.remove('bg-slate-800', 'text-slate-300');
+                }
+            };
+
+            learningRecognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                if (input) {
+                    input.value = (input.value ? (input.value + ' ') : '') + transcript;
+                }
+            };
+
+            learningRecognition.onerror = (event) => {
+                console.warn('Learning speech error:', event.error);
+                isLearningListening = false;
+                if (statusLabel) statusLabel.classList.add('hidden');
+                if (micBtn) {
+                    micBtn.classList.remove('bg-rose-600', 'text-white');
+                    micBtn.classList.add('bg-slate-800', 'text-slate-300');
+                }
+            };
+
+            learningRecognition.onend = () => {
+                isLearningListening = false;
+                if (statusLabel) statusLabel.classList.add('hidden');
+                if (micBtn) {
+                    micBtn.classList.remove('bg-rose-600', 'text-white');
+                    micBtn.classList.add('bg-slate-800', 'text-slate-300');
+                }
+            };
+
+            learningRecognition.start();
+        }
+
+        async function closeLearningModal() {
+            if (isLearningListening && learningRecognition) {
+                learningRecognition.stop();
+            }
+            const modal = document.getElementById('learning-interview-modal');
+            if (modal) modal.style.display = 'none';
+
+            try {
+                await fetch('/api/learning/stop', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ user_id: activeUserId || 'alessio' })
+                });
+            } catch (e) {}
+
+            await loadKnowledge();
+        }
+
 
         async function saveNewKnowledge() {
             const text = document.getElementById('new-k-text').value.trim();
