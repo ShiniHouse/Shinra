@@ -78,12 +78,14 @@ class OllamaClient:
             return {
                 "status": "online",
                 "models": models,
-                "current_model": selected_model
+                "current_model": selected_model,
+                "active_model": selected_model
             }
         return {
             "status": "offline",
             "models": [],
-            "current_model": self.model
+            "current_model": self.model,
+            "active_model": self.model
         }
 
     async def chat(

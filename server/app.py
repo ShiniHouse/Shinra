@@ -51,6 +51,8 @@ async def chat_endpoint(payload: ChatRequest):
         user_text=payload.message,
         user_id=payload.user_id
     )
+    return result
+
 class TTSRequest(BaseModel):
     text: str
     voice: Optional[str] = "it-IT-DiegoNeural"
