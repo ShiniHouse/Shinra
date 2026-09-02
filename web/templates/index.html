@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shinra — Assistente Domestico & Console di Controllo</title>
+    <title>Shinra — Hub Domestico Intelligente</title>
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- PWA & Mobile Meta Tags -->
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#4f46e5">
@@ -18,12 +22,24 @@
             darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
                     colors: {
                         brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            400: '#818cf8',
                             500: '#6366f1',
                             600: '#4f46e5',
                             700: '#4338ca',
                             900: '#1e1b4b',
+                        },
+                        amber: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
                         }
                     }
                 }
@@ -38,23 +54,155 @@
         }
     </script>
     <style>
-        .glow { box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.4); }
-        .mic-active { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        /* ==================== THEME VARIABLES & DUAL-THEME ENGINE ==================== */
+        :root {
+            --bg-base: #060911;
+            --bg-card: rgba(15, 23, 42, 0.75);
+            --bg-card-hover: rgba(30, 41, 59, 0.85);
+            --border-subtle: rgba(245, 158, 11, 0.12);
+            --border-card: rgba(99, 102, 241, 0.2);
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --mesh-1: rgba(245, 158, 11, 0.07);
+            --mesh-2: rgba(139, 92, 246, 0.08);
+            --chat-user-bg: rgba(79, 70, 229, 0.9);
+            --chat-shinra-bg: rgba(15, 23, 42, 0.85);
+            --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
         }
+
+        html.light {
+            --bg-base: #fbf9f5;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-card-hover: rgba(255, 255, 255, 0.98);
+            --border-subtle: rgba(217, 119, 6, 0.18);
+            --border-card: rgba(203, 213, 225, 0.8);
+            --text-main: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --mesh-1: rgba(251, 191, 36, 0.14);
+            --mesh-2: rgba(167, 139, 250, 0.12);
+            --chat-user-bg: #4f46e5;
+            --chat-shinra-bg: rgba(255, 255, 255, 0.95);
+            --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.06);
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Ambient Mesh Glows */
+        .ambient-mesh {
+            background-image: 
+                radial-gradient(at 0% 0%, var(--mesh-1) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, var(--mesh-2) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, var(--mesh-1) 0px, transparent 60%);
+        }
+
+        /* Glassmorphism Card Utility */
+        .theme-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            box-shadow: var(--card-shadow);
+            backdrop-filter: blur(12px);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .theme-card:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* ==================== SHINRA LIVING CORE AVATAR ==================== */
+        .living-core {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f59e0b 0%, #8b5cf6 50%, #4f46e5 100%);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3), 0 0 15px rgba(139, 92, 246, 0.3);
+            animation: core-breathe 4s ease-in-out infinite;
+        }
+
+        .living-core-halo {
+            position: absolute;
+            inset: -3px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+            opacity: 0.5;
+            filter: blur(6px);
+            z-index: -1;
+            animation: core-spin 8s linear infinite;
+        }
+
+        .living-core.listening {
+            animation: core-listen-pulse 1.2s ease-in-out infinite;
+            background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%);
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
+        }
+
+        .living-core.thinking {
+            animation: core-spin 1.5s linear infinite;
+            background: linear-gradient(135deg, #8b5cf6, #3b82f6, #06b6d4);
+        }
+
+        .living-core.speaking {
+            animation: core-breathe 1s ease-in-out infinite;
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
+        }
+
+        @keyframes core-breathe {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.04); filter: brightness(1.15); }
+        }
+
+        @keyframes core-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes core-listen-pulse {
+            0%, 100% { transform: scale(0.96); box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+            50% { transform: scale(1.08); box-shadow: 0 0 25px rgba(239, 68, 68, 0.9); }
+        }
+
+        /* Microphone Pulse */
+        .mic-active {
+            animation: mic-pulse 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+        }
+        @keyframes mic-pulse {
+            0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.06); box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* Typing Dots */
         @keyframes bounce-dot {
             0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-            40% { transform: translateY(-6px); opacity: 1; }
+            40% { transform: translateY(-5px); opacity: 1; }
         }
-        .typing-dot {
-            animation: bounce-dot 1.4s infinite ease-in-out both;
-        }
+        .typing-dot { animation: bounce-dot 1.4s infinite ease-in-out both; }
         .typing-dot:nth-child(1) { animation-delay: 0s; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        /* Soundwave animation for voice */
+        .soundwave-bar {
+            display: inline-block;
+            width: 3px;
+            background: #a855f7;
+            border-radius: 9999px;
+            animation: soundwave-play 1s ease-in-out infinite alternate;
+        }
+        @keyframes soundwave-play {
+            0% { height: 4px; }
+            100% { height: 16px; }
+        }
+
         /* Routine Flow Visuals */
         .flow-line { position: relative; }
         .flow-line::after {
@@ -69,36 +217,47 @@
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+<body class="min-h-screen flex flex-col font-sans antialiased ambient-mesh selection:bg-amber-500 selection:text-white">
 
     <!-- Top Header -->
-    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <header class="border-b border-slate-800/80 dark:border-slate-800/80 light:border-slate-200/80 bg-slate-900/70 dark:bg-slate-900/70 light:bg-white/80 backdrop-blur-xl sticky top-0 z-50 transition-colors">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center glow">
-                    <i data-lucide="bot" class="w-6 h-6 text-white"></i>
+            <!-- Living Core & Title -->
+            <div class="flex items-center gap-3.5">
+                <div id="header-living-core" class="living-core" title="Shinra Living Core">
+                    <div class="living-core-halo"></div>
+                    <i data-lucide="sparkles" class="w-5 h-5 text-white animate-pulse"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">Shinra</h1>
-                    <p class="text-[11px] text-slate-400">Hub Domestico Intelligente</p>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-extrabold bg-gradient-to-r from-amber-200 via-violet-200 to-indigo-300 dark:from-amber-200 dark:via-violet-200 dark:to-indigo-300 light:from-amber-700 light:via-violet-700 light:to-indigo-800 bg-clip-text text-transparent">Shinra</h1>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-amber-500/20 dark:bg-amber-500/20 light:bg-amber-100 text-amber-300 dark:text-amber-300 light:text-amber-800 border border-amber-500/30">AI Hub</span>
+                    </div>
+                    <p id="empathetic-greeting" class="text-[11px] text-slate-400 dark:text-slate-400 light:text-slate-600 font-medium">Buon pomeriggio. Casa pronta e accogliente.</p>
                 </div>
             </div>
 
-            <!-- Active User Selector, Voice Selector, PWA & Status -->
-            <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+            <!-- Header Controls & Status -->
+            <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end">
+                <!-- Theme Switcher Button -->
+                <button id="theme-toggle-btn" onclick="toggleTheme()" class="px-2.5 py-1.5 rounded-xl border border-slate-700/80 dark:border-slate-700/80 light:border-slate-300 bg-slate-800/70 dark:bg-slate-800/70 light:bg-slate-100 hover:scale-105 transition flex items-center gap-1.5 text-xs font-semibold text-slate-200 dark:text-slate-200 light:text-slate-700 shadow-sm" title="Cambia tema">
+                    <span id="theme-toggle-icon"><i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400"></i></span>
+                    <span id="theme-toggle-label" class="hidden sm:inline text-[11px]">Giorno</span>
+                </button>
+
                 <!-- PWA Install Button -->
-                <button id="pwa-install-btn" onclick="installPwa()" class="hidden px-2.5 py-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+                <button id="pwa-install-btn" onclick="installPwa()" class="hidden px-2.5 py-1.5 bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
                     <i data-lucide="download" class="w-3.5 h-3.5"></i> Installa App
                 </button>
 
                 <!-- Voice Selector & Mute Toggle -->
-                <div class="flex items-center gap-1 bg-slate-800/80 border border-slate-700 rounded-xl px-2.5 py-1 text-xs">
-                    <button onclick="toggleVoiceMute()" id="voice-mute-btn" type="button" title="Attiva/Disattiva voce audio" class="text-indigo-400 hover:text-indigo-300 p-0.5">
+                <div class="flex items-center gap-1 bg-slate-800/70 dark:bg-slate-800/70 light:bg-slate-100 border border-slate-700/80 dark:border-slate-700/80 light:border-slate-300 rounded-xl px-2.5 py-1 text-xs">
+                    <button onclick="toggleVoiceMute()" id="voice-mute-btn" type="button" title="Attiva/Disattiva voce audio" class="text-amber-400 dark:text-amber-400 light:text-amber-600 hover:opacity-80 p-0.5">
                         <i data-lucide="volume-2" id="voice-mute-icon" class="w-3.5 h-3.5"></i>
                     </button>
-                    <select id="voice-gender-select" onchange="setNeuralVoice(this.value)" class="bg-transparent text-indigo-300 font-semibold focus:outline-none cursor-pointer text-xs">
-                        <option value="it-IT-DiegoNeural">👨 Diego (Jarvis HD)</option>
+                    <select id="voice-gender-select" onchange="setNeuralVoice(this.value)" class="bg-transparent text-slate-200 dark:text-slate-200 light:text-slate-800 font-semibold focus:outline-none cursor-pointer text-xs">
                         <option value="it-IT-ElsaNeural">👩 Elsa (Shinra HD)</option>
+                        <option value="it-IT-DiegoNeural">👨 Diego (Jarvis HD)</option>
                         <option value="it-IT-IsabellaNeural">👩 Isabella (Dolce HD)</option>
                         <option value="it-IT-GiuseppeNeural">👨 Giuseppe (Formale HD)</option>
                         <option value="browser">🌐 Voce Browser Locale</option>
@@ -106,20 +265,20 @@
                 </div>
 
                 <!-- User Selector Dropdown -->
-                <div class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700 rounded-xl px-2.5 py-1 text-xs">
-                    <i data-lucide="user" class="w-3.5 h-3.5 text-indigo-400"></i>
-                    <span class="text-slate-400 hidden sm:inline">Parli come:</span>
-                    <select id="user-select" onchange="changeActiveUser(this.value)" class="bg-transparent text-indigo-300 font-semibold focus:outline-none cursor-pointer text-xs">
+                <div class="flex items-center gap-1.5 bg-slate-800/70 dark:bg-slate-800/70 light:bg-slate-100 border border-slate-700/80 dark:border-slate-700/80 light:border-slate-300 rounded-xl px-2.5 py-1 text-xs">
+                    <i data-lucide="user" class="w-3.5 h-3.5 text-violet-400 dark:text-violet-400 light:text-violet-600"></i>
+                    <span class="text-slate-400 dark:text-slate-400 light:text-slate-600 hidden sm:inline">Parli come:</span>
+                    <select id="user-select" onchange="changeActiveUser(this.value)" class="bg-transparent text-violet-300 dark:text-violet-300 light:text-violet-700 font-semibold focus:outline-none cursor-pointer text-xs">
                         <option value="alessio">Caricamento...</option>
                     </select>
                 </div>
 
-                <!-- Ollama & HA Badges -->
-                <div id="ollama-status" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800 border border-slate-700 text-slate-300">
+                <!-- Status Badges -->
+                <div id="ollama-status" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 dark:bg-slate-800/70 light:bg-slate-100 border border-slate-700/80 dark:border-slate-700/80 light:border-slate-300 text-slate-300 dark:text-slate-300 light:text-slate-700">
                     <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
                     <span>Ollama</span>
                 </div>
-                <div id="ha-status" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800 border border-slate-700 text-slate-300">
+                <div id="ha-status" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 dark:bg-slate-800/70 light:bg-slate-100 border border-slate-700/80 dark:border-slate-700/80 light:border-slate-300 text-slate-300 dark:text-slate-300 light:text-slate-700">
                     <span class="w-2 h-2 rounded-full bg-slate-500"></span>
                     <span>HA</span>
                 </div>
@@ -127,26 +286,26 @@
         </div>
 
         <!-- Navigation Tabs Bar -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 flex gap-2 border-t border-slate-800/60 overflow-x-auto text-xs font-medium py-1.5">
-            <button onclick="switchTab('console')" id="tab-btn-console" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 transition">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 flex gap-2 border-t border-slate-800/60 dark:border-slate-800/60 light:border-slate-200/80 overflow-x-auto text-xs font-semibold py-1.5">
+            <button onclick="switchTab('console')" id="tab-btn-console" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-600/30 dark:bg-indigo-600/30 light:bg-indigo-100 text-indigo-300 dark:text-indigo-300 light:text-indigo-800 border border-indigo-500/40 dark:border-indigo-500/40 light:border-indigo-300 transition shadow-sm">
                 <i data-lucide="message-square" class="w-4 h-4"></i> Console Vocale
             </button>
-            <button onclick="switchTab('knowledge')" id="tab-btn-knowledge" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+            <button onclick="switchTab('knowledge')" id="tab-btn-knowledge" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
                 <i data-lucide="book-open" class="w-4 h-4"></i> Conoscenza Casa
             </button>
-            <button onclick="switchTab('sources')" id="tab-btn-sources" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+            <button onclick="switchTab('sources')" id="tab-btn-sources" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
                 <i data-lucide="globe" class="w-4 h-4"></i> Fonti & Notizie
             </button>
-            <button onclick="switchTab('aliases')" id="tab-btn-aliases" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+            <button onclick="switchTab('aliases')" id="tab-btn-aliases" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
                 <i data-lucide="layout-grid" class="w-4 h-4"></i> Mappa Dispositivi
             </button>
-            <button onclick="switchTab('modes')" id="tab-btn-modes" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+            <button onclick="switchTab('modes')" id="tab-btn-modes" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
                 <i data-lucide="sparkles" class="w-4 h-4"></i> Modalità & Routine
             </button>
-            <button onclick="switchTab('users')" id="tab-btn-users" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+            <button onclick="switchTab('users')" id="tab-btn-users" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
                 <i data-lucide="users" class="w-4 h-4"></i> Gestione Utenti
             </button>
-            <button onclick="switchTab('settings')" id="tab-btn-settings" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+            <button onclick="switchTab('settings')" id="tab-btn-settings" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
                 <i data-lucide="settings" class="w-4 h-4"></i> Impostazioni
             </button>
         </div>
@@ -527,6 +686,66 @@
             } catch (e) { console.warn('Lucide icon render:', e); }
         }
 
+        // ==================== DUAL THEME ENGINE (DARK / LIGHT) ====================
+        function initTheme() {
+            const saved = localStorage.getItem('shinra_theme') || 'dark';
+            setTheme(saved);
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            setTheme(next);
+        }
+
+        function setTheme(t) {
+            const icon = document.getElementById('theme-toggle-icon');
+            const label = document.getElementById('theme-toggle-label');
+            if (t === 'light') {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+                localStorage.setItem('shinra_theme', 'light');
+                if (icon) icon.innerHTML = '<i data-lucide="moon" class="w-3.5 h-3.5 text-indigo-600"></i>';
+                if (label) label.innerText = 'Notte';
+            } else {
+                document.documentElement.classList.remove('light');
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('shinra_theme', 'dark');
+                if (icon) icon.innerHTML = '<i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400"></i>';
+                if (label) label.innerText = 'Giorno';
+            }
+            safeCreateIcons();
+        }
+
+        // ==================== SHINRA LIVING CORE & EMPATHIC GREETING ====================
+        function updateLivingCoreState(state) {
+            const core = document.getElementById('header-living-core');
+            if (!core) return;
+            core.classList.remove('listening', 'thinking', 'speaking');
+            if (state && state !== 'idle') {
+                core.classList.add(state);
+            }
+        }
+
+        function updateEmpatheticGreeting() {
+            const el = document.getElementById('empathetic-greeting');
+            if (!el) return;
+            const hour = new Date().getHours();
+            const userName = (typeof activeUserId !== 'undefined' && activeUserId) ? (activeUserId.charAt(0).toUpperCase() + activeUserId.slice(1)) : 'Alessio';
+
+            let greeting = '';
+            if (hour >= 5 && hour < 12) {
+                greeting = `Buongiorno ${userName}. Casa accogliente e pronta per la giornata.`;
+            } else if (hour >= 12 && hour < 18) {
+                greeting = `Buon pomeriggio ${userName}. Gestisco la casa, timer e notizie per te.`;
+            } else if (hour >= 18 && hour < 23) {
+                greeting = `Buonasera ${userName}. Ambienti regolati per il relax serale.`;
+            } else {
+                greeting = `Notte fonda ${userName}. Modalità silenziosa attiva.`;
+            }
+            el.innerText = greeting;
+        }
+
         let activeUserId = "alessio";
         let usersData = [];
 
@@ -606,8 +825,14 @@
         }
 
         // Speech Recognition Setup
-        let recognition = null;
-        let isRecording = false;
+        function stopRecording() {
+            isRecording = false;
+            const btn = document.getElementById('mic-btn');
+            if (btn) btn.classList.remove('bg-rose-600', 'text-white', 'mic-active');
+            const st = document.getElementById('recording-status');
+            if (st) st.classList.add('hidden');
+            updateLivingCoreState('idle');
+        }
 
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -618,8 +843,11 @@
 
             recognition.onstart = () => {
                 isRecording = true;
-                document.getElementById('mic-btn').classList.add('bg-rose-600', 'text-white', 'mic-active');
-                document.getElementById('recording-status').classList.remove('hidden');
+                const btn = document.getElementById('mic-btn');
+                if (btn) btn.classList.add('bg-rose-600', 'text-white', 'mic-active');
+                const st = document.getElementById('recording-status');
+                if (st) st.classList.remove('hidden');
+                updateLivingCoreState('listening');
             };
 
             recognition.onresult = (event) => {
@@ -633,7 +861,7 @@
         }
 
         function toggleSpeechRecognition() {
-            if (!recognition) return alert("Riconoscimento vocale non supportato.");
+            if (!recognition) return alert("Riconoscimento vocale non supportato nel browser.");
             if (isRecording) recognition.stop();
             else recognition.start();
         }
@@ -771,6 +999,8 @@
             const clean = cleanTextForSpeech(text);
             if (!clean) return;
 
+            updateLivingCoreState('speaking');
+
             // Se la voce selezionata è una voce neurale HD del server
             if (neuralVoice !== 'browser') {
                 try {
@@ -790,7 +1020,12 @@
                         const blob = await res.blob();
                         const audioUrl = URL.createObjectURL(blob);
                         currentAudioPlayer = new Audio(audioUrl);
-                        currentAudioPlayer.play().catch(e => console.warn('Audio playback block/error:', e));
+                        currentAudioPlayer.onended = () => updateLivingCoreState('idle');
+                        currentAudioPlayer.onerror = () => updateLivingCoreState('idle');
+                        currentAudioPlayer.play().catch(e => {
+                            console.warn('Audio playback block/error:', e);
+                            updateLivingCoreState('idle');
+                        });
                         return;
                     }
                 } catch (e) {
@@ -809,14 +1044,18 @@
                 }
                 utterance.pitch = voicePitch;
                 utterance.rate = voiceRate;
+                utterance.onend = () => updateLivingCoreState('idle');
+                utterance.onerror = () => updateLivingCoreState('idle');
                 window.speechSynthesis.speak(utterance);
+            } else {
+                updateLivingCoreState('idle');
             }
         }
 
         async function testVoicePreview() {
             const previewText = neuralVoice.includes('Diego') || neuralVoice.includes('Giuseppe')
-                ? "Sistemi operativi, Alessio. Voce neurale ad alta definizione calibrata e pronta."
-                : "Ciao Alessio, sono Shinra. La mia voce neurale ad alta definizione è pronta.";
+                ? "Sistemi operativi. Voce neurale ad alta definizione calibrata e pronta."
+                : "Ciao, sono Shinra. La mia voce neurale ad alta definizione è pronta.";
             
             const wasMuted = voiceMuted;
             voiceMuted = false;
@@ -830,7 +1069,7 @@
             const container = document.getElementById('messages-container');
             const div = document.createElement('div');
             div.className = 'flex justify-end gap-3';
-            div.innerHTML = `<div class="bg-indigo-600 text-white rounded-2xl rounded-tr-none p-3.5 text-sm max-w-xl shadow-md">${text}</div>`;
+            div.innerHTML = `<div class="bg-indigo-600 dark:bg-indigo-600 light:bg-indigo-600 text-white rounded-2xl rounded-tr-none p-3.5 text-sm max-w-xl shadow-md">${text}</div>`;
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
         }
@@ -850,13 +1089,20 @@
             }
 
             div.innerHTML = `
-                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
-                    <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                <div class="living-core !w-8 !h-8 !rounded-lg shrink-0">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
                 </div>
-                <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 flex-1">
+                <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 flex-1 shadow-sm">
                     <div class="flex items-center justify-between mb-1">
-                        <p class="font-medium text-indigo-400">Shinra</p>
-                        <button onclick="speakText('${text.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-indigo-300 p-1" title="Riascolta">
+                        <p class="font-bold text-amber-400 dark:text-amber-400 light:text-amber-600 flex items-center gap-1.5">
+                            <span>Shinra</span>
+                            <span class="inline-flex gap-0.5 items-end h-3">
+                                <span class="soundwave-bar"></span>
+                                <span class="soundwave-bar" style="animation-delay: 0.2s"></span>
+                                <span class="soundwave-bar" style="animation-delay: 0.4s"></span>
+                            </span>
+                        </p>
+                        <button onclick="speakText('${text.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-amber-400 p-1 transition" title="Riascolta">
                             <i data-lucide="volume-2" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -894,13 +1140,13 @@
             div.id = 'typing-indicator';
             div.className = 'flex gap-3 max-w-2xl items-center';
             div.innerHTML = `
-                <div class="w-8 h-8 rounded-lg bg-indigo-600/80 flex items-center justify-center shrink-0">
-                    <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                <div class="living-core !w-8 !h-8 !rounded-lg shrink-0 thinking">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
                 </div>
                 <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl rounded-tl-none px-4 py-3 text-sm text-slate-200 flex items-center gap-1.5 shadow-sm">
-                    <span class="w-2 h-2 rounded-full bg-indigo-400 typing-dot"></span>
-                    <span class="w-2 h-2 rounded-full bg-indigo-400 typing-dot"></span>
-                    <span class="w-2 h-2 rounded-full bg-indigo-400 typing-dot"></span>
+                    <span class="w-2 h-2 rounded-full bg-amber-400 typing-dot"></span>
+                    <span class="w-2 h-2 rounded-full bg-amber-400 typing-dot"></span>
+                    <span class="w-2 h-2 rounded-full bg-amber-400 typing-dot"></span>
                     <span class="text-xs text-slate-400 ml-1.5 font-medium">Shinra sta elaborando...</span>
                 </div>
             `;
@@ -926,6 +1172,7 @@
             const sendBtn = document.getElementById('send-btn');
             sendBtn.disabled = true;
             showTypingIndicator();
+            updateLivingCoreState('thinking');
 
             try {
                 const res = await fetch('/api/chat', {
@@ -937,6 +1184,7 @@
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({ detail: res.statusText }));
                     appendAssistantMessage(`Errore dal server (${res.status}): ${errData.detail || 'Impossibile elaborare il messaggio'}`);
+                    updateLivingCoreState('idle');
                     return;
                 }
                 const data = await res.json();
@@ -945,6 +1193,7 @@
             } catch (err) {
                 hideTypingIndicator();
                 appendAssistantMessage(`Errore di comunicazione con Shinra: ${err.message || 'Server non raggiungibile'}`);
+                updateLivingCoreState('idle');
             } finally {
                 sendBtn.disabled = false;
             }
@@ -2579,10 +2828,14 @@
 
         // Inizializzazione — eseguita dopo il caricamento completo della pagina
         window.addEventListener('load', function() {
+            initTheme();
             initTabs();
             safeCreateIcons();
             initVoiceEngine();
             loadUsersDropdown();
+            updateEmpatheticGreeting();
+            setInterval(updateEmpatheticGreeting, 60000);
+            updateLivingCoreState('idle');
             loadTimers();
             startTimerTick();
             checkSystemHealth();
