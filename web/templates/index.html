@@ -1778,175 +1778,527 @@
             }, 1200);
         }
 
+        // ==================== VISUAL FLOW CANVAS (STILE VISIO / NODE-RED) ====================
+        let _canvasState = {
+            id: '',
+            name: '',
+            icon: 'workflow',
+            description: '',
+            trigger_phrases: [],
+            nodes: [],
+            edges: [],
+            isDraggingNode: null,
+            dragOffset: { x: 0, y: 0 },
+            connectingSourceId: null
+        };
+
         function openModularModeBuilder(existingId = null) {
-            let mode = { id: '', name: '', icon: 'sparkles', description: '', trigger_phrases: [], actions: [] };
+            let mode = { id: '', name: '', icon: 'workflow', description: '', trigger_phrases: [], nodes: [], edges: [] };
             if (existingId) {
                 const found = _allModesCache.find(m => m.id === existingId);
                 if (found) mode = JSON.parse(JSON.stringify(found));
             }
-            _builderSteps = mode.actions || [];
 
-            renderModeBuilderModal(mode);
-        }
+            _canvasState.id = mode.id || '';
+            _canvasState.name = mode.name || (existingId ? '' : 'Nuova Routine');
+            _canvasState.icon = mode.icon || 'workflow';
+            _canvasState.description = mode.description || '';
+            _canvasState.trigger_phrases = mode.trigger_phrases || [];
 
-        function renderModeBuilderModal(mode) {
-            const triggersStr = (mode.trigger_phrases || []).join(', ');
+            // Se la routine ha già nodi e archi grafici carichiamoli, altrimenti convertiamo le vecchie actions in grafo
+            if (mode.nodes && mode.nodes.length > 0) {
+                _canvasState.nodes = mode.nodes;
+                _canvasState.edges = mode.edges || [];
+            } else if (mode.actions && mode.actions.length > 0) {
+                // Auto-conversione in layout orizzontale a nodi
+                const nTrigger = { id: 'node_trig', type: 'trigger', x: 40, y: 140, data: { phrases: mode.trigger_phrases || [] } };
+                _canvasState.nodes = [nTrigger];
+                _canvasState.edges = [];
+                let prevId = 'node_trig';
 
-            showModal(`
-                <div class="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
-                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                        <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
-                            <i data-lucide="workflow" class="w-4 h-4 text-indigo-400"></i> ${mode.id ? 'Modifica Routine Modulare' : 'Costruisci Nuova Routine Modulare'}
-                        </h3>
-                    </div>
-
-                    <!-- Info Base -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-slate-400 text-xs block mb-1">Nome Routine / Modalità:</label>
-                            <input type="text" id="bm-name" value="${mode.name || ''}" placeholder="es. Cinema, Buonanotte, Uscita" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
-                        </div>
-                        <div>
-                            <label class="text-slate-400 text-xs block mb-1">Icona Lucide:</label>
-                            <input type="text" id="bm-icon" value="${mode.icon || 'sparkles'}" placeholder="es. film, moon, sun, zap" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="text-slate-400 text-xs block mb-1">Frasi Vocali di Attivazione (separate da virgola):</label>
-                        <input type="text" id="bm-triggers" value="${triggersStr}" placeholder="es. modalità cinema, attiva cinema, accendi cinema" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
-                    </div>
-
-                    <div>
-                        <label class="text-slate-400 text-xs block mb-1">Descrizione:</label>
-                        <input type="text" id="bm-desc" value="${mode.description || ''}" placeholder="Cosa fa questa routine?" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
-                    </div>
-
-                    <!-- Sezione Moduli Sequenziali -->
-                    <div class="pt-3 border-t border-slate-800">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Moduli Collegati in Sequenza</span>
-                            <div class="flex gap-1.5">
-                                <button type="button" onclick="addBuilderStep('ha_device')" class="px-2 py-1 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-md text-[11px] font-semibold border border-indigo-500/30 transition">
-                                    + 💡 Dispositivo HA
-                                </button>
-                                <button type="button" onclick="addBuilderStep('delay')" class="px-2 py-1 bg-amber-600/30 hover:bg-amber-600 text-amber-300 hover:text-white rounded-md text-[11px] font-semibold border border-amber-500/30 transition">
-                                    + ⏱️ Ritardo
-                                </button>
-                                <button type="button" onclick="addBuilderStep('tts')" class="px-2 py-1 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-md text-[11px] font-semibold border border-emerald-500/30 transition">
-                                    + 🗣️ Voce TTS
-                                </button>
-                            </div>
-                        </div>
-
-                        <div id="builder-steps-container" class="space-y-2 mt-2">
-                            <!-- Render steps -->
-                        </div>
-                    </div>
-
-                    <input type="hidden" id="bm-id" value="${mode.id || ''}">
-
-                    <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
-                        <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Annulla</button>
-                        <button onclick="saveModularModeFromModal()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold">Salva Routine</button>
-                    </div>
-                </div>
-            `);
-            renderBuilderStepsList();
-        }
-
-        function renderBuilderStepsList() {
-            const container = document.getElementById('builder-steps-container');
-            if (!container) return;
-            if (_builderSteps.length === 0) {
-                container.innerHTML = '<div class="text-xs text-slate-500 text-center py-4 bg-slate-950/40 rounded-xl border border-dashed border-slate-800">Nessun modulo inserito. Clicca sui pulsanti in alto per aggiungere un Dispositivo, un Ritardo temporale o un Annuncio vocale.</div>';
-                return;
+                mode.actions.forEach((act, idx) => {
+                    const nId = `node_${idx + 1}`;
+                    _canvasState.nodes.push({
+                        id: nId,
+                        type: act.type || 'ha_device',
+                        x: 40 + (idx + 1) * 270,
+                        y: 140,
+                        data: {
+                            entity_id: act.entity_id || act.data?.entity_id || '',
+                            action: act.action || act.service || 'turn_on',
+                            seconds: act.seconds || act.delay_seconds || 5,
+                            message: act.message || ''
+                        }
+                    });
+                    _canvasState.edges.push({ from: prevId, to: nId });
+                    prevId = nId;
+                });
+            } else {
+                // Routine vuota predefinita con nodo Trigger
+                _canvasState.nodes = [
+                    { id: 'node_trig', type: 'trigger', x: 50, y: 140, data: { phrases: ['modalità ' + (_canvasState.name.toLowerCase() || 'relax')] } },
+                    { id: 'node_ha1', type: 'ha_device', x: 340, y: 140, data: { entity_id: '', action: 'turn_on' } }
+                ];
+                _canvasState.edges = [
+                    { from: 'node_trig', to: 'node_ha1' }
+                ];
             }
 
-            container.innerHTML = _builderSteps.map((step, idx) => {
-                if (step.type === 'ha_device' || step.type === 'ha_service') {
-                    return `
-                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-2 flex-1">
-                                <span class="w-5 h-5 rounded-full bg-indigo-600/40 text-indigo-300 text-[10px] flex items-center justify-center font-bold">${idx + 1}</span>
-                                <span class="text-xs text-indigo-400 font-semibold">💡 HA:</span>
-                                <input type="text" placeholder="Entità o Alias (es. light.salotto)" value="${step.entity_id || ''}" oninput="_builderSteps[${idx}].entity_id = this.value" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100">
-                                <select onchange="_builderSteps[${idx}].action = this.value" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
-                                    <option value="turn_on" ${step.action === 'turn_on' ? 'selected' : ''}>Accendi</option>
-                                    <option value="turn_off" ${step.action === 'turn_off' ? 'selected' : ''}>Spegni</option>
-                                    <option value="toggle" ${step.action === 'toggle' ? 'selected' : ''}>Inverti (Toggle)</option>
+            renderFlowCanvasModal();
+        }
+
+        function renderFlowCanvasModal() {
+            const triggersStr = _canvasState.trigger_phrases.join(', ');
+
+            showModal(`
+                <div class="flex flex-col h-[85vh] w-full select-none">
+                    <!-- Top Control Toolbar -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-900/90 border-b border-slate-800 rounded-t-2xl">
+                        <!-- Routine Info -->
+                        <div class="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-600/40 text-indigo-300 flex items-center justify-center font-bold">
+                                <i data-lucide="workflow" class="w-4 h-4"></i>
+                            </div>
+                            <input type="text" id="cv-name" value="${_canvasState.name || ''}" placeholder="Nome Routine (es. Cinema, Notte)" oninput="_canvasState.name = this.value" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 font-bold focus:outline-none focus:border-indigo-500 w-40">
+                            <input type="text" id="cv-triggers" value="${triggersStr}" placeholder="Frasi vocali: es. modalità cinema, relax" oninput="_canvasState.trigger_phrases = this.value.split(',').map(s=>s.trim()).filter(s=>s.length>0)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 flex-1 min-w-[180px]">
+                        </div>
+
+                        <!-- Add Node Buttons Toolbar -->
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <button type="button" onclick="addCanvasNode('ha_device')" class="px-2.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 hover:text-white rounded-lg text-xs font-semibold border border-indigo-500/40 transition flex items-center gap-1">
+                                + 💡 Dispositivo HA
+                            </button>
+                            <button type="button" onclick="addCanvasNode('delay')" class="px-2.5 py-1.5 bg-amber-600/30 hover:bg-amber-600 text-amber-200 hover:text-white rounded-lg text-xs font-semibold border border-amber-500/40 transition flex items-center gap-1">
+                                + ⏱️ Ritardo (Pausa)
+                            </button>
+                            <button type="button" onclick="addCanvasNode('tts')" class="px-2.5 py-1.5 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 hover:text-white rounded-lg text-xs font-semibold border border-emerald-500/40 transition flex items-center gap-1">
+                                + 🗣️ Voce Shinra
+                            </button>
+                        </div>
+
+                        <!-- Action Toolbar -->
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="simulateCanvasFlow()" id="btn-sim-canvas" class="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5">
+                                ▶️ Simula Flusso
+                            </button>
+                            <button type="button" onclick="saveCanvasMode()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5">
+                                💾 Salva
+                            </button>
+                            <button type="button" onclick="closeModal()" class="p-1.5 text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800 transition">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Flow Canvas Viewport (Visio 2D Grid) -->
+                    <div id="flow-canvas" class="relative flex-1 w-full overflow-hidden bg-[#030712] cursor-default" style="background-image: radial-gradient(rgba(99, 102, 241, 0.25) 1.5px, transparent 1.5px); background-size: 24px 24px;">
+                        <!-- SVG Cables Layer -->
+                        <svg id="flow-svg-layer" class="absolute inset-0 w-full h-full pointer-events-none z-10" style="overflow: visible;">
+                            <defs>
+                                <linearGradient id="wireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#6366f1" />
+                                    <stop offset="100%" stop-color="#a855f7" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+
+                        <!-- DOM Nodes Layer -->
+                        <div id="flow-nodes-container" class="absolute inset-0 z-20 pointer-events-auto">
+                            <!-- Nodi generati dinamicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Canvas Footer Help -->
+                    <div class="px-4 py-2 bg-slate-900/90 border-t border-slate-800 rounded-b-2xl text-[11px] text-slate-400 flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <span>💡 <strong>Suggerimento:</strong> Trascina la porta <strong>destra (●)</strong> di un blocco verso la porta <strong>sinistra (●)</strong> di un altro per collegarli! Trascina i nodi per spostarli.</span>
+                        </span>
+                        <span class="text-slate-500 font-mono text-[10px]" id="canvas-stats">Nodi: 0 | Connessioni: 0</span>
+                    </div>
+                </div>
+            `, true);
+
+            initCanvasInteractions();
+            renderCanvasElements();
+        }
+
+        function initCanvasInteractions() {
+            const canvas = document.getElementById('flow-canvas');
+            if (!canvas) return;
+
+            // Global Mouse Move su Canvas per Drag dei Nodi e Disegno Cavo Attivo
+            canvas.onmousemove = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                // 1. Dragging Node
+                if (_canvasState.isDraggingNode) {
+                    const node = _canvasState.nodes.find(n => n.id === _canvasState.isDraggingNode);
+                    if (node) {
+                        node.x = Math.max(10, Math.min(rect.width - 240, mouseX - _canvasState.dragOffset.x));
+                        node.y = Math.max(10, Math.min(rect.height - 180, mouseY - _canvasState.dragOffset.y));
+                        const el = document.getElementById(`c-node-${node.id}`);
+                        if (el) {
+                            el.style.left = `${node.x}px`;
+                            el.style.top = `${node.y}px`;
+                        }
+                        renderCanvasWires();
+                    }
+                }
+
+                // 2. Connecting Wire Draft
+                if (_canvasState.connectingSourceId) {
+                    renderCanvasWires({ x: mouseX, y: mouseY });
+                }
+            };
+
+            // Global Mouse Up su Canvas
+            canvas.onmouseup = () => {
+                _canvasState.isDraggingNode = null;
+                if (_canvasState.connectingSourceId) {
+                    _canvasState.connectingSourceId = null;
+                    renderCanvasWires();
+                }
+            };
+        }
+
+        function renderCanvasElements() {
+            const container = document.getElementById('flow-nodes-container');
+            if (!container) return;
+
+            // Costruisce opzioni dispositivi per select
+            const aliases = (typeof data_store !== 'undefined' ? [] : (_haEntitiesCache ? Object.values(_haEntitiesCache.groups).flat() : []));
+            
+            container.innerHTML = _canvasState.nodes.map(node => {
+                let headerBg = 'from-indigo-600 to-violet-600';
+                let icon = 'workflow';
+                let typeLabel = 'Modulo';
+                let bodyHtml = '';
+
+                if (node.type === 'trigger') {
+                    headerBg = 'from-amber-600 to-orange-600';
+                    icon = 'zap';
+                    typeLabel = '⚡ Innesco Vocale';
+                    const ph = (node.data.phrases || []).join(', ');
+                    bodyHtml = `
+                        <div class="space-y-1.5 text-xs">
+                            <label class="text-[10px] text-slate-400 font-semibold block">Frasi di Attivazione:</label>
+                            <input type="text" value="${ph}" oninput="updateNodeData('${node.id}', 'phrases', this.value.split(',').map(s=>s.trim()))" placeholder="es. attiva cinema, cinema" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500">
+                        </div>
+                    `;
+                } else if (node.type === 'ha_device' || node.type === 'ha_service') {
+                    headerBg = 'from-indigo-600 to-blue-600';
+                    icon = 'power';
+                    typeLabel = '💡 Dispositivo HA';
+                    bodyHtml = `
+                        <div class="space-y-2 text-xs">
+                            <div>
+                                <label class="text-[10px] text-slate-400 font-semibold block mb-0.5">Dispositivo / Alias:</label>
+                                <input type="text" value="${node.data.entity_id || ''}" oninput="updateNodeData('${node.id}', 'entity_id', this.value)" placeholder="es. light.salotto" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div class="flex gap-1.5">
+                                <select onchange="updateNodeData('${node.id}', 'action', this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200">
+                                    <option value="turn_on" ${node.data.action === 'turn_on' ? 'selected' : ''}>Accendi</option>
+                                    <option value="turn_off" ${node.data.action === 'turn_off' ? 'selected' : ''}>Spegni</option>
+                                    <option value="toggle" ${node.data.action === 'toggle' ? 'selected' : ''}>Inverti</option>
                                 </select>
                             </div>
-                            <button onclick="removeBuilderStep(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                         </div>
                     `;
-                } else if (step.type === 'delay') {
-                    return `
-                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-2 flex-1">
-                                <span class="w-5 h-5 rounded-full bg-amber-600/40 text-amber-300 text-[10px] flex items-center justify-center font-bold">${idx + 1}</span>
-                                <span class="text-xs text-amber-400 font-semibold">⏱️ Ritardo:</span>
-                                <span class="text-xs text-slate-400">Attendi</span>
-                                <input type="number" min="1" max="300" value="${step.seconds || 5}" oninput="_builderSteps[${idx}].seconds = parseInt(this.value) || 1" class="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 text-center">
+                } else if (node.type === 'delay') {
+                    headerBg = 'from-amber-600 to-yellow-600';
+                    icon = 'clock';
+                    typeLabel = '⏱️ Ritardo (Pausa)';
+                    bodyHtml = `
+                        <div class="space-y-2 text-xs">
+                            <label class="text-[10px] text-slate-400 font-semibold block">Attesa prima del prossimo step:</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" min="1" max="300" value="${node.data.seconds || 5}" oninput="updateNodeData('${node.id}', 'seconds', parseInt(this.value)||1)" class="w-20 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 font-bold text-center">
                                 <span class="text-xs text-slate-400">secondi</span>
                             </div>
-                            <button onclick="removeBuilderStep(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                            <div class="flex gap-1">
+                                <button type="button" onclick="setQuickDelay('${node.id}', 3)" class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 hover:bg-slate-700">3s</button>
+                                <button type="button" onclick="setQuickDelay('${node.id}', 5)" class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 hover:bg-slate-700">5s</button>
+                                <button type="button" onclick="setQuickDelay('${node.id}', 10)" class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 hover:bg-slate-700">10s</button>
+                                <button type="button" onclick="setQuickDelay('${node.id}', 30)" class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 hover:bg-slate-700">30s</button>
+                            </div>
                         </div>
                     `;
-                } else if (step.type === 'tts') {
-                    return `
-                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-2 flex-1">
-                                <span class="w-5 h-5 rounded-full bg-emerald-600/40 text-emerald-300 text-[10px] flex items-center justify-center font-bold">${idx + 1}</span>
-                                <span class="text-xs text-emerald-400 font-semibold">🗣️ Parla:</span>
-                                <input type="text" placeholder="Frase parlata (es. Luci regolate, buona visione!)" value="${step.message || ''}" oninput="_builderSteps[${idx}].message = this.value" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100">
-                            </div>
-                            <button onclick="removeBuilderStep(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                } else if (node.type === 'tts') {
+                    headerBg = 'from-emerald-600 to-teal-600';
+                    icon = 'message-circle';
+                    typeLabel = '🗣️ Annuncio Vocale';
+                    bodyHtml = `
+                        <div class="space-y-1 text-xs">
+                            <label class="text-[10px] text-slate-400 font-semibold block">Frase da pronunciare:</label>
+                            <textarea rows="2" oninput="updateNodeData('${node.id}', 'message', this.value)" placeholder="es. Luci regolate, buona visione!" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500">${node.data.message || ''}</textarea>
                         </div>
                     `;
                 }
+
+                const hasInputPin = node.type !== 'trigger';
+                const hasOutputPin = true;
+
+                return `
+                    <div id="c-node-${node.id}" class="flow-node absolute w-60 rounded-xl bg-slate-950/90 border border-slate-700 shadow-xl backdrop-blur" style="left: ${node.x}px; top: ${node.y}px;">
+                        <!-- Input Pin (Left) -->
+                        ${hasInputPin ? `<div onmouseup="onPinMouseUp('${node.id}', event)" class="port-pin port-pin-in" title="Collega qui il cavo in ingresso"></div>` : ''}
+                        
+                        <!-- Output Pin (Right) -->
+                        ${hasOutputPin ? `<div onmousedown="onPinMouseDown('${node.id}', event)" class="port-pin port-pin-out" title="Trascina cavo verso un altro nodo"></div>` : ''}
+
+                        <!-- Node Header -->
+                        <div class="flow-node-header flex items-center justify-between px-3 py-2 bg-gradient-to-r ${headerBg} rounded-t-xl cursor-move text-white font-bold text-xs" onmousedown="startDragNode('${node.id}', event)">
+                            <div class="flex items-center gap-1.5">
+                                <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
+                                <span>${typeLabel}</span>
+                            </div>
+                            ${node.type !== 'trigger' ? `<button type="button" onclick="deleteCanvasNode('${node.id}')" class="text-white/70 hover:text-white p-0.5" title="Elimina nodo"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>` : ''}
+                        </div>
+
+                        <!-- Node Body -->
+                        <div class="p-3">
+                            ${bodyHtml}
+                        </div>
+                    </div>
+                `;
             }).join('');
+
             safeCreateIcons();
+            renderCanvasWires();
+            updateCanvasStats();
         }
 
-        function addBuilderStep(type) {
-            if (type === 'ha_device') {
-                _builderSteps.push({ type: 'ha_device', entity_id: '', action: 'turn_on' });
-            } else if (type === 'delay') {
-                _builderSteps.push({ type: 'delay', seconds: 5 });
-            } else if (type === 'tts') {
-                _builderSteps.push({ type: 'tts', message: 'Operazione completata.' });
+        function updateCanvasStats() {
+            const el = document.getElementById('canvas-stats');
+            if (el) el.innerText = `Nodi: ${_canvasState.nodes.length} | Connessioni: ${_canvasState.edges.length}`;
+        }
+
+        function updateNodeData(nodeId, field, val) {
+            const node = _canvasState.nodes.find(n => n.id === nodeId);
+            if (node) {
+                node.data[field] = val;
             }
-            renderBuilderStepsList();
         }
 
-        function removeBuilderStep(idx) {
-            _builderSteps.splice(idx, 1);
-            renderBuilderStepsList();
+        function setQuickDelay(nodeId, secs) {
+            updateNodeData(nodeId, 'seconds', secs);
+            renderCanvasElements();
         }
 
-        async function saveModularModeFromModal() {
-            const name = document.getElementById('bm-name').value.trim();
-            const icon = document.getElementById('bm-icon').value.trim() || 'sparkles';
-            const desc = document.getElementById('bm-desc').value.trim();
-            const triggersRaw = document.getElementById('bm-triggers').value.trim();
-            const id = document.getElementById('bm-id').value.trim();
+        function startDragNode(nodeId, e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON') return;
+            const node = _canvasState.nodes.find(n => n.id === nodeId);
+            if (!node) return;
+            const canvas = document.getElementById('flow-canvas');
+            const rect = canvas.getBoundingClientRect();
+            _canvasState.isDraggingNode = nodeId;
+            _canvasState.dragOffset = {
+                x: (e.clientX - rect.left) - node.x,
+                y: (e.clientY - rect.top) - node.y
+            };
+        }
 
-            if (!name) {
+        function onPinMouseDown(sourceNodeId, e) {
+            e.stopPropagation();
+            _canvasState.connectingSourceId = sourceNodeId;
+        }
+
+        function onPinMouseUp(targetNodeId, e) {
+            e.stopPropagation();
+            if (_canvasState.connectingSourceId && _canvasState.connectingSourceId !== targetNodeId) {
+                // Aggiunge la connessione se non già esistente
+                const exists = _canvasState.edges.some(e => e.from === _canvasState.connectingSourceId && e.to === targetNodeId);
+                if (!exists) {
+                    _canvasState.edges.push({
+                        from: _canvasState.connectingSourceId,
+                        to: targetNodeId
+                    });
+                }
+                _canvasState.connectingSourceId = null;
+                renderCanvasWires();
+                updateCanvasStats();
+            }
+        }
+
+        function addCanvasNode(type) {
+            const id = `node_${Date.now().toString().slice(-5)}`;
+            const count = _canvasState.nodes.length;
+            const newNode = {
+                id: id,
+                type: type,
+                x: 80 + (count % 3) * 260,
+                y: 100 + Math.floor(count / 3) * 160,
+                data: {
+                    entity_id: '',
+                    action: 'turn_on',
+                    seconds: 5,
+                    message: ''
+                }
+            };
+            _canvasState.nodes.push(newNode);
+            renderCanvasElements();
+        }
+
+        function deleteCanvasNode(nodeId) {
+            _canvasState.nodes = _canvasState.nodes.filter(n => n.id !== nodeId);
+            _canvasState.edges = _canvasState.edges.filter(e => e.from !== nodeId && e.to !== nodeId);
+            renderCanvasElements();
+        }
+
+        function deleteCanvasEdge(idx) {
+            _canvasState.edges.splice(idx, 1);
+            renderCanvasWires();
+            updateCanvasStats();
+        }
+
+        function renderCanvasWires(draftPos = null) {
+            const svg = document.getElementById('flow-svg-layer');
+            if (!svg) return;
+
+            let pathsHtml = '';
+
+            _canvasState.edges.forEach((edge, idx) => {
+                const fromNode = _canvasState.nodes.find(n => n.id === edge.from);
+                const toNode = _canvasState.nodes.find(n => n.id === edge.to);
+                if (fromNode && toNode) {
+                    const x1 = fromNode.x + 240; // output pin (right side)
+                    const y1 = fromNode.y + 20;  // pin y position
+                    const x2 = toNode.x;         // input pin (left side)
+                    const y2 = toNode.y + 20;
+
+                    const dx = Math.max(40, Math.abs(x2 - x1) * 0.5);
+                    const pathD = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+
+                    const midX = (x1 + x2) / 2;
+                    const midY = (y1 + y2) / 2;
+
+                    pathsHtml += `
+                        <g class="wire-group">
+                            <!-- Glow shadow -->
+                            <path d="${pathD}" stroke="rgba(99, 102, 241, 0.2)" stroke-width="8" fill="none" />
+                            <!-- Main line -->
+                            <path id="wire-${edge.from}-${edge.to}" d="${pathD}" class="flow-wire" stroke="url(#wireGradient)" stroke-width="3" fill="none" />
+                            <!-- Wire Delete Button -->
+                            <circle cx="${midX}" cy="${midY}" r="7" fill="#0f172a" stroke="#6366f1" stroke-width="1.5" class="pointer-events-auto cursor-pointer hover:fill-rose-600" onclick="deleteCanvasEdge(${idx})" />
+                            <text x="${midX}" y="${midY + 3}" fill="#cbd5e1" font-size="9" text-anchor="middle" font-weight="bold" class="pointer-events-none">×</text>
+                        </g>
+                    `;
+                }
+            });
+
+            // Disegna cavo di bozza durante il trascinamento
+            if (draftPos && _canvasState.connectingSourceId) {
+                const srcNode = _canvasState.nodes.find(n => n.id === _canvasState.connectingSourceId);
+                if (srcNode) {
+                    const x1 = srcNode.x + 240;
+                    const y1 = srcNode.y + 20;
+                    const x2 = draftPos.x;
+                    const y2 = draftPos.y;
+                    const dx = Math.max(40, Math.abs(x2 - x1) * 0.5);
+                    const pathD = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+                    pathsHtml += `<path d="${pathD}" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="4 4" fill="none" />`;
+                }
+            }
+
+            svg.innerHTML = `
+                <defs>
+                    <linearGradient id="wireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#6366f1" />
+                        <stop offset="100%" stop-color="#a855f7" />
+                    </linearGradient>
+                </defs>
+                ${pathsHtml}
+            `;
+        }
+
+        async function simulateCanvasFlow() {
+            const btn = document.getElementById('btn-sim-canvas');
+            if (btn) btn.innerHTML = '<span class="animate-spin">⏳</span> Simulazione...';
+
+            // Trova nodo di partenza trigger
+            const trig = _canvasState.nodes.find(n => n.type === 'trigger') || _canvasState.nodes[0];
+            if (!trig) return;
+
+            // Traversata visiva
+            const visited = new Set();
+            const queue = [trig.id];
+
+            while (queue.length > 0) {
+                const currId = queue.shift();
+                if (visited.has(currId)) continue;
+                visited.add(currId);
+
+                const node = _canvasState.nodes.find(n => n.id === currId);
+                const el = document.getElementById(`c-node-${currId}`);
+                if (el) {
+                    el.classList.add('ring-2', 'ring-violet-400', 'border-violet-400', 'scale-[1.02]');
+                }
+
+                if (node.type === 'delay') {
+                    const s = node.data.seconds || 3;
+                    await new Promise(r => setTimeout(r, Math.min(s * 1000, 3000)));
+                } else if (node.type === 'tts') {
+                    playChimeAlert();
+                    if (node.data.message) speakText(node.data.message);
+                    await new Promise(r => setTimeout(r, 1000));
+                } else {
+                    await new Promise(r => setTimeout(r, 600));
+                }
+
+                if (el) {
+                    el.classList.remove('ring-2', 'ring-violet-400', 'border-violet-400', 'scale-[1.02]');
+                }
+
+                // Trova archi uscenti
+                const outEdges = _canvasState.edges.filter(e => e.from === currId);
+                for (const edge of outEdges) {
+                    const wireEl = document.getElementById(`wire-${edge.from}-${edge.to}`);
+                    if (wireEl) wireEl.classList.add('flow-wire-sim');
+                    queue.push(edge.to);
+                }
+
+                await new Promise(r => setTimeout(r, 400));
+                for (const edge of outEdges) {
+                    const wireEl = document.getElementById(`wire-${edge.from}-${edge.to}`);
+                    if (wireEl) wireEl.classList.remove('flow-wire-sim');
+                }
+            }
+
+            if (btn) btn.innerHTML = '▶️ Simula Flusso';
+        }
+
+        async function saveCanvasMode() {
+            if (!_canvasState.name) {
                 alert('Inserisci un nome per la routine.');
                 return;
             }
 
-            const triggers = triggersRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            // Converte anche in array lineare di actions per garantire retrocompatibilità al 100%
+            const linearActions = [];
+            _canvasState.nodes.forEach(n => {
+                if (n.type !== 'trigger') {
+                    linearActions.push({
+                        type: n.type,
+                        entity_id: n.data.entity_id,
+                        action: n.data.action,
+                        seconds: n.data.seconds,
+                        message: n.data.message
+                    });
+                }
+            });
 
             const payload = {
-                id: id || undefined,
-                name: name,
-                icon: icon,
-                description: desc,
-                trigger_phrases: triggers,
+                id: _canvasState.id || undefined,
+                name: _canvasState.name,
+                icon: _canvasState.icon || 'workflow',
+                description: _canvasState.description || '',
+                trigger_phrases: _canvasState.trigger_phrases,
                 enabled: true,
-                actions: _builderSteps
+                nodes: _canvasState.nodes,
+                edges: _canvasState.edges,
+                actions: linearActions
             };
 
             const res = await fetch('/api/modes', {
@@ -2151,8 +2503,13 @@
         }
 
         // Modal Helpers
-        function showModal(contentHtml) {
+        function showModal(contentHtml, isWide = false) {
             const modal = document.getElementById('modal-container');
+            if (isWide) {
+                modal.className = "bg-slate-900 border border-slate-800 rounded-2xl max-w-6xl w-full p-0 shadow-2xl overflow-hidden";
+            } else {
+                modal.className = "bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4";
+            }
             modal.innerHTML = contentHtml;
             document.getElementById('modal-backdrop').style.display = 'flex';
             safeCreateIcons();

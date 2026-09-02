@@ -143,47 +143,111 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
     executed_actions = []
     tts_messages = []
 
-    for action in target_mode.get("actions", []):
-        act_type = action.get("type", "ha_device")
+    # Se la modalità è definita con la struttura a Grafo (Nodes & Edges - Stile Visio/Node-RED)
+    nodes = target_mode.get("nodes", [])
+    edges = target_mode.get("edges", [])
 
-        # Modulo 1: Controllo Dispositivo HA o Servizio
-        if act_type in ["ha_device", "ha_service"]:
-            entity_id = action.get("entity_id") or action.get("data", {}).get("entity_id")
-            act_cmd = action.get("action") or action.get("service", "turn_on")
-            
-            if entity_id:
-                resolved_entity = data_store.resolve_alias_or_entity(entity_id)
-                domain = resolved_entity.split(".")[0] if "." in resolved_entity else "homeassistant"
-                s_data = {"entity_id": resolved_entity}
-                
-                if action.get("brightness") is not None:
-                    s_data["brightness_pct"] = int(action["brightness"])
-                if action.get("temperature") is not None:
-                    s_data["temperature"] = float(action["temperature"])
-                if action.get("color_name"):
-                    s_data["color_name"] = action["color_name"]
+    if nodes and edges:
+        # Costruisce la mappa dei nodi e l'adiacenza
+        node_map = {n["id"]: n for n in nodes if "id" in n}
+        adj = {}
+        in_degree = {n["id"]: 0 for n in nodes if "id" in n}
+        for e in edges:
+            u, v = e.get("from"), e.get("to")
+            if u and v and u in node_map and v in node_map:
+                adj.setdefault(u, []).append(v)
+                in_degree[v] = in_degree.get(v, 0) + 1
 
-                res = await ha_client.call_service(domain, act_cmd, s_data)
-                executed_actions.append({
-                    "type": "ha_device",
-                    "entity_id": resolved_entity,
-                    "action": act_cmd,
-                    "status": res.get("success", False)
-                })
+        # Trova il punto di partenza (nodo trigger o con in_degree == 0)
+        start_nodes = [n_id for n_id, deg in in_degree.items() if deg == 0 and node_map[n_id].get("type") == "trigger"]
+        if not start_nodes:
+            start_nodes = [n_id for n_id, deg in in_degree.items() if deg == 0]
+        if not start_nodes and nodes:
+            start_nodes = [nodes[0]["id"]]
 
-        # Modulo 2: Ritardo Temporale / Pausa programmata
-        elif act_type == "delay":
-            delay_sec = float(action.get("seconds") or action.get("delay_seconds") or 1)
-            logger.info(f"[Shinra Routine] Pausa programmata di {delay_sec}s...")
-            await asyncio.sleep(delay_sec)
-            executed_actions.append({"type": "delay", "seconds": delay_sec, "status": True})
+        # Coda di esecuzione BFS ordinata
+        queue = list(start_nodes)
+        visited = set()
 
-        # Modulo 3: Sintesi Vocale / Messaggio Parlato
-        elif act_type == "tts":
-            msg = action.get("message", "")
-            if msg:
-                tts_messages.append(msg)
-                executed_actions.append({"type": "tts", "message": msg, "status": True})
+        while queue:
+            curr_id = queue.pop(0)
+            if curr_id in visited:
+                continue
+            visited.add(curr_id)
+
+            curr_node = node_map.get(curr_id)
+            if not curr_node:
+                continue
+
+            n_type = curr_node.get("type")
+            n_data = curr_node.get("data", {})
+
+            # 1. Nodo Dispositivo Home Assistant
+            if n_type in ["ha_device", "ha_service"]:
+                entity_id = n_data.get("entity_id")
+                act_cmd = n_data.get("action", "turn_on")
+                if entity_id:
+                    resolved_entity = data_store.resolve_alias_or_entity(entity_id)
+                    domain = resolved_entity.split(".")[0] if "." in resolved_entity else "homeassistant"
+                    s_data = {"entity_id": resolved_entity}
+                    if n_data.get("brightness") is not None:
+                        s_data["brightness_pct"] = int(n_data["brightness"])
+                    if n_data.get("temperature") is not None:
+                        s_data["temperature"] = float(n_data["temperature"])
+
+                    res = await ha_client.call_service(domain, act_cmd, s_data)
+                    executed_actions.append({"type": "ha_device", "node_id": curr_id, "entity_id": resolved_entity, "action": act_cmd, "status": res.get("success", False)})
+
+            # 2. Nodo Ritardo Temporizzato (Delay)
+            elif n_type == "delay":
+                delay_sec = float(n_data.get("seconds") or n_data.get("delay_seconds") or 1)
+                logger.info(f"[Shinra Flow] Pausa temporizzata di {delay_sec}s sul nodo {curr_id}...")
+                await asyncio.sleep(delay_sec)
+                executed_actions.append({"type": "delay", "node_id": curr_id, "seconds": delay_sec, "status": True})
+
+            # 3. Nodo Sintesi Vocale (TTS)
+            elif n_type == "tts":
+                msg = n_data.get("message", "")
+                if msg:
+                    tts_messages.append(msg)
+                    executed_actions.append({"type": "tts", "node_id": curr_id, "message": msg, "status": True})
+
+            # Accoda i nodi successivi collegati
+            for neighbor in adj.get(curr_id, []):
+                if neighbor not in visited:
+                    queue.append(neighbor)
+
+    else:
+        # Fallback per routine con array lineare di actions
+        for action in target_mode.get("actions", []):
+            act_type = action.get("type", "ha_device")
+
+            if act_type in ["ha_device", "ha_service"]:
+                entity_id = action.get("entity_id") or action.get("data", {}).get("entity_id")
+                act_cmd = action.get("action") or action.get("service", "turn_on")
+                if entity_id:
+                    resolved_entity = data_store.resolve_alias_or_entity(entity_id)
+                    domain = resolved_entity.split(".")[0] if "." in resolved_entity else "homeassistant"
+                    s_data = {"entity_id": resolved_entity}
+                    if action.get("brightness") is not None:
+                        s_data["brightness_pct"] = int(action["brightness"])
+                    if action.get("temperature") is not None:
+                        s_data["temperature"] = float(action["temperature"])
+
+                    res = await ha_client.call_service(domain, act_cmd, s_data)
+                    executed_actions.append({"type": "ha_device", "entity_id": resolved_entity, "action": act_cmd, "status": res.get("success", False)})
+
+            elif act_type == "delay":
+                delay_sec = float(action.get("seconds") or action.get("delay_seconds") or 1)
+                logger.info(f"[Shinra Routine] Pausa programmata di {delay_sec}s...")
+                await asyncio.sleep(delay_sec)
+                executed_actions.append({"type": "delay", "seconds": delay_sec, "status": True})
+
+            elif act_type == "tts":
+                msg = action.get("message", "")
+                if msg:
+                    tts_messages.append(msg)
+                    executed_actions.append({"type": "tts", "message": msg, "status": True})
 
     final_msg = " ".join(tts_messages) if tts_messages else f"Modalità {target_mode.get('name')} eseguita con successo."
     return {
