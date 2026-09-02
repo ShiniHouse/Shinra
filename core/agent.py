@@ -67,6 +67,50 @@ class ShinraAgent:
         user_lower = user_text.lower()
         live_context = ""
 
+        # ==================== FAST-PATH ULTRA-RAPIDO (<0.2s) ====================
+        # 1. Fast-Path: Attivazione Modalità & Routine
+        modes = data_store.get_modes()
+        for m in modes:
+            if m.get("enabled", True):
+                triggers = [t.lower() for t in m.get("trigger_phrases", [])] + [m.get("name", "").lower(), f"modalità {m.get('name', '').lower()}", f"attiva {m.get('name', '').lower()}"]
+                if any(t in user_lower for t in triggers if t):
+                    logger.info(f"[Shinra Fast-Path] Attivazione immediata modalità: {m.get('name')}")
+                    m_res = await execute_tool("activate_mode", {"mode_name": m.get("name")})
+                    actions_taken.append({"tool": "activate_mode", "args": {"mode_name": m.get("name")}, "result": m_res})
+                    resp = f"Modalità {m.get('name')} attivata."
+                    mem.add_user_message(user_text)
+                    mem.add_assistant_message(resp)
+                    return {"response": resp, "actions": actions_taken, "user": profile.model_dump() if profile else None, "success": True}
+
+        # 2. Fast-Path: Controllo Diretto Dispositivi con Alias (Accendi/Spegni rapido)
+        action_match = re.match(r"^(accendi|attiva|spegni|disattiva)\s+(?:la\s+|il\s+|le\s+|l'|i\s+|gli\s+)?(.+)$", user_text, re.IGNORECASE)
+        if action_match:
+            verb = action_match.group(1).lower()
+            target_device_name = action_match.group(2).strip().lower()
+            is_turn_on = verb in ["accendi", "attiva"]
+            action_code = "turn_on" if is_turn_on else "turn_off"
+            
+            # Cerca tra gli alias configurati
+            aliases = data_store.get_aliases()
+            matched_entity = None
+            matched_alias_name = target_device_name
+            for a in aliases:
+                a_name = a.get("alias", "").lower()
+                if a_name == target_device_name or a_name in target_device_name or target_device_name in a_name:
+                    matched_entity = a.get("entity_id")
+                    matched_alias_name = a.get("alias")
+                    break
+
+            if matched_entity:
+                logger.info(f"[Shinra Fast-Path] Controllo immediato alias '{matched_alias_name}' -> {matched_entity} ({action_code})")
+                ha_res = await execute_tool("control_device", {"entity_id": matched_entity, "action": action_code})
+                actions_taken.append({"tool": "control_device", "args": {"entity_id": matched_entity, "action": action_code}, "result": ha_res})
+                resp = f"{matched_alias_name.capitalize()} {'acceso' if is_turn_on else 'spento'}."
+                mem.add_user_message(user_text)
+                mem.add_assistant_message(resp)
+                return {"response": resp, "actions": actions_taken, "user": profile.model_dump() if profile else None, "success": True}
+
+        # 3. Fast-Path: Meteo Diretto (Previsioni istantanee in 0.15s)
         if any(w in user_lower for w in ["meteo", "tempo a", "tempo fa", "tempo farà", "previsioni", "pioverà", "piove", "temperatura"]):
             target_city = settings.assistant.default_city or "Roma"
             city_match = re.search(r"\b(?:a|ad|per|di)\s+([a-zA-Zàèéìòù]+)", user_text, re.IGNORECASE)
@@ -75,27 +119,44 @@ class ShinraAgent:
                 if cand.lower() not in ["oggi", "domani", "casa", "adesso", "questo", "questa", "sera", "mattina"]:
                     target_city = cand
 
-            logger.info(f"[Shinra] Auto-recupero meteo in tempo reale per: {target_city}")
+            logger.info(f"[Shinra Fast-Path] Recupero meteo per: {target_city}")
             w_res = await execute_tool("get_weather", {"location": target_city, "days": 2})
             actions_taken.append({"tool": "get_weather", "args": {"location": target_city, "days": 2}, "result": w_res})
             
             if w_res.get("success"):
+                loc = w_res.get("localita", target_city)
                 adesso = w_res.get("adesso", {})
                 previsioni = w_res.get("previsioni", [])
-                prev_text = "; ".join([f"{p.get('giorno')}: {p.get('condizione')}, max {p.get('temp_max')}°C, min {p.get('temp_min')}°C, probabilità pioggia {p.get('probabilita_pioggia')}" for p in previsioni])
-                live_context = f"DATI METEO REALI ({w_res.get('localita', target_city)}): Adesso {adesso.get('temperatura', '')}, {adesso.get('condizione', '')}. Previsioni -> {prev_text}."
-            else:
-                live_context = f"DATI METEO: Impossibile recuperare il meteo per {target_city}."
+                
+                if "domani" in user_lower and len(previsioni) > 1:
+                    p_dom = previsioni[1]
+                    resp = f"Domani a {loc} {p_dom.get('condizione', 'variabile').lower()}, max {p_dom.get('temp_max')} gradi e min {p_dom.get('temp_min')}."
+                else:
+                    p_oggi = previsioni[0] if previsioni else {}
+                    t_adesso = adesso.get('temperatura', '')
+                    c_adesso = adesso.get('condizione', '')
+                    resp = f"A {loc} attualmente {t_adesso}, {c_adesso.lower()}."
+                    if p_oggi:
+                        resp += f" Massima prevista di {p_oggi.get('temp_max')} gradi."
+                
+                mem.add_user_message(user_text)
+                mem.add_assistant_message(resp)
+                return {"response": resp, "actions": actions_taken, "user": profile.model_dump() if profile else None, "success": True}
 
+        # 4. Fast-Path: Notizie Flash in tempo reale
         elif any(w in user_lower for w in ["notizie", "ultime notizie", "rassegna stampa", "cosa succede"]):
-            logger.info(f"[Shinra] Auto-recupero notizie in tempo reale")
+            logger.info(f"[Shinra Fast-Path] Recupero notizie flash")
             n_res = await execute_tool("get_latest_news", {"category": "generale"})
             actions_taken.append({"tool": "get_latest_news", "args": {"category": "generale"}, "result": n_res})
             
             if n_res.get("success"):
-                titoli = [item.get("titolo", "") for item in n_res.get("notizie", [])[:3]]
-                live_context = f"ULTIME NOTIZIE REALI: " + " | ".join(titoli)
+                titoli = [item.get("titolo", "") for item in n_res.get("notizie", [])[:2]]
+                resp = "Ultime notizie: " + ". ".join(titoli)
+                mem.add_user_message(user_text)
+                mem.add_assistant_message(resp)
+                return {"response": resp, "actions": actions_taken, "user": profile.model_dump() if profile else None, "success": True}
 
+        # 5. Arricchimento Enciclopedia/Wikipedia per LLM
         elif any(w in user_lower for w in ["cosa significa", "chi era", "chi è", "chi fu", "definizione di", "cos'è", "che cos'è", "spiegami", "quando è", "quando e", "patrono", "storia di", "dove si trova", "chi sono", "biografia di"]):
             clean_term = re.sub(r"^(cosa significa|chi era|chi è|chi fu|definizione di|cos'è|che cos'è|spiegami|il termine|la parola|quando è|quando e|dove si trova|storia di|patrono di|la festa di|il santo)\s+", "", user_text, flags=re.IGNORECASE).strip(" ?.,\"'")
             if clean_term:

@@ -365,8 +365,16 @@
                             <input type="text" id="cfg-ollama-url" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                         <div>
-                            <label class="text-slate-400 block mb-1">Nome Modello Gemma:</label>
-                            <input type="text" id="cfg-model" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-slate-400 font-semibold">Modello IA (Ollama):</label>
+                                <button type="button" onclick="loadOllamaModels()" class="text-indigo-400 hover:text-indigo-300 text-[11px] flex items-center gap-1 font-semibold transition">
+                                    🔄 Ricarica Modelli da Ollama
+                                </button>
+                            </div>
+                            <select id="cfg-model" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-semibold focus:border-indigo-500 focus:outline-none">
+                                <option value="qwen2.5:3b">qwen2.5:3b (Caricamento...)</option>
+                            </select>
+                            <p class="text-[10px] text-slate-500 mt-1">Scegli tra i modelli scaricati su Ollama. Consigliato su CPU: <span class="text-indigo-400 font-mono">qwen2.5:1.5b</span> o <span class="text-indigo-400 font-mono">qwen2.5:3b</span>.</p>
                         </div>
                         <div>
                             <div class="flex justify-between text-slate-400 mb-1">
@@ -1555,12 +1563,36 @@
             document.getElementById('cfg-max-tokens-val').textContent = desc;
         }
 
+        async function loadOllamaModels(selectedModel = null) {
+            const select = document.getElementById('cfg-model');
+            if (!select) return;
+            try {
+                const res = await fetch('/api/ollama/models');
+                const data = await res.json();
+                if (data.success && data.models && data.models.length > 0) {
+                    const current = selectedModel || data.active_model || select.value;
+                    select.innerHTML = data.models.map(m => {
+                        const isSel = (m.name === current) ? 'selected' : '';
+                        const sizeInfo = m.size_gb ? ` — ${m.size_gb}` : '';
+                        const paramInfo = m.parameter_size ? ` (${m.parameter_size})` : '';
+                        return `<option value="${m.name}" ${isSel}>🧠 ${m.name}${paramInfo}${sizeInfo}</option>`;
+                    }).join('');
+                } else {
+                    const current = selectedModel || 'qwen2.5:3b';
+                    select.innerHTML = `<option value="${current}">${current}</option>`;
+                }
+            } catch (e) {
+                console.warn('Impossibile caricare lista modelli Ollama:', e);
+            }
+        }
+
         async function loadSettings() {
             try {
                 const res = await fetch('/api/settings');
                 const cfg = await res.json();
                 document.getElementById('cfg-ollama-url').value = cfg.llm.ollama_url || '';
-                document.getElementById('cfg-model').value = cfg.llm.model || '';
+                
+                await loadOllamaModels(cfg.llm.model);
                 
                 const maxTok = cfg.llm.max_tokens || 150;
                 document.getElementById('cfg-max-tokens').value = maxTok;

@@ -35,19 +35,36 @@ class OllamaClient:
         cfg = reload_settings()
         return float(cfg.llm.timeout_seconds or 180)
 
-    async def get_available_models(self) -> List[str]:
-        """Recupera la lista dei modelli installati su Ollama."""
+    async def get_models_detailed(self) -> List[Dict[str, Any]]:
+        """Recupera la lista dettagliata dei modelli installati con dimensioni e dettagli."""
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(6.0, connect=3.0)) as client:
                 res = await client.get(f"{self.base_url}/api/tags")
                 if res.status_code == 200:
                     data = res.json()
-                    models = [m.get("name") for m in data.get("models", [])]
-                    return models
+                    models_list = []
+                    for m in data.get("models", []):
+                        size_gb = round(m.get("size", 0) / (1024**3), 2)
+                        details = m.get("details", {})
+                        param_size = details.get("parameter_size", "")
+                        quant = details.get("quantization_level", "")
+                        models_list.append({
+                            "name": m.get("name"),
+                            "size_gb": f"{size_gb} GB" if size_gb > 0 else "",
+                            "parameter_size": param_size,
+                            "quantization": quant,
+                            "family": details.get("family", "")
+                        })
+                    return models_list
                 return []
         except Exception as e:
             logger.warning(f"Impossibile contattare Ollama su {self.base_url}: {e}")
             return []
+
+    async def get_available_models(self) -> List[str]:
+        """Recupera la lista dei nomi dei modelli installati su Ollama."""
+        detailed = await self.get_models_detailed()
+        return [m["name"] for m in detailed if "name" in m]
 
     async def check_health(self) -> Dict[str, Any]:
         """Verifica se Ollama è raggiungibile e quali modelli sono pronti."""
@@ -55,21 +72,18 @@ class OllamaClient:
         if models:
             selected_model = self.model
             if self.model not in models:
-                gemma_models = [m for m in models if "gemma" in m.lower()]
-                if gemma_models:
-                    selected_model = gemma_models[0]
-                else:
-                    selected_model = models[0]
+                qwen_models = [m for m in models if "qwen" in m.lower() or "gemma" in m.lower()]
+                if qwen_models:
+                    selected_model = qwen_models[0]
             return {
                 "status": "online",
-                "available_models": models,
-                "active_model": selected_model
+                "models": models,
+                "current_model": selected_model
             }
         return {
             "status": "offline",
-            "message": f"Ollama non risponde su {self.base_url}. Assicurati che il servizio Ollama sia avviato.",
-            "available_models": [],
-            "active_model": self.model
+            "models": [],
+            "current_model": self.model
         }
 
     async def chat(
@@ -79,7 +93,7 @@ class OllamaClient:
         temperature: Optional[float] = None
     ) -> Dict[str, Any]:
         """
-        Invia una richiesta di chat a Ollama supportando il passaggio dei tools.
+        Invia una richiesta di chat a Ollama supportando il passaggio dei tools e keep_alive permanente.
         """
         cfg = reload_settings()
         curr_model = self.model
@@ -95,9 +109,10 @@ class OllamaClient:
             "model": curr_model,
             "messages": messages,
             "stream": False,
+            "keep_alive": "24h",
             "options": {
                 "temperature": curr_temp,
-                "num_ctx": 2048 if max_tok > 250 else 1024,
+                "num_ctx": 1024 if max_tok <= 250 else 2048,
                 "num_predict": max_tok,
                 "top_p": 0.9
             }

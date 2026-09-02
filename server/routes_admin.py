@@ -270,3 +270,13 @@ async def get_app_settings():
 async def update_app_settings(new_settings: AppConfig):
     save_config(new_settings)
     return {"success": True, "settings": reload_settings().model_dump()}
+
+# --- OLLAMA MODELS DISCOVERY ---
+@router.get("/ollama/models")
+async def get_ollama_models():
+    """Recupera la lista dettagliata dei modelli disponibili direttamente da Ollama."""
+    from core.ollama_client import OllamaClient
+    client = OllamaClient()
+    models = await client.get_models_detailed()
+    return {"success": True, "models": models, "active_model": client.model}
+
