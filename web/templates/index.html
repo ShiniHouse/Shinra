@@ -56,13 +56,83 @@
         }
     </script>
     <style>
-        /* ==================== THEME VARIABLES & DUAL-THEME ENGINE ==================== */
-        :root {
-            --bg-base: #060911;
+        /* ==================== 3 ATMOSPHERIC DESIGN PALETTES ==================== */
+        /* 1. Aurora (Default - Apple Intelligence & Linear) */
+        :root, html[data-palette="aurora"].dark, html:not([data-palette]).dark {
+            --bg-base: #060913;
             --text-main: #f8fafc;
             --text-secondary: #94a3b8;
-            --mesh-1: rgba(245, 158, 11, 0.07);
-            --mesh-2: rgba(139, 92, 246, 0.08);
+            --mesh-1: rgba(245, 158, 11, 0.08);
+            --mesh-2: rgba(139, 92, 246, 0.09);
+            --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #8b5cf6 50%, #4f46e5 100%);
+            --accent-halo: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+            --accent-glow: rgba(245, 158, 11, 0.35);
+        }
+        html[data-palette="aurora"].light, html:not([data-palette]).light {
+            --bg-base: #f1f5f9;
+            --text-main: #0f172a;
+            --text-secondary: #475569;
+            --mesh-1: rgba(245, 158, 11, 0.06);
+            --mesh-2: rgba(99, 102, 241, 0.06);
+            --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #8b5cf6 50%, #4f46e5 100%);
+            --accent-halo: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+            --accent-glow: rgba(245, 158, 11, 0.25);
+        }
+
+        /* 2. Sandstone (Claude / Anthropic Warm Terracotta & Espresso) */
+        html[data-palette="sandstone"].dark {
+            --bg-base: #12100e;
+            --text-main: #fafaf9;
+            --text-secondary: #a8a29e;
+            --mesh-1: rgba(217, 119, 6, 0.09);
+            --mesh-2: rgba(194, 65, 12, 0.08);
+            --accent-gradient: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #9a3412 100%);
+            --accent-halo: linear-gradient(135deg, #d97706, #f97316, #ea580c);
+            --accent-glow: rgba(217, 119, 6, 0.35);
+        }
+        html[data-palette="sandstone"].light {
+            --bg-base: #faf8f5;
+            --text-main: #1c1917;
+            --text-secondary: #57534e;
+            --mesh-1: rgba(217, 119, 6, 0.08);
+            --mesh-2: rgba(180, 83, 9, 0.06);
+            --accent-gradient: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #9a3412 100%);
+            --accent-halo: linear-gradient(135deg, #d97706, #f97316, #ea580c);
+            --accent-glow: rgba(217, 119, 6, 0.2);
+        }
+        html[data-palette="sandstone"].dark .bg-slate-900\/60,
+        html[data-palette="sandstone"].dark .bg-slate-900\/70,
+        html[data-palette="sandstone"].dark .bg-slate-900\/80 {
+            background-color: rgba(28, 25, 23, 0.78) !important;
+            border-color: rgba(68, 64, 60, 0.6) !important;
+        }
+
+        /* 3. Stealth (Vercel / Teenage Engineering Cyber Carbon & Cyan) */
+        html[data-palette="stealth"].dark {
+            --bg-base: #09090b;
+            --text-main: #fafafa;
+            --text-secondary: #a1a1aa;
+            --mesh-1: rgba(6, 182, 212, 0.08);
+            --mesh-2: rgba(16, 185, 129, 0.08);
+            --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #10b981 50%, #0ea5e9 100%);
+            --accent-halo: linear-gradient(135deg, #06b6d4, #10b981, #3b82f6);
+            --accent-glow: rgba(6, 182, 212, 0.35);
+        }
+        html[data-palette="stealth"].light {
+            --bg-base: #f4f4f5;
+            --text-main: #09090b;
+            --text-secondary: #52525b;
+            --mesh-1: rgba(6, 182, 212, 0.06);
+            --mesh-2: rgba(16, 185, 129, 0.06);
+            --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #10b981 50%, #0ea5e9 100%);
+            --accent-halo: linear-gradient(135deg, #06b6d4, #10b981, #3b82f6);
+            --accent-glow: rgba(6, 182, 212, 0.2);
+        }
+        html[data-palette="stealth"].dark .bg-slate-900\/60,
+        html[data-palette="stealth"].dark .bg-slate-900\/70,
+        html[data-palette="stealth"].dark .bg-slate-900\/80 {
+            background-color: rgba(24, 24, 27, 0.8) !important;
+            border-color: rgba(63, 63, 70, 0.6) !important;
         }
 
         html.dark {
@@ -71,11 +141,6 @@
 
         html.light {
             color-scheme: light;
-            --bg-base: #f1f5f9;
-            --text-main: #0f172a;
-            --text-secondary: #475569;
-            --mesh-1: rgba(245, 158, 11, 0.06);
-            --mesh-2: rgba(99, 102, 241, 0.06);
         }
 
         body {
@@ -117,7 +182,7 @@
 
         /* ==================== HIGH-CONTRAST LIGHT THEME FIXES ==================== */
         html.light body {
-            background-color: #f1f5f9 !important;
+            background-color: var(--bg-base) !important;
             color: #0f172a !important;
         }
 
@@ -660,6 +725,71 @@
                 </h2>
 
                 <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-5 text-xs">
+                    <!-- Atmosfera & Palette di Design -->
+                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                                    <i data-lucide="palette" class="w-4 h-4 text-amber-400"></i> Atmosfera & Palette di Design
+                                </h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Scegli la tonalità estetica e psicologica di Shinra (calibrata con studi di settore HCI per IA).</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                            <!-- Palette 1: Aurora (Apple Intelligence / Linear) -->
+                            <div onclick="setPalette('aurora')" id="palette-card-aurora" class="palette-card p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between hover:scale-[1.02] border-indigo-500 ring-2 ring-indigo-500/40 bg-slate-900/90 shadow-sm">
+                                <div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="font-bold text-xs text-slate-100 flex items-center gap-1">🌌 Obsidian Aurora</span>
+                                        <span id="badge-palette-aurora" class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">Attiva</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-400 leading-tight">Ispirata ad Apple Intelligence & Linear. Riflessi viola iridescente, ambra calda e vetro satinato.</p>
+                                </div>
+                                <div class="flex gap-1.5 mt-3 pt-2 border-t border-slate-800">
+                                    <span class="w-4 h-4 rounded-full bg-[#f59e0b] shadow-sm"></span>
+                                    <span class="w-4 h-4 rounded-full bg-[#ec4899] shadow-sm"></span>
+                                    <span class="w-4 h-4 rounded-full bg-[#8b5cf6] shadow-sm"></span>
+                                    <span class="w-4 h-4 rounded-full bg-[#4f46e5] shadow-sm"></span>
+                                </div>
+                            </div>
+
+                            <!-- Palette 2: Sandstone (Claude / Anthropic) -->
+                            <div onclick="setPalette('sandstone')" id="palette-card-sandstone" class="palette-card p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between hover:scale-[1.02] border-slate-800 bg-slate-900/50 shadow-sm">
+                                <div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="font-bold text-xs text-slate-100 flex items-center gap-1">☕ Warm Sandstone</span>
+                                        <span id="badge-palette-sandstone" class="hidden px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">Attiva</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-400 leading-tight">Ispirata a Claude (Anthropic). Terracotta organica, ambra dorata, toni sabbia ed espresso caldo.</p>
+                                </div>
+                                <div class="flex gap-1.5 mt-3 pt-2 border-t border-slate-800">
+                                    <span class="w-4 h-4 rounded-full bg-[#d97706] shadow-sm"></span>
+                                    <span class="w-4 h-4 rounded-full bg-[#ea580c] shadow-sm"></span>
+                                    <span class="w-4 h-4 rounded-full bg-[#9a3412] shadow-sm"></span>
+                                    <span class="w-4 h-4 rounded-full bg-[#78350f] shadow-sm"></span>
+                                </div>
+                            </div>
+
+                            <!-- Palette 3: Stealth (Vercel / Teenage Eng) -->
+                            <div onclick="setPalette('stealth')" id="palette-card-stealth" class="palette-card p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between hover:scale-[1.02] border-slate-800 bg-slate-900/50 shadow-sm">
+                                <div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="font-bold text-xs text-slate-100 flex items-center gap-1">⚡ Cyber Stealth</span>
+                                        <span id="badge-palette-stealth" class="hidden px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Attiva</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-400 leading-tight">Ispirata a Vercel & Teenage Eng. Carbonio scuro stealth, ciano elettrico e smeraldo cibernetico.</p>
+                                </div>
+                                <div class="flex gap-1.5 mt-3 pt-2 border-t border-slate-800">
+                                    <span class="w-4 h-4 rounded-full bg-[#06b6d4] shadow-sm"></span>
+                                    <span class="w-4 h-4 rounded-full bg-[#10b981] shadow-sm"></span>
+                                    <span class="w-4 h-4 rounded-full bg-[#0ea5e9] shadow-sm"></span>
+                                    <span class="w-4 h-4 rounded-full bg-[#27272a] shadow-sm"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- LLM -->
                     <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
                         <h3 class="font-semibold text-indigo-300">Intelligenza Artificiale (Ollama / Gemma)</h3>
@@ -867,6 +997,40 @@
                     lucide.createIcons();
                 }
             } catch (e) { console.warn('Lucide icon render:', e); }
+        }
+
+        // ==================== PALETTE MANAGER (3 DESIGN ATMOSPHERES) ====================
+        let currentPalette = localStorage.getItem('shinra_palette') || 'aurora';
+
+        function initPalette() {
+            currentPalette = localStorage.getItem('shinra_palette') || 'aurora';
+            setPalette(currentPalette);
+        }
+
+        function setPalette(name) {
+            if (!['aurora', 'sandstone', 'stealth'].includes(name)) name = 'aurora';
+            currentPalette = name;
+            localStorage.setItem('shinra_palette', name);
+            document.documentElement.setAttribute('data-palette', name);
+
+            // Update UI Selection Badges & Border Highlights
+            ['aurora', 'sandstone', 'stealth'].forEach(p => {
+                const card = document.getElementById(`palette-card-${p}`);
+                const badge = document.getElementById(`badge-palette-${p}`);
+                if (card) {
+                    if (p === name) {
+                        card.classList.add('border-indigo-500', 'ring-2', 'ring-indigo-500/40', 'bg-slate-900/90');
+                        card.classList.remove('border-slate-800', 'bg-slate-900/50');
+                    } else {
+                        card.classList.remove('border-indigo-500', 'ring-2', 'ring-indigo-500/40', 'bg-slate-900/90');
+                        card.classList.add('border-slate-800', 'bg-slate-900/50');
+                    }
+                }
+                if (badge) {
+                    badge.classList.toggle('hidden', p !== name);
+                }
+            });
+            safeCreateIcons();
         }
 
         // ==================== 3-WAY THEME ENGINE (AUTO SOLAR / DAY / NIGHT) ====================
@@ -3169,6 +3333,7 @@
 
         // Inizializzazione — eseguita dopo il caricamento completo della pagina
         window.addEventListener('load', function() {
+            initPalette();
             initTheme();
             setInterval(applyTheme, 30000);
             checkAuthStatus();
