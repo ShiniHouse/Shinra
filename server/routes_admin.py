@@ -280,3 +280,45 @@ async def get_ollama_models():
     models = await client.get_models_detailed()
     return {"success": True, "models": models, "active_model": client.model}
 
+# --- TIMERS & REMINDERS ENDPOINTS ---
+from core.timer_engine import timer_engine
+
+class CreateTimerReq(BaseModel):
+    label: str = "Timer"
+    duration_seconds: int = 60
+    user_id: str = "alessio"
+
+class CreateReminderReq(BaseModel):
+    text: str
+    remind_at: str
+    user_id: str = "alessio"
+
+@router.get("/timers")
+async def list_timers():
+    return timer_engine.get_timers()
+
+@router.post("/timers")
+async def create_timer(payload: CreateTimerReq):
+    item = timer_engine.add_timer(payload.label, payload.duration_seconds, payload.user_id)
+    return {"success": True, "timer": item}
+
+@router.delete("/timers/{timer_id}")
+async def remove_timer(timer_id: str):
+    success = timer_engine.delete_timer(timer_id)
+    return {"success": success}
+
+@router.get("/reminders")
+async def list_reminders():
+    return timer_engine.get_reminders()
+
+@router.post("/reminders")
+async def create_reminder(payload: CreateReminderReq):
+    item = timer_engine.add_reminder(payload.text, payload.remind_at, payload.user_id)
+    return {"success": True, "reminder": item}
+
+@router.delete("/reminders/{reminder_id}")
+async def remove_reminder(reminder_id: str):
+    success = timer_engine.delete_reminder(reminder_id)
+    return {"success": success}
+
+

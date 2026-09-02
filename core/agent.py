@@ -68,6 +68,32 @@ class ShinraAgent:
         live_context = ""
 
         # ==================== FAST-PATH ULTRA-RAPIDO (<0.2s) ====================
+        # 0. Fast-Path: Timer & Promemoria Vocali
+        from core.timer_engine import timer_engine
+        parsed_timer = timer_engine.parse_timer_or_reminder(user_text)
+        if parsed_timer:
+            if parsed_timer["type"] == "timer":
+                item = timer_engine.add_timer(
+                    label=parsed_timer["label"],
+                    duration_seconds=parsed_timer["duration_seconds"],
+                    user_id=profile.id if profile else "alessio"
+                )
+                resp = f"Timer di {parsed_timer['amount']} {parsed_timer['unit']} impostato per {parsed_timer['label']}."
+                mem.add_user_message(user_text)
+                mem.add_assistant_message(resp)
+                return {"response": resp, "actions": [{"tool": "set_timer", "args": parsed_timer, "result": item}], "user": profile.model_dump() if profile else None, "success": True}
+
+            elif parsed_timer["type"] == "reminder":
+                item = timer_engine.add_reminder(
+                    text=parsed_timer["text"],
+                    remind_at_iso=parsed_timer["remind_at"],
+                    user_id=profile.id if profile else "alessio"
+                )
+                resp = f"Perfetto, ti ricorderò di {parsed_timer['text']} {parsed_timer['formatted_time']}."
+                mem.add_user_message(user_text)
+                mem.add_assistant_message(resp)
+                return {"response": resp, "actions": [{"tool": "set_reminder", "args": parsed_timer, "result": item}], "user": profile.model_dump() if profile else None, "success": True}
+
         # 1. Fast-Path: Attivazione Modalità & Routine
         modes = data_store.get_modes()
         for m in modes:

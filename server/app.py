@@ -24,6 +24,7 @@ STATIC_DIR = BASE_DIR / "web" / "static"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="Shinra AI Hub", version="2.0.0")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.include_router(admin_router)
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))

@@ -112,9 +112,15 @@ async def activate_scene_or_routine(entity_id: str) -> Dict[str, Any]:
         return {"success": True, "message": f"Scena '{entity_id}' attivata."}
     return {"success": False, "error": res.get("error")}
 
+import asyncio
+
 async def activate_mode(mode_name: str) -> Dict[str, Any]:
     """
-    Attiva una modalità o scenario personalizzato salvato in Shinra (es. 'Cinema', 'Buonanotte', 'Buongiorno', 'Lavoro').
+    Attiva una modalità o scenario personalizzato modulare a catena (Action-Reaction Flow).
+    Supporta:
+    - Controllo dispositivi HA (luci, prese, clima, tapparelle)
+    - Ritardi temporali (delay_seconds)
+    - Messaggi vocali TTS
     """
     modes = data_store.get_modes()
     target_mode = None
@@ -135,22 +141,54 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
         return {"success": False, "message": f"Modalità '{mode_name}' non trovata."}
 
     executed_actions = []
-    tts_message = ""
+    tts_messages = []
 
     for action in target_mode.get("actions", []):
-        act_type = action.get("type")
-        if act_type == "ha_service":
-            domain = action.get("domain", "homeassistant")
-            service = action.get("service", "turn_on")
-            data = action.get("data", {})
-            res = await ha_client.call_service(domain, service, data)
-            executed_actions.append({"service": f"{domain}.{service}", "status": res.get("success", False)})
-        elif act_type == "tts":
-            tts_message = action.get("message", "")
+        act_type = action.get("type", "ha_device")
 
+        # Modulo 1: Controllo Dispositivo HA o Servizio
+        if act_type in ["ha_device", "ha_service"]:
+            entity_id = action.get("entity_id") or action.get("data", {}).get("entity_id")
+            act_cmd = action.get("action") or action.get("service", "turn_on")
+            
+            if entity_id:
+                resolved_entity = data_store.resolve_alias_or_entity(entity_id)
+                domain = resolved_entity.split(".")[0] if "." in resolved_entity else "homeassistant"
+                s_data = {"entity_id": resolved_entity}
+                
+                if action.get("brightness") is not None:
+                    s_data["brightness_pct"] = int(action["brightness"])
+                if action.get("temperature") is not None:
+                    s_data["temperature"] = float(action["temperature"])
+                if action.get("color_name"):
+                    s_data["color_name"] = action["color_name"]
+
+                res = await ha_client.call_service(domain, act_cmd, s_data)
+                executed_actions.append({
+                    "type": "ha_device",
+                    "entity_id": resolved_entity,
+                    "action": act_cmd,
+                    "status": res.get("success", False)
+                })
+
+        # Modulo 2: Ritardo Temporale / Pausa programmata
+        elif act_type == "delay":
+            delay_sec = float(action.get("seconds") or action.get("delay_seconds") or 1)
+            logger.info(f"[Shinra Routine] Pausa programmata di {delay_sec}s...")
+            await asyncio.sleep(delay_sec)
+            executed_actions.append({"type": "delay", "seconds": delay_sec, "status": True})
+
+        # Modulo 3: Sintesi Vocale / Messaggio Parlato
+        elif act_type == "tts":
+            msg = action.get("message", "")
+            if msg:
+                tts_messages.append(msg)
+                executed_actions.append({"type": "tts", "message": msg, "status": True})
+
+    final_msg = " ".join(tts_messages) if tts_messages else f"Modalità {target_mode.get('name')} eseguita con successo."
     return {
         "success": True,
         "modalita": target_mode.get("name"),
         "azioni_eseguite": executed_actions,
-        "messaggio": tts_message or f"Modalità {target_mode.get('name')} attivata."
+        "messaggio": final_msg
     }

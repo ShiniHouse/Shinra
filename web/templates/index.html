@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shinra — Assistente Domestico & Console di Controllo</title>
+    <!-- PWA & Mobile Meta Tags -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Shinra">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -48,6 +55,18 @@
         .typing-dot:nth-child(1) { animation-delay: 0s; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        /* Routine Flow Visuals */
+        .flow-line { position: relative; }
+        .flow-line::after {
+            content: '';
+            position: absolute;
+            bottom: -16px;
+            left: 50%;
+            width: 2px;
+            height: 16px;
+            background: linear-gradient(to bottom, #6366f1, #a855f7);
+            transform: translateX(-50%);
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
@@ -65,8 +84,13 @@
                 </div>
             </div>
 
-            <!-- Active User Selector, Voice Selector & Status -->
+            <!-- Active User Selector, Voice Selector, PWA & Status -->
             <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+                <!-- PWA Install Button -->
+                <button id="pwa-install-btn" onclick="installPwa()" class="hidden px-2.5 py-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Installa App
+                </button>
+
                 <!-- Voice Selector & Mute Toggle -->
                 <div class="flex items-center gap-1 bg-slate-800/80 border border-slate-700 rounded-xl px-2.5 py-1 text-xs">
                     <button onclick="toggleVoiceMute()" id="voice-mute-btn" type="button" title="Attiva/Disattiva voce audio" class="text-indigo-400 hover:text-indigo-300 p-0.5">
@@ -182,8 +206,23 @@
                 </div>
             </div>
 
-            <!-- Right: Activity Logs -->
+            <!-- Right: Activity Logs & Active Timers -->
             <div class="flex flex-col gap-5">
+                <!-- Widget Timer & Promemoria Live -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 backdrop-blur flex flex-col space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                            <i data-lucide="timer" class="w-4 h-4 text-amber-400"></i> Timer & Promemoria Live
+                        </h2>
+                        <button onclick="openAddTimerModal()" class="px-2 py-1 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/30 rounded-lg text-[11px] font-semibold transition flex items-center gap-1">
+                            <i data-lucide="plus" class="w-3 h-3"></i> + Timer
+                        </button>
+                    </div>
+                    <div id="active-timers-list" class="space-y-2">
+                        <div class="text-[11px] text-slate-500 text-center py-2">Nessun timer attivo. Prova a dire "Timer pasta 9 minuti".</div>
+                    </div>
+                </div>
+
                 <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 backdrop-blur">
                     <h2 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
                         <i data-lucide="activity" class="w-4 h-4 text-indigo-400"></i> Stato Sistema
@@ -191,7 +230,7 @@
                     <div class="space-y-2 text-xs">
                         <div class="flex justify-between p-2 rounded bg-slate-800/50">
                             <span class="text-slate-400">Modello:</span>
-                            <span id="model-name-badge" class="font-mono text-indigo-300 font-semibold">gemma2:9b</span>
+                            <span id="model-name-badge" class="font-mono text-indigo-300 font-semibold">Caricamento...</span>
                         </div>
                         <div class="flex justify-between p-2 rounded bg-slate-800/50">
                             <span class="text-slate-400">Alexa Invocazione:</span>
@@ -204,7 +243,7 @@
                     <h2 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
                         <i data-lucide="cpu" class="w-4 h-4 text-violet-400"></i> Tool Invocati da Shinra
                     </h2>
-                    <div id="tool-logs" class="flex-1 min-h-[200px] max-h-[350px] overflow-y-auto font-mono text-[11px] p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 text-slate-400 space-y-2">
+                    <div id="tool-logs" class="flex-1 min-h-[160px] max-h-[260px] overflow-y-auto font-mono text-[11px] p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 text-slate-400 space-y-2">
                         <div class="text-slate-600">Nessuna azione recente. Invia un comando per vedere i tool in esecuzione.</div>
                     </div>
                 </div>
@@ -314,19 +353,23 @@
             </div>
         </div>
 
-        <!-- ==================== TAB 5: MODALITÀ & ROUTINE ==================== -->
+        <!-- ==================== TAB 5: MODALITÀ & ROUTINE MODULARI ==================== -->
         <div id="tab-modes" class="tab-content hidden space-y-6">
-            <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
                 <div>
                     <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-                        <i data-lucide="sparkles" class="w-5 h-5 text-indigo-400"></i> Modalità & Routine Personalizzate
+                        <i data-lucide="workflow" class="w-5 h-5 text-indigo-400"></i> Costruttore Routine & Modalità Modulari
                     </h2>
-                    <p class="text-xs text-slate-400">Crea o attiva routine complesse con un solo comando vocale.</p>
+                    <p class="text-xs text-slate-400 mt-1">Crea pipeline a blocchi collegati: un comando innesca una serie di azioni, ritardi temporali e risposte vocali.</p>
                 </div>
+                <button onclick="openModularModeBuilder()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shrink-0 shadow-lg shadow-indigo-600/20">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Nuova Routine Modulare
+                </button>
             </div>
 
-            <div id="modes-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Caricato dinamicamente -->
+            <!-- Lista Routine Modulari -->
+            <div id="modes-list" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <!-- Caricato dinamicamente in formato Modular Flow -->
             </div>
         </div>
 
@@ -1462,31 +1505,468 @@
             loadAliases();
         }
 
-        // ==================== MODES ====================
-        async function loadModes() {
-            const res = await fetch('/api/modes');
-            const items = await res.json();
-            const container = document.getElementById('modes-list');
-            container.innerHTML = items.map(m => `
-                <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex justify-between items-center">
-                    <div>
-                        <h4 class="font-bold text-xs text-slate-100 flex items-center gap-2">
-                            <i data-lucide="${m.icon || 'zap'}" class="w-4 h-4 text-indigo-400"></i> ${m.name}
-                        </h4>
-                        <p class="text-[11px] text-slate-400 mt-1">${m.description || ''}</p>
+        // ==================== CHIME AUDIO & TIMER ENGINE ====================
+        function playChimeAlert() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = ctx.currentTime;
+                
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(587.33, now); // D5
+                gain1.gain.setValueAtTime(0.3, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.4);
+
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(880, now + 0.12); // A5
+                gain2.gain.setValueAtTime(0.35, now + 0.12);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.12);
+                osc2.stop(now + 0.7);
+            } catch (e) { console.warn('Audio Context non supportato:', e); }
+        }
+
+        let _activeTimers = [];
+        let _timerInterval = null;
+
+        async function loadTimers() {
+            try {
+                const res = await fetch('/api/timers');
+                _activeTimers = await res.json();
+                renderTimers();
+            } catch (e) { console.error('Errore loadTimers:', e); }
+        }
+
+        function renderTimers() {
+            const container = document.getElementById('active-timers-list');
+            if (!container) return;
+            if (!_activeTimers || _activeTimers.length === 0) {
+                container.innerHTML = '<div class="text-[11px] text-slate-500 text-center py-2">Nessun timer attivo. Prova a dire "Timer pasta 9 minuti".</div>';
+                return;
+            }
+
+            container.innerHTML = _activeTimers.map(t => {
+                const rem = t.remaining_seconds || 0;
+                const m = Math.floor(rem / 60);
+                const s = rem % 60;
+                const timeStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                const pct = t.duration_seconds > 0 ? Math.min(100, Math.max(0, ((t.duration_seconds - rem) / t.duration_seconds) * 100)) : 0;
+                const isFinished = rem <= 0;
+
+                return `
+                    <div class="p-2.5 rounded-xl bg-slate-950/80 border ${isFinished ? 'border-amber-500/80 bg-amber-950/30 animate-pulse' : 'border-slate-800'} flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-7 h-7 rounded-lg ${isFinished ? 'bg-amber-500 text-slate-950' : 'bg-amber-600/30 text-amber-300'} flex items-center justify-center font-bold text-xs">
+                                ⏳
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-xs text-slate-200">${t.label || 'Timer'}</h4>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="font-mono text-xs font-bold ${isFinished ? 'text-amber-400' : 'text-slate-300'}">${timeStr}</span>
+                                    <div class="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                        <div class="h-full bg-amber-500 transition-all duration-1000" style="width: ${pct}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="deleteTimer('${t.id}')" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Cancella timer">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
                     </div>
-                    <button onclick="triggerMode('${m.name}')" class="px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 text-xs font-semibold transition">
-                        Attiva Ora
-                    </button>
-                </div>
-            `).join('');
+                `;
+            }).join('');
             safeCreateIcons();
         }
 
-        async function triggerMode(name) {
-            const res = await fetch(`/api/modes/${encodeURIComponent(name)}/activate`, { method: 'POST' });
-            const data = await res.json();
-            alert(data.messaggio || `Modalità ${name} eseguita.`);
+        async function deleteTimer(id) {
+            await fetch(`/api/timers/${id}`, { method: 'DELETE' });
+            _activeTimers = _activeTimers.filter(t => t.id !== id);
+            renderTimers();
+        }
+
+        function openAddTimerModal() {
+            showModal(`
+                <h3 class="font-bold text-sm text-slate-100 mb-3 flex items-center gap-2">
+                    <i data-lucide="timer" class="w-4 h-4 text-amber-400"></i> Imposta Nuovo Timer
+                </h3>
+                <label class="text-slate-400 text-xs block mb-1">Nome o Etichetta (es. Pasta, Tè, Forno):</label>
+                <input type="text" id="new-timer-label" value="Timer" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3 focus:outline-none focus:border-amber-500">
+                
+                <label class="text-slate-400 text-xs block mb-1">Durata (Minuti):</label>
+                <input type="number" id="new-timer-min" min="1" max="180" value="5" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-4 focus:outline-none focus:border-amber-500">
+                
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Annulla</button>
+                    <button onclick="saveNewTimerManual()" class="px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-xs text-white font-semibold">Avvia Timer</button>
+                </div>
+            `);
+            setTimeout(() => document.getElementById('new-timer-label')?.focus(), 100);
+        }
+
+        async function saveNewTimerManual() {
+            const label = document.getElementById('new-timer-label').value.trim() || 'Timer';
+            const mins = parseInt(document.getElementById('new-timer-min').value) || 1;
+            const secs = mins * 60;
+            const res = await fetch('/api/timers', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ label, duration_seconds: secs, user_id: _currentUserId })
+            });
+            if (res.ok) {
+                closeModal();
+                loadTimers();
+            }
+        }
+
+        function startTimerTick() {
+            if (_timerInterval) clearInterval(_timerInterval);
+            _timerInterval = setInterval(() => {
+                let changed = false;
+                for (const t of _activeTimers) {
+                    if (t.remaining_seconds > 0) {
+                        t.remaining_seconds -= 1;
+                        changed = true;
+                        if (t.remaining_seconds === 0 && !t._notified) {
+                            t._notified = true;
+                            playChimeAlert();
+                            speakText(`Attenzione, il timer per ${t.label} è terminato!`);
+                        }
+                    }
+                }
+                if (changed || _activeTimers.length > 0) {
+                    renderTimers();
+                }
+            }, 1000);
+        }
+
+        // ==================== MODULAR ROUTINE BUILDER ====================
+        let _allModesCache = [];
+        let _builderSteps = [];
+
+        async function loadModes() {
+            const res = await fetch('/api/modes');
+            _allModesCache = await res.json();
+            const container = document.getElementById('modes-list');
+            if (!_allModesCache || _allModesCache.length === 0) {
+                container.innerHTML = '<div class="col-span-2 text-center py-8 text-slate-500 text-xs">Nessuna routine configurata. Clicca "+ Nuova Routine Modulare" per crearne una.</div>';
+                return;
+            }
+
+            container.innerHTML = _allModesCache.map(m => {
+                const triggers = (m.trigger_phrases || []).map(t => `<span class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] text-slate-300 font-mono">"${t}"</span>`).join(' ');
+                const actions = m.actions || [];
+                
+                const stepsHtml = actions.map((act, idx) => {
+                    let icon = 'zap';
+                    let title = 'Azione';
+                    let desc = '';
+                    let badge = '';
+
+                    if (act.type === 'ha_device' || act.type === 'ha_service') {
+                        icon = 'power';
+                        title = act.entity_id || act.data?.entity_id || 'Dispositivo HA';
+                        const cmd = act.action || act.service || 'turn_on';
+                        desc = cmd === 'turn_on' ? 'Accendi' : cmd === 'turn_off' ? 'Spegni' : cmd;
+                        badge = `<span class="text-[10px] text-indigo-400 bg-indigo-950/80 px-1.5 py-0.5 rounded border border-indigo-800">💡 HA</span>`;
+                    } else if (act.type === 'delay') {
+                        icon = 'clock';
+                        title = `Pausa ${act.seconds || act.delay_seconds || 1}s`;
+                        desc = 'Attesa prima del prossimo step';
+                        badge = `<span class="text-[10px] text-amber-400 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800">⏱️ Pausa</span>`;
+                    } else if (act.type === 'tts') {
+                        icon = 'message-circle';
+                        title = 'Annuncio Vocale';
+                        desc = `"${act.message || ''}"`;
+                        badge = `<span class="text-[10px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800">🗣️ Parla</span>`;
+                    }
+
+                    return `
+                        <div class="relative flex items-center gap-3 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 ${idx < actions.length - 1 ? 'mb-4 flow-line' : ''}">
+                            <div class="w-6 h-6 rounded-lg bg-indigo-600/30 text-indigo-300 flex items-center justify-center text-xs shrink-0">
+                                ${idx + 1}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-slate-200 truncate">${title}</span>
+                                    ${badge}
+                                </div>
+                                <p class="text-[11px] text-slate-400 truncate">${desc}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div id="mode-card-${m.id}" class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-4 shadow-sm hover:border-slate-700 transition">
+                        <div>
+                            <!-- Header Routine -->
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
+                                        <i data-lucide="${m.icon || 'workflow'}" class="w-5 h-5"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-sm text-slate-100">${m.name}</h3>
+                                        <p class="text-[11px] text-slate-400">${m.description || 'Routine personalizzata'}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <button onclick="openModularModeBuilder('${m.id}')" class="p-1.5 text-slate-400 hover:text-indigo-300 rounded-lg hover:bg-slate-800 transition" title="Modifica">
+                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="deleteMode('${m.id}')" class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Elimina">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Inneschi Vocali -->
+                            <div class="mt-3">
+                                <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">Frasi di Attivazione Vocale:</span>
+                                <div class="flex flex-wrap gap-1.5">
+                                    ${triggers || '<span class="text-xs text-slate-500">Nessun comando configurato</span>'}
+                                </div>
+                            </div>
+
+                            <!-- Pipeline Moduli Sequenziali -->
+                            <div class="mt-4 pt-3 border-t border-slate-800/80">
+                                <span class="text-[10px] font-semibold text-indigo-400 uppercase tracking-wider block mb-2">Sequenza di Moduli (${actions.length}):</span>
+                                <div class="space-y-1">
+                                    ${stepsHtml || '<div class="text-xs text-slate-500">Nessun modulo associato.</div>'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer / Test -->
+                        <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
+                            <span class="text-[11px] text-slate-500 font-mono">${actions.length} moduli collegati</span>
+                            <button onclick="triggerModularMode('${m.name}', '${m.id}')" id="btn-run-mode-${m.id}" class="px-3.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i data-lucide="play" class="w-3.5 h-3.5"></i> ▶️ Esegui Test
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            safeCreateIcons();
+        }
+
+        async function triggerModularMode(name, modeId) {
+            const btn = document.getElementById(`btn-run-mode-${modeId}`);
+            const card = document.getElementById(`mode-card-${modeId}`);
+            if (btn) btn.innerHTML = '<span class="animate-spin">⏳</span> Esecuzione...';
+            if (card) card.classList.add('border-indigo-500', 'ring-1', 'ring-indigo-500/50');
+
+            try {
+                const res = await fetch(`/api/modes/${encodeURIComponent(name)}/activate`, { method: 'POST' });
+                const data = await res.json();
+                if (data.messaggio) speakText(data.messaggio);
+            } catch (e) { console.error('Errore attivazione modalità:', e); }
+
+            setTimeout(() => {
+                if (btn) btn.innerHTML = '<i data-lucide="play" class="w-3.5 h-3.5"></i> ▶️ Esegui Test';
+                if (card) card.classList.remove('border-indigo-500', 'ring-1', 'ring-indigo-500/50');
+                safeCreateIcons();
+            }, 1200);
+        }
+
+        function openModularModeBuilder(existingId = null) {
+            let mode = { id: '', name: '', icon: 'sparkles', description: '', trigger_phrases: [], actions: [] };
+            if (existingId) {
+                const found = _allModesCache.find(m => m.id === existingId);
+                if (found) mode = JSON.parse(JSON.stringify(found));
+            }
+            _builderSteps = mode.actions || [];
+
+            renderModeBuilderModal(mode);
+        }
+
+        function renderModeBuilderModal(mode) {
+            const triggersStr = (mode.trigger_phrases || []).join(', ');
+
+            showModal(`
+                <div class="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                            <i data-lucide="workflow" class="w-4 h-4 text-indigo-400"></i> ${mode.id ? 'Modifica Routine Modulare' : 'Costruisci Nuova Routine Modulare'}
+                        </h3>
+                    </div>
+
+                    <!-- Info Base -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-slate-400 text-xs block mb-1">Nome Routine / Modalità:</label>
+                            <input type="text" id="bm-name" value="${mode.name || ''}" placeholder="es. Cinema, Buonanotte, Uscita" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 text-xs block mb-1">Icona Lucide:</label>
+                            <input type="text" id="bm-icon" value="${mode.icon || 'sparkles'}" placeholder="es. film, moon, sun, zap" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-slate-400 text-xs block mb-1">Frasi Vocali di Attivazione (separate da virgola):</label>
+                        <input type="text" id="bm-triggers" value="${triggersStr}" placeholder="es. modalità cinema, attiva cinema, accendi cinema" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="text-slate-400 text-xs block mb-1">Descrizione:</label>
+                        <input type="text" id="bm-desc" value="${mode.description || ''}" placeholder="Cosa fa questa routine?" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <!-- Sezione Moduli Sequenziali -->
+                    <div class="pt-3 border-t border-slate-800">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Moduli Collegati in Sequenza</span>
+                            <div class="flex gap-1.5">
+                                <button type="button" onclick="addBuilderStep('ha_device')" class="px-2 py-1 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-md text-[11px] font-semibold border border-indigo-500/30 transition">
+                                    + 💡 Dispositivo HA
+                                </button>
+                                <button type="button" onclick="addBuilderStep('delay')" class="px-2 py-1 bg-amber-600/30 hover:bg-amber-600 text-amber-300 hover:text-white rounded-md text-[11px] font-semibold border border-amber-500/30 transition">
+                                    + ⏱️ Ritardo
+                                </button>
+                                <button type="button" onclick="addBuilderStep('tts')" class="px-2 py-1 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-md text-[11px] font-semibold border border-emerald-500/30 transition">
+                                    + 🗣️ Voce TTS
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="builder-steps-container" class="space-y-2 mt-2">
+                            <!-- Render steps -->
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="bm-id" value="${mode.id || ''}">
+
+                    <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                        <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Annulla</button>
+                        <button onclick="saveModularModeFromModal()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold">Salva Routine</button>
+                    </div>
+                </div>
+            `);
+            renderBuilderStepsList();
+        }
+
+        function renderBuilderStepsList() {
+            const container = document.getElementById('builder-steps-container');
+            if (!container) return;
+            if (_builderSteps.length === 0) {
+                container.innerHTML = '<div class="text-xs text-slate-500 text-center py-4 bg-slate-950/40 rounded-xl border border-dashed border-slate-800">Nessun modulo inserito. Clicca sui pulsanti in alto per aggiungere un Dispositivo, un Ritardo temporale o un Annuncio vocale.</div>';
+                return;
+            }
+
+            container.innerHTML = _builderSteps.map((step, idx) => {
+                if (step.type === 'ha_device' || step.type === 'ha_service') {
+                    return `
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 flex-1">
+                                <span class="w-5 h-5 rounded-full bg-indigo-600/40 text-indigo-300 text-[10px] flex items-center justify-center font-bold">${idx + 1}</span>
+                                <span class="text-xs text-indigo-400 font-semibold">💡 HA:</span>
+                                <input type="text" placeholder="Entità o Alias (es. light.salotto)" value="${step.entity_id || ''}" oninput="_builderSteps[${idx}].entity_id = this.value" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100">
+                                <select onchange="_builderSteps[${idx}].action = this.value" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
+                                    <option value="turn_on" ${step.action === 'turn_on' ? 'selected' : ''}>Accendi</option>
+                                    <option value="turn_off" ${step.action === 'turn_off' ? 'selected' : ''}>Spegni</option>
+                                    <option value="toggle" ${step.action === 'toggle' ? 'selected' : ''}>Inverti (Toggle)</option>
+                                </select>
+                            </div>
+                            <button onclick="removeBuilderStep(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    `;
+                } else if (step.type === 'delay') {
+                    return `
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 flex-1">
+                                <span class="w-5 h-5 rounded-full bg-amber-600/40 text-amber-300 text-[10px] flex items-center justify-center font-bold">${idx + 1}</span>
+                                <span class="text-xs text-amber-400 font-semibold">⏱️ Ritardo:</span>
+                                <span class="text-xs text-slate-400">Attendi</span>
+                                <input type="number" min="1" max="300" value="${step.seconds || 5}" oninput="_builderSteps[${idx}].seconds = parseInt(this.value) || 1" class="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 text-center">
+                                <span class="text-xs text-slate-400">secondi</span>
+                            </div>
+                            <button onclick="removeBuilderStep(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    `;
+                } else if (step.type === 'tts') {
+                    return `
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 flex-1">
+                                <span class="w-5 h-5 rounded-full bg-emerald-600/40 text-emerald-300 text-[10px] flex items-center justify-center font-bold">${idx + 1}</span>
+                                <span class="text-xs text-emerald-400 font-semibold">🗣️ Parla:</span>
+                                <input type="text" placeholder="Frase parlata (es. Luci regolate, buona visione!)" value="${step.message || ''}" oninput="_builderSteps[${idx}].message = this.value" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100">
+                            </div>
+                            <button onclick="removeBuilderStep(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    `;
+                }
+            }).join('');
+            safeCreateIcons();
+        }
+
+        function addBuilderStep(type) {
+            if (type === 'ha_device') {
+                _builderSteps.push({ type: 'ha_device', entity_id: '', action: 'turn_on' });
+            } else if (type === 'delay') {
+                _builderSteps.push({ type: 'delay', seconds: 5 });
+            } else if (type === 'tts') {
+                _builderSteps.push({ type: 'tts', message: 'Operazione completata.' });
+            }
+            renderBuilderStepsList();
+        }
+
+        function removeBuilderStep(idx) {
+            _builderSteps.splice(idx, 1);
+            renderBuilderStepsList();
+        }
+
+        async function saveModularModeFromModal() {
+            const name = document.getElementById('bm-name').value.trim();
+            const icon = document.getElementById('bm-icon').value.trim() || 'sparkles';
+            const desc = document.getElementById('bm-desc').value.trim();
+            const triggersRaw = document.getElementById('bm-triggers').value.trim();
+            const id = document.getElementById('bm-id').value.trim();
+
+            if (!name) {
+                alert('Inserisci un nome per la routine.');
+                return;
+            }
+
+            const triggers = triggersRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+
+            const payload = {
+                id: id || undefined,
+                name: name,
+                icon: icon,
+                description: desc,
+                trigger_phrases: triggers,
+                enabled: true,
+                actions: _builderSteps
+            };
+
+            const res = await fetch('/api/modes', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                closeModal();
+                loadModes();
+            } else {
+                alert('Errore nel salvataggio della routine.');
+            }
+        }
+
+        async function deleteMode(id) {
+            if (!confirm('Eliminare questa routine?')) return;
+            await fetch(`/api/modes/${id}`, { method: 'DELETE' });
+            loadModes();
         }
 
         // ==================== USERS CRUD ====================
@@ -1711,12 +2191,43 @@
             } catch (e) { console.warn('Health check error:', e); }
         }
 
+        // PWA Installation Prompt
+        let _deferredPwaPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            _deferredPwaPrompt = e;
+            const btn = document.getElementById('pwa-install-btn');
+            if (btn) btn.classList.remove('hidden');
+        });
+
+        async function installPwa() {
+            if (_deferredPwaPrompt) {
+                _deferredPwaPrompt.prompt();
+                const { outcome } = await _deferredPwaPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    const btn = document.getElementById('pwa-install-btn');
+                    if (btn) btn.classList.add('hidden');
+                }
+                _deferredPwaPrompt = null;
+            } else {
+                alert('Per installare l\'app:\n- Su iPhone: tocca il pulsante Condividi in Safari e scegli "Aggiungi a schermata Home".\n- Su Android / Chrome: tocca il menu (3 puntini) e scegli "Installa app".');
+            }
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js').catch(e => console.warn('SW error:', e));
+            });
+        }
+
         // Inizializzazione — eseguita dopo il caricamento completo della pagina
         window.addEventListener('load', function() {
             initTabs();
             safeCreateIcons();
             initVoiceEngine();
             loadUsersDropdown();
+            loadTimers();
+            startTimerTick();
             checkSystemHealth();
             setInterval(checkSystemHealth, 8000);
         });
