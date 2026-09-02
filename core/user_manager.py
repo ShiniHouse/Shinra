@@ -14,8 +14,8 @@ class UserProfile(BaseModel):
     name: str
     role: str = "adult" # admin, adult, teen, child, guest
     age_group: str = "adult" # adult, teen, child
-    gender: str = "male" # male, female, neutral, unspecified
-    avatar_type: Optional[str] = "male_adult" # male_adult, female_adult, male_child, female_child, neutral, guest
+    gender: str = "unspecified" # male, female, neutral, unspecified
+    avatar_type: Optional[str] = None # male_adult, female_adult, male_child, female_child, neutral, guest
     pin: Optional[str] = None
     preferred_news_categories: List[str] = ["generale"]
     restricted_topics: List[str] = []
@@ -31,6 +31,37 @@ GUEST_PROFILE = UserProfile(
     notes="Profilo ospite temporaneo con accesso base."
 )
 
+FEMALE_HINTS = {"sonia", "daniela", "sofia", "giulia", "elena", "laura", "chiara", "francesca", "martina", "sara", "alice", "mamma", "moglie", "madre", "nonna", "zia", "ragazza", "bambina", "figlia"}
+MALE_HINTS = {"alessio", "maurizio", "thomas", "christian", "luca", "marco", "andrea", "francesco", "matteo", "papa", "papà", "padre", "marito", "nonno", "zio", "ragazzo", "bambino", "figlio"}
+
+def auto_detect_avatar(u: UserProfile) -> UserProfile:
+    """Inferisce genere e avatar appropriato se non specificati o incoerenti."""
+    name_l = u.name.lower()
+    notes_l = (u.notes or "").lower()
+    
+    if u.role == "guest" or u.id == "guest":
+        u.avatar_type = "guest"
+        u.gender = "neutral"
+        return u
+
+    # Rilevamento femmina da nome o note (es. "Moglie", "Madre", "Sonia", "Daniela")
+    is_female = any(w in name_l for w in FEMALE_HINTS) or any(w in notes_l for w in ["moglie", "madre", "mamma", "donna", "femmina", "figlia"])
+    # Rilevamento maschio da nome o note
+    is_male = any(w in name_l for w in MALE_HINTS) or any(w in notes_l for w in ["marito", "padre", "papà", "papa", "uomo", "maschio", "figlio"])
+
+    if is_female:
+        u.gender = "female"
+        u.avatar_type = "female_child" if u.age_group == "child" else "female_adult"
+    elif is_male:
+        u.gender = "male"
+        u.avatar_type = "male_child" if u.age_group == "child" else "male_adult"
+    elif not u.avatar_type or u.avatar_type == "unspecified":
+        if u.age_group == "child":
+            u.avatar_type = "male_child" if u.gender == "male" else ("female_child" if u.gender == "female" else "neutral")
+        else:
+            u.avatar_type = "female_adult" if u.gender == "female" else ("male_adult" if u.gender == "male" else "neutral")
+    return u
+
 class UserManager:
     def __init__(self):
         DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -41,6 +72,8 @@ class UserManager:
                     name="Alessio",
                     role="admin",
                     age_group="adult",
+                    gender="male",
+                    avatar_type="male_adult",
                     preferred_news_categories=["economia", "tecnologia", "mondo"],
                     notes="Proprietario e amministratore principale di Shinra."
                 )
@@ -51,7 +84,14 @@ class UserManager:
             if USERS_FILE.exists():
                 with open(USERS_FILE, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    return [UserProfile(**u) for u in data]
+                    users = []
+                    for u in data:
+                        profile = UserProfile(**u)
+                        if not profile.avatar_type or profile.avatar_type in ["male_adult", "neutral", None]:
+                            # Esegui auto-detect se default per allineare subito nomi pre-esistenti
+                            profile = auto_detect_avatar(profile)
+                        users.append(profile)
+                    return users
             return []
         except Exception as e:
             logger.error(f"Errore lettura users.json: {e}")
