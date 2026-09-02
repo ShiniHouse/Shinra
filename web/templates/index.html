@@ -544,18 +544,6 @@
                     <span id="theme-toggle-label" class="text-[11px]">Auto</span>
                 </button>
 
-                <!-- Security Lock/Unlock Status Button -->
-                <button id="lock-session-btn" onclick="lockSession()" class="hidden px-2.5 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/70 hover:bg-slate-700 text-amber-400 hover:text-amber-300 transition flex items-center gap-1.5 text-xs font-semibold shadow-sm" title="Blocca Sessione Dashboard">
-                    <i data-lucide="lock" class="w-3.5 h-3.5"></i>
-                    <span class="text-[11px]">Blocca</span>
-                </button>
-
-                <!-- Shinra Istruisci Learning Mode Button -->
-                <button onclick="startLearningModal()" class="px-2.5 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 text-xs font-semibold shadow-sm" title="Modalità Apprendimento: Insegna a Shinra le tue abitudini con un'intervista vocale guidata">
-                    <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-amber-400"></i>
-                    <span class="text-[11px]">Istruisci</span>
-                </button>
-
                 <!-- User Selector Dropdown -->
                 <div class="flex items-center gap-1.5 bg-slate-800/70 border border-slate-700/80 rounded-xl px-2.5 py-1 text-xs">
                     <i data-lucide="user" class="w-3.5 h-3.5 text-violet-400"></i>
@@ -1167,6 +1155,21 @@
                                 <input type="checkbox" id="cfg-sec-protect-dashboard" class="w-4 h-4 accent-indigo-500 rounded cursor-pointer" checked>
                                 <label for="cfg-sec-protect-dashboard" class="text-slate-400 cursor-pointer text-xs">Blocca l'intera schermata all'apertura (Lock Screen)</label>
                             </div>
+                            <div class="pt-2 border-t border-slate-800/80">
+                                <label class="text-slate-300 block mb-1 font-semibold text-xs flex items-center gap-1.5">
+                                    <i data-lucide="timer" class="w-3.5 h-3.5 text-amber-400"></i> Blocco Automatico per Inattività:
+                                </label>
+                                <select id="cfg-sec-auto-lock-timeout" onchange="setAutoLockTimeout(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs font-medium">
+                                    <option value="0">Disattivato (Non bloccare mai automaticamente)</option>
+                                    <option value="1">Dopo 1 minuto di inattività</option>
+                                    <option value="3">Dopo 3 minuti di inattività</option>
+                                    <option value="5" selected>Dopo 5 minuti di inattività (Consigliato)</option>
+                                    <option value="10">Dopo 10 minuti di inattività</option>
+                                    <option value="15">Dopo 15 minuti di inattività</option>
+                                    <option value="30">Dopo 30 minuti di inattività</option>
+                                </select>
+                                <p class="text-[10px] text-slate-500 mt-1">Se non utilizzi o tocchi la dashboard per il tempo stabilito, Shinra blocca la sessione e richiede il PIN.</p>
+                            </div>
                         </div>
                     </div>
 
@@ -1506,6 +1509,40 @@
             sessionStorage.removeItem('shinra_auth_token');
             await checkAuthStatus();
         }
+
+        // ==================== INACTIVITY AUTO-LOCK CONTROLLER ====================
+        let inactivityTimeoutMinutes = parseInt(localStorage.getItem('shinra_inactivity_timeout_mins') || '5', 10);
+        let inactivityTimer = null;
+
+        function setAutoLockTimeout(val) {
+            inactivityTimeoutMinutes = parseInt(val, 10);
+            localStorage.setItem('shinra_inactivity_timeout_mins', inactivityTimeoutMinutes);
+            resetInactivityTimer();
+        }
+
+        function resetInactivityTimer() {
+            if (inactivityTimer) {
+                clearTimeout(inactivityTimer);
+                inactivityTimer = null;
+            }
+
+            if (inactivityTimeoutMinutes <= 0) return;
+            const lockModal = document.getElementById('lock-screen-modal');
+            if (lockModal && lockModal.style.display === 'flex') return;
+
+            inactivityTimer = setTimeout(async () => {
+                const isAuthEnabled = document.getElementById('cfg-sec-auth-enabled')?.checked;
+                const token = sessionStorage.getItem('shinra_auth_token');
+                if (isAuthEnabled || token) {
+                    console.log(`[Shinra Security] Auto-lock attivato dopo ${inactivityTimeoutMinutes} min di inattività.`);
+                    await lockSession();
+                }
+            }, inactivityTimeoutMinutes * 60 * 1000);
+        }
+
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
+            window.addEventListener(evt, resetInactivityTimer, { passive: true });
+        });
 
         function setVoiceMuteState(isMuted) {
             voiceMuted = isMuted;
@@ -4103,6 +4140,11 @@
                 if (pinInput) pinInput.value = sec.admin_pin || '';
                 const protCb = document.getElementById('cfg-sec-protect-dashboard');
                 if (protCb) protCb.checked = (sec.protect_dashboard !== false);
+
+                // Auto-Lock Inattività
+                const autoLockVal = localStorage.getItem('shinra_inactivity_timeout_mins') || '5';
+                const autoLockSelect = document.getElementById('cfg-sec-auto-lock-timeout');
+                if (autoLockSelect) autoLockSelect.value = autoLockVal;
 
                 // Audio
                 const muteCb = document.getElementById('cfg-voice-muted');
