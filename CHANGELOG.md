@@ -26,6 +26,15 @@ installabile e utilizzabile.
 - Suite di test iniziale, con i test di regressione dei difetti bloccanti
   marcati `xfail(strict=True)` finche' non vengono corretti.
 - `.env.example` per la migrazione dei segreti fuori dal file di configurazione.
+- `scripts/deploy.sh`: aggiornamento del server Debian con backup, distribuzione
+  per tag di release, verifica di salute e ritorno automatico alla versione
+  precedente se il servizio non risponde.
+- `deploy/shinra.service`: unita' systemd irrobustita, con utente dedicato al
+  posto di root, segreti da `.env` e filesystem in sola lettura.
+- `docs/DEPLOY.md`, che include la messa in sicurezza da eseguire sul server
+  **prima** di unire la issue #07: quel commit rimuove `config/config.yaml`
+  dall'indice, e il primo `git pull` successivo lo cancellerebbe dal server
+  insieme al token di Home Assistant.
 
 ### Modificato
 - `.gitignore` ora esclude `config/config.yaml` e i file di stato con dati

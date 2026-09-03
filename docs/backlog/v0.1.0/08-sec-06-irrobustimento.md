@@ -23,6 +23,7 @@ Diverse impostazioni di irrobustimento mancano o sono errate:
 - [ ] Gestore globale delle eccezioni: messaggio generico al client, traccia completa nel log
 - [ ] Applicare `restricted_topics` come filtro reale prima dell'invio al modello e sulla risposta
 - [ ] Documentare in `README.md` che il servizio va esposto solo dietro HTTPS
+- [ ] Aggiungere `GET /health`: endpoint pubblico che risponde `200` se il processo e' vivo, **senza esporre alcuna informazione** (niente modelli, niente URL di Home Assistant, niente stato dei servizi). Serve allo script di distribuzione, che oggi deve interrogare `/api/status` e accettare qualsiasi codice HTTP perche' quell'endpoint diventera' autenticato. Vedi `docs/DEPLOY.md`.
 
 ## Criteri di accettazione
 
@@ -30,3 +31,4 @@ Diverse impostazioni di irrobustimento mancano o sono errate:
 - [ ] Un errore interno restituisce un messaggio generico, e la traccia e' nel log
 - [ ] Un profilo con un argomento vietato non riceve risposta su quell'argomento
 - [ ] Il servizio avviato senza variabili di sviluppo non ha il reload attivo
+- [ ] `GET /health` risponde `200` senza autenticazione e il suo corpo non contiene configurazione

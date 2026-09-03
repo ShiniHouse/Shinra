@@ -18,6 +18,7 @@ corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino all
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Struttura attuale, struttura target e come si aggiunge un modulo nuovo |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Flusso di lavoro, convenzioni sui commit, processo di rilascio |
 | [`SECURITY.md`](SECURITY.md) | Difetti di sicurezza noti e come segnalarne di nuovi |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Aggiornamento del server Debian e messa in sicurezza da fare subito |
 | [`docs/backlog/`](docs/backlog/) | Il piano di lavoro completo, issue per issue |
 
 > ### ⚠️ Prima della versione `0.1.0`
