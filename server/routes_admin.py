@@ -403,6 +403,89 @@ async def get_ollama_models():
     models = await client.get_models_detailed()
     return {"success": True, "models": models, "active_model": client.model}
 
+# --- ALEXA INTERACTION MODEL GENERATOR ---
+@router.get("/alexa/interaction-model")
+async def get_alexa_interaction_model(name: Optional[str] = None):
+    """Restituisce lo schema JSON Interaction Model per Amazon Alexa Skill Kit con nome personalizzato."""
+    clean_name = (name or settings.alexa.invocation_name or "kyra").lower().strip()
+    return {
+        "interactionModel": {
+            "languageModel": {
+                "invocationName": clean_name,
+                "intents": [
+                    {"name": "AMAZON.CancelIntent", "samples": []},
+                    {"name": "AMAZON.HelpIntent", "samples": []},
+                    {"name": "AMAZON.StopIntent", "samples": []},
+                    {"name": "AMAZON.NavigateHomeIntent", "samples": []},
+                    {"name": "AMAZON.FallbackIntent", "samples": []},
+                    {
+                        "name": "TurnOnIntent",
+                        "slots": [{"name": "device", "type": "AMAZON.SearchQuery"}],
+                        "samples": [
+                            "accendi {device}",
+                            "attiva {device}",
+                            "apri {device}",
+                            "accendere {device}",
+                            "attivare {device}"
+                        ]
+                    },
+                    {
+                        "name": "TurnOffIntent",
+                        "slots": [{"name": "device", "type": "AMAZON.SearchQuery"}],
+                        "samples": [
+                            "spegni {device}",
+                            "disattiva {device}",
+                            "chiudi {device}",
+                            "spegnere {device}",
+                            "disattivare {device}"
+                        ]
+                    },
+                    {
+                        "name": "ActivateModeIntent",
+                        "slots": [{"name": "mode", "type": "AMAZON.SearchQuery"}],
+                        "samples": [
+                            "modalità {mode}",
+                            "modalita {mode}",
+                            "avvia {mode}",
+                            "imposta {mode}",
+                            "attiva modalità {mode}",
+                            "attiva modalita {mode}"
+                        ]
+                    },
+                    {
+                        "name": "GeneralQueryIntent",
+                        "slots": [{"name": "query", "type": "AMAZON.SearchQuery"}],
+                        "samples": [
+                            "dimmi {query}",
+                            "chiedi {query}",
+                            "fai {query}",
+                            "esegui {query}",
+                            "cosa {query}",
+                            "come {query}",
+                            "quando {query}",
+                            "chi {query}",
+                            "dove {query}",
+                            "perché {query}",
+                            "perche {query}",
+                            "quanto {query}",
+                            "quanti {query}",
+                            "qual è {query}",
+                            "qual e {query}",
+                            "cerca {query}",
+                            "spiegami {query}",
+                            "fammi {query}",
+                            "domanda {query}",
+                            "voglio {query}",
+                            "vorrei {query}",
+                            "puoi {query}"
+                        ]
+                    }
+                ],
+                "types": []
+            }
+        }
+    }
+
 # --- TIMERS & REMINDERS ENDPOINTS ---
 from core.timer_engine import timer_engine
 

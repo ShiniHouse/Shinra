@@ -1173,6 +1173,44 @@
                         </div>
                     </div>
 
+                    <!-- Integrazione Alexa & Generatore Schema Skill -->
+                    <div class="space-y-4 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                                <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                                    <i data-lucide="mic" class="w-4 h-4 text-sky-400"></i> Integrazione Alexa & Generatore Skill
+                                </h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Personalizza il nome con cui chiamare l'assistente su Alexa (es. <em>kyra</em>, <em>shinra</em>, <em>jarvis</em>, <em>casa</em>) e genera il file JSON pronto per Amazon Developer Console.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <label class="text-slate-300 block mb-1 font-semibold text-xs">Nome Assistente (Personalità / Risposte):</label>
+                                <input type="text" id="cfg-assistant-name" oninput="handleAssistantNameInput(this.value)" placeholder="Es. Kyra" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs font-semibold">
+                            </div>
+                            <div>
+                                <label class="text-slate-300 block mb-1 font-semibold text-xs">Nome Invocazione Vocale Alexa ("Alexa, apri..."):</label>
+                                <input type="text" id="cfg-alexa-invocation" oninput="updateAlexaGeneratorName(this.value)" placeholder="Es. kyra" class="w-full bg-slate-900 border border-indigo-700/60 rounded-lg p-2 text-indigo-300 font-mono text-xs font-bold">
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 pt-2 border-t border-slate-800/80">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                                    <i data-lucide="code" class="w-3.5 h-3.5 text-amber-400"></i> Interaction Model JSON Personalizzato:
+                                </span>
+                                <button type="button" onclick="copyAlexaSkillJson()" id="copy-alexa-json-btn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copia JSON
+                                </button>
+                            </div>
+                            <textarea id="alexa-generated-json" rows="8" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-[11px] text-emerald-400 leading-relaxed focus:outline-none select-all"></textarea>
+                            <p class="text-[11px] text-slate-400 leading-relaxed">
+                                💡 <strong>Come usarlo:</strong> Copia questo codice, vai su <a href="https://developer.amazon.com/alexa/console/ask" target="_blank" class="text-indigo-400 hover:underline font-medium">developer.amazon.com/alexa/console/ask</a> ➔ Entra nella tua Skill ➔ <strong>Interaction Model</strong> ➔ <strong>JSON Editor</strong> ➔ Incolla tutto ➔ Clicca <strong>Save Model</strong> e <strong>Build Model</strong>!
+                            </p>
+                        </div>
+                    </div>
+
                     <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition shadow-lg shadow-indigo-600/30">
                         Salva Tutte le Impostazioni
                     </button>
@@ -4146,10 +4184,139 @@
                 const autoLockSelect = document.getElementById('cfg-sec-auto-lock-timeout');
                 if (autoLockSelect) autoLockSelect.value = autoLockVal;
 
+                // Assistente & Alexa Invocazione
+                const asstName = cfg.assistant?.name || 'Kyra';
+                const alexaInv = cfg.alexa?.invocation_name || 'kyra';
+                const asstInput = document.getElementById('cfg-assistant-name');
+                const alexaInput = document.getElementById('cfg-alexa-invocation');
+                if (asstInput) asstInput.value = asstName;
+                if (alexaInput) alexaInput.value = alexaInv;
+                updateAlexaGeneratorName(alexaInv);
+
                 // Audio
                 const muteCb = document.getElementById('cfg-voice-muted');
                 if (muteCb) muteCb.checked = voiceMuted;
             } catch (e) { console.error('Errore loadSettings:', e); }
+        }
+
+        function handleAssistantNameInput(val) {
+            const alexaInput = document.getElementById('cfg-alexa-invocation');
+            if (alexaInput) {
+                const autoVal = (val || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+                alexaInput.value = autoVal || 'kyra';
+                updateAlexaGeneratorName(autoVal || 'kyra');
+            }
+        }
+
+        function getAlexaInteractionModelJson(name) {
+            const cleanName = (name || 'kyra').toLowerCase().trim() || 'kyra';
+            const model = {
+              "interactionModel": {
+                "languageModel": {
+                  "invocationName": cleanName,
+                  "intents": [
+                    { "name": "AMAZON.CancelIntent", "samples": [] },
+                    { "name": "AMAZON.HelpIntent", "samples": [] },
+                    { "name": "AMAZON.StopIntent", "samples": [] },
+                    { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
+                    { "name": "AMAZON.FallbackIntent", "samples": [] },
+                    {
+                      "name": "TurnOnIntent",
+                      "slots": [{ "name": "device", "type": "AMAZON.SearchQuery" }],
+                      "samples": [
+                        "accendi {device}",
+                        "attiva {device}",
+                        "apri {device}",
+                        "accendere {device}",
+                        "attivare {device}"
+                      ]
+                    },
+                    {
+                      "name": "TurnOffIntent",
+                      "slots": [{ "name": "device", "type": "AMAZON.SearchQuery" }],
+                      "samples": [
+                        "spegni {device}",
+                        "disattiva {device}",
+                        "chiudi {device}",
+                        "spegnere {device}",
+                        "disattivare {device}"
+                      ]
+                    },
+                    {
+                      "name": "ActivateModeIntent",
+                      "slots": [{ "name": "mode", "type": "AMAZON.SearchQuery" }],
+                      "samples": [
+                        "modalità {mode}",
+                        "modalita {mode}",
+                        "avvia {mode}",
+                        "imposta {mode}",
+                        "attiva modalità {mode}",
+                        "attiva modalita {mode}"
+                      ]
+                    },
+                    {
+                      "name": "GeneralQueryIntent",
+                      "slots": [{ "name": "query", "type": "AMAZON.SearchQuery" }],
+                      "samples": [
+                        "dimmi {query}",
+                        "chiedi {query}",
+                        "fai {query}",
+                        "esegui {query}",
+                        "cosa {query}",
+                        "come {query}",
+                        "quando {query}",
+                        "chi {query}",
+                        "dove {query}",
+                        "perché {query}",
+                        "perche {query}",
+                        "quanto {query}",
+                        "quanti {query}",
+                        "qual è {query}",
+                        "qual e {query}",
+                        "cerca {query}",
+                        "spiegami {query}",
+                        "fammi {query}",
+                        "domanda {query}",
+                        "voglio {query}",
+                        "vorrei {query}",
+                        "puoi {query}"
+                      ]
+                    }
+                  ],
+                  "types": []
+                }
+              }
+            };
+            return JSON.stringify(model, null, 2);
+        }
+
+        function updateAlexaGeneratorName(val) {
+            const clean = (val !== undefined ? val : (document.getElementById('cfg-alexa-invocation')?.value || 'kyra'));
+            const textarea = document.getElementById('alexa-generated-json');
+            if (textarea) {
+                textarea.value = getAlexaInteractionModelJson(clean);
+            }
+        }
+
+        function copyAlexaSkillJson() {
+            const textarea = document.getElementById('alexa-generated-json');
+            if (!textarea) return;
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                const btn = document.getElementById('copy-alexa-json-btn');
+                if (btn) {
+                    const originalHtml = btn.innerHTML;
+                    btn.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i> Copiato! ✓';
+                    safeCreateIcons();
+                    setTimeout(() => {
+                        btn.innerHTML = originalHtml;
+                        safeCreateIcons();
+                    }, 2500);
+                }
+            }).catch(() => {
+                textarea.select();
+                document.execCommand('copy');
+                alert('JSON copiato negli appunti!');
+            });
         }
 
         async function saveSettings(e) {
@@ -4162,6 +4329,11 @@
             cfg.home_assistant.url = document.getElementById('cfg-ha-url').value.trim();
             cfg.home_assistant.token = document.getElementById('cfg-ha-token').value.trim();
             cfg.assistant.default_city = document.getElementById('cfg-default-city').value.trim();
+
+            if (!cfg.assistant) cfg.assistant = {};
+            if (!cfg.alexa) cfg.alexa = {};
+            cfg.assistant.name = document.getElementById('cfg-assistant-name')?.value.trim() || 'Kyra';
+            cfg.alexa.invocation_name = document.getElementById('cfg-alexa-invocation')?.value.trim().toLowerCase() || 'kyra';
 
             if (!cfg.security) cfg.security = {};
             cfg.security.auth_enabled = Boolean(document.getElementById('cfg-sec-auth-enabled')?.checked);
