@@ -1,51 +1,39 @@
-# 🎙️ Guida Definitiva: Configurazione e Modifica della Skill Alexa per Shinra
+# 🎙️ Guida Definitiva: Configurazione Skill Alexa per Kyra
 
-Questa guida ti spiega passo dopo passo come configurare, testare e **modificare in futuro** la tua Skill Alexa personalizzata per interagire con il tuo assistente domestico **Shinra** tramite qualsiasi dispositivo **Amazon Echo** o dall'app per smartphone.
+Questa guida ti spiega come configurare e testare la tua Skill Alexa personalizzata con il nome di invocazione **Kyra** (molto più facile e naturale da pronunciare rispetto a Shinra per il riconoscimento vocale di Amazon Echo).
 
 ---
 
 ## 📑 Indice
-1. [Requisiti e Architettura](#1-requisiti-e-architettura)
-2. [Creazione della Skill](#2-creazione-della-skill)
-3. [Interaction Model Completo (JSON Editor)](#3-interaction-model-completo-json-editor)
-4. [Configurazione Endpoint HTTPS & SSL](#4-configurazione-endpoint-https--ssl)
-5. [Impostazioni di Rete (NPM e Cloudflare WAF)](#5-impostazioni-di-rete-npm-e-cloudflare-waf)
-6. [Come Usare e Testare la Skill](#6-come-usare-e-testare-la-skill)
-7. [🪄 Come Modificare la Skill in Futuro](#7--come-modificare-la-skill-in-futuro)
-8. [Risoluzione Errori Comuni](#8-risoluzione-errori-comuni)
+1. [Perché Kyra risolve i problemi di pronuncia](#1-perché-kyra-risolve-i-problemi-di-pronuncia)
+2. [Interaction Model Completo (JSON Editor)](#2-interaction-model-completo-json-editor)
+3. [Come Aggiornare la Skill su Amazon Developer Console](#3-come-aggiornare-la-skill-su-amazon-developer-console)
+4. [Configurazione Endpoint HTTPS](#4-configurazione-endpoint-https)
+5. [Come Usare e Testare Kyra](#5-come-usare-e-testare-kyra)
+6. [Consiglio Pro: Routine con 1 parola ("Alexa, Kyra")](#6-consiglio-pro-routine-con-1-parola-alexa-kyra)
 
 ---
 
-## 1. Requisiti e Architettura
-* Un account **[Amazon Developer](https://developer.amazon.com/alexa/console/ask)** (gratuito, registrato con la stessa email dei tuoi dispositivi Amazon Echo).
-* Il backend Shinra attivo su server Linux/Debian con HTTPS valido (`https://tuodominio.com/api/alexa` oppure `https://shinra.tuodominio.it/api/alexa`).
-* Certificato SSL valido tramite Cloudflare / Let's Encrypt / Reverse Proxy.
+## 1. Perché Kyra risolve i problemi di pronuncia
+
+Amazon Alexa in lingua italiana ha difficoltà con fonemi non tipicamente italiani come *"Shinra"* (che viene spesso storpiato in *"scena"*, *"siringa"*, *"scimmia"* o interpretato come ricerca brani su Spotify).
+
+**Kyra** (pronunciato *Chì-ra* o *Kì-ra*) ha invece due sillabe aperte e nette (`KI` + `RA`) che l'algoritmo vocale di Alexa riconosce al primo colpo, sia pronunciato veloce che sottovoce.
+
+> [!TIP]
+> Puoi impostare il nome di invocazione come **`kyra`** (oppure **`kira`** se preferisci la grafia fonetica italiana tradizionale). Entrambe le varianti sono pienamente gestite dal backend.
 
 ---
 
-## 2. Creazione della Skill
-1. Accedi alla console: **[developer.amazon.com/alexa/console/ask](https://developer.amazon.com/alexa/console/ask)**.
-2. In basso a destra clicca su **`Alexa Skills Kit`** ➔ poi clicca su **`Create Skill`**.
-3. Compila la prima schermata:
-   * **Skill Name**: `Shinra`
-   * **Primary Locale**: `Italian (IT)`
-   * **Experience / Type**: Seleziona **`Other`** ➔ poi **`Custom`**
-   * **Hosting Service**: Seleziona **`Provision your own`**
-4. Clicca su **Next** (in alto a destra), seleziona il template **"Start from Scratch"** e conferma con **Create Skill**.
+## 2. Interaction Model Completo (JSON Editor)
 
----
-
-## 3. Interaction Model Completo (JSON Editor)
-
-Nel menu a sinistra della console Alexa:
-1. Vai su **Interaction Model** ➔ **JSON Editor**.
-2. Cancella tutto e incolla questo schema JSON validato (che include tutte le *carrier phrases* obbligatorie per evitare errori di build):
+Questo schema JSON include gli intenti dedicati per **accendere/spegnere dispositivi domotici senza perdere i verbi d'azione**, attivare routine e porre qualsiasi domanda generica:
 
 ```json
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "shinra",
+      "invocationName": "kyra",
       "intents": [
         {
           "name": "AMAZON.CancelIntent",
@@ -68,6 +56,55 @@ Nel menu a sinistra della console Alexa:
           "samples": []
         },
         {
+          "name": "TurnOnIntent",
+          "slots": [
+            {
+              "name": "device",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "accendi {device}",
+            "attiva {device}",
+            "apri {device}",
+            "accendere {device}",
+            "attivare {device}"
+          ]
+        },
+        {
+          "name": "TurnOffIntent",
+          "slots": [
+            {
+              "name": "device",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "spegni {device}",
+            "disattiva {device}",
+            "chiudi {device}",
+            "spegnere {device}",
+            "disattivare {device}"
+          ]
+        },
+        {
+          "name": "ActivateModeIntent",
+          "slots": [
+            {
+              "name": "mode",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "modalità {mode}",
+            "modalita {mode}",
+            "avvia {mode}",
+            "imposta {mode}",
+            "attiva modalità {mode}",
+            "attiva modalita {mode}"
+          ]
+        },
+        {
           "name": "GeneralQueryIntent",
           "slots": [
             {
@@ -83,11 +120,7 @@ Nel menu a sinistra della console Alexa:
             "cosa {query}",
             "come {query}",
             "quando {query}",
-            "quando e {query}",
-            "quando è {query}",
             "chi {query}",
-            "chi e {query}",
-            "chi è {query}",
             "dove {query}",
             "perché {query}",
             "perche {query}",
@@ -95,15 +128,13 @@ Nel menu a sinistra della console Alexa:
             "quanti {query}",
             "qual è {query}",
             "qual e {query}",
-            "imposta {query}",
-            "accendi {query}",
-            "spegni {query}",
             "cerca {query}",
             "spiegami {query}",
             "fammi {query}",
-            "apri {query}",
-            "chiudi {query}",
-            "domanda {query}"
+            "domanda {query}",
+            "voglio {query}",
+            "vorrei {query}",
+            "puoi {query}"
           ]
         }
       ],
@@ -113,98 +144,59 @@ Nel menu a sinistra della console Alexa:
 }
 ```
 
-3. Clicca su **"Save Model"** e poi su **"Build Model"**. Attendi la notifica verde **"Build Successful"**.
+---
+
+## 3. Come Aggiornare la Skill su Amazon Developer Console
+
+Se hai già creato la Skill:
+
+1. Apri **[developer.amazon.com/alexa/console/ask](https://developer.amazon.com/alexa/console/ask)** ed entra nella tua Skill.
+2. Nel menu a sinistra vai su **Interaction Model** ➔ **JSON Editor**.
+3. Seleziona tutto il testo presente, cancellalo e incolla il JSON completo qui sopra.
+4. Clicca sul pulsante in alto **"Save Model"**.
+5. Clicca subito dopo su **"Build Model"** e attendi qualche secondo fino a quando compare il messaggio verde **"Build Successful"**.
+
+Se vuoi cambiare anche il nome visualizzato della skill:
+* Vai su **Skill Preview / Distribution** ➔ **Skill Name** e imposta `Kyra`.
 
 ---
 
-## 4. Configurazione Endpoint HTTPS & SSL
+## 4. Configurazione Endpoint HTTPS
 
-1. Nel menu a sinistra clicca su **Endpoint**.
-2. Seleziona il pallino **HTTPS**.
-3. Incolla l'URL pubblico HTTPS del tuo server in entrambi i campi:
-   * **Default Region**: `https://tuodominio.com/api/alexa`
-   * **Europe and India (Europe)**: `https://tuodominio.com/api/alexa`
-4. Nel menu a tendina *Select SSL certificate type* seleziona per entrambi la **2ª opzione**:
-   * **`My development endpoint is a sub-domain of a domain that has a wildcard certificate from a certificate authority`**
-5. Clicca sul pulsante azzurro **"Save Endpoints"** in alto a destra.
+Nel menu a sinistra su **Endpoint**:
+* Seleziona **HTTPS**.
+* **Default Region**: `https://tuodominio.com/api/alexa`
+* **Europe and India**: `https://tuodominio.com/api/alexa`
+* Tipo di certificato: Seleziona la 2ª opzione (*"My development endpoint is a sub-domain of a domain that has a wildcard certificate from a certificate authority"*).
+* Clicca su **"Save Endpoints"**.
 
 ---
 
-## 5. Impostazioni di Rete (NPM e Cloudflare WAF)
+## 5. Come Usare e Testare Kyra
 
-Affinché i server di Amazon Alexa possano comunicare con il tuo server di casa senza essere bloccati:
+### A. Apertura Continua (Consigliata)
+> **"Alexa, apri Kyra"**
 
-### A. Su Nginx Proxy Manager (NPM):
-* Nel Proxy Host associato al tuo dominio:
-* **Block Common Exploits**: ⚠️ **DISATTIVATO** (evita che Nginx blocchi le chiamate interne di Alexa con un errore 403).
-* **Force SSL**: Attivo.
-* **HTTP/2 Support**: Attivo.
+Alexa risponderà: *"Kyra online, Alessio. Dimmi pure."* e l'anello luminoso rimarrà blu in ascolto. Da questo momento puoi impartire comandi naturali direttamente:
+* *"Accendi la luce in cucina"*
+* *"Che tempo fa oggi?"*
+* *"Ultime notizie"*
+* *"Modalità Relax"*
 
-### B. Su Cloudflare Dashboard:
-* Vai su **Security** ➔ **WAF** ➔ **Custom Rules**.
-* Crea una regola:
-  * **Nome**: `Allow Alexa Endpoint`
-  * **Campo (Field)**: `URI Path` | **Operatore**: `equals` | **Valore**: `/api/alexa`
-  * **Azione**: `Skip` ➔ Seleziona tutte le opzioni (WAF, Bot Fight Mode, Rate Limiting).
+### B. Comando One-Shot Diretto
+> **"Alexa, chiedi a Kyra che tempo fa a Roma"**  
+> **"Alexa, dì a Kyra di accendere il salotto"**  
+> **"Alexa, chiedi a Kyra le notizie del giorno"**
 
 ---
 
-## 6. Come Usare e Testare la Skill
+## 6. Consiglio Pro: Routine con 1 parola ("Alexa, Kyra")
 
-### A. Nel Simulatore Web (Tab "Test"):
-* Vai nella scheda **Test** in alto nella console Alexa.
-* Imposta il selettore da *Off* a **Development**.
-* Scrivi: **`apri shinra`** *(non scrivere la parola "alexa", il simulatore è già Alexa!)*.
-* Shinra risponderà immediatamente salutandoti e mettendosi in ascolto.
-
-### B. Sui tuoi dispositivi fisici Amazon Echo:
-Tutti gli Echo collegati al tuo account sono già abilitati:
-* **Comando Diretto (One-Shot)**:
-  * *"Alexa, chiedi a Shinra che tempo farà domani a Roma"*
-  * *"Alexa, dì a Shinra di accendere la luce in salotto"*
-  * *"Alexa, chiedi a Shinra cosa significa il termine fotosintesi"*
-  * *"Alexa, chiedi a Shinra le ultime notizie"*
-* **Sessione Continua**:
-  * Dici *"Alexa, apri Shinra"* ➔ l'anello luminoso resta blu e puoi fare domande consecutive senza dover ripetere la parola "Alexa".
-
-### C. Creare una Routine con 1 sola parola (*"Alexa, Shinra"*):
-1. Apri l'app **Amazon Alexa** su smartphone.
+Per non dover dire ogni volta *"Alexa, apri Kyra"*:
+1. Apri l'app **Amazon Alexa** sullo smartphone.
 2. Vai su **Altro** ➔ **Routine** ➔ premi **`+`**.
-3. **Quando:** seleziona *Voce* ➔ imposta la parola (es. `Shinra`).
-4. **Aggiungi un'azione:** seleziona *Personalizzata* ➔ scrivi `apri Shinra`.
-5. Salva la routine. Ora basterà dire: **"Alexa, Shinra"**!
+3. **Quando:** seleziona *Voce* ➔ scrivi **`Kyra`**.
+4. **Aggiungi un'azione:** seleziona *Personalizzata* ➔ scrivi **`apri Kyra`**.
+5. Salva la routine.
 
----
-
-## 7. 🪄 Come Modificare la Skill in Futuro
-
-Se in futuro vuoi aggiornare o personalizzare la Skill:
-
-### A. Aggiungere nuove frasi di comando (Sample Utterances):
-1. Vai su **Interaction Model** ➔ **Intents** ➔ clicca su **`GeneralQueryIntent`**.
-2. Nel riquadro *Sample Utterances* aggiungi nuove combinazioni contenenti lo slot `{query}`, ad esempio:
-   * `regola {query}`
-   * `controlla {query}`
-   * `attiva la modalità {query}`
-3. Clicca su **"Save Model"** e poi su **"Build Model"**.
-
-### B. Cambiare il nome di invocazione (*Invocation Name*):
-1. Vai su **Interaction Model** ➔ **Invocations** ➔ **Skill Invocation Name**.
-2. Modifica il nome (es. da `shinra` a `computer` o `casa`).
-3. Clicca **"Save Model"** ➔ **"Build Model"**.
-
-### C. Aggiornare l'URL del server:
-1. Se cambi dominio o IP, vai su **Endpoint**.
-2. Sostituisci l'URL nei campi *Default Region* ed *Europe and India*.
-3. Clicca su **"Save Endpoints"**.
-
----
-
-## 8. Risoluzione Errori Comuni
-
-| Errore | Causa | Soluzione |
-| :--- | :--- | :--- |
-| **`Sample utterance "{query}" must include a carrier phrase`** | Amazon non consente lo slot `{query}` isolato. | Usa sempre frasi con prefisso come `dimmi {query}`, `chiedi {query}`, `esegui {query}` nel JSON Editor. |
-| **`Non posso raggiungere la Skill richiesta`** | Cloudflare WAF, Nginx Proxy Manager o certificato SSL errato. | Disattiva *Block Common Exploits* in NPM, crea la regola di bypass WAF su Cloudflare per `/api/alexa` e seleziona la 2ª opzione SSL (*Wildcard certificate*). |
-| **Timeout durante l'elaborazione su Echo** | Alexa richiede risposte entro 8 secondi. | Assicurati che Shinra usi un modello compatto (es. `qwen2.5:3b`) con cache attiva, per rispondere in meno di un secondo. |
-
+Ora basterà dire semplicemente: **"Alexa, Kyra"** e partirà subito!

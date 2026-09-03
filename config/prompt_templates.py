@@ -1,5 +1,6 @@
 import datetime
 from typing import Optional
+from config.settings import settings
 from core.user_manager import UserProfile
 
 def get_system_prompt(
@@ -11,6 +12,7 @@ def get_system_prompt(
     modes_summary: str = ""
 ) -> str:
     now_str = datetime.datetime.now().strftime("%A %d %B %Y, ore %H:%M")
+    assistant_name = getattr(settings.assistant, "name", "Kyra") or "Kyra"
     user_name = user_profile.name if user_profile else "Utente"
     age_group = user_profile.age_group if user_profile else "adult"
     role = user_profile.role if user_profile else "adult"
@@ -23,7 +25,7 @@ def get_system_prompt(
         persona = f"Parli con {user_name} ({'Amministratore' if role == 'admin' else 'Adulto'}). Stile Jarvis: cordiale, riservato, preciso, risposte brevi e naturali in italiano. Evita frasi verbose."
 
     parts = [
-        f"Sei Shinra, assistente domestico intelligente. Oggi è {now_str}. Città di riferimento: {default_city}.",
+        f"Sei {assistant_name}, assistente domestico intelligente. Oggi è {now_str}. Città di riferimento: {default_city}.",
         persona,
         f"""REGOLE SUI TOOL (Usa sempre i tool per dati in tempo reale o azioni):
 - METEO: Per qualsiasi domanda sul meteo o temperature, chiama SEMPRE il tool `get_weather` (default location: "{default_city}").

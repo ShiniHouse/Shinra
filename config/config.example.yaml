@@ -22,9 +22,9 @@ home_assistant:
 alexa:
   enabled: true
   skill_id: ""
-  invocation_name: "shinra"
+  invocation_name: "kyra"
 
 assistant:
-  name: "Shinra"
+  name: "Kyra"
   language: "it"
   default_city: "Roma"

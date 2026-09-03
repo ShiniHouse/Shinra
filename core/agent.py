@@ -72,7 +72,7 @@ class ShinraAgent:
         from core.interview_engine import interview_engine
         u_id = profile.id if profile else "alessio"
         
-        learning_triggers = ["shinra istruisci", "istruisci", "modalità apprendimento", "impara la casa", "intervista casa", "insegna abitudini", "voglio insegnarti", "impara abitudini"]
+        learning_triggers = ["kyra istruisci", "kira istruisci", "chira istruisci", "shinra istruisci", "istruisci", "modalità apprendimento", "impara la casa", "intervista casa", "insegna abitudini", "voglio insegnarti", "impara abitudini"]
         is_start_interview = any(t in user_lower for t in learning_triggers)
         
         if is_start_interview:

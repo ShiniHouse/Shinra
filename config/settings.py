@@ -28,10 +28,10 @@ class HomeAssistantConfig(BaseModel):
 class AlexaConfig(BaseModel):
     enabled: bool = True
     skill_id: Optional[str] = ""
-    invocation_name: str = "shinra"
+    invocation_name: str = "kyra"
 
 class AssistantConfig(BaseModel):
-    name: str = "Shinra"
+    name: str = "Kyra"
     language: str = "it"
     default_city: str = "Roma"
 

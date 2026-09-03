@@ -28,10 +28,10 @@ alexa:
   enabled: true
   # Se impostato, verifica che l'App ID corrisponda alla tua skill
   skill_id: ""
-  # Nome invocazione skill — dì "Alexa, apri Shinra" o "Alexa, chiedi a Shinra..."
-  invocation_name: "shinra"
+  # Nome invocazione skill — dì "Alexa, apri Kyra" o "Alexa, chiedi a Kyra..."
+  invocation_name: "kyra"
 
 assistant:
-  name: "Shinra"
+  name: "Kyra"
   language: "it"
   default_city: "Roma" # Città predefinita per meteo locale se non specificata

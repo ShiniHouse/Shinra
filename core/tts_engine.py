@@ -43,7 +43,7 @@ def clean_text_for_tts(text: str) -> str:
     clean = re.sub(r"`.*?`", "", clean)
     clean = re.sub(r"https?://\S+", "", clean)
     clean = re.sub(r"[*_~#>[\]]", "", clean)
-    clean = re.sub(r"[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]", "", clean, flags=re.UNICODE)
+    clean = re.sub(r"[\U0001F300-\U0001FAFF\u2600-\u26FF\u2700-\u27BF]", "", clean)
     clean = re.sub(r"\bHA\b", "Home Assistant", clean)
     clean = re.sub(r"\b°C\b", " gradi ", clean)
     clean = re.sub(r"\s+", " ", clean).strip()
