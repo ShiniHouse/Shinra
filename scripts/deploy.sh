@@ -275,7 +275,9 @@ else
     info "[simulazione] tar -czf $ARCHIVIO config data .env"
 fi
 
-echo "$ATTUALE" > "${STATO_PRECEDENTE}.tmp" && mv "${STATO_PRECEDENTE}.tmp" "$STATO_PRECEDENTE"
+if [[ $DRY_RUN -eq 0 ]]; then
+    echo "$ATTUALE" > "${STATO_PRECEDENTE}.tmp" && mv "${STATO_PRECEDENTE}.tmp" "$STATO_PRECEDENTE"
+fi
 
 # ------------------------------------------- 3b. migrazione dello stato
 # Quando un aggiornamento smette di tracciare un file di stato — e' cio' che
