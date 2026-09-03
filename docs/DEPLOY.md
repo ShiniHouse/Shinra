@@ -63,6 +63,26 @@ sono cambiate**; applica le migrazioni; riavvia; e per trenta secondi verifica
 che il servizio risponda davvero. Se non risponde, mostra il log, **torna da
 solo alla versione precedente** e riavvia.
 
+> ### Sul server non si esegue mai `git pull` a mano
+>
+> Non e' una preferenza di stile: `git pull` scavalca tutto cio' che questa
+> procedura fa per te. Niente backup, niente messa da parte dello stato,
+> nessun riavvio controllato, nessuna verifica di salute, nessun ritorno
+> indietro possibile. Lo script fa il `fetch` da solo: non serve anticiparlo.
+>
+> Succede in buona fede, tipicamente per «prendere prima lo script nuovo».
+> Anche in quel caso la risposta e' lanciare lo script: si aggiorna da se'.
+>
+> Se il pull e' gia' stato fatto, lo script dira' «gia' aggiornato» e non
+> fara' nulla — comprese le migrazioni che dovevano accompagnare quel codice.
+> Per rimediare, riportare il repository alla versione precedente e rifare
+> l'aggiornamento con lo script:
+>
+> ```bash
+> sudo -u "$(stat -c '%U' /opt/Shinra)" git -C /opt/Shinra checkout --force HEAD~1
+> sudo /opt/Shinra/scripts/deploy.sh
+> ```
+
 ### Comandi
 
 ```bash
