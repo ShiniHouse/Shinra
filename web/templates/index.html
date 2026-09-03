@@ -1767,7 +1767,10 @@
             if (roleEl) roleEl.innerText = `${user.role} • ${av.label}`;
         }
 
-        // Speech Recognition Setup
+        // ==================== SPEECH RECOGNITION (COMPATIBILE IOS SAFARI / PWA) ====================
+        let activeRecognition = null;
+        let isRecording = false;
+
         function stopRecording() {
             isRecording = false;
             const btn = document.getElementById('mic-btn');
@@ -1777,36 +1780,90 @@
             updateLivingCoreState('idle');
         }
 
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            recognition = new SpeechRecognition();
-            recognition.lang = 'it-IT';
-            recognition.continuous = false;
-            recognition.interimResults = false;
+        async function toggleSpeechRecognition() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) {
+                alert("Il riconoscimento vocale non è supportato in questa versione del browser. Puoi digitare il tuo messaggio.");
+                return;
+            }
 
-            recognition.onstart = () => {
-                isRecording = true;
-                const btn = document.getElementById('mic-btn');
-                if (btn) btn.classList.add('bg-rose-600', 'text-white', 'mic-active');
-                const st = document.getElementById('recording-status');
-                if (st) st.classList.remove('hidden');
-                updateLivingCoreState('listening');
-            };
+            if (isRecording && activeRecognition) {
+                try { activeRecognition.stop(); } catch(e) {}
+                stopRecording();
+                return;
+            }
 
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                document.getElementById('user-input').value = transcript;
-                handleSend();
-            };
+            // Su iOS Safari PWA: sblocca la sessione microfono se necessario
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(t => t.stop());
+                } catch (micErr) {
+                    console.warn('Permesso microfono non concesso da iOS:', micErr);
+                    alert("Accesso al microfono non consentito da iOS. Vai in Impostazioni iPhone ➔ Safari ➔ Microfono e seleziona 'Consenti'.");
+                    return;
+                }
+            }
 
-            recognition.onerror = () => stopRecording();
-            recognition.onend = () => stopRecording();
-        }
+            try {
+                activeRecognition = new SpeechRec();
+                activeRecognition.lang = 'it-IT';
+                activeRecognition.continuous = false;
+                activeRecognition.interimResults = true;
+                activeRecognition.maxAlternatives = 1;
 
-        function toggleSpeechRecognition() {
-            if (!recognition) return alert("Riconoscimento vocale non supportato nel browser.");
-            if (isRecording) recognition.stop();
-            else recognition.start();
+                let finalTranscript = '';
+
+                activeRecognition.onstart = () => {
+                    isRecording = true;
+                    const btn = document.getElementById('mic-btn');
+                    if (btn) btn.classList.add('bg-rose-600', 'text-white', 'mic-active');
+                    const st = document.getElementById('recording-status');
+                    if (st) {
+                        st.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> 🎙️ In ascolto... parla pure!';
+                        st.classList.remove('hidden');
+                    }
+                    updateLivingCoreState('listening');
+                };
+
+                activeRecognition.onresult = (event) => {
+                    let interim = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        const piece = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += piece;
+                        } else {
+                            interim += piece;
+                        }
+                    }
+                    const display = (finalTranscript || interim).trim();
+                    const input = document.getElementById('user-input');
+                    if (input && display) {
+                        input.value = display;
+                    }
+                };
+
+                activeRecognition.onerror = (event) => {
+                    console.warn('SpeechRecognition error:', event.error);
+                    stopRecording();
+                    if (event.error === 'not-allowed') {
+                        alert("Permesso microfono non autorizzato su iOS. Controlla le impostazioni di Safari.");
+                    }
+                };
+
+                activeRecognition.onend = () => {
+                    stopRecording();
+                    const input = document.getElementById('user-input');
+                    if (input && input.value.trim().length > 0) {
+                        handleSend();
+                    }
+                };
+
+                activeRecognition.start();
+            } catch (err) {
+                console.error('Errore avvio SpeechRecognition:', err);
+                stopRecording();
+            }
         }
 
         // ==================== MOTORE VOCALE UMANIZZATO HD ====================
@@ -2099,22 +2156,25 @@
         async function handleSend(e) {
             if (e) e.preventDefault();
             const input = document.getElementById('user-input');
-            const text = input.value.trim();
+            const text = input ? input.value.trim() : '';
             if (!text) return;
 
             appendUserMessage(text);
-            input.value = '';
+            if (input) {
+                input.value = '';
+                input.blur(); // Chiude la tastiera virtuale su iPhone evitando blocchi di scrolling/zoom
+            }
 
             const sendBtn = document.getElementById('send-btn');
-            sendBtn.disabled = true;
+            if (sendBtn) sendBtn.disabled = true;
             showTypingIndicator();
             updateLivingCoreState('thinking');
 
             try {
                 const res = await fetch('/api/chat', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ message: text, user_id: activeUserId })
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ message: text, user_id: activeUserId || 'alessio' })
                 });
                 hideTypingIndicator();
                 if (!res.ok) {
@@ -2128,10 +2188,10 @@
                 if (data.actions) data.actions.forEach(a => logAction(a.tool, a.args, a.result));
             } catch (err) {
                 hideTypingIndicator();
-                appendAssistantMessage(`Errore di comunicazione con Shinra: ${err.message || 'Server non raggiungibile'}`);
+                appendAssistantMessage(`Errore di comunicazione: ${err.message || 'Server non raggiungibile'}`);
                 updateLivingCoreState('idle');
             } finally {
-                sendBtn.disabled = false;
+                if (sendBtn) sendBtn.disabled = false;
             }
         }
 
@@ -2584,18 +2644,19 @@
             }
         }
 
-        function toggleLearningMic() {
+        async function toggleLearningMic() {
             const micBtn = document.getElementById('learning-mic-btn');
             const statusLabel = document.getElementById('learning-mic-status');
             const input = document.getElementById('learning-answer-input');
 
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) {
                 alert('Riconoscimento vocale non supportato dal browser. Puoi digitare la risposta nella casella di testo.');
                 return;
             }
 
             if (isLearningListening && learningRecognition) {
-                learningRecognition.stop();
+                try { learningRecognition.stop(); } catch(e) {}
                 isLearningListening = false;
                 if (statusLabel) statusLabel.classList.add('hidden');
                 if (micBtn) {
@@ -2605,48 +2666,87 @@
                 return;
             }
 
-            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-            learningRecognition = new SpeechRec();
-            learningRecognition.lang = 'it-IT';
-            learningRecognition.continuous = false;
-            learningRecognition.interimResults = false;
-
-            learningRecognition.onstart = () => {
-                isLearningListening = true;
-                if (statusLabel) statusLabel.classList.remove('hidden');
-                if (micBtn) {
-                    micBtn.classList.add('bg-rose-600', 'text-white');
-                    micBtn.classList.remove('bg-slate-800', 'text-slate-300');
+            // Su iOS Safari: sblocca la sessione microfono se necessario
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(t => t.stop());
+                } catch (micErr) {
+                    console.warn('Permesso microfono non concesso da iOS:', micErr);
+                    alert("Accesso al microfono non consentito da iOS. Vai in Impostazioni iPhone ➔ Safari ➔ Microfono e seleziona 'Consenti'.");
+                    return;
                 }
-            };
+            }
 
-            learningRecognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                if (input) {
-                    input.value = (input.value ? (input.value + ' ') : '') + transcript;
-                }
-            };
+            try {
+                learningRecognition = new SpeechRec();
+                learningRecognition.lang = 'it-IT';
+                learningRecognition.continuous = false;
+                learningRecognition.interimResults = true;
 
-            learningRecognition.onerror = (event) => {
-                console.warn('Learning speech error:', event.error);
+                let finalTranscript = '';
+                const initialText = input ? input.value.trim() : '';
+
+                learningRecognition.onstart = () => {
+                    isLearningListening = true;
+                    if (statusLabel) {
+                        statusLabel.innerText = '🎙️ In ascolto... parla pure!';
+                        statusLabel.classList.remove('hidden');
+                    }
+                    if (micBtn) {
+                        micBtn.classList.add('bg-rose-600', 'text-white');
+                        micBtn.classList.remove('bg-slate-800', 'text-slate-300');
+                    }
+                };
+
+                learningRecognition.onresult = (event) => {
+                    let interim = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        const piece = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += piece;
+                        } else {
+                            interim += piece;
+                        }
+                    }
+                    const spoken = (finalTranscript || interim).trim();
+                    if (input && spoken) {
+                        input.value = initialText ? `${initialText} ${spoken}` : spoken;
+                    }
+                };
+
+                learningRecognition.onerror = (event) => {
+                    console.warn('Learning speech error:', event.error);
+                    isLearningListening = false;
+                    if (statusLabel) statusLabel.classList.add('hidden');
+                    if (micBtn) {
+                        micBtn.classList.remove('bg-rose-600', 'text-white');
+                        micBtn.classList.add('bg-slate-800', 'text-slate-300');
+                    }
+                    if (event.error === 'not-allowed') {
+                        alert("Permesso microfono non autorizzato su iOS. Controlla le impostazioni di Safari.");
+                    }
+                };
+
+                learningRecognition.onend = () => {
+                    isLearningListening = false;
+                    if (statusLabel) statusLabel.classList.add('hidden');
+                    if (micBtn) {
+                        micBtn.classList.remove('bg-rose-600', 'text-white');
+                        micBtn.classList.add('bg-slate-800', 'text-slate-300');
+                    }
+                };
+
+                learningRecognition.start();
+            } catch (err) {
+                console.error('Errore avvio learningRecognition:', err);
                 isLearningListening = false;
                 if (statusLabel) statusLabel.classList.add('hidden');
                 if (micBtn) {
                     micBtn.classList.remove('bg-rose-600', 'text-white');
                     micBtn.classList.add('bg-slate-800', 'text-slate-300');
                 }
-            };
-
-            learningRecognition.onend = () => {
-                isLearningListening = false;
-                if (statusLabel) statusLabel.classList.add('hidden');
-                if (micBtn) {
-                    micBtn.classList.remove('bg-rose-600', 'text-white');
-                    micBtn.classList.add('bg-slate-800', 'text-slate-300');
-                }
-            };
-
-            learningRecognition.start();
+            }
         }
 
         async function closeLearningModal() {
