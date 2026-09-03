@@ -70,15 +70,33 @@ target-version = "py310"
 exclude = [".venv", "web", "data"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "ASYNC", "S", "C4", "SIM", "RUF"]
+# Insieme di partenza: correttezza, sicurezza e igiene, senza le regole di
+# modernizzazione (UP) che imporrebbero 186 riscritture sul codice esistente.
+# Vengono attivate una alla volta durante il riordino della v0.2.0 (issue #18):
+# una regola che nessuno riesce a soddisfare viene solo disattivata.
+select = ["E", "F", "W", "I", "B", "ASYNC", "S", "C4", "SIM", "RUF"]
 ignore = [
   "E501",    # lunghezza riga gestita da black
   "B008",    # Depends() nei default e' idiomatico in FastAPI
   "S101",    # assert consentiti nei test
+  "S104",    # 0.0.0.0 e' il valore atteso per un servizio di rete domestico
+  "SIM105",  # contextlib.suppress non e' piu' chiaro di try/except/pass
 ]
+
+# Da attivare progressivamente (issue v0.2.0 #18):
+#   UP    modernizzazione delle annotazioni di tipo   (186 rilievi)
+#   ANN   annotazioni obbligatorie                    (dopo UP)
+#   D     docstring                                   (dopo ANN)
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "S105", "S106"]
+# Lo script di importazione invoca gh: e' il suo scopo.
+"scripts/import_backlog.py" = ["S603", "S607"]
+# L'agente importa alcuni moduli dentro le funzioni per evitare import
+# circolari. Sara' risolto dall'intent router (issue v0.2.0 #17).
+"core/agent.py" = ["E402"]
+"server/routes_admin.py" = ["E402"]
+"server/app.py" = ["E402"]
 
 # --------------------------------- Black ----------------------------------
 [tool.black]

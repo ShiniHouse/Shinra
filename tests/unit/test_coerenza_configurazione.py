@@ -93,9 +93,9 @@ def test_l_annuncio_su_echo_e_utilizzato() -> None:
     reason="session_secret e' dichiarato e mai usato: i token non sono firmati — issue v0.1.0 #06",
 )
 def test_il_segreto_di_sessione_e_utilizzato() -> None:
-    assert occorrenze("session_secret", escludi=("settings.py",)), (
-        "I token di sessione sono generati con secrets.token_hex e non firmati"
-    )
+    assert occorrenze(
+        "session_secret", escludi=("settings.py",)
+    ), "I token di sessione sono generati con secrets.token_hex e non firmati"
 
 
 def test_nessuna_dipendenza_dichiarata_e_inutilizzata() -> None:
@@ -107,6 +107,5 @@ def test_nessuna_dipendenza_dichiarata_e_inutilizzata() -> None:
     """
     pyproject = (RADICE / "pyproject.toml").read_text(encoding="utf-8")
     assert "duckduckgo" not in pyproject, (
-        "duckduckgo-search non e' importata da nessun modulo: non deve comparire "
-        "fra le dipendenze"
+        "duckduckgo-search non e' importata da nessun modulo: non deve comparire " "fra le dipendenze"
     )

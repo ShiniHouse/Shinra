@@ -1,4 +1,5 @@
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 
 class ConversationMemory:
     def __init__(self, max_history: int = 10):
@@ -25,7 +26,8 @@ class ConversationMemory:
 
     def _trim(self) -> None:
         if len(self.history) > self.max_history * 2:
-            self.history = self.history[-self.max_history * 2:]
+            self.history = self.history[-self.max_history * 2 :]
+
 
 # Istanza singleton per la sessione principale
 memory = ConversationMemory(max_history=10)

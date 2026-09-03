@@ -1,23 +1,23 @@
+import asyncio
 import logging
-from typing import Dict, Any, Optional
-from core.ha_client import HomeAssistantClient
-from core.data_store import data_store
+from typing import Any, Dict, Optional
+
 from config.settings import settings
+from core.data_store import data_store
+from core.ha_client import HomeAssistantClient
 
 logger = logging.getLogger(__name__)
 
 # Istanza condivisa del client HA
-ha_client = HomeAssistantClient(
-    base_url=settings.home_assistant.url,
-    token=settings.home_assistant.token
-)
+ha_client = HomeAssistantClient(base_url=settings.home_assistant.url, token=settings.home_assistant.token)
+
 
 async def control_device(
     entity_id: str,
-    action: str, # 'turn_on', 'turn_off', 'toggle', 'set_temperature', 'open', 'close', 'press'
-    brightness: Optional[int] = None, # 0-100 per luci
-    temperature: Optional[float] = None, # per termostati
-    color_name: Optional[str] = None # per luci RGB (es. 'rosso', 'blu', 'bianco caldo')
+    action: str,  # 'turn_on', 'turn_off', 'toggle', 'set_temperature', 'open', 'close', 'press'
+    brightness: Optional[int] = None,  # 0-100 per luci
+    temperature: Optional[float] = None,  # per termostati
+    color_name: Optional[str] = None,  # per luci RGB (es. 'rosso', 'blu', 'bianco caldo')
 ) -> Dict[str, Any]:
     """
     Controlla un dispositivo smart della casa tramite Home Assistant o risolvendo l'alias configurato.
@@ -54,13 +54,14 @@ async def control_device(
     if res.get("success"):
         return {
             "success": True,
-            "message": f"Azione '{action}' eseguita con successo su '{resolved_entity}'."
+            "message": f"Azione '{action}' eseguita con successo su '{resolved_entity}'.",
         }
     return {
         "success": False,
         "error": res.get("error"),
-        "message": f"Non è stato possibile eseguire l'azione '{action}' su '{resolved_entity}'."
+        "message": f"Non è stato possibile eseguire l'azione '{action}' su '{resolved_entity}'.",
     }
+
 
 async def get_home_status(filter_domain: Optional[str] = None) -> Dict[str, Any]:
     """
@@ -70,14 +71,14 @@ async def get_home_status(filter_domain: Optional[str] = None) -> Dict[str, Any]
     if not states:
         return {
             "success": False,
-            "message": "Nessun dato disponibile da Home Assistant (verifica connessione/token)."
+            "message": "Nessun dato disponibile da Home Assistant (verifica connessione/token).",
         }
 
     results = []
     for entity in states:
         entity_id = entity.get("entity_id", "")
         domain = entity_id.split(".")[0]
-        
+
         if filter_domain and domain != filter_domain:
             continue
 
@@ -85,21 +86,16 @@ async def get_home_status(filter_domain: Optional[str] = None) -> Dict[str, Any]
             friendly_name = entity.get("attributes", {}).get("friendly_name", entity_id)
             state = entity.get("state", "unknown")
             unit = entity.get("attributes", {}).get("unit_of_measurement", "")
-            
+
             if domain == "sensor" and any(x in entity_id for x in ["uptime", "ip_address", "last_boot"]):
                 continue
 
-            results.append({
-                "entity_id": entity_id,
-                "nome": friendly_name,
-                "stato": f"{state} {unit}".strip()
-            })
+            results.append(
+                {"entity_id": entity_id, "nome": friendly_name, "stato": f"{state} {unit}".strip()}
+            )
 
-    return {
-        "success": True,
-        "conteggio_dispositivi": len(results),
-        "dispositivi": results[:50]
-    }
+    return {"success": True, "conteggio_dispositivi": len(results), "dispositivi": results[:50]}
+
 
 async def activate_scene_or_routine(entity_id: str) -> Dict[str, Any]:
     """
@@ -112,7 +108,6 @@ async def activate_scene_or_routine(entity_id: str) -> Dict[str, Any]:
         return {"success": True, "message": f"Scena '{entity_id}' attivata."}
     return {"success": False, "error": res.get("error")}
 
-import asyncio
 
 async def activate_mode(mode_name: str) -> Dict[str, Any]:
     """
@@ -159,7 +154,9 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
                 in_degree[v] = in_degree.get(v, 0) + 1
 
         # Trova il punto di partenza (nodo trigger o con in_degree == 0)
-        start_nodes = [n_id for n_id, deg in in_degree.items() if deg == 0 and node_map[n_id].get("type") == "trigger"]
+        start_nodes = [
+            n_id for n_id, deg in in_degree.items() if deg == 0 and node_map[n_id].get("type") == "trigger"
+        ]
         if not start_nodes:
             start_nodes = [n_id for n_id, deg in in_degree.items() if deg == 0]
         if not start_nodes and nodes:
@@ -196,21 +193,33 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
                         s_data["temperature"] = float(n_data["temperature"])
 
                     res = await ha_client.call_service(domain, act_cmd, s_data)
-                    executed_actions.append({"type": "ha_device", "node_id": curr_id, "entity_id": resolved_entity, "action": act_cmd, "status": res.get("success", False)})
+                    executed_actions.append(
+                        {
+                            "type": "ha_device",
+                            "node_id": curr_id,
+                            "entity_id": resolved_entity,
+                            "action": act_cmd,
+                            "status": res.get("success", False),
+                        }
+                    )
 
             # 2. Nodo Ritardo Temporizzato (Delay)
             elif n_type == "delay":
                 delay_sec = float(n_data.get("seconds") or n_data.get("delay_seconds") or 1)
                 logger.info(f"[Shinra Flow] Pausa temporizzata di {delay_sec}s sul nodo {curr_id}...")
                 await asyncio.sleep(delay_sec)
-                executed_actions.append({"type": "delay", "node_id": curr_id, "seconds": delay_sec, "status": True})
+                executed_actions.append(
+                    {"type": "delay", "node_id": curr_id, "seconds": delay_sec, "status": True}
+                )
 
             # 3. Nodo Sintesi Vocale (TTS)
             elif n_type == "tts":
                 msg = n_data.get("message", "")
                 if msg:
                     tts_messages.append(msg)
-                    executed_actions.append({"type": "tts", "node_id": curr_id, "message": msg, "status": True})
+                    executed_actions.append(
+                        {"type": "tts", "node_id": curr_id, "message": msg, "status": True}
+                    )
 
             # Accoda i nodi successivi collegati
             for neighbor in adj.get(curr_id, []):
@@ -235,7 +244,14 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
                         s_data["temperature"] = float(action["temperature"])
 
                     res = await ha_client.call_service(domain, act_cmd, s_data)
-                    executed_actions.append({"type": "ha_device", "entity_id": resolved_entity, "action": act_cmd, "status": res.get("success", False)})
+                    executed_actions.append(
+                        {
+                            "type": "ha_device",
+                            "entity_id": resolved_entity,
+                            "action": act_cmd,
+                            "status": res.get("success", False),
+                        }
+                    )
 
             elif act_type == "delay":
                 delay_sec = float(action.get("seconds") or action.get("delay_seconds") or 1)
@@ -249,10 +265,14 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
                     tts_messages.append(msg)
                     executed_actions.append({"type": "tts", "message": msg, "status": True})
 
-    final_msg = " ".join(tts_messages) if tts_messages else f"Modalità {target_mode.get('name')} eseguita con successo."
+    final_msg = (
+        " ".join(tts_messages)
+        if tts_messages
+        else f"Modalità {target_mode.get('name')} eseguita con successo."
+    )
     return {
         "success": True,
         "modalita": target_mode.get("name"),
         "azioni_eseguite": executed_actions,
-        "messaggio": final_msg
+        "messaggio": final_msg,
     }

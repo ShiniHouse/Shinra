@@ -1,13 +1,12 @@
 import inspect
-import json
 import logging
-from typing import Callable, Dict, Any, List
+from typing import Any, Callable, Dict, List
 
-from core.tools.ha_tools import control_device, get_home_status, activate_scene_or_routine, activate_mode
-from core.tools.weather import get_weather
+from core.tools.ha_tools import activate_mode, activate_scene_or_routine, control_device, get_home_status
 from core.tools.news_search import get_latest_news, search_web
-from core.tools.wikipedia_tool import search_wikipedia
 from core.tools.reminders import add_reminder, list_reminders
+from core.tools.weather import get_weather
+from core.tools.wikipedia_tool import search_wikipedia
 
 logger = logging.getLogger(__name__)
 
@@ -37,16 +36,16 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                 "properties": {
                     "location": {
                         "type": "string",
-                        "description": "Nome della città o comune (es. 'Roma', 'Milano', 'Bologna')."
+                        "description": "Nome della città o comune (es. 'Roma', 'Milano', 'Bologna').",
                     },
                     "days": {
                         "type": "integer",
-                        "description": "Numero di giorni da prevedere (default 2 per oggi e domani)."
-                    }
+                        "description": "Numero di giorni da prevedere (default 2 per oggi e domani).",
+                    },
                 },
-                "required": ["location"]
-            }
-        }
+                "required": ["location"],
+            },
+        },
     },
     {
         "type": "function",
@@ -58,12 +57,12 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Il termine o concetto da cercare (es. 'Olocausto', 'Legge di bilancio', 'Albert Einstein')."
+                        "description": "Il termine o concetto da cercare (es. 'Olocausto', 'Legge di bilancio', 'Albert Einstein').",
                     }
                 },
-                "required": ["query"]
-            }
-        }
+                "required": ["query"],
+            },
+        },
     },
     {
         "type": "function",
@@ -75,12 +74,12 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "La query di ricerca su internet (es. 'approvazione legge di bilancio novità', 'cosa è successo oggi nel mondo')."
+                        "description": "La query di ricerca su internet (es. 'approvazione legge di bilancio novità', 'cosa è successo oggi nel mondo').",
                     }
                 },
-                "required": ["query"]
-            }
-        }
+                "required": ["query"],
+            },
+        },
     },
     {
         "type": "function",
@@ -93,12 +92,12 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                     "category": {
                         "type": "string",
                         "enum": ["mondo", "italia", "economia", "politica", "tecnologia", "generale"],
-                        "description": "Categoria delle notizie desiderata."
+                        "description": "Categoria delle notizie desiderata.",
                     }
                 },
-                "required": ["category"]
-            }
-        }
+                "required": ["category"],
+            },
+        },
     },
     {
         "type": "function",
@@ -110,29 +109,29 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                 "properties": {
                     "entity_id": {
                         "type": "string",
-                        "description": "L'ID o alias del dispositivo (es. 'light.salotto', 'lampadario salotto', 'clima camera', 'switch.tv')."
+                        "description": "L'ID o alias del dispositivo (es. 'light.salotto', 'lampadario salotto', 'clima camera', 'switch.tv').",
                     },
                     "action": {
                         "type": "string",
                         "enum": ["turn_on", "turn_off", "toggle", "set_temperature", "open", "close"],
-                        "description": "Azione da eseguire sul dispositivo."
+                        "description": "Azione da eseguire sul dispositivo.",
                     },
                     "brightness": {
                         "type": "integer",
-                        "description": "Percentuale di luminosità per le luci da 1 a 100."
+                        "description": "Percentuale di luminosità per le luci da 1 a 100.",
                     },
                     "temperature": {
                         "type": "number",
-                        "description": "Temperatura target per climatizzatore o termostato."
+                        "description": "Temperatura target per climatizzatore o termostato.",
                     },
                     "color_name": {
                         "type": "string",
-                        "description": "Colore per luci RGB (es. 'rosso', 'blu', 'verde', 'bianco caldo')."
-                    }
+                        "description": "Colore per luci RGB (es. 'rosso', 'blu', 'verde', 'bianco caldo').",
+                    },
                 },
-                "required": ["entity_id", "action"]
-            }
-        }
+                "required": ["entity_id", "action"],
+            },
+        },
     },
     {
         "type": "function",
@@ -145,11 +144,11 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                     "filter_domain": {
                         "type": "string",
                         "enum": ["light", "climate", "sensor", "switch", "cover"],
-                        "description": "Opzionale: filtra per tipologia di dispositivo."
+                        "description": "Opzionale: filtra per tipologia di dispositivo.",
                     }
-                }
-            }
-        }
+                },
+            },
+        },
     },
     {
         "type": "function",
@@ -161,12 +160,12 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                 "properties": {
                     "mode_name": {
                         "type": "string",
-                        "description": "Il nome della modalità da attivare (es. 'Cinema', 'Buonanotte', 'Buongiorno', 'Lavoro')."
+                        "description": "Il nome della modalità da attivare (es. 'Cinema', 'Buonanotte', 'Buongiorno', 'Lavoro').",
                     }
                 },
-                "required": ["mode_name"]
-            }
-        }
+                "required": ["mode_name"],
+            },
+        },
     },
     {
         "type": "function",
@@ -178,12 +177,12 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                 "properties": {
                     "entity_id": {
                         "type": "string",
-                        "description": "ID dell'entità scena o script (es. 'scene.buonanotte')."
+                        "description": "ID dell'entità scena o script (es. 'scene.buonanotte').",
                     }
                 },
-                "required": ["entity_id"]
-            }
-        }
+                "required": ["entity_id"],
+            },
+        },
     },
     {
         "type": "function",
@@ -193,38 +192,33 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "text": {
-                        "type": "string",
-                        "description": "Contenuto del promemoria."
-                    },
+                    "text": {"type": "string", "description": "Contenuto del promemoria."},
                     "time_info": {
                         "type": "string",
-                        "description": "Quando ricordare (es. 'domani mattina', 'alle 18:00', 'stasera')."
-                    }
+                        "description": "Quando ricordare (es. 'domani mattina', 'alle 18:00', 'stasera').",
+                    },
                 },
-                "required": ["text"]
-            }
-        }
+                "required": ["text"],
+            },
+        },
     },
     {
         "type": "function",
         "function": {
             "name": "list_reminders",
             "description": "Elenca tutti i promemoria salvati e attivi.",
-            "parameters": {
-                "type": "object",
-                "properties": {}
-            }
-        }
-    }
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
 ]
+
 
 async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
     """Esegue un tool registrato passando gli argomenti forniti dal modello LLM."""
     handler = TOOL_HANDLERS.get(tool_name)
     if not handler:
         return {"success": False, "error": f"Tool '{tool_name}' non trovato nel registro."}
-    
+
     try:
         if inspect.iscoroutinefunction(handler):
             return await handler(**arguments)

@@ -30,8 +30,7 @@ def test_data_store_espone_add_knowledge_item() -> None:
     Apprendimento solleva AttributeError e produce un HTTP 500.
     """
     assert hasattr(DataStore, "add_knowledge_item"), (
-        "core/interview_engine.py:110 chiama data_store.add_knowledge_item(), "
-        "che non esiste in DataStore"
+        "core/interview_engine.py:110 chiama data_store.add_knowledge_item(), " "che non esiste in DataStore"
     )
 
 
@@ -46,8 +45,7 @@ def test_ollama_client_espone_generate() -> None:
     prompt di estrazione dei fatti non e' mai stato eseguito.
     """
     assert hasattr(OllamaClient, "generate"), (
-        "core/interview_engine.py:181 chiama self.ollama.generate(), "
-        "che non esiste in OllamaClient"
+        "core/interview_engine.py:181 chiama self.ollama.generate(), " "che non esiste in OllamaClient"
     )
 
 

@@ -1,7 +1,9 @@
 import datetime
 from typing import Optional
+
 from config.settings import settings
 from core.user_manager import UserProfile
+
 
 def get_system_prompt(
     home_context_summary: str = "",
@@ -9,7 +11,7 @@ def get_system_prompt(
     user_profile: Optional[UserProfile] = None,
     custom_knowledge: str = "",
     device_aliases: str = "",
-    modes_summary: str = ""
+    modes_summary: str = "",
 ) -> str:
     now_str = datetime.datetime.now().strftime("%A %d %B %Y, ore %H:%M")
     assistant_name = getattr(settings.assistant, "name", "Kyra") or "Kyra"

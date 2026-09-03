@@ -1,9 +1,9 @@
 import asyncio
 import logging
 import urllib.parse
-from typing import Dict, Any, List
+from typing import Any, Dict
+
 import feedparser
-import httpx
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
@@ -18,11 +18,13 @@ RSS_FEEDS = {
     "generale": "https://www.ansa.it/sito/ansait_rss.xml",
 }
 
+
 def _clean_html(raw_html: str) -> str:
     """Rimuove tag HTML dai sommari RSS."""
     if not raw_html:
         return ""
     return BeautifulSoup(raw_html, "html.parser").get_text(separator=" ", strip=True)
+
 
 async def get_latest_news(category: str = "generale", max_items: int = 4) -> Dict[str, Any]:
     """
@@ -30,40 +32,33 @@ async def get_latest_news(category: str = "generale", max_items: int = 4) -> Dic
     """
     try:
         feed_url = RSS_FEEDS.get(category.lower(), RSS_FEEDS["generale"])
-        
+
         def _parse_feed():
             return feedparser.parse(feed_url)
-        
+
         loop = asyncio.get_event_loop()
         parsed = await loop.run_in_executor(None, _parse_feed)
-        
+
         articles = []
         for entry in parsed.entries[:max_items]:
             title = entry.get("title", "")
             summary = _clean_html(entry.get("summary", ""))
             pub_date = entry.get("published", "")
-            articles.append({
-                "titolo": title,
-                "sommario": summary,
-                "data": pub_date
-            })
-            
+            articles.append({"titolo": title, "sommario": summary, "data": pub_date})
+
         if not articles:
             return await search_web(f"ultime notizie {category}", max_results=max_items)
-            
-        return {
-            "success": True,
-            "categoria": category,
-            "notizie": articles
-        }
+
+        return {"success": True, "categoria": category, "notizie": articles}
     except Exception as e:
         logger.error(f"Errore recupero news RSS ({category}): {e}")
         return await search_web(f"ultime notizie {category}", max_results=max_items)
 
+
 async def search_web(query: str, max_results: int = 4) -> Dict[str, Any]:
     """
     Effettua una ricerca notizie e attualità su internet in tempo reale (Google News & agenzie stampa).
-    
+
     Args:
         query: Termine o domanda da cercare (es. 'approvazione legge di bilancio cosa prevede', 'ultime notizie mondo').
         max_results: Numero massimo di notizie/risultati da restituire (default 4).
@@ -84,22 +79,13 @@ async def search_web(query: str, max_results: int = 4) -> Dict[str, Any]:
             summary = _clean_html(entry.get("summary", ""))
             pub_date = entry.get("published", "")
             source = entry.get("source", {}).get("title", "News")
-            
-            results.append({
-                "titolo": title,
-                "estratto": summary,
-                "data": pub_date,
-                "fonte": source
-            })
+
+            results.append({"titolo": title, "estratto": summary, "data": pub_date, "fonte": source})
 
         if not results:
             return {"success": False, "message": f"Nessun risultato o notizia recente trovata per '{query}'."}
 
-        return {
-            "success": True,
-            "query": query,
-            "risultati": results
-        }
+        return {"success": True, "query": query, "risultati": results}
     except Exception as e:
         logger.error(f"Errore ricerca web per {query}: {e}")
         return {"success": False, "error": str(e), "message": f"Errore durante la ricerca per '{query}'."}

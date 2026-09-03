@@ -80,7 +80,9 @@ def parse(path: Path) -> dict:
 
 
 def assicura_etichette(dry: bool) -> None:
-    esistenti = {e["name"] for e in json.loads(run(["gh", "label", "list", "--json", "name", "--limit", "200"]).stdout)}
+    esistenti = {
+        e["name"] for e in json.loads(run(["gh", "label", "list", "--json", "name", "--limit", "200"]).stdout)
+    }
     for nome, (colore, descrizione) in LABEL.items():
         if nome in esistenti:
             continue
@@ -97,8 +99,18 @@ def assicura_milestone(dry: bool) -> None:
             continue
         print(f"  + milestone  {titolo}")
         if not dry:
-            run(["gh", "api", "repos/{owner}/{repo}/milestones", "-f", f"title={titolo}",
-                 "-f", f"description={descrizione}"], check=False)
+            run(
+                [
+                    "gh",
+                    "api",
+                    "repos/{owner}/{repo}/milestones",
+                    "-f",
+                    f"title={titolo}",
+                    "-f",
+                    f"description={descrizione}",
+                ],
+                check=False,
+            )
 
 
 def main() -> int:
@@ -119,7 +131,9 @@ def main() -> int:
     assicura_etichette(args.dry_run)
     assicura_milestone(args.dry_run)
 
-    aperte = json.loads(run(["gh", "issue", "list", "--state", "all", "--limit", "500", "--json", "title"]).stdout)
+    aperte = json.loads(
+        run(["gh", "issue", "list", "--state", "all", "--limit", "500", "--json", "title"]).stdout
+    )
     titoli_esistenti = {i["title"] for i in aperte}
 
     file = sorted(f for f in BACKLOG.rglob("*.md") if f.name != "README.md")
@@ -141,8 +155,17 @@ def main() -> int:
             continue
 
         corpo = f"{meta['body']}\n\n---\n<sub>Importata da `{meta['file']}`</sub>"
-        cmd = ["gh", "issue", "create", "--title", meta["title"], "--body", corpo,
-               "--milestone", meta["milestone"]]
+        cmd = [
+            "gh",
+            "issue",
+            "create",
+            "--title",
+            meta["title"],
+            "--body",
+            corpo,
+            "--milestone",
+            meta["milestone"],
+        ]
         for etichetta in meta.get("labels", []):
             cmd += ["--label", etichetta]
 
