@@ -1,7 +1,8 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import List, Optional
+
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -9,17 +10,19 @@ logger = logging.getLogger(__name__)
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 USERS_FILE = DATA_DIR / "users.json"
 
+
 class UserProfile(BaseModel):
     id: str
     name: str
-    role: str = "adult" # admin, adult, teen, child, guest
-    age_group: str = "adult" # adult, teen, child
-    gender: str = "unspecified" # male, female, neutral, unspecified
-    avatar_type: Optional[str] = None # male_adult, female_adult, male_child, female_child, neutral, guest
+    role: str = "adult"  # admin, adult, teen, child, guest
+    age_group: str = "adult"  # adult, teen, child
+    gender: str = "unspecified"  # male, female, neutral, unspecified
+    avatar_type: Optional[str] = None  # male_adult, female_adult, male_child, female_child, neutral, guest
     pin: Optional[str] = None
     preferred_news_categories: List[str] = ["generale"]
     restricted_topics: List[str] = []
     notes: Optional[str] = ""
+
 
 GUEST_PROFILE = UserProfile(
     id="guest",
@@ -28,26 +31,70 @@ GUEST_PROFILE = UserProfile(
     age_group="adult",
     gender="neutral",
     avatar_type="guest",
-    notes="Profilo ospite temporaneo con accesso base."
+    notes="Profilo ospite temporaneo con accesso base.",
 )
 
-FEMALE_HINTS = {"sonia", "daniela", "sofia", "giulia", "elena", "laura", "chiara", "francesca", "martina", "sara", "alice", "mamma", "moglie", "madre", "nonna", "zia", "ragazza", "bambina", "figlia"}
-MALE_HINTS = {"alessio", "maurizio", "thomas", "christian", "luca", "marco", "andrea", "francesco", "matteo", "papa", "papà", "padre", "marito", "nonno", "zio", "ragazzo", "bambino", "figlio"}
+FEMALE_HINTS = {
+    "sonia",
+    "daniela",
+    "sofia",
+    "giulia",
+    "elena",
+    "laura",
+    "chiara",
+    "francesca",
+    "martina",
+    "sara",
+    "alice",
+    "mamma",
+    "moglie",
+    "madre",
+    "nonna",
+    "zia",
+    "ragazza",
+    "bambina",
+    "figlia",
+}
+MALE_HINTS = {
+    "alessio",
+    "maurizio",
+    "thomas",
+    "christian",
+    "luca",
+    "marco",
+    "andrea",
+    "francesco",
+    "matteo",
+    "papa",
+    "papà",
+    "padre",
+    "marito",
+    "nonno",
+    "zio",
+    "ragazzo",
+    "bambino",
+    "figlio",
+}
+
 
 def auto_detect_avatar(u: UserProfile) -> UserProfile:
     """Inferisce genere e avatar appropriato se non specificati o incoerenti."""
     name_l = u.name.lower()
     notes_l = (u.notes or "").lower()
-    
+
     if u.role == "guest" or u.id == "guest":
         u.avatar_type = "guest"
         u.gender = "neutral"
         return u
 
     # Rilevamento femmina da nome o note (es. "Moglie", "Madre", "Sonia", "Daniela")
-    is_female = any(w in name_l for w in FEMALE_HINTS) or any(w in notes_l for w in ["moglie", "madre", "mamma", "donna", "femmina", "figlia"])
+    is_female = any(w in name_l for w in FEMALE_HINTS) or any(
+        w in notes_l for w in ["moglie", "madre", "mamma", "donna", "femmina", "figlia"]
+    )
     # Rilevamento maschio da nome o note
-    is_male = any(w in name_l for w in MALE_HINTS) or any(w in notes_l for w in ["marito", "padre", "papà", "papa", "uomo", "maschio", "figlio"])
+    is_male = any(w in name_l for w in MALE_HINTS) or any(
+        w in notes_l for w in ["marito", "padre", "papà", "papa", "uomo", "maschio", "figlio"]
+    )
 
     if is_female:
         u.gender = "female"
@@ -57,27 +104,38 @@ def auto_detect_avatar(u: UserProfile) -> UserProfile:
         u.avatar_type = "male_child" if u.age_group == "child" else "male_adult"
     elif not u.avatar_type or u.avatar_type == "unspecified":
         if u.age_group == "child":
-            u.avatar_type = "male_child" if u.gender == "male" else ("female_child" if u.gender == "female" else "neutral")
+            u.avatar_type = (
+                "male_child"
+                if u.gender == "male"
+                else ("female_child" if u.gender == "female" else "neutral")
+            )
         else:
-            u.avatar_type = "female_adult" if u.gender == "female" else ("male_adult" if u.gender == "male" else "neutral")
+            u.avatar_type = (
+                "female_adult"
+                if u.gender == "female"
+                else ("male_adult" if u.gender == "male" else "neutral")
+            )
     return u
+
 
 class UserManager:
     def __init__(self):
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         if not USERS_FILE.exists():
-            self.save_users([
-                UserProfile(
-                    id="alessio",
-                    name="Alessio",
-                    role="admin",
-                    age_group="adult",
-                    gender="male",
-                    avatar_type="male_adult",
-                    preferred_news_categories=["economia", "tecnologia", "mondo"],
-                    notes="Proprietario e amministratore principale di Shinra."
-                )
-            ])
+            self.save_users(
+                [
+                    UserProfile(
+                        id="alessio",
+                        name="Alessio",
+                        role="admin",
+                        age_group="adult",
+                        gender="male",
+                        avatar_type="male_adult",
+                        preferred_news_categories=["economia", "tecnologia", "mondo"],
+                        notes="Proprietario e amministratore principale di Shinra.",
+                    )
+                ]
+            )
 
     def get_users(self) -> List[UserProfile]:
         try:
@@ -116,13 +174,13 @@ class UserManager:
         # Rimuove preamboli tipici italiani come "sono", "mi chiamo", "parlo con", "è"
         for prefix in ["sono ", "mi chiamo ", "parli con ", "parla con ", "qui è ", "è "]:
             if clean.startswith(prefix):
-                clean = clean[len(prefix):].strip()
+                clean = clean[len(prefix) :].strip()
 
         users = self.get_users()
         for u in users:
             if u.name.lower() in clean or clean in u.name.lower():
                 return u
-        
+
         # Se non corrisponde a nessuno, crea o restituisce un profilo ospite con quel nome
         if clean:
             return UserProfile(
@@ -130,7 +188,7 @@ class UserManager:
                 name=clean.capitalize(),
                 role="guest",
                 age_group="adult",
-                notes="Ospite non registrato."
+                notes="Ospite non registrato.",
             )
         return GUEST_PROFILE
 
@@ -153,5 +211,6 @@ class UserManager:
             self.save_users(filtered)
             return True
         return False
+
 
 user_manager = UserManager()

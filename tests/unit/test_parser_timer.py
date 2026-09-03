@@ -22,6 +22,7 @@ def motore() -> TimerEngine:
 # Timer
 # --------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     ("frase", "secondi_attesi"),
     [
@@ -47,6 +48,7 @@ def test_estrae_l_etichetta_del_timer(motore: TimerEngine) -> None:
 # --------------------------------------------------------------------------
 # Promemoria
 # --------------------------------------------------------------------------
+
 
 def test_riconosce_il_promemoria_a_orario(motore: TimerEngine) -> None:
     risultato = motore.parse_timer_or_reminder("ricordami di prendere le medicine alle 17:30")
@@ -75,6 +77,7 @@ def test_orario_gia_passato_slitta_al_giorno_dopo(motore: TimerEngine) -> None:
 # Non deve riconoscere
 # --------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     "frase",
     ["che ore sono", "accendi la luce del salotto", "che tempo fa domani", ""],
@@ -86,6 +89,7 @@ def test_ignora_le_frasi_non_pertinenti(motore: TimerEngine, frase: str) -> None
 # --------------------------------------------------------------------------
 # Lacune note del parser — issue v0.2.0 #17
 # --------------------------------------------------------------------------
+
 
 @pytest.mark.xfail(
     strict=True,

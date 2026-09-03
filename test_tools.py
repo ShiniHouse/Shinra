@@ -1,17 +1,17 @@
 import asyncio
-import sys
 
-from core.tools.weather import get_weather
-from core.tools.wikipedia_tool import search_wikipedia
 from core.tools.news_search import get_latest_news, search_web
 from core.tools.reminders import add_reminder, list_reminders
+from core.tools.weather import get_weather
+from core.tools.wikipedia_tool import search_wikipedia
+
 
 async def main():
     print("=== 1. Test Tool Meteo (Open-Meteo) ===")
     w = await get_weather("Roma", days=2)
     print("Meteo Roma:", w.get("localita"), "| Adesso:", w.get("adesso"))
     print("Previsione:", w.get("previsioni"))
-    
+
     print("\n=== 2. Test Tool Wikipedia (Definizioni/Storia) ===")
     wiki = await search_wikipedia("Olocausto")
     print("Wikipedia Termine:", wiki.get("termine"))
@@ -33,6 +33,7 @@ async def main():
     await add_reminder("Comprare il latte", "domani mattina")
     rems = await list_reminders()
     print("Promemoria:", rems)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

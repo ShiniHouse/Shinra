@@ -1,0 +1,9 @@
+# Revisioni da saltare in git blame: cambiano la forma, non il contenuto.
+#
+# Attivazione (una volta sola, per ogni copia del repository):
+#     git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# GitHub lo usa automaticamente.
+
+# style: formattazione dell'intero codice con black
+3e41ab07848870d307341f855bcc3800dedd8718

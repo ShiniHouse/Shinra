@@ -1,9 +1,12 @@
-import httpx
 import logging
 from typing import Any, Dict, List, Optional
+
+import httpx
+
 from config.settings import reload_settings
 
 logger = logging.getLogger(__name__)
+
 
 class HomeAssistantClient:
     def __init__(self, base_url: Optional[str] = None, token: Optional[str] = None):
@@ -37,51 +40,34 @@ class HomeAssistantClient:
         curr_url = self.base_url
 
         if not curr_token or curr_token.startswith("INSERISCI_QUI") or len(curr_token) < 20:
-            return {
-                "status": "unconfigured",
-                "message": "Token non inserito",
-                "url": curr_url
-            }
+            return {"status": "unconfigured", "message": "Token non inserito", "url": curr_url}
         try:
             async with httpx.AsyncClient(timeout=4.0) as client:
                 res = await client.get(f"{curr_url}/api/", headers=self.headers)
                 if res.status_code == 200:
-                    return {
-                        "status": "ok",
-                        "message": "Connesso",
-                        "url": curr_url,
-                        "data": res.json()
-                    }
+                    return {"status": "ok", "message": "Connesso", "url": curr_url, "data": res.json()}
                 elif res.status_code == 401:
                     return {
                         "status": "unauthorized",
                         "message": "Token errato / non valido (401)",
-                        "url": curr_url
+                        "url": curr_url,
                     }
                 else:
-                    return {
-                        "status": "error",
-                        "message": f"Errore HTTP {res.status_code}",
-                        "url": curr_url
-                    }
+                    return {"status": "error", "message": f"Errore HTTP {res.status_code}", "url": curr_url}
         except httpx.ConnectError:
             return {
                 "status": "unreachable",
                 "message": f"IP/URL non raggiungibile ({curr_url})",
-                "url": curr_url
+                "url": curr_url,
             }
         except httpx.TimeoutException:
             return {
                 "status": "timeout",
                 "message": f"Timeout di connessione verso {curr_url}",
-                "url": curr_url
+                "url": curr_url,
             }
         except Exception as e:
-            return {
-                "status": "unreachable",
-                "message": f"Errore: {str(e)}",
-                "url": curr_url
-            }
+            return {"status": "unreachable", "message": f"Errore: {e!s}", "url": curr_url}
 
     async def get_states(self) -> List[Dict[str, Any]]:
         """Recupera lo stato di tutte le entità su Home Assistant."""
@@ -118,7 +104,9 @@ class HomeAssistantClient:
 
         return "; ".join(summary_lines[:15])
 
-    async def call_service(self, domain: str, service: str, service_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def call_service(
+        self, domain: str, service: str, service_data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Chiama un servizio su Home Assistant (es. light.turn_on, climate.set_temperature)."""
         if not self.token or self.token.startswith("INSERISCI_QUI"):
             return {"success": False, "error": "Token Home Assistant non configurato."}
@@ -135,9 +123,5 @@ class HomeAssistantClient:
     async def speak_on_alexa(self, message: str, alexa_entity_id: Optional[str] = None) -> Dict[str, Any]:
         """Invia un messaggio vocale TTS su un dispositivo Echo tramite alexa_media_player."""
         target_entity = alexa_entity_id or "media_player.alexa"
-        service_data = {
-            "entity_id": target_entity,
-            "message": message,
-            "data": {"type": "tts"}
-        }
+        service_data = {"entity_id": target_entity, "message": message, "data": {"type": "tts"}}
         return await self.call_service("notify", "alexa_media", service_data)

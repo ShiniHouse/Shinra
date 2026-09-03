@@ -1,7 +1,8 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -12,11 +13,13 @@ SOURCES_FILE = DATA_DIR / "sources.json"
 ALIASES_FILE = DATA_DIR / "device_aliases.json"
 MODES_FILE = DATA_DIR / "modes.json"
 
+
 class KnowledgeItem(BaseModel):
     id: str
     text: str
     category: str = "generale"
     enabled: bool = True
+
 
 class NewsSource(BaseModel):
     id: str
@@ -25,6 +28,7 @@ class NewsSource(BaseModel):
     url: str
     enabled: bool = True
 
+
 class DeviceAlias(BaseModel):
     id: str
     alias: str
@@ -32,13 +36,15 @@ class DeviceAlias(BaseModel):
     room: Optional[str] = ""
     domain: Optional[str] = "light"
 
+
 class ModeAction(BaseModel):
-    type: str # 'ha_service' o 'tts'
+    type: str  # 'ha_service' o 'tts'
     domain: Optional[str] = None
     service: Optional[str] = None
     entity_id: Optional[str] = None
     data: Optional[Dict[str, Any]] = None
     message: Optional[str] = None
+
 
 class ModeItem(BaseModel):
     id: str
@@ -48,6 +54,7 @@ class ModeItem(BaseModel):
     description: Optional[str] = ""
     enabled: bool = True
     actions: List[Dict[str, Any]] = []
+
 
 class DataStore:
     def __init__(self):
@@ -127,7 +134,10 @@ class DataStore:
 
     def get_aliases_summary(self) -> str:
         aliases = self.get_aliases()
-        lines = [f"- '{item.get('alias')}' → `{item.get('entity_id')}` ({item.get('room', 'Generale')})" for item in aliases]
+        lines = [
+            f"- '{item.get('alias')}' → `{item.get('entity_id')}` ({item.get('room', 'Generale')})"
+            for item in aliases
+        ]
         return "\n".join(lines) if lines else "Nessun alias configurato."
 
     # --- Modes / Routines ---
@@ -154,7 +164,10 @@ class DataStore:
         for m in modes:
             if m.get("enabled", True):
                 triggers = ", ".join([f"'{t}'" for t in m.get("trigger_phrases", [])])
-                lines.append(f"- Modalità '{m.get('name')}' (frasi di attivazione: {triggers}): {m.get('description', '')}")
+                lines.append(
+                    f"- Modalità '{m.get('name')}' (frasi di attivazione: {triggers}): {m.get('description', '')}"
+                )
         return "\n".join(lines) if lines else "Nessuna modalità configurata."
+
 
 data_store = DataStore()

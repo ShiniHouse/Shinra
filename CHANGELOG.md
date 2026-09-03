@@ -37,6 +37,13 @@ installabile e utilizzabile.
   insieme al token di Home Assistant.
 
 ### Modificato
+- Formattato l'intero codice Python con black (26 file). Il commit e' puramente
+  meccanico: nessun cambiamento di comportamento. Elencato in
+  `.git-blame-ignore-revs` perche' non sporchi `git blame`.
+- Ridotto l'insieme di regole ruff a quello che il codice esistente puo'
+  sostenere. Le regole di modernizzazione (`UP`, 186 rilievi) vengono attivate
+  durante il riordino della v0.2.0: una regola che nessuno riesce a soddisfare
+  viene solo disattivata.
 - `.gitignore` ora esclude `config/config.yaml` e i file di stato con dati
   personali. **Attenzione**: `config/config.yaml` risulta ancora tracciato da
   git; la rimozione dall'indice fa parte della v0.1.0.

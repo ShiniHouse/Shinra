@@ -1,17 +1,17 @@
 import logging
 from pathlib import Path
 from typing import Optional
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from config.settings import settings, save_config, AppConfig
+from config.settings import settings
 from core.agent import agent
-from core.ollama_client import OllamaClient
 from core.ha_client import HomeAssistantClient
-from core.user_manager import user_manager
+from core.ollama_client import OllamaClient
 from integrations.alexa.skill_handler import handle_alexa_request
 from server.routes_admin import router as admin_router
 
@@ -29,35 +29,39 @@ app.include_router(admin_router)
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+
 class ChatRequest(BaseModel):
     message: str
     user_id: Optional[str] = None
 
-from fastapi.responses import HTMLResponse, JSONResponse, Response
-from core.tts_engine import generate_speech_mp3, NEURAL_VOICES
+
+from fastapi.responses import Response
+
+from core.tts_engine import NEURAL_VOICES, generate_speech_mp3
+
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """Serve la dashboard web dell'assistente."""
     return templates.TemplateResponse(request=request, name="index.html", context={"settings": settings})
 
+
 @app.post("/api/chat")
 async def chat_endpoint(payload: ChatRequest):
     """Endpoint per richieste di chat / voce dall'interfaccia web o client locali."""
     if not payload.message.strip():
         raise HTTPException(status_code=400, detail="Il messaggio non può essere vuoto.")
-    
-    result = await agent.process_user_input(
-        user_text=payload.message,
-        user_id=payload.user_id
-    )
+
+    result = await agent.process_user_input(user_text=payload.message, user_id=payload.user_id)
     return result
+
 
 class TTSRequest(BaseModel):
     text: str
     voice: Optional[str] = "it-IT-DiegoNeural"
     rate: Optional[str] = "+0%"
     pitch: Optional[str] = "+0Hz"
+
 
 @app.post("/api/tts")
 async def tts_endpoint(payload: TTSRequest):
@@ -69,17 +73,19 @@ async def tts_endpoint(payload: TTSRequest):
             text=payload.text,
             voice=payload.voice or "it-IT-DiegoNeural",
             rate=payload.rate or "+0%",
-            pitch=payload.pitch or "+0Hz"
+            pitch=payload.pitch or "+0Hz",
         )
         return Response(content=audio_bytes, media_type="audio/mpeg")
     except Exception as e:
         logger.error(f"Errore generazione TTS neurale: {e}")
-        raise HTTPException(status_code=500, detail=f"Errore generazione audio: {e}")
+        raise HTTPException(status_code=500, detail=f"Errore generazione audio: {e}") from e
+
 
 @app.get("/api/tts/voices")
 async def tts_voices_endpoint():
     """Restituisce le voci neurali disponibili nel server."""
     return NEURAL_VOICES
+
 
 @app.post("/api/alexa")
 async def alexa_skill_endpoint(request: Request):
@@ -98,27 +104,24 @@ async def alexa_skill_endpoint(request: Request):
         return {
             "version": "1.0",
             "response": {
-                "outputSpeech": {
-                    "type": "PlainText",
-                    "text": "Si è verificato un errore interno. Riprova."
-                },
-                "shouldEndSession": True
-            }
+                "outputSpeech": {"type": "PlainText", "text": "Si è verificato un errore interno. Riprova."},
+                "shouldEndSession": True,
+            },
         }
+
 
 @app.get("/api/status")
 async def status_endpoint():
     """Controlla lo stato dei servizi (Ollama, Home Assistant)."""
     ollama = OllamaClient()
     ollama_health = await ollama.check_health()
-    
+
     ha = HomeAssistantClient()
     ha_health = await ha.check_connection()
-    
+
     return {
         "status": "running",
         "ollama": ollama_health,
         "home_assistant": ha_health,
-        "alexa_endpoint": "/api/alexa"
+        "alexa_endpoint": "/api/alexa",
     }
-

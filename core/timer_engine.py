@@ -1,11 +1,12 @@
 import json
+import logging
+import re
 import time
 import uuid
-import re
-import logging
-from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
 
 logger = logging.getLogger("Shinra.TimerEngine")
@@ -13,6 +14,7 @@ logger = logging.getLogger("Shinra.TimerEngine")
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 TIMERS_FILE = DATA_DIR / "timers.json"
 REMINDERS_FILE = DATA_DIR / "reminders.json"
+
 
 class TimerItem(BaseModel):
     id: str
@@ -23,13 +25,15 @@ class TimerItem(BaseModel):
     user_id: str = "alessio"
     completed: bool = False
 
+
 class ReminderItem(BaseModel):
     id: str
     text: str
-    remind_at: str # ISO format YYYY-MM-DDTHH:MM:SS
+    remind_at: str  # ISO format YYYY-MM-DDTHH:MM:SS
     user_id: str = "alessio"
     completed: bool = False
     created_at: str
+
 
 class TimerEngine:
     def __init__(self):
@@ -71,7 +75,7 @@ class TimerEngine:
             "expires_at": now + duration_seconds,
             "user_id": user_id,
             "completed": False,
-            "remaining_seconds": duration_seconds
+            "remaining_seconds": duration_seconds,
         }
         timers.append(item)
         self.save_timers(timers)
@@ -112,7 +116,7 @@ class TimerEngine:
             "remind_at": remind_at_iso,
             "user_id": user_id,
             "completed": False,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
         }
         reminders.append(item)
         self.save_reminders(reminders)
@@ -132,7 +136,10 @@ class TimerEngine:
         t_lower = user_text.lower().strip()
 
         # 1. Parsing Timer: "timer 10 minuti", "timer di 5 minuti per la pasta", "metti un timer di 30 secondi"
-        timer_match = re.search(r"\b(?:metti|imposta|avvia|crea)?\s*(?:un\s+)?timer\s+(?:di\s+)?(\d+)\s*(minuti|minuto|secondi|secondo|ore|ora)\b(?:\s+(?:per|da|chiamato)\s+(.+))?", t_lower)
+        timer_match = re.search(
+            r"\b(?:metti|imposta|avvia|crea)?\s*(?:un\s+)?timer\s+(?:di\s+)?(\d+)\s*(minuti|minuto|secondi|secondo|ore|ora)\b(?:\s+(?:per|da|chiamato)\s+(.+))?",
+            t_lower,
+        )
         if timer_match:
             amount = int(timer_match.group(1))
             unit = timer_match.group(2)
@@ -150,11 +157,13 @@ class TimerEngine:
                 "label": label.capitalize(),
                 "duration_seconds": secs,
                 "amount": amount,
-                "unit": unit
+                "unit": unit,
             }
 
         # 2. Parsing Promemoria temporizzato: "ricordami di comprare il pane alle 17:30" / "ricordami di prendere le medicine tra 20 minuti"
-        remind_delta_match = re.search(r"\bricordami\s+di\s+(.+?)\s+tra\s+(\d+)\s*(minuti|minuto|ore|ora)\b", t_lower)
+        remind_delta_match = re.search(
+            r"\bricordami\s+di\s+(.+?)\s+tra\s+(\d+)\s*(minuti|minuto|ore|ora)\b", t_lower
+        )
         if remind_delta_match:
             action = remind_delta_match.group(1).strip()
             amount = int(remind_delta_match.group(2))
@@ -165,7 +174,7 @@ class TimerEngine:
                 "type": "reminder",
                 "text": action.capitalize(),
                 "remind_at": target_time.strftime("%Y-%m-%dT%H:%M:%S"),
-                "formatted_time": target_time.strftime("alle ore %H:%M")
+                "formatted_time": target_time.strftime("alle ore %H:%M"),
             }
 
         remind_time_match = re.search(r"\bricordami\s+di\s+(.+?)\s+alle\s+(\d{1,2})[:.](\d{2})\b", t_lower)
@@ -181,9 +190,10 @@ class TimerEngine:
                 "type": "reminder",
                 "text": action.capitalize(),
                 "remind_at": target_time.strftime("%Y-%m-%dT%H:%M:%S"),
-                "formatted_time": target_time.strftime("alle ore %H:%M")
+                "formatted_time": target_time.strftime("alle ore %H:%M"),
             }
 
         return None
+
 
 timer_engine = TimerEngine()

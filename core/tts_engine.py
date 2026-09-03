@@ -1,7 +1,6 @@
-import io
-import re
 import logging
-from typing import Dict, Any, List, Optional
+import re
+
 import edge_tts
 
 logger = logging.getLogger(__name__)
@@ -12,27 +11,28 @@ NEURAL_VOICES = [
         "id": "it-IT-DiegoNeural",
         "name": "👨 Diego (Maschile / Stile Jarvis HD)",
         "gender": "male",
-        "desc": "Voce maschile calda, naturale e profonda — ideale per assistenti stile Jarvis"
+        "desc": "Voce maschile calda, naturale e profonda — ideale per assistenti stile Jarvis",
     },
     {
         "id": "it-IT-ElsaNeural",
         "name": "👩 Elsa (Femminile / Stile Shinra HD)",
         "gender": "female",
-        "desc": "Voce femminile brillante, espressiva ed empatica"
+        "desc": "Voce femminile brillante, espressiva ed empatica",
     },
     {
         "id": "it-IT-IsabellaNeural",
         "name": "👩 Isabella (Femminile Conversazionale)",
         "gender": "female",
-        "desc": "Voce femminile calma, colloquiale e rilassante"
+        "desc": "Voce femminile calma, colloquiale e rilassante",
     },
     {
         "id": "it-IT-GiuseppeNeural",
         "name": "👨 Giuseppe (Maschile Formale)",
         "gender": "male",
-        "desc": "Voce maschile chiara, precisa e istituzionale"
-    }
+        "desc": "Voce maschile chiara, precisa e istituzionale",
+    },
 ]
+
 
 def clean_text_for_tts(text: str) -> str:
     """Pulisce il testo da markdown, URL ed emoji prima di inviarlo al motore TTS."""
@@ -49,11 +49,9 @@ def clean_text_for_tts(text: str) -> str:
     clean = re.sub(r"\s+", " ", clean).strip()
     return clean
 
+
 async def generate_speech_mp3(
-    text: str,
-    voice: str = "it-IT-DiegoNeural",
-    rate: str = "+0%",
-    pitch: str = "+0Hz"
+    text: str, voice: str = "it-IT-DiegoNeural", rate: str = "+0%", pitch: str = "+0Hz"
 ) -> bytes:
     """
     Genera uno stream audio MP3 ad alta fedelta a partire dal testo fornito.
@@ -66,12 +64,7 @@ async def generate_speech_mp3(
     if voice not in valid_ids:
         voice = "it-IT-DiegoNeural"
 
-    communicate = edge_tts.Communicate(
-        text=cleaned,
-        voice=voice,
-        rate=rate,
-        pitch=pitch
-    )
+    communicate = edge_tts.Communicate(text=cleaned, voice=voice, rate=rate, pitch=pitch)
 
     audio_bytes = bytearray()
     async for chunk in communicate.stream():
