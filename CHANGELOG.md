@@ -14,7 +14,37 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Sicurezza
+- **I segreti non stanno piu' nel repository** (issue #07, SEC-05).
+  `config/config.yaml`, `data/users.json`, `data/knowledge.json` e gli altri
+  file di stato non sono piu' tracciati da git. Token di Home Assistant, PIN
+  amministratore e segreto di sessione si leggono dall'ambiente o da `.env`,
+  con precedenza `ambiente > .env > config.yaml`.
+- `save_config()` non puo' piu' scrivere un segreto nel file di
+  configurazione: e' l'invariante che impediva a un `git commit -a` di
+  pubblicare le credenziali di casa.
+- Rimosso il segreto di sessione predefinito `shinra-secret-key-salt`, uguale
+  per ogni installazione. Ne viene generato uno per installazione al primo
+  avvio e scritto in `.env` con permessi `600`.
+- I segreti rimasti in `config.yaml` da versioni precedenti vengono spostati
+  in `.env` al primo avvio e cancellati da li'. La migrazione e' idempotente.
+- Controlli d'avvio: token mancante con Home Assistant attivo, PIN mancante con
+  autenticazione attiva, `debug` esposto in rete, skill Alexa senza `skill_id`.
+  Vengono segnalati nel log e non impediscono l'avvio — un hub domotico che si
+  rifiuta di partire lascia una casa senza controllo.
+- Il controllo dei segreti in CI accetta una dichiarazione esplicita per i
+  valori deliberatamente finti: `# pragma: allowlist secret` sulla stessa riga.
+  Serviva perche' il token di prova nei test — che ha la forma di un JWT
+  proprio per somigliare al caso reale — faceva scattare il controllo. La
+  dichiarazione e' visibile in revisione; escludere intere cartelle no, e un
+  segreto vero puo' finire in un test tanto quanto altrove.
+- La configurazione illeggibile non viene piu' ignorata in silenzio: prima un
+  file corrotto faceva ripartire dai valori predefiniti senza alcun segnale.
+
 ### Aggiunto
+- `data/examples/` con i valori iniziali versionati. Al primo avvio ogni file
+  mancante in `data/` viene creato copiando il proprio esempio, cosi'
+  un'installazione nuova parte pronta e una esistente non viene toccata.
 - Impianto di progetto: `pyproject.toml` con dipendenze, dipendenze di
   sviluppo e configurazione di ruff, black, pytest, coverage e mypy.
 - Documenti di governance: `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`,

@@ -1,30 +1,54 @@
-# Shinra Configuration Template
+# ---------------------------------------------------------------------------
+# Shinra — configurazione
+#
+# Copiare in config/config.yaml e adattare:
+#     cp config/config.example.yaml config/config.yaml
+#
+# config/config.yaml NON e' versionato: appartiene a questa installazione.
+#
+# I SEGRETI NON STANNO QUI. Token di Home Assistant, PIN amministratore e
+# segreto di sessione si leggono dall'ambiente o da .env — vedi .env.example.
+# Se un segreto e' rimasto in questo file da una versione precedente, viene
+# spostato in .env al primo avvio e cancellato da qui.
+# ---------------------------------------------------------------------------
 
 server:
   host: "0.0.0.0"
   port: 8000
-  debug: true
+  # Il ricaricamento automatico e le tracce di errore non vanno esposti in
+  # rete: in produzione questo valore resta false.
+  debug: false
 
 llm:
-  # URL dell'istanza Ollama locale
+  # Sovrascrivibile con SHINRA_OLLAMA_URL
   ollama_url: "http://localhost:11434"
-  # Nome del modello (es. gemma2:9b, gemma2:2b, gemma2)
+  # es. qwen2.5:3b (veloce, supporta i tool), gemma2:9b, llama3.2:3b
   model: "gemma2:9b"
   temperature: 0.4
   timeout_seconds: 60
+  max_tokens: 150
 
 home_assistant:
   enabled: true
+  # Sovrascrivibile con SHINRA_HA_URL
   url: "http://homeassistant.local:8123"
-  token: "INSERISCI_QUI_IL_TUO_LONG_LIVED_ACCESS_TOKEN"
+  # Il token si imposta in .env come SHINRA_HA_TOKEN
+  # Entita' media player per gli annunci vocali (es. media_player.echo_cucina)
   alexa_media_player_entity: ""
 
 alexa:
   enabled: true
-  skill_id: ""
+  # L'App ID si imposta in .env come SHINRA_ALEXA_SKILL_ID.
+  # Senza, l'endpoint /api/alexa non puo' verificare da quale skill
+  # arrivano i comandi.
   invocation_name: "kyra"
 
 assistant:
   name: "Kyra"
   language: "it"
   default_city: "Roma"
+
+security:
+  auth_enabled: false
+  # Il PIN si imposta in .env come SHINRA_ADMIN_PIN
+  protect_dashboard: true

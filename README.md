@@ -31,8 +31,8 @@ corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino all
 >   accetta comandi da qualunque origine.
 > - Trentotto endpoint su trentanove non richiedono autenticazione: chiunque sia
 >   sulla rete di casa può comandare l'impianto.
-> - `config/config.yaml` è tracciato da git e riceve il token di Home Assistant
->   quando si salvano le impostazioni: verifica sempre che non finisca in un commit.
+> - ~~`config/config.yaml` è tracciato da git~~ — **risolto**: i segreti stanno
+>   in `.env` (vedi `.env.example`) e i file di stato non sono più versionati.
 > - **La Modalità Apprendimento non funziona** (errore 500 a ogni risposta) e i
 >   **promemoria non vengono mai eseguiti**. Entrambi sono in lavorazione nella
 >   milestone `v0.1.0`.

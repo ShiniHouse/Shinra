@@ -1,0 +1,14 @@
+[
+  {
+    "id": "k1",
+    "text": "Esempio: qui vengono memorizzati i fatti sulla casa, uno per riga.",
+    "category": "generale",
+    "enabled": true
+  },
+  {
+    "id": "k2",
+    "text": "Esempio: il contatore elettrico si trova nel sottoscala all'ingresso.",
+    "category": "casa_tecnica",
+    "enabled": false
+  }
+]

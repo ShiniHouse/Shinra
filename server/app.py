@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
@@ -8,7 +9,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from config.settings import settings
+from config.settings import (
+    assicura_segreto_sessione,
+    migra_segreti_su_env,
+    settings,
+    verifica_configurazione,
+)
 from core.agent import agent
 from core.ha_client import HomeAssistantClient
 from core.ollama_client import OllamaClient
@@ -23,7 +29,33 @@ TEMPLATES_DIR = BASE_DIR / "web" / "templates"
 STATIC_DIR = BASE_DIR / "web" / "static"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
-app = FastAPI(title="Shinra AI Hub", version="2.0.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Controlli e migrazioni all'avvio.
+
+    Nessuno di questi passi puo' impedire l'avvio: un hub domotico che si
+    rifiuta di partire lascia una casa senza controllo. I problemi vengono
+    segnalati con chiarezza nel log e restano visibili.
+    """
+    migrati = migra_segreti_su_env()
+    if migrati:
+        logger.warning(
+            "Segreti spostati da config.yaml a .env: %s. "
+            "Se config.yaml e' mai finito in un commit, revoca subito quelle credenziali.",
+            ", ".join(migrati),
+        )
+
+    if assicura_segreto_sessione():
+        logger.info("Generato il segreto di sessione di questa installazione.")
+
+    for problema in verifica_configurazione():
+        logger.warning("Configurazione: %s", problema)
+
+    yield
+
+
+app = FastAPI(title="Shinra AI Hub", version="2.0.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.include_router(admin_router)
 

@@ -20,7 +20,13 @@ SORGENTI = [RADICE / "core", RADICE / "server", RADICE / "config", RADICE / "int
 
 
 def occorrenze(simbolo: str, escludi: tuple[str, ...] = ()) -> list[str]:
-    """File Python che nominano il simbolo, esclusi quelli indicati."""
+    """File Python che nominano il simbolo, esclusi quelli indicati.
+
+    `config/secrets.py` va quasi sempre escluso: rendere un campo
+    impostabile dall'ambiente non significa che qualcuno lo usi per cio'
+    a cui serve. Un test che si dichiara soddisfatto a vuoto e' peggio di
+    nessun test.
+    """
     trovati = []
     for radice in SORGENTI:
         if not radice.is_dir():
@@ -71,7 +77,7 @@ def test_gli_argomenti_vietati_sono_applicati() -> None:
     reason="skill_id e' configurabile e mai confrontato: l'endpoint Alexa accetta chiunque — issue v0.1.0 #04",
 )
 def test_l_application_id_di_alexa_e_verificato() -> None:
-    assert occorrenze("skill_id", escludi=("settings.py",)), (
+    assert occorrenze("skill_id", escludi=("settings.py", "secrets.py")), (
         "settings.alexa.skill_id non e' letto da nessuna riga: /api/alexa non "
         "verifica da quale skill provenga la richiesta"
     )
@@ -94,7 +100,7 @@ def test_l_annuncio_su_echo_e_utilizzato() -> None:
 )
 def test_il_segreto_di_sessione_e_utilizzato() -> None:
     assert occorrenze(
-        "session_secret", escludi=("settings.py",)
+        "session_secret", escludi=("settings.py", "secrets.py")
     ), "I token di sessione sono generati con secrets.token_hex e non firmati"
 
 

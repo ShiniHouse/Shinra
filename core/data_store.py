@@ -1,5 +1,6 @@
 import json
 import logging
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -8,10 +9,40 @@ from pydantic import BaseModel
 logger = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+EXAMPLES_DIR = DATA_DIR / "examples"
 KNOWLEDGE_FILE = DATA_DIR / "knowledge.json"
 SOURCES_FILE = DATA_DIR / "sources.json"
 ALIASES_FILE = DATA_DIR / "device_aliases.json"
 MODES_FILE = DATA_DIR / "modes.json"
+
+
+def assicura_dati_iniziali() -> list[str]:
+    """Crea i file di stato mancanti copiandoli da data/examples/.
+
+    I file in data/ non sono versionati: contengono i nomi della famiglia e le
+    abitudini di una casa reale. Un'installazione nuova parte dagli esempi;
+    un'installazione esistente non viene mai toccata.
+
+    Restituisce i nomi dei file creati.
+    """
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if not EXAMPLES_DIR.is_dir():
+        return []
+
+    creati: list[str] = []
+    for esempio in sorted(EXAMPLES_DIR.glob("*.json")):
+        destinazione = DATA_DIR / esempio.name
+        if destinazione.exists():
+            continue
+        try:
+            shutil.copyfile(esempio, destinazione)
+            creati.append(esempio.name)
+        except OSError as e:
+            logger.error("Impossibile creare %s: %s", destinazione, e)
+
+    if creati:
+        logger.info("Creati da data/examples/: %s", ", ".join(creati))
+    return creati
 
 
 class KnowledgeItem(BaseModel):
@@ -58,7 +89,7 @@ class ModeItem(BaseModel):
 
 class DataStore:
     def __init__(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        assicura_dati_iniziali()
 
     # --- Knowledge ---
     def get_knowledge(self) -> List[Dict[str, Any]]:
