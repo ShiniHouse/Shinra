@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Vulnerabilita' di sicurezza
+    url: https://github.com/ShiniHouse/Shinra/security/advisories/new
+    about: Non aprire una issue pubblica. Usa un advisory privato.
+  - name: Roadmap del progetto
+    url: https://github.com/ShiniHouse/Shinra/blob/main/docs/ROADMAP.md
+    about: Le fasi da 0.1.0 a 1.0.0 e cosa contiene ciascuna.

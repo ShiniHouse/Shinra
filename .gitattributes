@@ -1,0 +1,46 @@
+# ---------------------------------------------------------------------------
+# Normalizzazione dei fine riga.
+#
+# Il progetto si sviluppa su Windows e gira su Linux. Senza questo file, ogni
+# salvataggio da un editor Windows riscrive l'intero file con terminatori CRLF
+# e git lo registra come "tutte le righe modificate": una modifica di tre righe
+# produce un diff di quattrocento, e la revisione diventa impossibile.
+#
+# Al momento di scrivere, sei file risultano modificati per questa sola
+# ragione: `git diff --ignore-all-space` su di essi e' vuoto.
+#
+# Dopo aver aggiunto questo file, normalizzare una volta sola l'intero
+# repository:
+#     git add --renormalize .
+#     git commit -m "chore: normalizza i fine riga"
+# ---------------------------------------------------------------------------
+
+# Per difetto: LF nel repository, conversione automatica sulla copia di lavoro.
+* text=auto eol=lf
+
+# File che devono restare CRLF sulla copia di lavoro Windows
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+
+# Script che devono restare LF anche su Windows
+*.sh    text eol=lf
+
+# Binari: nessuna conversione
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.mp3   binary
+*.woff  binary
+*.woff2 binary
+*.db    binary
+*.sqlite3 binary
+
+# Esclusi dall'archivio di release
+.github/        export-ignore
+docs/backlog/   export-ignore
+tests/          export-ignore
+.gitattributes  export-ignore
+.gitignore      export-ignore

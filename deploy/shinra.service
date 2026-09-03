@@ -1,0 +1,67 @@
+# /etc/systemd/system/shinra.service
+#
+# Unita' di servizio irrobustita per Shinra su Debian.
+# Differenze rispetto alla versione nel README fino alla 0.1.0:
+#   - non gira piu' come root
+#   - i segreti arrivano da /opt/Shinra/.env, non dal file di configurazione
+#   - il filesystem e' in sola lettura tranne le due cartelle che servono
+#   - attende la rete davvero disponibile, non solo l'interfaccia alzata
+#
+# Installazione:
+#   sudo useradd --system --home /opt/Shinra --shell /usr/sbin/nologin shinra
+#   sudo chown -R shinra:shinra /opt/Shinra
+#   sudo install -m 644 /opt/Shinra/deploy/shinra.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl restart shinra
+
+[Unit]
+Description=Shinra — Hub domotico con IA locale
+Documentation=https://github.com/ShiniHouse/Shinra
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=shinra
+Group=shinra
+WorkingDirectory=/opt/Shinra
+ExecStart=/opt/Shinra/.venv/bin/python run.py
+
+# Segreti: token Home Assistant, PIN, segreto di sessione.
+# Il file deve essere di proprieta' di shinra e con permessi 600.
+EnvironmentFile=-/opt/Shinra/.env
+Environment=PYTHONUNBUFFERED=1
+
+Restart=on-failure
+RestartSec=5
+# Se il servizio fallisce cinque volte in un minuto, systemd smette di
+# insistere: meglio un servizio fermo e visibile di uno in ciclo infinito.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# --- Irrobustimento ---
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=no
+
+# Le uniche cartelle su cui l'applicazione deve poter scrivere.
+ReadWritePaths=/opt/Shinra/data /opt/Shinra/config
+
+# Rete: solo IPv4/IPv6, niente socket esotici.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+# --- Log ---
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=shinra
+
+[Install]
+WantedBy=multi-user.target

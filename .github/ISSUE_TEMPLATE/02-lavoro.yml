@@ -1,0 +1,49 @@
+name: Attivita' di roadmap
+description: Un elemento pianificato in docs/ROADMAP.md
+title: ""
+labels: ["tipo: attivita'"]
+body:
+  - type: dropdown
+    id: milestone
+    attributes:
+      label: Fase
+      options:
+        - "v0.1.0 — Impianto chiuso"
+        - "v0.2.0 — Fondamenta"
+        - "v0.3.0 — Copertura"
+        - "v0.4.0 — Proattivita'"
+        - "v0.5.0 — Prodotto"
+        - "Dopo la 1.0.0"
+    validations: { required: true }
+
+  - type: textarea
+    id: contesto
+    attributes:
+      label: Contesto
+      description: Perche' questo lavoro esiste. Se deriva dalla revisione tecnica, citarne l'identificativo (BLK-01, SEC-03, REL-02...).
+    validations: { required: true }
+
+  - type: textarea
+    id: lavoro
+    attributes:
+      label: Cosa fare
+      value: |
+        - [ ]
+        - [ ]
+    validations: { required: true }
+
+  - type: textarea
+    id: accettazione
+    attributes:
+      label: Criteri di accettazione
+      description: Condizioni verificabili. "Funziona" non e' un criterio; "una POST non autenticata risponde 401" lo e'.
+      value: |
+        - [ ]
+        - [ ]
+    validations: { required: true }
+
+  - type: textarea
+    id: dipendenze
+    attributes:
+      label: Dipendenze
+      placeholder: "Bloccata da #12"
