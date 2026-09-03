@@ -685,7 +685,7 @@
                             <i data-lucide="bot" class="w-5 h-5 text-white"></i>
                         </div>
                         <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200">
-                            <p class="font-medium text-indigo-400 mb-1">Shinra</p>
+                            <p class="font-medium text-indigo-400 mb-1 assistant-name-label">Kyra</p>
                             <p id="welcome-text">Alessio. Sono online. Gestisco i dispositivi, il meteo, le notizie e la tua conoscenza domestica.</p>
                         </div>
                     </div>
@@ -1999,6 +1999,8 @@
 
 
         // Messages Handling
+        let activeAssistantName = 'Kyra';
+
         function appendUserMessage(text) {
             const container = document.getElementById('messages-container');
             const div = document.createElement('div');
@@ -2029,7 +2031,7 @@
                 <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 flex-1 shadow-sm">
                     <div class="flex items-center justify-between mb-1">
                         <p class="font-bold text-amber-400 dark:text-amber-400 light:text-amber-600 flex items-center gap-1.5">
-                            <span>Shinra</span>
+                            <span class="assistant-name-label">${activeAssistantName}</span>
                             <span class="inline-flex gap-0.5 items-end h-3">
                                 <span class="soundwave-bar"></span>
                                 <span class="soundwave-bar" style="animation-delay: 0.2s"></span>
@@ -4187,6 +4189,9 @@
                 // Assistente & Alexa Invocazione
                 const asstName = cfg.assistant?.name || 'Kyra';
                 const alexaInv = cfg.alexa?.invocation_name || 'kyra';
+                activeAssistantName = asstName;
+                document.querySelectorAll('.assistant-name-label').forEach(el => el.innerText = asstName);
+
                 const asstInput = document.getElementById('cfg-assistant-name');
                 const alexaInput = document.getElementById('cfg-alexa-invocation');
                 if (asstInput) asstInput.value = asstName;
