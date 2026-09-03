@@ -71,6 +71,7 @@ sudo scripts/deploy.sh v0.1.0         # una versione precisa
 sudo scripts/deploy.sh main           # ultimo commit di main, per provare
 sudo scripts/deploy.sh --dry-run      # mostra cosa farebbe, senza farlo
 sudo scripts/deploy.sh --rollback     # torna alla versione precedente
+sudo scripts/deploy.sh --proteggi-stato   # una volta sola, vedi sotto
 ```
 
 ### Perche' i tag e non `main`
@@ -123,16 +124,34 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 `.env` e' in `.gitignore`: nessun `git pull` potra' toccarlo. Dalla v0.1.0 e'
 da li' che il codice legge i segreti.
 
-### 3. Fai in modo che git non gestisca piu' la configurazione locale
+### 3. Metti al riparo lo stato di questa casa
+
+Non e' solo `config.yaml`. Anche `data/users.json`, `data/knowledge.json`,
+`data/device_aliases.json` e `data/sources.json` sono tracciati da git e sul
+server contengono i dati reali: gli utenti della famiglia, la conoscenza della
+casa, gli alias dei dispositivi. Nel repository ci sono le versioni
+dimostrative, ed e' giusto che differiscano.
 
 ```bash
-cd /opt/Shinra
-sudo -u "$(stat -c '%U' .)" git update-index --skip-worktree config/config.yaml
+sudo /opt/Shinra/scripts/deploy.sh --proteggi-stato
 ```
 
-Un rimedio provvisorio, ma sufficiente a superare senza danni l'aggiornamento
-che rimuove il file dall'indice. Dopo la v0.1.0, quando la configurazione
-locale non e' piu' tracciata, non serve piu'.
+Un comando, una volta sola. Fa un backup completo in `/var/backups/shinra/`,
+toglie quei file dall'area di lavoro di git e li marca `skip-worktree`, cosi'
+nessun aggiornamento puo' piu' sovrascriverli.
+
+> **Non usare mai `git checkout -- .` su questi file.** Sostituirebbe i dati
+> della tua casa con quelli dimostrativi del repository. Lo script te lo
+> ricorda, ma vale la pena saperlo a priori.
+
+Da solo `skip-worktree` non basterebbe: quando arriva la issue #07, che
+rimuove quei file dall'indice, git rifiuterebbe l'aggiornamento con
+*«Your local changes would be overwritten by merge»*. Nessun dato perso, ma
+il deploy si blocca. Per questo lo script fa un passo in piu': riconosce quali
+file di stato l'aggiornamento sta per smettere di tracciare, li mette da
+parte, lascia procedere il checkout e li rimette al loro posto subito dopo —
+compreso il percorso di ritorno indietro, perche' un ripristino che perde i
+dati della casa non e' un ripristino.
 
 ### 4. Smetti di far girare il servizio come root
 
