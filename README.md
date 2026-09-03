@@ -6,6 +6,38 @@ Il nome *Shinra* nasce dall'unione concettuale con **Shinigami** (死神 — ent
 
 ---
 
+## 🚧 Stato del progetto — beta `0.1.0-dev`
+
+Shinra è in **beta** e procede per fasi verso la `1.0.0`. Ogni versione minor
+corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino alla
+`1.0.0` una minor può introdurre modifiche incompatibili.
+
+| Documento | Cosa contiene |
+| :--- | :--- |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le cinque fasi da `0.1.0` a `1.0.0` e i criteri di uscita di ciascuna |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Struttura attuale, struttura target e come si aggiunge un modulo nuovo |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Flusso di lavoro, convenzioni sui commit, processo di rilascio |
+| [`SECURITY.md`](SECURITY.md) | Difetti di sicurezza noti e come segnalarne di nuovi |
+| [`docs/backlog/`](docs/backlog/) | Il piano di lavoro completo, issue per issue |
+
+> ### ⚠️ Prima della versione `0.1.0`
+>
+> Una revisione tecnica ha individuato difetti che chi usa oggi il progetto deve
+> conoscere. I dettagli e le mitigazioni provvisorie sono in
+> [`SECURITY.md`](SECURITY.md); in sintesi:
+>
+> - **Non esporre `/api/alexa` su Internet**: non verifica la firma Amazon e
+>   accetta comandi da qualunque origine.
+> - Trentotto endpoint su trentanove non richiedono autenticazione: chiunque sia
+>   sulla rete di casa può comandare l'impianto.
+> - `config/config.yaml` è tracciato da git e riceve il token di Home Assistant
+>   quando si salvano le impostazioni: verifica sempre che non finisca in un commit.
+> - **La Modalità Apprendimento non funziona** (errore 500 a ogni risposta) e i
+>   **promemoria non vengono mai eseguiti**. Entrambi sono in lavorazione nella
+>   milestone `v0.1.0`.
+
+---
+
 ## 📸 Anteprima Dashboard
 
 <p align="center">

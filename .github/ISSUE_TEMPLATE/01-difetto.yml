@@ -1,0 +1,53 @@
+name: Difetto
+description: Qualcosa non funziona come dovrebbe
+title: "fix: "
+labels: ["tipo: difetto"]
+body:
+  - type: textarea
+    id: cosa
+    attributes:
+      label: Cosa succede
+      description: Il comportamento osservato, non l'ipotesi sulla causa.
+    validations: { required: true }
+
+  - type: textarea
+    id: atteso
+    attributes:
+      label: Cosa dovrebbe succedere
+    validations: { required: true }
+
+  - type: textarea
+    id: riproduzione
+    attributes:
+      label: Come riprodurlo
+      value: |
+        1.
+        2.
+        3.
+    validations: { required: true }
+
+  - type: input
+    id: posizione
+    attributes:
+      label: File e riga, se noti
+      placeholder: core/interview_engine.py:110
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log o traccia dell'errore
+      render: text
+
+  - type: dropdown
+    id: canale
+    attributes:
+      label: Da quale canale
+      options: [Interfaccia web, PWA mobile, Amazon Alexa, Chiamata API diretta, Non applicabile]
+    validations: { required: true }
+
+  - type: input
+    id: versione
+    attributes:
+      label: Versione o commit
+      placeholder: v0.1.0 oppure a622043
+    validations: { required: true }

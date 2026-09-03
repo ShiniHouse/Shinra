@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  qualita:
+    name: Lint e formattazione
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Installa le dipendenze
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Ruff
+        run: ruff check --output-format=github .
+
+      - name: Black
+        run: black --check --diff .
+
+      - name: Mypy
+        run: mypy config core server integrations
+        continue-on-error: true   # informativo finche' la tipizzazione non e' completa (issue v0.2.0)
+
+  test:
+    name: Test — Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Installa le dipendenze
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Pytest
+        # I test marcati network o integration richiedono Internet, Ollama o
+        # Home Assistant: non hanno posto in CI.
+        run: pytest -m "not network and not integration" --cov --cov-report=term-missing
+
+  segreti:
+    name: Controllo segreti
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Nessun file sensibile tracciato
+        run: |
+          set -e
+          vietati="config/config.yaml .env data/users.json data/knowledge.json"
+          errori=0
+          for f in $vietati; do
+            if git ls-files --error-unmatch "$f" > /dev/null 2>&1; then
+              echo "::error file=$f::$f e' tracciato da git ma contiene o ricevera' dati sensibili"
+              errori=1
+            fi
+          done
+          exit $errori
+
+      - name: Nessun token in chiaro nel codice
+        run: |
+          set -e
+          # Token a lungo termine di Home Assistant: JWT che inizia per eyJ
+          if grep -rInE "eyJ[A-Za-z0-9_-]{30,}" \
+               --exclude-dir=.git --exclude-dir=.venv --exclude-dir=node_modules . ; then
+            echo "::error::Possibile token JWT presente nel repository"
+            exit 1
+          fi
+          echo "Nessun token trovato."

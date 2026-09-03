@@ -1,0 +1,35 @@
+name: Proposta di funzione
+description: Un'idea non ancora in roadmap
+title: "feat: "
+labels: ["tipo: funzione", "stato: da valutare"]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Quale problema risolve
+      description: Descrivi la situazione reale in casa, non la soluzione tecnica.
+    validations: { required: true }
+
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Come dovrebbe funzionare
+    validations: { required: true }
+
+  - type: textarea
+    id: alternative
+    attributes:
+      label: Alternative valutate
+      description: Si puo' gia' ottenere lo stesso risultato con una routine o un'automazione di Home Assistant?
+
+  - type: dropdown
+    id: quando
+    attributes:
+      label: Fase proposta
+      options:
+        - "v0.3.0 — Copertura"
+        - "v0.4.0 — Proattivita'"
+        - "v0.5.0 — Prodotto"
+        - "Dopo la 1.0.0"
+        - "Da decidere"
+    validations: { required: true }

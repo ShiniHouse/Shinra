@@ -1,32 +1,67 @@
-# Virtual Environment
+# --- Ambiente virtuale ---
 .venv/
 venv/
 ENV/
 env/
 
-# Python Cache
+# --- Cache Python ---
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+build/
+dist/
+*.egg-info/
+.eggs/
 
-# IDE & Editor
+# --- Strumenti di sviluppo ---
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# --- IDE ed editor ---
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS files
+# --- File di sistema ---
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 .DS_Store
 
-# Logs
+# --- Log ---
 *.log
 logs/
 
-# Sensitive / Local configs
+# =========================================================================
+#  SEGRETI E STATO LOCALE — non devono mai finire su GitHub
+# =========================================================================
+# config.yaml riceve il token di Home Assistant e il PIN amministratore
+# quando vengono salvati dall'interfaccia (config/settings.py -> save_config).
+# Il file di riferimento versionato e' config/config.example.yaml.
+config/config.yaml
 .env
+*.pem
+*.key
+
+# Stato runtime con dati personali della famiglia (nomi, abitudini,
+# conoscenza della casa): non ha alcun motivo di essere versionato.
+data/users.json
+data/knowledge.json
+data/timers.json
+data/reminders.json
+data/*.db
+data/*.sqlite3
+
+# NOTA: device_aliases.json, modes.json e sources.json restano versionati
+# perche' oggi fungono da dati di seed generici. In v0.1.0 vengono spostati
+# in data/examples/ e anche quei percorsi runtime saranno ignorati.
+# Vedi docs/backlog/v0.1.0/07-segreti-fuori-da-git.md
