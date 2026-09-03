@@ -199,12 +199,14 @@
         html.light .bg-slate-900\/70,
         html.light .bg-slate-900\/80,
         html.light .bg-slate-900\/90,
+        html.light .bg-slate-900\/95,
         html.light .bg-slate-950,
         html.light .bg-slate-950\/40,
         html.light .bg-slate-950\/60,
         html.light .bg-slate-950\/70,
         html.light .bg-slate-950\/80,
-        html.light .bg-slate-950\/90 {
+        html.light .bg-slate-950\/90,
+        html.light .bg-slate-950\/95 {
             background-color: rgba(255, 255, 255, 0.95) !important;
             border-color: #e2e8f0 !important;
             color: #0f172a !important;
@@ -411,6 +413,54 @@
             border-color: #c7d2fe !important;
             color: #4338ca !important;
             font-weight: 700 !important;
+        }
+
+        /* ==================== MODALI IN TEMA CHIARO ==================== */
+        html.light #learning-interview-modal > div,
+        html.light #lock-screen-modal > div,
+        html.light #modal-container {
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
+        }
+        html.light #learning-interview-modal .bg-gradient-to-br {
+            background: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+        }
+        html.light #learning-interview-modal #learning-question-text {
+            color: #0f172a !important;
+        }
+        html.light #learning-interview-modal #learning-hint-text {
+            color: #64748b !important;
+        }
+        html.light #learning-interview-modal .bg-slate-950 {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+        }
+        html.light #learning-interview-modal textarea {
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        html.light #learning-interview-modal #learning-mic-btn {
+            background-color: #f1f5f9 !important;
+            color: #475569 !important;
+            border: 1px solid #cbd5e1 !important;
+        }
+        html.light #learning-interview-modal #learning-mic-btn:hover {
+            background-color: #4f46e5 !important;
+            color: #ffffff !important;
+        }
+        html.light #learning-interview-modal h3 {
+            color: #0f172a !important;
+        }
+        html.light #learning-interview-modal p {
+            color: #475569 !important;
+        }
+        html.light #learning-interview-modal .border-slate-800\/80,
+        html.light #learning-interview-modal .border-slate-800 {
+            border-color: #e2e8f0 !important;
         }
 
         /* ==================== SHINRA LIVING CORE AVATAR ==================== */
@@ -2524,7 +2574,7 @@
                         Chiudi e Visualizza Conoscenza
                     </button>
                 `;
-                playAudioOrSpeak(data.message);
+                speakText(data.message);
                 safeCreateIcons();
                 loadKnowledge();
                 return;
@@ -2568,13 +2618,19 @@
             answerInput.focus();
 
             // Speak question
-            playAudioOrSpeak(step.question || data.message);
+            speakText(step.question || data.message);
             safeCreateIcons();
+        }
+
+        function playAudioOrSpeak(text) {
+            if (text && typeof speakText === 'function') {
+                speakText(text);
+            }
         }
 
         function replayLearningQuestionAudio() {
             if (lastLearningQuestion) {
-                playAudioOrSpeak(lastLearningQuestion);
+                speakText(lastLearningQuestion);
             }
         }
 
