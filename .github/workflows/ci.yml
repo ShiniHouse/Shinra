@@ -75,11 +75,13 @@ jobs:
       - name: Nessun file sensibile tracciato
         run: |
           set -e
-          vietati="config/config.yaml .env data/users.json data/knowledge.json"
+          vietati="config/config.yaml .env data/users.json data/knowledge.json
+                   data/device_aliases.json data/modes.json data/sources.json
+                   data/timers.json data/reminders.json"
           errori=0
           for f in $vietati; do
             if git ls-files --error-unmatch "$f" > /dev/null 2>&1; then
-              echo "::error file=$f::$f e' tracciato da git ma contiene o ricevera' dati sensibili"
+              echo "::error file=$f::$f e' tracciato da git ma contiene o ricevera' dati personali o segreti. I valori iniziali vanno in data/examples/."
               errori=1
             fi
           done
@@ -88,10 +90,21 @@ jobs:
       - name: Nessun token in chiaro nel codice
         run: |
           set -e
-          # Token a lungo termine di Home Assistant: JWT che inizia per eyJ
-          if grep -rInE "eyJ[A-Za-z0-9_-]{30,}" \
-               --exclude-dir=.git --exclude-dir=.venv --exclude-dir=node_modules . ; then
-            echo "::error::Possibile token JWT presente nel repository"
+          # Token a lungo termine di Home Assistant: JWT che inizia per eyJ.
+          #
+          # Un valore deliberatamente finto — in un test, in un esempio — si
+          # dichiara aggiungendo sulla stessa riga:
+          #     # pragma: allowlist secret
+          # Serve una dichiarazione esplicita e leggibile in revisione, non
+          # un'esclusione di intere cartelle: un segreto vero puo' finire in
+          # un test tanto quanto altrove.
+          trovati="$(grep -rInE "eyJ[A-Za-z0-9_-]{30,}" \
+                       --exclude-dir=.git --exclude-dir=.venv \
+                       --exclude-dir=node_modules . \
+                     | grep -v "pragma: allowlist secret" || true)"
+          if [ -n "$trovati" ]; then
+            echo "$trovati"
+            echo "::error::Possibile token nel repository. Se e' un valore finto, dichiaralo con  # pragma: allowlist secret  sulla stessa riga."
             exit 1
           fi
           echo "Nessun token trovato."

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "admin",
+    "name": "Amministratore",
+    "role": "admin",
+    "age_group": "adult",
+    "gender": "unspecified",
+    "avatar_type": "neutral",
+    "pin": null,
+    "preferred_news_categories": ["generale"],
+    "restricted_topics": [],
+    "notes": "Profilo creato al primo avvio. Rinominalo dalle impostazioni."
+  }
+]

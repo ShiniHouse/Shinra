@@ -89,7 +89,9 @@ ignore = [
 #   D     docstring                                   (dopo ANN)
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "S105", "S106"]
+# Nei test i valori fissi sono finti per definizione, e invocare git fa
+# parte di cio' che verificano.
+"tests/*" = ["S101", "S105", "S106", "S603", "S607"]
 # Lo script di importazione invoca gh: e' il suo scopo.
 "scripts/import_backlog.py" = ["S603", "S607"]
 # L'agente importa alcuni moduli dentro le funzioni per evitare import

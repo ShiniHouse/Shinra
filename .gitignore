@@ -52,16 +52,12 @@ config/config.yaml
 *.pem
 *.key
 
-# Stato runtime con dati personali della famiglia (nomi, abitudini,
-# conoscenza della casa): non ha alcun motivo di essere versionato.
-data/users.json
-data/knowledge.json
-data/timers.json
-data/reminders.json
+# Stato runtime: contiene i nomi della famiglia, le abitudini della casa e
+# gli alias dei dispositivi reali. Non ha alcun motivo di essere versionato.
+# I valori iniziali vivono in data/examples/, che invece e' versionato: al
+# primo avvio ogni file mancante viene creato copiando il proprio esempio.
+data/*.json
 data/*.db
 data/*.sqlite3
-
-# NOTA: device_aliases.json, modes.json e sources.json restano versionati
-# perche' oggi fungono da dati di seed generici. In v0.1.0 vengono spostati
-# in data/examples/ e anche quei percorsi runtime saranno ignorati.
-# Vedi docs/backlog/v0.1.0/07-segreti-fuori-da-git.md
+!data/examples/
+!data/examples/*.json
