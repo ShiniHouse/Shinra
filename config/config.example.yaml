@@ -55,3 +55,9 @@ security:
   # Metterlo a false apre la casa a chiunque sia sulla rete.
   auth_enabled: true
   protect_dashboard: true
+  # Indirizzi dei reverse proxy di cui fidarsi per leggere X-Forwarded-For.
+  # Da compilare SOLO se Shinra sta dietro nginx o simili, con l'indirizzo da
+  # cui il proxy si presenta — di solito 127.0.0.1. Vuoto significa: non
+  # fidarsi di nessuno. Fidarsi di tutti permetterebbe di aggirare la
+  # limitazione dei tentativi cambiando un'intestazione.
+  trusted_proxies: []

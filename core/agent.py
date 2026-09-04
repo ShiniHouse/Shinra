@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from config.prompt_templates import get_system_prompt
 from config.settings import settings
 from core.data_store import data_store
-from core.ha_client import HomeAssistantClient
+from core.ha_client import client_home_assistant
 from core.memory import ConversationMemory, memory
 from core.ollama_client import OllamaClient
 from core.tools.registry import TOOLS_SCHEMA, execute_tool
@@ -18,7 +18,7 @@ logger = logging.getLogger("Shinra")
 class ShinraAgent:
     def __init__(self):
         self.ollama = OllamaClient()
-        self.ha = HomeAssistantClient()
+        self.ha = client_home_assistant()
 
     async def process_user_input(
         self,
@@ -43,6 +43,22 @@ class ShinraAgent:
                 # Profilo admin predefinito se non specificato
                 users = user_manager.get_users()
                 profile = users[0] if users else None
+
+        # 1b. Argomenti vietati al profilo: si controlla prima di qualunque
+        # altra cosa, altrimenti il fast-path potrebbe agire su una richiesta
+        # che questo utente non ha il diritto di fare.
+        from core.argomenti_vietati import RISPOSTA_PREDEFINITA, consenti
+
+        vietato = consenti(user_text, profile)
+        if vietato:
+            mem.add_user_message(user_text)
+            mem.add_assistant_message(RISPOSTA_PREDEFINITA)
+            return {
+                "response": RISPOSTA_PREDEFINITA,
+                "actions": [],
+                "user": profile.model_dump() if profile else None,
+                "success": True,
+            }
 
         # 2. Recupero riepilogo dispositivi da Home Assistant se abilitato
         ha_summary = ""

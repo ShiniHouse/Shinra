@@ -29,10 +29,10 @@ sapere a cosa e' esposto**. Tutti sono in lavorazione nella milestone `v0.1.0`.
 | :--- | :--- | :--- | :--- |
 | SEC-01 | Critico | Un solo endpoint su trentanove verifica l'autenticazione. `POST /api/modes/{nome}/activate` esegue una routine domotica senza credenziali. | **Risolto in v0.1.0** |
 | SEC-02 | Critico | `/api/alexa` non verifica la firma Amazon ne' l'`applicationId`. Se esposto su Internet, accetta comandi da chiunque. | **Risolto in v0.1.0** |
-| SEC-03 | Alto | Il blocco della dashboard e' un overlay CSS: i dati sono gia' stati inviati al browser. | Aperto |
-| SEC-04 | Alto | Senza PIN configurato, qualunque PIN ottiene una sessione valida. Il rate limit usa `request.client.host`, che dietro reverse proxy e' identico per tutti. | Aperto |
+| SEC-03 | Alto | Il blocco della dashboard e' un overlay CSS: i dati sono gia' stati inviati al browser. | **Risolto in v0.1.0** |
+| SEC-04 | Alto | Senza PIN configurato, qualunque PIN ottiene una sessione valida. Il rate limit usa `request.client.host`, che dietro reverse proxy e' identico per tutti. | **Risolto in v0.1.0** |
 | SEC-05 | Alto | `config/config.yaml` e' tracciato da git e riceve il token Home Assistant al salvataggio dalle impostazioni. | **Risolto in v0.1.0** |
-| SEC-06 | Medio | PIN in chiaro, `session_secret` inutilizzato, sessioni in memoria di processo, `restricted_topics` mai applicato, `debug: true`, nessun header di sicurezza. | Aperto |
+| SEC-06 | Medio | PIN in chiaro, `session_secret` inutilizzato, sessioni in memoria di processo, `restricted_topics` mai applicato, `debug: true`, nessun header di sicurezza. | **Risolto in v0.1.0**, tranne le sessioni in memoria di processo (v0.2.0, issue #12) |
 
 ### Fino alla v0.1.0
 

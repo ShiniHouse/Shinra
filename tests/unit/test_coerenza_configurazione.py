@@ -61,11 +61,8 @@ def test_le_categorie_di_notizie_preferite_sono_usate() -> None:
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="restricted_topics e' dichiarato nel profilo e mai applicato — issue v0.1.0 #08",
-)
 def test_gli_argomenti_vietati_sono_applicati() -> None:
+    """Risolto dalla issue #8: il filtro esiste ed e' applicato nell'agente."""
     assert occorrenze("restricted_topics", escludi=("user_manager.py",)), (
         "Nessun filtro sui contenuti per i minori: il profilo 'child' cambia "
         "solo il tono del prompt, non cio' a cui puo' accedere"
@@ -95,11 +92,8 @@ def test_l_annuncio_su_echo_e_utilizzato() -> None:
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="session_secret e' dichiarato e mai usato: i token non sono firmati — issue v0.1.0 #06",
-)
 def test_il_segreto_di_sessione_e_utilizzato() -> None:
+    """Risolto dalla issue #6: i token di sessione sono firmati con esso."""
     assert occorrenze(
         "session_secret", escludi=("settings.py", "secrets.py")
     ), "I token di sessione sono generati con secrets.token_hex e non firmati"

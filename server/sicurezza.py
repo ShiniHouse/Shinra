@@ -116,12 +116,32 @@ class _Stato:
 _stato = _Stato()
 
 
+def _firma(valore: str) -> str:
+    segreto = (settings.security.session_secret or "").encode() or b"shinra-senza-segreto"
+    return hmac.new(segreto, valore.encode(), hashlib.sha256).hexdigest()[:32]
+
+
 def crea_sessione(user_id: str) -> str:
+    """Genera un token di sessione firmato.
+
+    La firma non protegge da chi ruba il token — per quello serve il cookie
+    HttpOnly — ma rende inutile provare a indovinarne uno: un valore non
+    firmato con il segreto di questa installazione viene scartato senza
+    nemmeno cercarlo fra le sessioni.
+    """
     ora = time.time()
     _pota_sessioni(ora)
-    token = secrets.token_urlsafe(32)
+    grezzo = secrets.token_urlsafe(32)
+    token = f"{grezzo}.{_firma(grezzo)}"
     _stato.sessioni[token] = Sessione(token=token, user_id=user_id, creata_il=ora, vista_il=ora)
     return token
+
+
+def _firma_valida(token: str) -> bool:
+    grezzo, _, firma = token.rpartition(".")
+    if not grezzo or not firma:
+        return False
+    return hmac.compare_digest(_firma(grezzo), firma)
 
 
 def _pota_sessioni(ora: float) -> None:
@@ -137,7 +157,7 @@ def _pota_sessioni(ora: float) -> None:
 
 
 def sessione_valida(token: Optional[str]) -> Optional[Sessione]:
-    if not token:
+    if not token or not _firma_valida(token):
         return None
     sessione = _stato.sessioni.get(token)
     if not sessione:
@@ -177,13 +197,28 @@ def azzera_stato() -> None:
 def _chiave_client(request: Request) -> str:
     """Identifica il client per la limitazione dei tentativi.
 
-    `X-Forwarded-For` non viene letto: dietro il reverse proxy consigliato nel
-    README varrebbe lo stesso valore per tutti, e chiunque puo' contraffarlo.
-    Gestirlo davvero — con una lista di proxy fidati — e' la issue #6. Fino ad
-    allora la limitazione e' per indirizzo osservato, e su un accesso da
-    Internet vale per l'intero proxy: prudente, non permissivo.
+    `X-Forwarded-For` viene letto **solo** se la richiesta arriva da un proxy
+    dichiarato fidato in configurazione. E' un'intestazione che il client
+    scrive: fidarsene sempre permetterebbe a chi attacca di azzerare il
+    contatore dei tentativi cambiando un valore a ogni richiesta. Non fidarsene
+    mai, dietro un reverse proxy, produce il difetto opposto — il quinto
+    tentativo sbagliato di uno sconosciuto blocca il proprietario di casa,
+    perche' per il server hanno lo stesso indirizzo.
     """
-    return request.client.host if request.client else "sconosciuto"
+    osservato = request.client.host if request.client else "sconosciuto"
+
+    fidati = settings.security.trusted_proxies or []
+    if osservato not in fidati:
+        return osservato
+
+    inoltrato = request.headers.get("x-forwarded-for", "")
+    if not inoltrato:
+        return osservato
+
+    # Il primo della lista e' il client originale; gli altri sono i proxi
+    # attraversati. Si prende quello e si scarta il resto.
+    primo = inoltrato.split(",")[0].strip()
+    return primo or osservato
 
 
 def tentativi_esauriti(request: Request) -> bool:
