@@ -58,13 +58,30 @@ def _prepara_accesso() -> None:
     utenti = user_manager.get_users()
     if not utenti:
         return
-    if any(u.pin for u in utenti):
+
+    # Un PIN in chiaro rimasto sul profilo da una versione precedente non
+    # verrebbe mai riconosciuto: il confronto si aspetta un hash. Va cifrato
+    # qui, altrimenti risulta "presente" e blocca la generazione, lasciando
+    # chiusa fuori tutta la famiglia.
+    migrati = [
+        u.name
+        for u in utenti
+        if u.pin and not sicurezza.e_cifrato(u.pin) and user_manager.imposta_pin(u.id, u.pin)
+    ]
+    if migrati:
+        logger.warning(
+            "PIN cifrati per: %s. Restano quelli di prima, ora non piu' leggibili sul disco.",
+            ", ".join(migrati),
+        )
+        utenti = user_manager.get_users()
+
+    if any(sicurezza.e_cifrato(u.pin) for u in utenti):
         return
 
     amministratore = next((u for u in utenti if u.role == "admin"), utenti[0])
 
     pin_ereditato = (settings.security.admin_pin or "").strip()
-    if pin_ereditato and not sicurezza.e_cifrato(pin_ereditato):
+    if pin_ereditato:
         user_manager.imposta_pin(amministratore.id, pin_ereditato)
         logger.warning(
             "Il PIN di %s e' stato preso dalla configurazione e cifrato. "
