@@ -35,6 +35,9 @@ dependencies = [
   "beautifulsoup4>=4.12.3",
   # Verifica della firma Amazon su /api/alexa: senza X.509 non e' possibile.
   "cryptography>=42.0",
+  # Scheduler persistente per timer, promemoria e automazioni (ADR 0003).
+  "apscheduler>=3.10",
+  "sqlalchemy>=2.0",
   "feedparser>=6.0.11",
   "edge-tts>=6.1.12",
 ]

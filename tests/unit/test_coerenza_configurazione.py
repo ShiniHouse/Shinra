@@ -81,11 +81,9 @@ def test_l_application_id_di_alexa_e_verificato() -> None:
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="speak_on_alexa e' definita e mai chiamata — collegata in v0.2.0 #11",
-)
 def test_l_annuncio_su_echo_e_utilizzato() -> None:
+    """Risolto dalla issue #11: il canale di consegna la usa per annunciare
+    timer e promemoria scaduti su un dispositivo Echo."""
     assert occorrenze("speak_on_alexa", escludi=("ha_client.py",)), (
         "core/ha_client.py definisce speak_on_alexa() ma nessuno la chiama: "
         "l'assistente non puo' parlare spontaneamente su un dispositivo Echo"

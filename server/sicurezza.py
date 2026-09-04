@@ -55,6 +55,7 @@ ROTTE_PUBBLICHE: dict[str, str] = {
     "/api/auth/logout": "chiudere una sessione non richiede di averne una valida",
     "/api/auth/profili": "elenco dei profili per la schermata di accesso, senza dati sensibili",
     "/api/alexa": "protetta dalla firma Amazon, non dalla sessione — issue #4",
+    "/ws/eventi": "WebSocket: verifica la sessione da se', prima di accettare la connessione",
 }
 
 # --------------------------------------------------------------------------

@@ -18,6 +18,7 @@ jobs:
   qualita:
     name: Lint e formattazione
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -44,6 +45,10 @@ jobs:
   test:
     name: Test — Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    # La suite gira in una decina di secondi. Un tetto esplicito serve
+    # perche' un test sul WebSocket che non riceve mai resterebbe in attesa
+    # per ore invece di fallire.
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -69,6 +74,7 @@ jobs:
   segreti:
     name: Controllo segreti
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 

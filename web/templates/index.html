@@ -768,13 +768,17 @@
                         <h2 class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                             <i data-lucide="timer" class="w-4 h-4 text-amber-400"></i> Timer & Promemoria Live
                         </h2>
-                        <button onclick="openAddTimerModal()" class="px-2 py-1 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/30 rounded-lg text-[11px] font-semibold transition flex items-center gap-1">
-                            <i data-lucide="plus" class="w-3 h-3"></i> + Timer
-                        </button>
+                        <div class="flex items-center gap-1.5">
+                            <span id="stato-eventi" title="Collegamento agli eventi del server" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                            <button onclick="openAddTimerModal()" class="px-2 py-1 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/30 rounded-lg text-[11px] font-semibold transition flex items-center gap-1">
+                                <i data-lucide="plus" class="w-3 h-3"></i> + Timer
+                            </button>
+                        </div>
                     </div>
                     <div id="active-timers-list" class="space-y-2">
                         <div class="text-[11px] text-slate-500 text-center py-2">Nessun timer attivo. Prova a dire "Timer pasta 9 minuti".</div>
                     </div>
+                    <div id="lista-promemoria" class="space-y-2"></div>
                 </div>
 
                 <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 backdrop-blur">
@@ -1648,6 +1652,10 @@
                     loadKnowledge();
                     loadSettings();
                     loadTimers();
+                    loadReminders();
+                    // Il WebSocket era stato rifiutato senza sessione: ora si puo'.
+                    _attesaRiconnessione = 1000;
+                    collegaEventi();
                 } else {
                     const errData = await res.json().catch(() => ({}));
                     if (errBox) {
@@ -3457,25 +3465,150 @@
             }
         }
 
+        // Il conto alla rovescia qui e' solo estetico: fa scorrere i secondi
+        // sullo schermo. Chi decide che un timer e' scaduto e' il server, che
+        // lo annuncia su /ws/eventi — cosi' suona anche a scheda chiusa e
+        // anche sull'Echo. Se il collegamento agli eventi non c'e' (rete giu',
+        // versione vecchia del server) il ticker torna a suonare da solo:
+        // meglio un avviso locale che nessun avviso.
         function startTimerTick() {
             if (_timerInterval) clearInterval(_timerInterval);
             _timerInterval = setInterval(() => {
-                let changed = false;
+                let cambiato = false;
                 for (const t of _activeTimers) {
                     if (t.remaining_seconds > 0) {
                         t.remaining_seconds -= 1;
-                        changed = true;
-                        if (t.remaining_seconds === 0 && !t._notified) {
+                        cambiato = true;
+                        if (t.remaining_seconds === 0 && !t._notified && !_eventiCollegati) {
                             t._notified = true;
                             playChimeAlert();
                             speakText(`Attenzione, il timer per ${t.label} è terminato!`);
                         }
                     }
                 }
-                if (changed || _activeTimers.length > 0) {
+                if (cambiato || _activeTimers.length > 0) {
                     renderTimers();
                 }
             }, 1000);
+        }
+
+        // ============ PROMEMORIA ============
+        let _promemoria = [];
+
+        async function loadReminders() {
+            try {
+                const res = await fetch('/api/reminders');
+                if (!res.ok) return;
+                _promemoria = (await res.json()).filter(r => !r.completed);
+                renderReminders();
+            } catch (e) { console.error('Errore loadReminders:', e); }
+        }
+
+        function _quandoLeggibile(iso) {
+            const d = new Date(iso);
+            if (isNaN(d)) return iso || '';
+            const oggi = new Date();
+            const stessoGiorno = d.toDateString() === oggi.toDateString();
+            const ora = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            return stessoGiorno ? `oggi alle ${ora}` : `${d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })} alle ${ora}`;
+        }
+
+        function renderReminders() {
+            const container = document.getElementById('lista-promemoria');
+            if (!container) return;
+            if (!_promemoria || _promemoria.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = _promemoria.map(r => `
+                <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-lg bg-sky-600/30 text-sky-300 flex items-center justify-center font-bold text-xs">🔔</div>
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-200">${_testoSicuro(r.text)}</h4>
+                            <span class="text-[11px] text-slate-400">${_quandoLeggibile(r.remind_at)}</span>
+                        </div>
+                    </div>
+                    <button onclick="deleteReminder('${r.id}')" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Cancella promemoria">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+            safeCreateIcons();
+        }
+
+        // Il testo di un promemoria arriva da cio' che l'utente ha detto: non
+        // finisce mai nell'HTML senza essere neutralizzato.
+        function _testoSicuro(testo) {
+            const d = document.createElement('div');
+            d.textContent = testo || '';
+            return d.innerHTML;
+        }
+
+        async function deleteReminder(id) {
+            await fetch(`/api/reminders/${id}`, { method: 'DELETE' });
+            _promemoria = _promemoria.filter(r => r.id !== id);
+            renderReminders();
+        }
+
+        // ============ EVENTI IN TEMPO REALE (/ws/eventi) ============
+        let _eventiSocket = null;
+        let _eventiCollegati = false;
+        let _attesaRiconnessione = 1000;
+
+        function _segnalaStatoEventi(collegato) {
+            _eventiCollegati = collegato;
+            const spia = document.getElementById('stato-eventi');
+            if (spia) {
+                spia.className = `w-2 h-2 rounded-full ${collegato ? 'bg-emerald-500' : 'bg-slate-600'}`;
+                spia.title = collegato ? 'Eventi del server collegati' : 'Eventi del server non collegati: gli avvisi arrivano solo da questa scheda';
+            }
+        }
+
+        function collegaEventi() {
+            if (_eventiSocket && _eventiSocket.readyState <= 1) return;
+            const protocollo = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            try {
+                _eventiSocket = new WebSocket(`${protocollo}//${location.host}/ws/eventi`);
+            } catch (e) {
+                console.warn('WebSocket eventi non disponibile:', e);
+                return;
+            }
+
+            _eventiSocket.onopen = () => {
+                _attesaRiconnessione = 1000;
+                _segnalaStatoEventi(true);
+            };
+
+            _eventiSocket.onmessage = (msg) => {
+                let evento;
+                try { evento = JSON.parse(msg.data); } catch (e) { return; }
+                gestisciEvento(evento);
+            };
+
+            _eventiSocket.onclose = () => {
+                _segnalaStatoEventi(false);
+                // Riconnessione con attesa crescente, al massimo mezzo minuto:
+                // un server riavviato non deve subire una raffica di tentativi.
+                setTimeout(collegaEventi, _attesaRiconnessione);
+                _attesaRiconnessione = Math.min(_attesaRiconnessione * 2, 30000);
+            };
+
+            _eventiSocket.onerror = () => { try { _eventiSocket.close(); } catch (e) {} };
+        }
+
+        function gestisciEvento(evento) {
+            if (evento.tipo === 'timer.scaduto') {
+                const t = _activeTimers.find(x => x.id === evento.dati.id);
+                if (t) { t.remaining_seconds = 0; t._notified = true; }
+                playChimeAlert();
+                speakText(evento.frase || 'Il timer è scaduto.');
+                loadTimers();
+            } else if (evento.tipo === 'promemoria.scaduto') {
+                playChimeAlert();
+                speakText(evento.frase || 'Hai un promemoria.');
+                loadReminders();
+            }
         }
 
         // ==================== MODULAR ROUTINE BUILDER ====================
@@ -4727,7 +4860,9 @@
             setInterval(updateEmpatheticGreeting, 60000);
             updateLivingCoreState('idle');
             loadTimers();
+            loadReminders();
             startTimerTick();
+            collegaEventi();
             checkSystemHealth();
             setInterval(checkSystemHealth, 8000);
         });
