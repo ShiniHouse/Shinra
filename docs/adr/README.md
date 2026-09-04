@@ -17,3 +17,4 @@ state scartate alternative ragionevoli. Non serve per le decisioni ovvie.
 | [0001](0001-versionamento-e-flusso-di-lavoro.md) | Versionamento semantico e GitHub Flow | Accettato |
 | [0002](0002-sqlite-al-posto-dei-file-json.md) | SQLite al posto della persistenza su file JSON | Accettato |
 | [0003](0003-scheduler-persistente.md) | Scheduler persistente in processo | Accettato |
+| [0004](0004-identita-ruoli-e-permessi.md) | Identita' per persona, ruoli personalizzati e dispositivi fidati | Accettato |

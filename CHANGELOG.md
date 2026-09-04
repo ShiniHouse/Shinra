@@ -42,6 +42,15 @@ installabile e utilizzabile.
   file corrotto faceva ripartire dai valori predefiniti senza alcun segnale.
 
 ### Aggiunto
+- [ADR 0004](docs/adr/0004-identita-ruoli-e-permessi.md): un PIN per persona al
+  posto di uno per la casa, ruoli personalizzati invece di flag fissi, e
+  dispositivi fidati per non chiedere il PIN a ogni accesso. Passkey e
+  riconoscimento di chi parla rimandati alla `v0.4.0`, con il limite
+  dichiarato: fino ad allora il canale vocale non distingue chi parla, quindi
+  serrature e allarme restano fuori dalla voce.
+- Tre issue nuove nel backlog: ruoli e permessi, dispositivi fidati (v0.2.0),
+  passkey e voce riconosciuta (v0.4.0). La issue #3 acquisisce l'identita' per
+  persona e la sessione di 30 giorni.
 - `data/examples/` con i valori iniziali versionati. Al primo avvio ogni file
   mancante in `data/` viene creato copiando il proprio esempio, cosi'
   un'installazione nuova parte pronta e una esistente non viene toccata.
