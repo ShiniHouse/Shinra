@@ -255,7 +255,10 @@ def autenticazione_attiva() -> bool:
     """
     if not settings.security.auth_enabled:
         return False
-    return any(u.pin for u in user_manager.get_users())
+    # Conta solo i PIN in formato valido. Un valore in chiaro rimasto da una
+    # versione precedente non verra' mai riconosciuto dal confronto: contarlo
+    # renderebbe la casa chiusa a tutti, proprietario compreso.
+    return any(e_cifrato(u.pin) for u in user_manager.get_users())
 
 
 def utente_corrente(request: Request) -> Optional[UserProfile]:
