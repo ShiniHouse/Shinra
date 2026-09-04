@@ -192,11 +192,32 @@ class UserManager:
             )
         return GUEST_PROFILE
 
+    def imposta_pin(self, user_id: str, pin: Optional[str]) -> bool:
+        """Imposta o rimuove il PIN di un profilo, salvandolo sempre cifrato.
+
+        Il PIN in chiaro non viene mai scritto su disco: se un giorno
+        users.json finisse dove non deve, non regalerebbe l'accesso.
+        """
+        from server.sicurezza import cifra_pin  # import locale: evita un ciclo
+
+        utenti = self.get_users()
+        for i, u in enumerate(utenti):
+            if u.id == user_id:
+                utenti[i].pin = cifra_pin(pin.strip()) if pin and pin.strip() else None
+                self.save_users(utenti)
+                return True
+        return False
+
     def upsert_user(self, user: UserProfile) -> None:
         users = self.get_users()
         updated = False
         for i, u in enumerate(users):
             if u.id == user.id:
+                # L'interfaccia non rimanda il PIN quando salva un profilo:
+                # senza questa riga, ogni modifica al nome lo cancellerebbe e
+                # chiuderebbe fuori quella persona.
+                if not user.pin:
+                    user.pin = u.pin
                 users[i] = user
                 updated = True
                 break

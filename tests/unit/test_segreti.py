@@ -174,9 +174,20 @@ def test_non_segnala_nulla_quando_e_tutto_a_posto() -> None:
     config = AppConfig()
     config.home_assistant.enabled = False
     config.alexa.enabled = False
-    config.security.auth_enabled = False
+    config.security.auth_enabled = True
     config.server.debug = False
     assert verifica_configurazione(config) == []
+
+
+def test_segnala_l_autenticazione_disattivata() -> None:
+    """Spegnere l'autenticazione apre la casa a chiunque sia sulla rete:
+    deve restare una scelta visibile, non un valore che passa inosservato."""
+    config = AppConfig()
+    config.home_assistant.enabled = False
+    config.alexa.enabled = False
+    config.server.debug = False
+    config.security.auth_enabled = False
+    assert any("autenticazione" in p.lower() for p in verifica_configurazione(config))
 
 
 def test_segnala_il_debug_esposto_in_rete() -> None:

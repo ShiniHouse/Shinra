@@ -15,6 +15,29 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Sicurezza
+- **La casa non risponde piu' a chi non si e' identificato** (issue #3, SEC-01).
+  Prima la protezione era un controllo manuale presente su **un endpoint su
+  trentanove**: chiunque fosse sulla rete di casa comandava l'impianto e
+  leggeva l'anagrafica della famiglia con una `curl`. Ora e' una dipendenza
+  applicata all'intero router: un endpoint nuovo nasce chiuso, e per aprirlo
+  bisogna dichiararlo in `ROTTE_PUBBLICHE` scrivendo perche'.
+- **Un PIN per persona, non uno per la casa** ([ADR 0004](docs/adr/0004-identita-ruoli-e-permessi.md)).
+  All'accesso si sceglie chi si e' e si digita il proprio PIN; la sessione
+  porta con se' l'identita' reale, non una scelta da menu a tendina. E' il
+  fondamento su cui poggeranno i permessi della `v0.2.0`.
+- PIN salvati come hash PBKDF2-SHA256 con sale casuale: `users.json` non
+  contiene piu' nulla che apra la porta.
+- Sessione in un cookie `HttpOnly`, non leggibile da JavaScript, valida 30
+  giorni. Cambiare un PIN chiude le sessioni aperte con quello vecchio.
+- Autenticazione **attiva per difetto**. Al primo avvio senza alcun PIN ne
+  viene generato uno per l'amministratore e scritto nel log una volta sola:
+  un hub che si rifiuta di partire lascerebbe una casa senza controllo.
+- `GET /health` pubblico e privo di informazioni, per la sonda di
+  `scripts/deploy.sh`; `/api/status` ora richiede una sessione perche' rivela
+  modelli e indirizzo di Home Assistant.
+- Le operazioni distruttive — cancellare un utente, cambiare la configurazione
+  — richiedono il ruolo amministratore. Provvisorio: i ruoli veri sono la
+  issue #19 della `v0.2.0`.
 - **I segreti non stanno piu' nel repository** (issue #07, SEC-05).
   `config/config.yaml`, `data/users.json`, `data/knowledge.json` e gli altri
   file di stato non sono piu' tracciati da git. Token di Home Assistant, PIN

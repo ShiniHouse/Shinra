@@ -1,9 +1,10 @@
 import logging
+import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -18,8 +19,11 @@ from config.settings import (
 from core.agent import agent
 from core.ha_client import HomeAssistantClient
 from core.ollama_client import OllamaClient
+from core.user_manager import user_manager
 from integrations.alexa.skill_handler import handle_alexa_request
+from server import sicurezza
 from server.routes_admin import router as admin_router
+from server.routes_auth import router as auth_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("Shinra")
@@ -28,6 +32,53 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = BASE_DIR / "web" / "templates"
 STATIC_DIR = BASE_DIR / "web" / "static"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _prepara_accesso() -> None:
+    """Fa in modo che al primo avvio esista un modo per entrare.
+
+    Con l'autenticazione attiva e nessun PIN configurato, imporre la
+    protezione chiuderebbe fuori tutti — e in una casa questo significa
+    restare senza controllo su luci e riscaldamento. Qui succedono due cose:
+
+    - un PIN in chiaro rimasto in configurazione da una versione precedente
+      viene trasferito sull'amministratore e cifrato;
+    - se non esiste alcun PIN, ne viene generato uno e scritto nel log una
+      volta sola, perche' il proprietario possa entrare e cambiarlo.
+    """
+    if not settings.security.auth_enabled:
+        logger.warning(
+            "Autenticazione disattivata: chiunque sia sulla rete puo' comandare "
+            "l'impianto e leggere i dati della famiglia. Attivala dalle impostazioni."
+        )
+        return
+
+    utenti = user_manager.get_users()
+    if not utenti:
+        return
+    if any(u.pin for u in utenti):
+        return
+
+    amministratore = next((u for u in utenti if u.role == "admin"), utenti[0])
+
+    pin_ereditato = (settings.security.admin_pin or "").strip()
+    if pin_ereditato and not sicurezza.e_cifrato(pin_ereditato):
+        user_manager.imposta_pin(amministratore.id, pin_ereditato)
+        logger.warning(
+            "Il PIN di %s e' stato preso dalla configurazione e cifrato. "
+            "Da ora ogni familiare ha il proprio PIN.",
+            amministratore.name,
+        )
+        return
+
+    pin_nuovo = f"{secrets.randbelow(1_000_000):06d}"
+    user_manager.imposta_pin(amministratore.id, pin_nuovo)
+    logger.warning(
+        "=== PRIMO ACCESSO ===  PIN per %s: %s  "
+        "Compare solo in questo messaggio: annotalo e cambialo dalle impostazioni.",
+        amministratore.name,
+        pin_nuovo,
+    )
 
 
 @asynccontextmanager
@@ -49,6 +100,8 @@ async def lifespan(_: FastAPI):
     if assicura_segreto_sessione():
         logger.info("Generato il segreto di sessione di questa installazione.")
 
+    _prepara_accesso()
+
     for problema in verifica_configurazione():
         logger.warning("Configurazione: %s", problema)
 
@@ -57,7 +110,8 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="Shinra AI Hub", version="2.0.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-app.include_router(admin_router)
+app.include_router(auth_router)  # pubblico: e' l'accesso stesso
+app.include_router(admin_router)  # protetto per difetto
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
@@ -78,7 +132,7 @@ async def index(request: Request):
     return templates.TemplateResponse(request=request, name="index.html", context={"settings": settings})
 
 
-@app.post("/api/chat")
+@app.post("/api/chat", dependencies=[Depends(sicurezza.richiedi_autenticazione)])
 async def chat_endpoint(payload: ChatRequest):
     """Endpoint per richieste di chat / voce dall'interfaccia web o client locali."""
     if not payload.message.strip():
@@ -95,7 +149,7 @@ class TTSRequest(BaseModel):
     pitch: Optional[str] = "+0Hz"
 
 
-@app.post("/api/tts")
+@app.post("/api/tts", dependencies=[Depends(sicurezza.richiedi_autenticazione)])
 async def tts_endpoint(payload: TTSRequest):
     """Genera audio vocale neurale MP3 in alta definizione."""
     if not payload.text.strip():
@@ -113,7 +167,7 @@ async def tts_endpoint(payload: TTSRequest):
         raise HTTPException(status_code=500, detail=f"Errore generazione audio: {e}") from e
 
 
-@app.get("/api/tts/voices")
+@app.get("/api/tts/voices", dependencies=[Depends(sicurezza.richiedi_autenticazione)])
 async def tts_voices_endpoint():
     """Restituisce le voci neurali disponibili nel server."""
     return NEURAL_VOICES
@@ -142,7 +196,20 @@ async def alexa_skill_endpoint(request: Request):
         }
 
 
-@app.get("/api/status")
+@app.get("/health")
+async def health_endpoint():
+    """Sonda di liveness: dice solo che il processo risponde.
+
+    Pubblica di proposito, e per questo non contiene nulla — niente modelli,
+    niente indirizzo di Home Assistant, niente stato dei servizi. Quelle
+    informazioni stanno in /api/status, che richiede una sessione.
+    Serve a scripts/deploy.sh per capire se il servizio e' vivo dopo un
+    riavvio senza doversi autenticare.
+    """
+    return {"status": "ok"}
+
+
+@app.get("/api/status", dependencies=[Depends(sicurezza.richiedi_autenticazione)])
 async def status_endpoint():
     """Controlla lo stato dei servizi (Ollama, Home Assistant)."""
     ollama = OllamaClient()

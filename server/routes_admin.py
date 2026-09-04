@@ -1,11 +1,9 @@
 import asyncio
 import logging
-import secrets
-import time
 from typing import Any, Dict, List, Optional
 
 import feedparser
-from fastapi import APIRouter, Header, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from config.settings import AppConfig, reload_settings, save_config, settings
@@ -13,88 +11,19 @@ from core.data_store import data_store
 from core.ha_client import HomeAssistantClient
 from core.tools.ha_tools import activate_mode
 from core.user_manager import UserProfile, user_manager
+from server.sicurezza import chiudi_sessioni_di, richiedi_amministratore, richiedi_autenticazione
 
 logger = logging.getLogger("Shinra.Admin")
-router = APIRouter(prefix="/api", tags=["Admin & Management"])
+# Ogni rotta di questo router richiede una sessione valida. E' l'inversione
+# che risolve SEC-01: prima la protezione era un controllo manuale presente su
+# un endpoint su trentanove, adesso e' il comportamento predefinito e per
+# aprire un varco bisogna dichiararlo in sicurezza.ROTTE_PUBBLICHE.
+router = APIRouter(
+    prefix="/api",
+    tags=["Admin & Management"],
+    dependencies=[Depends(richiedi_autenticazione)],
+)
 ha_client = HomeAssistantClient()
-
-# --- AUTH & SESSION SECURITY ENGINE ---
-ACTIVE_SESSIONS: Dict[str, float] = {}
-SESSION_EXPIRY_SECONDS = 7 * 24 * 3600  # 7 giorni di durata sessione
-FAILED_ATTEMPTS: Dict[str, List[float]] = {}
-
-
-def is_authenticated(auth_header: Optional[str] = None) -> bool:
-    if not settings.security.auth_enabled or not settings.security.admin_pin:
-        return True
-    if not auth_header:
-        return False
-    token = auth_header.replace("Bearer ", "").strip()
-    if token in ACTIVE_SESSIONS:
-        created_at = ACTIVE_SESSIONS[token]
-        if time.time() - created_at < SESSION_EXPIRY_SECONDS:
-            return True
-        else:
-            ACTIVE_SESSIONS.pop(token, None)
-    return False
-
-
-class LoginRequest(BaseModel):
-    pin: str
-
-
-@router.get("/auth/status")
-async def auth_status(x_shinra_auth: Optional[str] = Header(None)):
-    """Restituisce lo stato di sicurezza e autenticazione corrente."""
-    auth_enabled = bool(settings.security.auth_enabled and settings.security.admin_pin)
-    authenticated = is_authenticated(x_shinra_auth) if auth_enabled else True
-    return {
-        "auth_enabled": auth_enabled,
-        "authenticated": authenticated,
-        "protect_dashboard": settings.security.protect_dashboard,
-    }
-
-
-@router.post("/auth/login")
-async def auth_login(req: LoginRequest, request: Request):
-    """Verifica il PIN di sicurezza e genera un token di sessione."""
-    client_ip = request.client.host if request.client else "unknown"
-    now = time.time()
-
-    # Rate limiting anti-bruteforce
-    attempts = FAILED_ATTEMPTS.get(client_ip, [])
-    # Filtra tentativi negli ultimi 5 minuti
-    attempts = [t for t in attempts if now - t < 300]
-    FAILED_ATTEMPTS[client_ip] = attempts
-
-    if len(attempts) >= 5:
-        logger.warning(f"Troppi tentativi di accesso falliti da {client_ip}")
-        raise HTTPException(
-            status_code=429, detail="Troppi tentativi errati. Accesso temporaneamente bloccato per 5 minuti."
-        )
-
-    expected_pin = (settings.security.admin_pin or "").strip()
-    provided_pin = req.pin.strip()
-
-    if not expected_pin or provided_pin == expected_pin:
-        token = secrets.token_hex(24)
-        ACTIVE_SESSIONS[token] = now
-        logger.info(f"Accesso riuscito per sessione amministratore da {client_ip}")
-        return {"success": True, "token": token}
-    else:
-        attempts.append(now)
-        FAILED_ATTEMPTS[client_ip] = attempts
-        logger.warning(f"Tentativo di accesso con PIN errato da {client_ip}")
-        raise HTTPException(status_code=401, detail="PIN o Password non corretta.")
-
-
-@router.post("/auth/logout")
-async def auth_logout(x_shinra_auth: Optional[str] = Header(None)):
-    """Invalida il token di sessione attivo."""
-    if x_shinra_auth:
-        token = x_shinra_auth.replace("Bearer ", "").strip()
-        ACTIVE_SESSIONS.pop(token, None)
-    return {"success": True}
 
 
 # --- User Models ---
@@ -114,12 +43,44 @@ async def save_user(user: UserProfile):
     return {"success": True, "user": user}
 
 
-@router.delete("/users/{user_id}")
+@router.delete("/users/{user_id}", dependencies=[Depends(richiedi_amministratore)])
 async def delete_user(user_id: str):
     success = user_manager.delete_user(user_id)
     if not success:
         raise HTTPException(status_code=404, detail="Utente non trovato")
     return {"success": True}
+
+
+class ImpostaPinReq(BaseModel):
+    pin: Optional[str] = None
+
+
+@router.post("/users/{user_id}/pin")
+async def imposta_pin_utente(
+    user_id: str,
+    payload: ImpostaPinReq,
+    chiamante: Optional[UserProfile] = Depends(richiedi_autenticazione),
+):
+    """Imposta o rimuove il PIN di un profilo.
+
+    Ciascuno puo' cambiare il proprio; l'amministratore puo' cambiare quello di
+    chiunque — in una casa serve, quando un figlio dimentica il PIN.
+    """
+    if chiamante is not None and chiamante.id != user_id and chiamante.role != "admin":
+        raise HTTPException(status_code=403, detail="Puoi cambiare solo il tuo PIN.")
+
+    pin = (payload.pin or "").strip()
+    if pin and (len(pin) < 4 or not pin.isdigit()):
+        raise HTTPException(status_code=400, detail="Il PIN deve essere di almeno 4 cifre.")
+
+    if not user_manager.imposta_pin(user_id, pin or None):
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+
+    # Cambiare il PIN chiude le sessioni aperte con quello vecchio: se e' stato
+    # cambiato perche' qualcuno lo aveva scoperto, lasciarle aperte sarebbe inutile.
+    chiuse = chiudi_sessioni_di(user_id)
+    logger.info("PIN aggiornato per %s (%d sessioni chiuse)", user_id, chiuse)
+    return {"success": True, "sessioni_chiuse": chiuse, "pin_impostato": bool(pin)}
 
 
 @router.post("/users/identify")
@@ -410,8 +371,8 @@ def is_masked(secret: Optional[str]) -> bool:
     return "••••" in secret or "********" in secret or "***" in secret
 
 
-@router.get("/settings")
-async def get_app_settings(x_shinra_auth: Optional[str] = Header(None)):
+@router.get("/settings", dependencies=[Depends(richiedi_amministratore)])
+async def get_app_settings():
     current = reload_settings().model_dump()
     # Maschera token sensibili
     if current.get("home_assistant", {}).get("token"):
@@ -421,11 +382,8 @@ async def get_app_settings(x_shinra_auth: Optional[str] = Header(None)):
     return current
 
 
-@router.post("/settings")
-async def update_app_settings(new_settings: AppConfig, x_shinra_auth: Optional[str] = Header(None)):
-    if settings.security.auth_enabled and settings.security.admin_pin and not is_authenticated(x_shinra_auth):
-        raise HTTPException(status_code=401, detail="Accesso non autorizzato. Inserisci il PIN di sicurezza.")
-
+@router.post("/settings", dependencies=[Depends(richiedi_amministratore)])
+async def update_app_settings(new_settings: AppConfig):
     current_cfg = reload_settings()
 
     # Preserva token Home Assistant se inviato mascherato o vuoto
@@ -443,7 +401,7 @@ async def update_app_settings(new_settings: AppConfig, x_shinra_auth: Optional[s
         new_settings.security.admin_pin = current_cfg.security.admin_pin
 
     save_config(new_settings)
-    return await get_app_settings(x_shinra_auth)
+    return await get_app_settings()
 
 
 # --- OLLAMA MODELS DISCOVERY ---
