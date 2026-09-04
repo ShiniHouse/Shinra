@@ -15,6 +15,14 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Corretto
+- **Cambiare l'indirizzo di Home Assistant ha effetto senza riavviare**
+  (issue #9, REL-04). `core/tools/ha_tools.py` costruiva il proprio client
+  passando URL e token come valori al momento dell'import, congelandoli: chi
+  correggeva l'indirizzo dalle impostazioni vedeva il pannello diagnostico
+  diventare verde — quello usa un client dinamico — mentre i comandi ai
+  dispositivi continuavano a fallire contro il vecchio indirizzo.
+- Un solo client condiviso al posto di quattro, con la connessione riusata
+  invece di aprirne una nuova a ogni chiamata, e chiusa allo spegnimento.
 - **La Modalita' Apprendimento arriva in fondo** (issue #1 e #2, BLK-01 e
   BLK-02). Era la funzione piu' recente del progetto e non aveva mai
   completato un passo: `interview_engine` chiamava `add_knowledge_item` su

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from config.settings import AppConfig, reload_settings, save_config, settings
 from core.data_store import data_store
-from core.ha_client import HomeAssistantClient
+from core.ha_client import client_home_assistant
 from core.tools.ha_tools import activate_mode
 from core.user_manager import UserProfile, user_manager
 from server.sicurezza import chiudi_sessioni_di, richiedi_amministratore, richiedi_autenticazione
@@ -23,7 +23,7 @@ router = APIRouter(
     tags=["Admin & Management"],
     dependencies=[Depends(richiedi_autenticazione)],
 )
-ha_client = HomeAssistantClient()
+ha_client = client_home_assistant()
 
 
 # --- User Models ---

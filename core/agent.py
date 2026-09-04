@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from config.prompt_templates import get_system_prompt
 from config.settings import settings
 from core.data_store import data_store
-from core.ha_client import HomeAssistantClient
+from core.ha_client import client_home_assistant
 from core.memory import ConversationMemory, memory
 from core.ollama_client import OllamaClient
 from core.tools.registry import TOOLS_SCHEMA, execute_tool
@@ -18,7 +18,7 @@ logger = logging.getLogger("Shinra")
 class ShinraAgent:
     def __init__(self):
         self.ollama = OllamaClient()
-        self.ha = HomeAssistantClient()
+        self.ha = client_home_assistant()
 
     async def process_user_input(
         self,

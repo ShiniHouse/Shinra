@@ -18,7 +18,7 @@ from config.settings import (
     verifica_configurazione,
 )
 from core.agent import agent
-from core.ha_client import HomeAssistantClient
+from core.ha_client import client_home_assistant
 from core.ollama_client import OllamaClient
 from core.user_manager import user_manager
 from integrations.alexa.skill_handler import handle_alexa_request
@@ -125,6 +125,9 @@ async def lifespan(_: FastAPI):
         logger.warning("Configurazione: %s", problema)
 
     yield
+
+    # Spegnimento: chiude la connessione condivisa verso Home Assistant.
+    await client_home_assistant().chiudi()
 
 
 app = FastAPI(title="Shinra AI Hub", version="2.0.0", lifespan=lifespan)
@@ -273,7 +276,7 @@ async def status_endpoint():
     ollama = OllamaClient()
     ollama_health = await ollama.check_health()
 
-    ha = HomeAssistantClient()
+    ha = client_home_assistant()
     ha_health = await ha.check_connection()
 
     return {

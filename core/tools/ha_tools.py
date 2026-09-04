@@ -2,14 +2,10 @@ import asyncio
 import logging
 from typing import Any, Dict, Optional
 
-from config.settings import settings
 from core.data_store import data_store
-from core.ha_client import HomeAssistantClient
+from core.ha_client import client_home_assistant
 
 logger = logging.getLogger(__name__)
-
-# Istanza condivisa del client HA
-ha_client = HomeAssistantClient(base_url=settings.home_assistant.url, token=settings.home_assistant.token)
 
 
 async def control_device(
@@ -50,7 +46,7 @@ async def control_device(
         domain = "cover"
         service = "open_cover" if action == "open" else "close_cover"
 
-    res = await ha_client.call_service(domain, service, service_data)
+    res = await client_home_assistant().call_service(domain, service, service_data)
     if res.get("success"):
         return {
             "success": True,
@@ -67,7 +63,7 @@ async def get_home_status(filter_domain: Optional[str] = None) -> Dict[str, Any]
     """
     Recupera lo stato attuale dei dispositivi e sensori di casa (es. luci accese, temperature, sensori).
     """
-    states = await ha_client.get_states()
+    states = await client_home_assistant().get_states()
     if not states:
         return {
             "success": False,
@@ -103,7 +99,7 @@ async def activate_scene_or_routine(entity_id: str) -> Dict[str, Any]:
     """
     domain = entity_id.split(".")[0] if "." in entity_id else "scene"
     service = "turn_on"
-    res = await ha_client.call_service(domain, service, {"entity_id": entity_id})
+    res = await client_home_assistant().call_service(domain, service, {"entity_id": entity_id})
     if res.get("success"):
         return {"success": True, "message": f"Scena '{entity_id}' attivata."}
     return {"success": False, "error": res.get("error")}
@@ -192,7 +188,7 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
                     if n_data.get("temperature") is not None:
                         s_data["temperature"] = float(n_data["temperature"])
 
-                    res = await ha_client.call_service(domain, act_cmd, s_data)
+                    res = await client_home_assistant().call_service(domain, act_cmd, s_data)
                     executed_actions.append(
                         {
                             "type": "ha_device",
@@ -243,7 +239,7 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
                     if action.get("temperature") is not None:
                         s_data["temperature"] = float(action["temperature"])
 
-                    res = await ha_client.call_service(domain, act_cmd, s_data)
+                    res = await client_home_assistant().call_service(domain, act_cmd, s_data)
                     executed_actions.append(
                         {
                             "type": "ha_device",
