@@ -55,7 +55,14 @@ def test_le_fonti_rss_configurate_sono_usate() -> None:
     reason="preferred_news_categories e' salvato per ogni utente e mai letto — issue v0.3.0 #26",
 )
 def test_le_categorie_di_notizie_preferite_sono_usate() -> None:
-    assert occorrenze("preferred_news_categories", escludi=("user_manager.py",)), (
+    # Escludiamo i moduli che il campo lo conservano soltanto: l'anagrafica e
+    # lo strato di persistenza. Conservare non e' usare, e un test che si
+    # dichiara soddisfatto perche' qualcuno ha nominato il campo in una
+    # tabella non presidia piu' niente.
+    assert occorrenze(
+        "preferred_news_categories",
+        escludi=("user_manager.py", "modelli.py", "depositi.py"),
+    ), (
         "Il campo e' salvato in users.json ma nessun codice lo consuma: "
         "il briefing notizie e' identico per tutti gli utenti"
     )

@@ -15,6 +15,20 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **Un database al posto di sette file JSON** (issue #12, prima parte).
+  `data/shinra.db`, SQLite in modalita' WAL, con SQLAlchemy 2 e Alembic per
+  le migrazioni di schema. I file JSON restano intatti: sono il backup con
+  cui tornare indietro.
+- `scripts/migra_da_json.py`: migrazione una tantum che **non tocca gli
+  originali**, verifica per conteggio entita' per entita' e si rifiuta di
+  scrivere sopra un database gia' popolato.
+- `scripts/deploy.sh` fa un'istantanea coerente del database prima di ogni
+  aggiornamento, con l'API di backup di SQLite e non con `tar`: copiare un
+  database in uso a colpi di archivio produce un file che sembra valido e
+  non lo e'. Se l'istantanea non riesce, l'aggiornamento si ferma.
+- La tabella `registro_azioni` nasce gia' nello schema iniziale, vuota, per
+  la issue #15: crearla dopo sarebbe una seconda migrazione sul database di
+  una casa in funzione.
 - **I promemoria suonano davvero** (issue #11). Fino alla `0.1.0` un
   promemoria veniva scritto in `data/reminders.json` e nessun processo lo
   rileggeva: non si attivava in nessuna circostanza, mentre l'assistente

@@ -251,6 +251,40 @@ scappatoia, non una configurazione.
 
 ---
 
+## Il database (dalla v0.2.0)
+
+Dalla `v0.2.0` i dati di casa hanno una destinazione nuova: `data/shinra.db`,
+un file SQLite. I sette file JSON in `data/` **restano dove sono** e non
+vengono ne' modificati ne' cancellati: sono il backup con cui tornare
+indietro finche' non ti sei convinto che il database funziona.
+
+`scripts/deploy.sh` fa da solo due cose in piu':
+
+1. **Un'istantanea coerente del database** prima di toccare qualsiasi cosa,
+   in `/var/backups/shinra/shinra-db-AAAAMMGG-HHMMSS.db`. Non e' il file
+   copiato con `cp`: il servizio e' ancora vivo quando si fa il backup, e
+   copiare un SQLite in uso con `cp` o `tar` produce un file che sembra a
+   posto e non lo e'. Se questa copia non riesce, l'aggiornamento si ferma:
+   un backup su cui non si puo' contare e' peggio di nessun backup.
+2. **`alembic upgrade head`**, che allinea lo schema prima del riavvio.
+
+La migrazione dei dati dai JSON al database si esegue una volta sola:
+
+```bash
+cd /opt/Shinra
+sudo -u shinra .venv/bin/python scripts/migra_da_json.py --prova   # cosa farebbe
+sudo -u shinra .venv/bin/python scripts/migra_da_json.py           # esegue
+sudo -u shinra .venv/bin/python scripts/migra_da_json.py --verifica  # ricontrolla
+```
+
+Al termine confronta, entita' per entita', quante voci c'erano nei file e
+quante sono nel database. Se un solo numero non torna lo dice e restituisce
+un codice d'errore: i JSON sono intatti, si cancella il database e si
+riprova. Lo script si rifiuta di scrivere sopra un database che contiene
+gia' dati, cosi' eseguirlo due volte per distrazione non duplica niente.
+
+---
+
 ## Quando qualcosa va storto
 
 ```bash

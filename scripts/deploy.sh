@@ -263,6 +263,35 @@ passo "Backup di configurazione e dati"
 MARCA="$(date +%Y%m%d-%H%M%S)"
 ARCHIVIO="$BACKUP_DIR/shinra-$MARCA.tar.gz"
 esegui mkdir -p "$BACKUP_DIR"
+
+# Il database e' vivo mentre facciamo il backup: il servizio non e' ancora
+# fermo. Copiarlo con tar mentre una transazione e' a meta' produce un file
+# che sembra a posto e non lo e' — e un backup che non si puo' ripristinare
+# e' peggio di nessun backup, perche' ci si conta sopra. L'API di backup di
+# SQLite fa una copia coerente di un database in uso: questa e' quella
+# buona, il tar la porta con se' insieme al resto.
+ISTANTANEA="$BACKUP_DIR/shinra-db-$MARCA.db"
+if [[ -f "$APP_DIR/data/shinra.db" ]]; then
+    if [[ $DRY_RUN -eq 0 ]]; then
+        if "$VENV/bin/python" - "$APP_DIR/data/shinra.db" "$ISTANTANEA" <<'PY'
+import sqlite3, sys
+sorgente, destinazione = sys.argv[1], sys.argv[2]
+with sqlite3.connect(sorgente) as origine, sqlite3.connect(destinazione) as copia:
+    origine.backup(copia)
+PY
+        then
+            chmod 600 "$ISTANTANEA"
+            info "Istantanea coerente del database: $ISTANTANEA"
+        else
+            rosso "Non sono riuscito a copiare il database in modo coerente."
+            rosso "Mi fermo: aggiornare senza un backup valido non e' accettabile."
+            exit 1
+        fi
+    else
+        info "[simulazione] istantanea SQLite in $ISTANTANEA"
+    fi
+fi
+
 if [[ $DRY_RUN -eq 0 ]]; then
     tar -czf "$ARCHIVIO" -C "$APP_DIR" \
         --ignore-failed-read config data .env 2>/dev/null || true
@@ -270,6 +299,8 @@ if [[ $DRY_RUN -eq 0 ]]; then
     info "Salvato in $ARCHIVIO ($(du -h "$ARCHIVIO" | cut -f1))"
     # Conserva solo gli ultimi N backup.
     ls -1t "$BACKUP_DIR"/shinra-*.tar.gz 2>/dev/null \
+        | tail -n "+$((BACKUP_DA_TENERE + 1))" | xargs -r rm -f
+    ls -1t "$BACKUP_DIR"/shinra-db-*.db 2>/dev/null \
         | tail -n "+$((BACKUP_DA_TENERE + 1))" | xargs -r rm -f
 else
     info "[simulazione] tar -czf $ARCHIVIO config data .env"

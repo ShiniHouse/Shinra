@@ -38,6 +38,9 @@ dependencies = [
   # Scheduler persistente per timer, promemoria e automazioni (ADR 0003).
   "apscheduler>=3.10",
   "sqlalchemy>=2.0",
+  # Migrazioni di schema: scripts/deploy.sh esegue `alembic upgrade head`
+  # a ogni aggiornamento, quindi e' una dipendenza del servizio, non di sviluppo.
+  "alembic>=1.13",
   "feedparser>=6.0.11",
   "edge-tts>=6.1.12",
 ]
