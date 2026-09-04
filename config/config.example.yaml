@@ -49,6 +49,9 @@ assistant:
   default_city: "Roma"
 
 security:
-  auth_enabled: false
-  # Il PIN si imposta in .env come SHINRA_ADMIN_PIN
+  # Ogni familiare ha il proprio PIN, impostato dal suo profilo.
+  # Al primo avvio, se nessuno ne ha uno, viene generato un PIN per
+  # l'amministratore e scritto nel log una volta sola.
+  # Metterlo a false apre la casa a chiunque sia sulla rete.
+  auth_enabled: true
   protect_dashboard: true

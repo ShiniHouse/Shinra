@@ -1287,14 +1287,23 @@
                 </div>
             </div>
             <div>
-                <h3 class="text-xl font-extrabold text-slate-100">Shinra Sicura</h3>
-                <p class="text-xs text-slate-400 mt-1">Inserisci il PIN di sicurezza per sbloccare la dashboard.</p>
+                <h3 class="text-xl font-extrabold text-slate-100">Chi sei?</h3>
+                <p id="unlock-sottotitolo" class="text-xs text-slate-400 mt-1">Scegli il tuo profilo per accedere.</p>
             </div>
-            <form onsubmit="handleUnlockSubmit(event)" class="space-y-4">
-                <input type="password" id="unlock-pin-input" placeholder="••••" maxlength="12" class="w-full text-center text-2xl font-mono tracking-widest bg-slate-950 border border-slate-700 rounded-2xl p-3 text-amber-400 focus:outline-none focus:border-amber-500 transition">
+
+            <!-- Scelta del profilo -->
+            <div id="unlock-profili" class="grid grid-cols-2 gap-2.5"></div>
+
+            <!-- PIN del profilo scelto -->
+            <form id="unlock-form-pin" onsubmit="handleUnlockSubmit(event)" class="space-y-4 hidden">
+                <div class="flex items-center justify-center gap-2 text-sm text-slate-300">
+                    <span id="unlock-profilo-scelto" class="font-bold"></span>
+                    <button type="button" onclick="tornaAllaSceltaProfilo()" class="text-[11px] text-indigo-400 hover:text-indigo-300 underline">cambia</button>
+                </div>
+                <input type="password" inputmode="numeric" id="unlock-pin-input" placeholder="••••" maxlength="12" autocomplete="current-password" class="w-full text-center text-2xl font-mono tracking-widest bg-slate-950 border border-slate-700 rounded-2xl p-3 text-amber-400 focus:outline-none focus:border-amber-500 transition">
                 <div id="unlock-error-msg" class="hidden text-xs text-rose-400 font-semibold animate-pulse">PIN non corretto. Riprova.</div>
                 <button type="submit" class="w-full py-3 bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-bold rounded-2xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
-                    <i data-lucide="unlock" class="w-4 h-4"></i> Sblocca Sessione
+                    <i data-lucide="unlock" class="w-4 h-4"></i> Entra
                 </button>
             </form>
         </div>
@@ -1526,8 +1535,7 @@
                     if (lockBtn) lockBtn.classList.remove('hidden');
                     if (!data.authenticated && data.protect_dashboard) {
                         if (lockModal) lockModal.style.display = 'flex';
-                        const pinInput = document.getElementById('unlock-pin-input');
-                        if (pinInput) setTimeout(() => pinInput.focus(), 200);
+                        caricaProfiliAccesso();
                     } else {
                         if (lockModal) lockModal.style.display = 'none';
                     }
@@ -1541,6 +1549,70 @@
             }
         }
 
+        // ---- Accesso: prima si sceglie chi si e', poi si digita il proprio PIN ----
+        let _profiloDaAccedere = null;
+
+        async function caricaProfiliAccesso() {
+            const box = document.getElementById('unlock-profili');
+            if (!box) return;
+            try {
+                const res = await fetch('/api/auth/profili');
+                if (!res.ok) return;
+                const profili = (await res.json()).filter(p => p.ha_pin);
+
+                if (profili.length === 0) {
+                    box.innerHTML = `<div class="col-span-2 text-xs text-slate-400 p-3 rounded-xl bg-slate-950 border border-slate-800">
+                        Nessun profilo ha ancora un PIN. Il PIN del primo accesso e' nel log del server.</div>`;
+                    return;
+                }
+
+                // Con un solo profilo la scelta non serve: si va dritti al PIN.
+                if (profili.length === 1) {
+                    box.classList.add('hidden');
+                    scegliProfiloAccesso(profili[0].id, profili[0].name);
+                    return;
+                }
+
+                box.classList.remove('hidden');
+                box.innerHTML = profili.map(p => `
+                    <button type="button" onclick="scegliProfiloAccesso('${p.id}', '${(p.name || '').replace(/'/g, "\\'")}')"
+                        class="p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-indigo-500 hover:bg-slate-900 transition text-left flex items-center gap-2.5">
+                        <span class="w-8 h-8 rounded-xl bg-indigo-600/25 text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0">
+                            ${(p.name || '?').charAt(0).toUpperCase()}
+                        </span>
+                        <span class="text-sm font-semibold text-slate-200 truncate">${p.name || p.id}</span>
+                    </button>`).join('');
+            } catch (e) {
+                console.warn('Impossibile caricare i profili di accesso:', e);
+            }
+        }
+
+        function scegliProfiloAccesso(userId, nome) {
+            _profiloDaAccedere = userId;
+            const box = document.getElementById('unlock-profili');
+            const form = document.getElementById('unlock-form-pin');
+            const etichetta = document.getElementById('unlock-profilo-scelto');
+            const sottotitolo = document.getElementById('unlock-sottotitolo');
+            if (box) box.classList.add('hidden');
+            if (form) form.classList.remove('hidden');
+            if (etichetta) etichetta.innerText = nome || userId;
+            if (sottotitolo) sottotitolo.innerText = 'Inserisci il tuo PIN.';
+            setTimeout(() => document.getElementById('unlock-pin-input')?.focus(), 80);
+        }
+
+        function tornaAllaSceltaProfilo() {
+            _profiloDaAccedere = null;
+            const box = document.getElementById('unlock-profili');
+            const form = document.getElementById('unlock-form-pin');
+            const sottotitolo = document.getElementById('unlock-sottotitolo');
+            const errBox = document.getElementById('unlock-error-msg');
+            if (box) box.classList.remove('hidden');
+            if (form) form.classList.add('hidden');
+            if (sottotitolo) sottotitolo.innerText = 'Scegli il tuo profilo per accedere.';
+            if (errBox) errBox.classList.add('hidden');
+            caricaProfiliAccesso();
+        }
+
         async function handleUnlockSubmit(e) {
             if (e) e.preventDefault();
             const pinInput = document.getElementById('unlock-pin-input');
@@ -1552,12 +1624,20 @@
                 const res = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ pin: pin })
+                    body: JSON.stringify({ pin: pin, user_id: _profiloDaAccedere })
                 });
 
                 if (res.ok) {
                     const data = await res.json();
                     sessionStorage.setItem('shinra_auth_token', data.token);
+                    // L'utente attivo non e' piu' una scelta da menu: e' chi
+                    // ha appena dimostrato di essere se stesso con il PIN.
+                    if (data.utente && data.utente.id) {
+                        activeUserId = data.utente.id;
+                        try { localStorage.setItem('shinra_active_user', data.utente.id); } catch (e) {}
+                        if (typeof updateActiveUserBanner === 'function') updateActiveUserBanner();
+                        if (typeof loadUsersDropdown === 'function') loadUsersDropdown();
+                    }
                     if (errBox) errBox.classList.add('hidden');
                     if (pinInput) pinInput.value = '';
                     const lockModal = document.getElementById('lock-screen-modal');

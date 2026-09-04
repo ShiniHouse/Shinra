@@ -56,7 +56,11 @@ class AssistantConfig(BaseModel):
 
 
 class SecurityConfig(BaseModel):
-    auth_enabled: bool = False
+    # Chiusa per difetto. Un hub che comanda luci, prese e clima non puo'
+    # nascere aperto a chiunque sia sulla rete: al primo avvio senza PIN ne
+    # viene generato uno e scritto nel log, cosi' il proprietario entra
+    # comunque. Vedi server/app.py::_prepara_accesso.
+    auth_enabled: bool = True
     admin_pin: Optional[str] = ""
     # Nessun valore predefinito: un segreto uguale per tutte le installazioni
     # non e' un segreto. Viene generato al primo avvio e scritto in .env.
@@ -218,9 +222,10 @@ def verifica_configurazione(config: Optional[AppConfig] = None) -> list[str]:
             "Imposta SHINRA_HA_TOKEN in .env, oppure metti home_assistant.enabled a false."
         )
 
-    if cfg.security.auth_enabled and not (cfg.security.admin_pin or "").strip():
+    if not cfg.security.auth_enabled:
         problemi.append(
-            "L'autenticazione e' attiva ma nessun PIN e' configurato. " "Imposta SHINRA_ADMIN_PIN in .env."
+            "L'autenticazione e' disattivata: chiunque sia sulla rete di casa puo' "
+            "comandare l'impianto e leggere i dati della famiglia."
         )
 
     if cfg.server.debug and cfg.server.host == "0.0.0.0":
