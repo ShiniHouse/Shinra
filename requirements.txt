@@ -1,10 +1,12 @@
-fastapi>=0.110.0
-uvicorn[standard]>=0.28.0
-httpx>=0.27.0
-pydantic>=2.6.0
-pyyaml>=6.0.1
-jinja2>=3.1.3
-duckduckgo-search>=6.0.0
-beautifulsoup4>=4.12.3
-feedparser>=6.0.11
-edge-tts>=6.1.12
+# Le dipendenze di Shinra sono dichiarate in pyproject.toml, che dalla v0.1.0
+# e' l'unica fonte di verita'. Questo file resta perche' README, script e
+# abitudini puntano ancora qui: rimanda al progetto invece di elencare una
+# seconda volta gli stessi pacchetti.
+#
+# Duplicarli e' gia' costato caro: fino alla v0.2.0 questo elenco non
+# conteneva cryptography, apscheduler, sqlalchemy ne' pydantic-settings, e
+# chi seguiva il README si ritrovava un'installazione che non partiva.
+#
+#   pip install -r requirements.txt    installa il progetto e le sue dipendenze
+#   pip install -e ".[dev]"            aggiunge gli strumenti di sviluppo
+-e .

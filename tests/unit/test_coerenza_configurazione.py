@@ -164,3 +164,19 @@ def test_dopo_un_ricarico_i_moduli_vedono_i_valori_nuovi(monkeypatch) -> None:
         modulo.reload_settings()
 
     assert modulo.settings.assistant.name == nome_originale
+
+
+def test_le_dipendenze_sono_dichiarate_in_un_posto_solo() -> None:
+    """requirements.txt non deve elencare pacchetti: deve rimandare a pyproject.
+
+    Quando i due elenchi erano separati, il secondo e' rimasto indietro:
+    mancavano cryptography, apscheduler, sqlalchemy e pydantic-settings, e
+    chi seguiva il README otteneva un'installazione che non partiva. Un
+    elenco che va tenuto allineato a mano prima o poi non lo e' piu'.
+    """
+    righe = (RADICE / "requirements.txt").read_text(encoding="utf-8").splitlines()
+    dichiarate = [r.strip() for r in righe if r.strip() and not r.strip().startswith("#")]
+    assert dichiarate == ["-e ."], (
+        "requirements.txt elenca dipendenze per conto suo: "
+        f"{dichiarate}. Devono stare solo in pyproject.toml"
+    )
