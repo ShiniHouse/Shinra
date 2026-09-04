@@ -46,6 +46,16 @@ installabile e utilizzabile.
 - `TimerEngine.pulisci_scaduti()`: i timer completati non si accumulano piu'
   all'infinito in `timers.json`.
 
+### Corretto
+- **Le impostazioni salvate arrivano a tutti i moduli senza riavviare.**
+  `reload_settings()` sostituiva l'oggetto di configurazione invece di
+  aggiornarlo: i sei moduli che avevano scritto
+  `from config.settings import settings` — fra cui `server/sicurezza.py` —
+  restavano legati alla vecchia istanza e continuavano a leggere i valori di
+  prima fino al riavvio del servizio. Stessa forma di REL-04 (issue #9), in
+  un altro punto del codice. Scoperto dal test end-to-end sul WebSocket, che
+  falliva su una copia pulita del repository e non su quella di lavoro.
+
 ### Modificato
 - Il conto alla rovescia nel browser e' ora solo estetico: chi decide che un
   timer e' scaduto e' il server. Se il collegamento agli eventi manca, la

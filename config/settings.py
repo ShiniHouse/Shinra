@@ -119,8 +119,22 @@ def load_config() -> AppConfig:
 
 
 def reload_settings() -> AppConfig:
-    global settings
-    settings = load_config()
+    """Rilegge la configurazione **dentro lo stesso oggetto**.
+
+    Sostituire l'oggetto lascerebbe indietro chiunque abbia scritto
+    `from config.settings import settings`: quel nome resta legato alla
+    vecchia istanza per sempre. Succedeva a sei moduli — fra cui
+    `server/sicurezza.py` — che dopo un salvataggio dal pannello
+    impostazioni continuavano a leggere i valori di prima fino al riavvio
+    del servizio. E' la stessa forma del difetto REL-04 (issue #9), dove il
+    client di Home Assistant congelava l'indirizzo al momento dell'import.
+
+    Aggiornare i campi al loro posto mantiene una sola identita' condivisa:
+    chi ha importato `settings` vede la configurazione corrente, sempre.
+    """
+    nuovo = load_config()
+    for campo in AppConfig.model_fields:
+        setattr(settings, campo, getattr(nuovo, campo))
     return settings
 
 
