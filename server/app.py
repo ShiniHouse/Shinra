@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import secrets
@@ -5,7 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -18,8 +19,12 @@ from config.settings import (
     verifica_configurazione,
 )
 from core.agent import agent
+from core.consegna import descrivi, registra_canali
+from core.eventi import PROMEMORIA_SCADUTO, TIMER_SCADUTO, Evento, bus
 from core.ha_client import client_home_assistant
 from core.ollama_client import OllamaClient
+from core.scheduler import scheduler
+from core.timer_engine import timer_engine
 from core.user_manager import user_manager
 from integrations.alexa.skill_handler import handle_alexa_request
 from integrations.alexa.verifica_firma import FirmaNonValida, verifica_richiesta
@@ -121,12 +126,27 @@ async def lifespan(_: FastAPI):
 
     _prepara_accesso()
 
+    # Scheduler: da qui timer e promemoria scattano lato server, anche a
+    # browser chiuso e attraverso i riavvii.
+    scheduler.avvia()
+    registra_canali()
+    ripresi = timer_engine.ripristina_job()
+    rimossi = timer_engine.pulisci_scaduti()
+    if any(ripresi.values()) or rimossi:
+        logger.info(
+            "Ripresi %d timer e %d promemoria; rimossi %d timer scaduti.",
+            ripresi["timer"],
+            ripresi["promemoria"],
+            rimossi,
+        )
+
     for problema in verifica_configurazione():
         logger.warning("Configurazione: %s", problema)
 
     yield
 
-    # Spegnimento: chiude la connessione condivisa verso Home Assistant.
+    # Spegnimento: i job restano nell'archivio per la prossima accensione.
+    scheduler.ferma()
     await client_home_assistant().chiudi()
 
 
@@ -301,6 +321,36 @@ async def alexa_skill_endpoint(request: Request):
                 "shouldEndSession": True,
             },
         }
+
+
+@app.websocket("/ws/eventi")
+async def eventi_websocket(websocket: WebSocket):
+    """Eventi in tempo reale verso la dashboard.
+
+    Sostituisce l'interrogazione periodica: la dashboard non chiede piu' «e'
+    scaduto qualcosa?», riceve l'avviso nel momento in cui accade.
+    """
+    if sicurezza.autenticazione_attiva():
+        token = websocket.cookies.get(sicurezza.NOME_COOKIE)
+        if sicurezza.sessione_valida(token) is None:
+            await websocket.close(code=1008)
+            return
+
+    await websocket.accept()
+    coda: asyncio.Queue = asyncio.Queue()
+
+    def accoda(evento: Evento) -> None:
+        coda.put_nowait(descrivi(evento))
+
+    annulla = [bus.sottoscrivi(t, accoda) for t in (TIMER_SCADUTO, PROMEMORIA_SCADUTO)]
+    try:
+        while True:
+            await websocket.send_json(await coda.get())
+    except (WebSocketDisconnect, RuntimeError):
+        pass
+    finally:
+        for a in annulla:
+            a()
 
 
 @app.get("/health")

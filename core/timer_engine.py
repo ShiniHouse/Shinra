@@ -79,15 +79,89 @@ class TimerEngine:
         }
         timers.append(item)
         self.save_timers(timers)
+
+        # Il conto alla rovescia non vive piu' solo nel browser: alla scadenza
+        # e' lo scheduler a suonare, anche a scheda chiusa.
+        from core.scheduler import scheduler
+
+        scheduler.programma_timer(t_id, item["label"], item["expires_at"], user_id)
         return item
 
     def delete_timer(self, timer_id: str) -> bool:
+        from core.scheduler import scheduler
+
+        scheduler.annulla_timer(timer_id)
         timers = self.get_timers()
         filtered = [t for t in timers if t.get("id") != timer_id]
         if len(filtered) != len(timers):
             self.save_timers(filtered)
             return True
         return False
+
+    def segna_completato(self, timer_id: str) -> bool:
+        """Marca un timer come scaduto.
+
+        Prima nessuno lo faceva: `completed` restava sempre falso, timers.json
+        cresceva all'infinito e ogni voce vecchia riappariva scaduta al
+        caricamento successivo della dashboard.
+        """
+        timers = self.get_timers()
+        trovato = False
+        for t in timers:
+            if t.get("id") == timer_id:
+                t["completed"] = True
+                t["completed_at"] = datetime.now().isoformat()
+                trovato = True
+        if trovato:
+            self.save_timers(timers)
+        return trovato
+
+    def segna_promemoria_completato(self, reminder_id: str) -> bool:
+        reminders = self.get_reminders()
+        trovato = False
+        for r in reminders:
+            if r.get("id") == reminder_id:
+                r["completed"] = True
+                r["completed_at"] = datetime.now().isoformat()
+                trovato = True
+        if trovato:
+            self.save_reminders(reminders)
+        return trovato
+
+    def pulisci_scaduti(self, conserva_ore: int = 24) -> int:
+        """Rimuove i timer completati piu' vecchi del periodo di conservazione."""
+        limite = time.time() - conserva_ore * 3600
+        timers = self.get_timers()
+        rimasti = [t for t in timers if not t.get("completed") or float(t.get("expires_at", 0)) > limite]
+        if len(rimasti) != len(timers):
+            self.save_timers(rimasti)
+        return len(timers) - len(rimasti)
+
+    def ripristina_job(self) -> dict[str, int]:
+        """Riprogramma i job per timer e promemoria ancora attivi.
+
+        Serve dopo un riavvio: l'archivio dei job di APScheduler li conserva,
+        ma un'installazione che aggiorna da una versione senza scheduler ha
+        timer e promemoria in attesa e nessun job corrispondente.
+        """
+        from core.scheduler import scheduler
+
+        contati = {"timer": 0, "promemoria": 0}
+        for t in self.get_timers():
+            if t.get("completed"):
+                continue
+            if scheduler.programma_timer(
+                t["id"], t.get("label", "Timer"), t.get("expires_at", 0), t.get("user_id", "")
+            ):
+                contati["timer"] += 1
+        for r in self.get_reminders():
+            if r.get("completed"):
+                continue
+            if scheduler.programma_promemoria(
+                r["id"], r.get("text", ""), r.get("remind_at", ""), r.get("user_id", "")
+            ):
+                contati["promemoria"] += 1
+        return contati
 
     # --- Reminders ---
     def get_reminders(self) -> List[Dict[str, Any]]:
@@ -120,9 +194,16 @@ class TimerEngine:
         }
         reminders.append(item)
         self.save_reminders(reminders)
+
+        from core.scheduler import scheduler
+
+        scheduler.programma_promemoria(r_id, item["text"], remind_at_iso, user_id)
         return item
 
     def delete_reminder(self, reminder_id: str) -> bool:
+        from core.scheduler import scheduler
+
+        scheduler.annulla_promemoria(reminder_id)
         reminders = self.get_reminders()
         filtered = [r for r in reminders if r.get("id") != reminder_id]
         if len(filtered) != len(reminders):

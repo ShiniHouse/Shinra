@@ -15,6 +15,7 @@ from __future__ import annotations
 import pytest
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from config.settings import settings
 from core.user_manager import user_manager
@@ -449,3 +450,22 @@ def test_un_token_con_firma_alterata_non_vale(casa_chiusa) -> None:
     assert sicurezza.sessione_valida(token) is not None
     assert sicurezza.sessione_valida(f"{grezzo}.0000000000000000000000000000000") is None
     assert sicurezza.sessione_valida(grezzo) is None
+
+
+# ------------------------------------------------------- eventi in tempo reale
+
+
+def test_il_websocket_degli_eventi_rifiuta_chi_non_e_entrato(casa_chiusa) -> None:
+    """Il canale degli eventi porta fuori i promemoria di famiglia: la
+    dichiarazione in ROTTE_PUBBLICHE dice che verifica la sessione da se',
+    e questo test la mette alla prova."""
+    with TestClient(app) as c, pytest.raises(WebSocketDisconnect), c.websocket_connect("/ws/eventi"):
+        pass
+
+
+def test_dopo_l_accesso_il_websocket_degli_eventi_accetta(casa_chiusa) -> None:
+    with TestClient(app) as c:
+        entrato = c.post("/api/auth/login", json={"pin": PIN_DI_PROVA, "user_id": casa_chiusa.id})
+        assert entrato.status_code == 200
+        with c.websocket_connect("/ws/eventi") as ws:
+            assert ws is not None

@@ -14,7 +14,54 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
-Nulla di nuovo dopo la `0.1.0`.
+### Aggiunto
+- **I promemoria suonano davvero** (issue #11). Fino alla `0.1.0` un
+  promemoria veniva scritto in `data/reminders.json` e nessun processo lo
+  rileggeva: non si attivava in nessuna circostanza, mentre l'assistente
+  aveva gia' risposto «ti ricordero'». I timer stavano poco meglio — il
+  conto alla rovescia viveva in un `setInterval` del browser, quindi
+  chiusa la scheda non suonava nulla.
+- `core/scheduler.py`: scheduler persistente (APScheduler con archivio
+  SQLite in `data/scheduler.db`). **Persistente** significa che un
+  promemoria per le 17:30 scatta anche se il servizio e' stato riavviato
+  alle 17:00.
+- Tolleranze distinte per il recupero dei job persi durante un fermo: mezz'ora
+  per i promemoria — «prendi le medicine» resta utile in ritardo — e un
+  minuto per i timer, perche' la pasta e' andata comunque.
+- `core/eventi.py`: bus interno. Chi produce un fatto non sa chi lo
+  consegnera'; un canale che fallisce non zittisce gli altri. Le notifiche
+  push (issue #29) si aggiungeranno come canale in piu', senza toccare lo
+  scheduler.
+- `core/consegna.py`: canale di annuncio su Echo. Collega finalmente
+  `speak_on_alexa()`, definita in `ha_client.py` e mai chiamata da nessuno:
+  l'assistente ora puo' parlare in casa di sua iniziativa, non solo
+  rispondere.
+- `GET /ws/eventi`: gli avvisi raggiungono la dashboard nell'istante in cui
+  accadono. Verifica la sessione prima di accettare la connessione.
+- La dashboard mostra i promemoria in attesa accanto ai timer, con lo stato
+  del collegamento agli eventi.
+- `TimerEngine.ripristina_job()`, eseguita all'avvio: chi aggiorna da una
+  versione senza scheduler ha timer e promemoria in attesa e nessun job
+  corrispondente.
+- `TimerEngine.pulisci_scaduti()`: i timer completati non si accumulano piu'
+  all'infinito in `timers.json`.
+
+### Corretto
+- **Le impostazioni salvate arrivano a tutti i moduli senza riavviare.**
+  `reload_settings()` sostituiva l'oggetto di configurazione invece di
+  aggiornarlo: i sei moduli che avevano scritto
+  `from config.settings import settings` — fra cui `server/sicurezza.py` —
+  restavano legati alla vecchia istanza e continuavano a leggere i valori di
+  prima fino al riavvio del servizio. Stessa forma di REL-04 (issue #9), in
+  un altro punto del codice. Scoperto dal test end-to-end sul WebSocket, che
+  falliva su una copia pulita del repository e non su quella di lavoro.
+
+### Modificato
+- Il conto alla rovescia nel browser e' ora solo estetico: chi decide che un
+  timer e' scaduto e' il server. Se il collegamento agli eventi manca, la
+  scheda torna a suonare da sola — meglio un avviso locale che nessuno.
+- Nuove dipendenze: `apscheduler>=3.10`, `sqlalchemy>=2.0`.
+- I job della CI hanno un tetto di 10 minuti.
 
 ---
 

@@ -81,11 +81,9 @@ def test_l_application_id_di_alexa_e_verificato() -> None:
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="speak_on_alexa e' definita e mai chiamata — collegata in v0.2.0 #11",
-)
 def test_l_annuncio_su_echo_e_utilizzato() -> None:
+    """Risolto dalla issue #11: il canale di consegna la usa per annunciare
+    timer e promemoria scaduti su un dispositivo Echo."""
     assert occorrenze("speak_on_alexa", escludi=("ha_client.py",)), (
         "core/ha_client.py definisce speak_on_alexa() ma nessuno la chiama: "
         "l'assistente non puo' parlare spontaneamente su un dispositivo Echo"
@@ -110,3 +108,59 @@ def test_nessuna_dipendenza_dichiarata_e_inutilizzata() -> None:
     assert "duckduckgo" not in pyproject, (
         "duckduckgo-search non e' importata da nessun modulo: non deve comparire " "fra le dipendenze"
     )
+
+
+# ------------------------------------------------- la configurazione ricaricata
+
+
+MODULI_CHE_IMPORTANO_SETTINGS = (
+    "server.sicurezza",
+    "server.routes_admin",
+    "core.agent",
+    "core.consegna",
+    "config.prompt_templates",
+    "integrations.alexa.skill_handler",
+)
+
+
+def test_c_e_una_sola_configurazione_per_tutti() -> None:
+    """Ogni `from config.settings import settings` deve guardare lo stesso oggetto.
+
+    Se `reload_settings()` ne creasse uno nuovo, questi moduli resterebbero
+    legati al vecchio: dopo un salvataggio dal pannello impostazioni
+    leggerebbero i valori di prima fino al riavvio del servizio. E'
+    esattamente il difetto REL-04 (issue #9) in un altro punto del codice.
+    """
+    import importlib
+
+    from config import settings as modulo
+
+    for nome in MODULI_CHE_IMPORTANO_SETTINGS:
+        m = importlib.import_module(nome)
+        assert (
+            m.settings is modulo.settings
+        ), f"{nome} ha una copia della configurazione invece di quella condivisa"
+
+
+def test_dopo_un_ricarico_i_moduli_vedono_i_valori_nuovi(monkeypatch) -> None:
+    """La prova che conta: cambiare la configurazione arriva a chi la usa."""
+    from config import settings as modulo
+    from server import sicurezza
+
+    nome_originale = modulo.settings.assistant.name
+
+    ricaricato = modulo.load_config()
+    ricaricato.assistant.name = "NomeDiProva"
+    ricaricato.security.auth_enabled = not modulo.settings.security.auth_enabled
+    monkeypatch.setattr(modulo, "load_config", lambda: ricaricato)
+
+    try:
+        modulo.reload_settings()
+        assert sicurezza.settings is modulo.settings
+        assert sicurezza.settings.assistant.name == "NomeDiProva"
+        assert sicurezza.settings.security.auth_enabled == ricaricato.security.auth_enabled
+    finally:
+        monkeypatch.undo()
+        modulo.reload_settings()
+
+    assert modulo.settings.assistant.name == nome_originale
