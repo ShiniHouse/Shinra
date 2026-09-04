@@ -203,6 +203,54 @@ procedura e' pronta.
 
 ---
 
+## Non riesco piu' a entrare
+
+Dalla `v0.1.0` l'autenticazione e' attiva e ogni familiare ha il proprio PIN.
+Al primo avvio, se nessuno ne ha uno, ne viene generato uno per
+l'amministratore e scritto nel log **una volta sola**.
+
+Se quel messaggio e' gia' scorso via — con `debug: true` uvicorn si riavvia a
+ogni scrittura su file, quindi succede in fretta — cercalo in tutto il
+giornale, non solo nelle ultime righe:
+
+```bash
+sudo journalctl -u shinra --no-pager | grep -i "PRIMO ACCESSO"
+```
+
+Se non c'e' piu', si reimposta da riga di comando:
+
+```bash
+# chi c'e' e chi ha un PIN
+sudo /opt/Shinra/.venv/bin/python /opt/Shinra/scripts/imposta_pin.py --elenco
+
+# imposta un PIN, chiesto senza mostrarlo a schermo
+sudo /opt/Shinra/.venv/bin/python /opt/Shinra/scripts/imposta_pin.py alessio
+
+# oppure fanne generare uno
+sudo /opt/Shinra/.venv/bin/python /opt/Shinra/scripts/imposta_pin.py alessio --genera
+```
+
+Il PIN viene salvato cifrato e riletto dal disco per conferma: scriverlo a
+mano in `data/users.json` **non funziona**, perche' li' dentro sta l'hash.
+
+Non serve fermare il servizio. Per chiudere subito le sessioni gia' aperte,
+`sudo systemctl restart shinra`.
+
+### Riaprire la casa in fretta
+
+Se c'e' un'emergenza e serve accedere subito, in `config/config.yaml`:
+
+```yaml
+security:
+  auth_enabled: false
+```
+
+Poi `sudo systemctl restart shinra`. Da quel momento chiunque sia sulla rete
+di casa comanda l'impianto, e a ogni avvio il log lo ricordera'. E' una
+scappatoia, non una configurazione.
+
+---
+
 ## Quando qualcosa va storto
 
 ```bash

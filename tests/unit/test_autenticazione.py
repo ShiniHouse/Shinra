@@ -277,3 +277,67 @@ def test_modificare_un_profilo_non_ne_cancella_il_pin(casa_chiusa) -> None:
         profilo["notes"] = "modificato dal test"
         assert c.post("/api/users", json=profilo).status_code == 200
     assert user_manager.get_user_by_id(casa_chiusa.id).pin, "il PIN e' stato cancellato"
+
+
+# ------------------------------------------- PIN in chiaro da versioni vecchie
+
+
+def test_un_pin_in_chiaro_non_chiude_fuori_la_famiglia() -> None:
+    """Il difetto che ha davvero chiuso fuori il proprietario.
+
+    `_prepara_accesso` si fermava se un profilo aveva un `pin` qualsiasi. Con
+    un valore in chiaro rimasto da una versione precedente, l'autenticazione
+    risultava attiva, nessun PIN nuovo veniva generato, e quel valore non
+    poteva essere riconosciuto perche' il confronto si aspetta un hash:
+    nessuno riusciva piu' a entrare, e non c'era modo di accorgersene.
+    """
+    from server.app import _prepara_accesso
+
+    era_attiva = settings.security.auth_enabled
+    originali = user_manager.get_users()
+    salvati = [u.model_copy(deep=True) for u in originali]
+    settings.security.auth_enabled = True
+
+    try:
+        utenti = user_manager.get_users()
+        utenti[0].pin = "1234"  # in chiaro, come lo lasciava una versione vecchia
+        user_manager.save_users(utenti)
+
+        # Un PIN non cifrato non deve valere come "qualcuno puo' accedere".
+        assert not sicurezza.autenticazione_attiva()
+
+        _prepara_accesso()
+
+        dopo = user_manager.get_users()[0]
+        assert sicurezza.e_cifrato(dopo.pin), "il PIN in chiaro non e' stato cifrato"
+        assert sicurezza.verifica_pin("1234", dopo.pin), "il PIN di prima non funziona piu'"
+        assert sicurezza.autenticazione_attiva()
+    finally:
+        user_manager.save_users(salvati)
+        settings.security.auth_enabled = era_attiva
+        sicurezza.azzera_stato()
+
+
+def test_senza_alcun_pin_ne_viene_generato_uno() -> None:
+    """Nessuno deve restare chiuso fuori: se non c'e' modo di entrare, se ne crea uno."""
+    from server.app import _prepara_accesso
+
+    era_attiva = settings.security.auth_enabled
+    salvati = [u.model_copy(deep=True) for u in user_manager.get_users()]
+    settings.security.auth_enabled = True
+
+    try:
+        utenti = user_manager.get_users()
+        for u in utenti:
+            u.pin = None
+        user_manager.save_users(utenti)
+        assert not sicurezza.autenticazione_attiva()
+
+        _prepara_accesso()
+
+        assert any(sicurezza.e_cifrato(u.pin) for u in user_manager.get_users())
+        assert sicurezza.autenticazione_attiva()
+    finally:
+        user_manager.save_users(salvati)
+        settings.security.auth_enabled = era_attiva
+        sicurezza.azzera_stato()
