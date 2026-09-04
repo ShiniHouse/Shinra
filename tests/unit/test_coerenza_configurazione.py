@@ -72,11 +72,12 @@ def test_gli_argomenti_vietati_sono_applicati() -> None:
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="skill_id e' configurabile e mai confrontato: l'endpoint Alexa accetta chiunque — issue v0.1.0 #04",
-)
 def test_l_application_id_di_alexa_e_verificato() -> None:
+    """Risolto dalla issue #4: /api/alexa confronta l'applicationId.
+
+    Il marcatore xfail e' stato rimosso quando la verifica e' entrata in
+    funzione — e' il segnale che il difetto e' chiuso, non solo dichiarato tale.
+    """
     assert occorrenze("skill_id", escludi=("settings.py", "secrets.py")), (
         "settings.alexa.skill_id non e' letto da nessuna riga: /api/alexa non "
         "verifica da quale skill provenga la richiesta"

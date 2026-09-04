@@ -33,6 +33,8 @@ dependencies = [
   "pyyaml>=6.0.1",
   "jinja2>=3.1.3",
   "beautifulsoup4>=4.12.3",
+  # Verifica della firma Amazon su /api/alexa: senza X.509 non e' possibile.
+  "cryptography>=42.0",
   "feedparser>=6.0.11",
   "edge-tts>=6.1.12",
 ]
@@ -91,7 +93,9 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # Nei test i valori fissi sono finti per definizione, e invocare git fa
 # parte di cio' che verificano.
-"tests/*" = ["S101", "S105", "S106", "S603", "S607"]
+# S303: i test della firma Alexa devono usare SHA-1 perche' e' quello che
+# usa Amazon. Firmare con altro non proverebbe nulla.
+"tests/*" = ["S101", "S105", "S106", "S303", "S603", "S607"]
 # Lo script di importazione invoca gh: e' il suo scopo.
 "scripts/import_backlog.py" = ["S603", "S607"]
 # L'agente importa alcuni moduli dentro le funzioni per evitare import

@@ -27,8 +27,9 @@ corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino all
 > conoscere. I dettagli e le mitigazioni provvisorie sono in
 > [`SECURITY.md`](SECURITY.md); in sintesi:
 >
-> - **Non esporre `/api/alexa` su Internet**: non verifica la firma Amazon e
->   accetta comandi da qualunque origine.
+> - ~~**Non esporre `/api/alexa` su Internet**~~ — **risolto**: l'endpoint verifica
+>   la firma di Amazon, l'`applicationId` e l'età della richiesta. Serve però
+>   impostare `SHINRA_ALEXA_SKILL_ID` in `.env`, altrimenti rifiuta tutto.
 > - Trentotto endpoint su trentanove non richiedono autenticazione: chiunque sia
 >   sulla rete di casa può comandare l'impianto.
 > - ~~`config/config.yaml` è tracciato da git~~ — **risolto**: i segreti stanno
@@ -201,7 +202,12 @@ Per la guida completa dettagliata alla creazione della Skill, consulta il file d
 * **Domain Name**: `tuodominio.com` o `shinra.tuodominio.com`
 * **Forward IP / Hostname**: `192.168.1.100` (IP locale del server Shinra)
 * **Forward Port**: `8000`
-* **Block Common Exploits**: ⚠️ **Disattivare** (permette ai server di Alexa di comunicare senza falsi positivi 403).
+* **Block Common Exploits**: **lasciare attivo**. Nelle versioni precedenti questa
+  guida diceva di disattivarlo per far passare Alexa: era un consiglio sbagliato,
+  perché toglieva una protezione a tutto il sito. Da `v0.1.0` l'endpoint `/api/alexa`
+  verifica da sé la firma Amazon, quindi non serve abbassare nulla a monte.
+  Se le chiamate di Alexa venissero comunque bloccate, restringi l'eccezione al solo
+  percorso `/api/alexa` invece di disattivare il controllo ovunque.
 * **SSL**: `Force SSL` attivo, `HTTP/2 Support` attivo.
 
 ```nginx
@@ -227,10 +233,18 @@ server {
 }
 ```
 
-### Regola Cloudflare WAF (Opzionale per Alexa):
-Se usi Cloudflare come DNS/Proxy, in *Security → WAF → Custom Rules*:
+### Regola Cloudflare WAF (solo se necessaria)
+
+Da `v0.1.0` **non serve più** una regola di bypass: `/api/alexa` verifica la
+firma di Amazon, l'`applicationId` della skill e l'età della richiesta, e
+rifiuta tutto il resto con un `400`.
+
+Se Cloudflare bloccasse comunque le chiamate di Amazon, in
+*Security → WAF → Custom Rules* limita l'eccezione al minimo indispensabile:
+
 * **Field**: `URI Path` equals `/api/alexa`
-* **Action**: `Skip` (Salta WAF, Bot Fight Mode e controlli di sicurezza per le richieste di Alexa).
+* **Action**: `Skip` — e **solo** le regole che stanno effettivamente bloccando,
+  non l'intero WAF e non Bot Fight Mode su tutto il dominio.
 
 ---
 
@@ -269,7 +283,7 @@ voice:
 | Problema | Causa Possibile | Soluzione |
 | :--- | :--- | :--- |
 | **Errore 524 Timeout su Cloudflare / Proxy** | Modello LLM troppo pesante per la CPU | Usa `qwen2.5:3b` o un modello quantizzato veloce per rispondere in meno di 1 secondo. |
-| **Alexa: "Non posso raggiungere la skill"** | Cloudflare WAF o NPM bloccano le chiamate AWS | Disattiva *Block Common Exploits* in NPM e crea la regola di bypass WAF su Cloudflare per `/api/alexa`. |
+| **Alexa: "Non posso raggiungere la skill"** | Manca `SHINRA_ALEXA_SKILL_ID`, oppure il proxy blocca le chiamate AWS | Verifica prima il log: `journalctl -u shinra \| grep Alexa` dice il motivo esatto del rifiuto. Se manca l'App ID, impostalo in `.env`. Solo se il problema è il proxy, restringi l'eccezione al percorso `/api/alexa`. |
 | **Voci Web Speech robotiche** | Voci di default del browser | Seleziona le **Voci Neurali Server HD** (*Diego / Elsa*) dal selettore vocale di Shinra. |
 | **Microfono non si avvia su Chrome/Safari** | Connessione HTTP non sicura | Assicurati di accedere sempre via **HTTPS** (`https://tuodominio.com`). |
 

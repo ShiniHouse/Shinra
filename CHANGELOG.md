@@ -15,6 +15,18 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Sicurezza
+- **`/api/alexa` verifica che le richieste vengano davvero da Amazon**
+  (issue #4, SEC-02). Era l'unico endpoint raggiungibile da Internet ed
+  eseguiva comandi domotici senza controllare nulla: una POST JSON di dieci
+  righe da qualsiasi parte del mondo accendeva o spegneva la casa. Ora si
+  verificano l'URL della catena di certificati, il certificato e il suo nome,
+  la firma sul corpo **grezzo** e l'eta' della richiesta.
+- L'`applicationId` viene confrontato con `SHINRA_ALEXA_SKILL_ID`. Senza
+  configurazione la richiesta e' **rifiutata**: un controllo che si spegne da
+  solo quando non e' configurato non e' un controllo.
+- `README.md` non consiglia piu' di disattivare «Block Common Exploits» ne' di
+  saltare il WAF: erano indicazioni che toglievano protezione a tutto il sito
+  per far passare Alexa, e ora non servono piu'.
 - **La casa non risponde piu' a chi non si e' identificato** (issue #3, SEC-01).
   Prima la protezione era un controllo manuale presente su **un endpoint su
   trentanove**: chiunque fosse sulla rete di casa comandava l'impianto e

@@ -1,3 +1,4 @@
+import json
 import logging
 import secrets
 from contextlib import asynccontextmanager
@@ -21,6 +22,7 @@ from core.ha_client import HomeAssistantClient
 from core.ollama_client import OllamaClient
 from core.user_manager import user_manager
 from integrations.alexa.skill_handler import handle_alexa_request
+from integrations.alexa.verifica_firma import FirmaNonValida, verifica_richiesta
 from server import sicurezza
 from server.routes_admin import router as admin_router
 from server.routes_auth import router as auth_router
@@ -175,22 +177,61 @@ async def tts_voices_endpoint():
 
 @app.post("/api/alexa")
 async def alexa_skill_endpoint(request: Request):
+    """Endpoint per Amazon Alexa Skill Kit.
+
+    E' l'unica porta di Shinra affacciata su Internet. Non e' protetta da una
+    sessione — Amazon non ne ha una — ma dalla firma che Amazon appone su ogni
+    richiesta. Chi non la supera non arriva all'agente.
     """
-    Endpoint per Amazon Alexa Skill Kit.
-    Riceve le richieste JSON dai dispositivi Echo / Alexa e restituisce la risposta vocale.
-    """
+    if not settings.alexa.enabled:
+        raise HTTPException(status_code=404, detail="Integrazione Alexa disattivata.")
+
+    # Il corpo va letto grezzo: la firma copre i byte esatti inviati da
+    # Amazon. Verificarla su un JSON riserializzato fallirebbe sempre, e
+    # peggio ancora convaliderebbe un contenuto diverso da quello firmato.
+    corpo = await request.body()
+
     try:
-        data = await request.json()
-        req_type = data.get("request", {}).get("type", "Unknown")
-        logger.info(f"Ricevuta richiesta Alexa Skill: {req_type}")
-        response = await handle_alexa_request(data)
-        return response
+        data = json.loads(corpo)
+        if not isinstance(data, dict):
+            raise ValueError("il corpo non e' un oggetto JSON")
+    except (ValueError, UnicodeDecodeError) as e:
+        logger.warning("Richiesta Alexa con corpo illeggibile: %s", e)
+        raise HTTPException(status_code=400, detail="Corpo della richiesta non valido.") from e
+
+    try:
+        await verifica_richiesta(
+            corpo=corpo,
+            intestazioni=dict(request.headers),
+            dati=data,
+            skill_id_atteso=settings.alexa.skill_id,
+        )
+    except FirmaNonValida as e:
+        # Il motivo resta nel log: al chiamante si dice solo che e' stata
+        # rifiutata, per non aiutare chi sta cercando di indovinare.
+        logger.warning(
+            "Richiesta Alexa rifiutata da %s: %s",
+            request.client.host if request.client else "?",
+            e,
+        )
+        raise HTTPException(status_code=400, detail="Richiesta non autenticata.") from e
+
+    req_type = (data.get("request") or {}).get("type", "Sconosciuto")
+    logger.info("Richiesta Alexa verificata: %s", req_type)
+
+    try:
+        return await handle_alexa_request(data)
     except Exception as e:
-        logger.error(f"Errore gestione richiesta Alexa: {e}")
+        # Solo qui si risponde con voce: la richiesta e' autentica, e un Echo
+        # che resta muto e' peggio di uno che dice che qualcosa non va.
+        logger.error("Errore gestione richiesta Alexa: %s", e, exc_info=True)
         return {
             "version": "1.0",
             "response": {
-                "outputSpeech": {"type": "PlainText", "text": "Si è verificato un errore interno. Riprova."},
+                "outputSpeech": {
+                    "type": "PlainText",
+                    "text": "Si e' verificato un errore interno. Riprova.",
+                },
                 "shouldEndSession": True,
             },
         }
