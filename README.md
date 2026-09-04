@@ -138,9 +138,9 @@ cd Shinra
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Installazione dipendenze
+# Installazione dipendenze (dichiarate in pyproject.toml)
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ### 2. Configurazione Iniziale

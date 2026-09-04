@@ -47,6 +47,13 @@ installabile e utilizzabile.
   all'infinito in `timers.json`.
 
 ### Corretto
+- **`pip install -r requirements.txt` installa di nuovo un sistema che parte.**
+  Le dipendenze erano dichiarate in due elenchi separati e il secondo era
+  rimasto indietro: mancavano `cryptography`, `apscheduler`, `sqlalchemy` e
+  `pydantic-settings`. Chi seguiva il README otteneva un'installazione che
+  si fermava all'avvio. Ora `requirements.txt` rimanda a `pyproject.toml`,
+  che e' l'unica fonte, e un test impedisce che i due elenchi si separino
+  di nuovo.
 - **Le impostazioni salvate arrivano a tutti i moduli senza riavviare.**
   `reload_settings()` sostituiva l'oggetto di configurazione invece di
   aggiornarlo: i sei moduli che avevano scritto

@@ -21,7 +21,8 @@ test che avesse eseguito quel percorso li avrebbe intercettati.**
 - [ ] Simulare le chiamate HTTP con `respx`: nessuna rete nei test unitari
 - [ ] Convertire `test_tools.py` in test veri, marcati `network`
 - [ ] Test del parser dei timer, che e' pura logica e oggi non e' coperto
-- [ ] Rimuovere `duckduckgo-search` da `requirements.txt`: non e' importato da nessuna parte
+- [x] Rimuovere `duckduckgo-search` da `requirements.txt`: non e' importato da nessuna parte
+      (fatto in v0.2.0: requirements.txt rimanda a pyproject.toml, unica fonte)
 
 ## Criteri di accettazione
 
