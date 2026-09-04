@@ -15,15 +15,18 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Sicurezza
-- **Un PIN in chiaro rimasto da una versione precedente non chiude piu' fuori
-  la famiglia.** `_prepara_accesso` si fermava se un profilo aveva un `pin`
-  qualsiasi: con un valore non cifrato, l'autenticazione risultava attiva,
-  nessun PIN nuovo veniva generato, e quel valore non poteva essere
-  riconosciuto perche' il confronto si aspetta un hash. Nessuno riusciva piu'
-  a entrare. Ora i PIN in chiaro vengono cifrati all'avvio conservando il
-  valore, e solo un PIN in formato valido conta come «qualcuno puo' accedere».
-- `scripts/imposta_pin.py`: elenca i profili e reimposta un PIN da riga di
-  comando, per quando il messaggio del primo accesso e' scorso via dal log.
+- **`/api/alexa` verifica che le richieste vengano davvero da Amazon**
+  (issue #4, SEC-02). Era l'unico endpoint raggiungibile da Internet ed
+  eseguiva comandi domotici senza controllare nulla: una POST JSON di dieci
+  righe da qualsiasi parte del mondo accendeva o spegneva la casa. Ora si
+  verificano l'URL della catena di certificati, il certificato e il suo nome,
+  la firma sul corpo **grezzo** e l'eta' della richiesta.
+- L'`applicationId` viene confrontato con `SHINRA_ALEXA_SKILL_ID`. Senza
+  configurazione la richiesta e' **rifiutata**: un controllo che si spegne da
+  solo quando non e' configurato non e' un controllo.
+- `README.md` non consiglia piu' di disattivare «Block Common Exploits» ne' di
+  saltare il WAF: erano indicazioni che toglievano protezione a tutto il sito
+  per far passare Alexa, e ora non servono piu'.
 - **La casa non risponde piu' a chi non si e' identificato** (issue #3, SEC-01).
   Prima la protezione era un controllo manuale presente su **un endpoint su
   trentanove**: chiunque fosse sulla rete di casa comandava l'impianto e
