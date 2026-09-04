@@ -14,6 +14,28 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Corretto
+- **La Modalita' Apprendimento arriva in fondo** (issue #1 e #2, BLK-01 e
+  BLK-02). Era la funzione piu' recente del progetto e non aveva mai
+  completato un passo: `interview_engine` chiamava `add_knowledge_item` su
+  `DataStore` e `generate` su `OllamaClient`, due metodi che non esistevano.
+  Il primo produceva un HTTP 500 a ogni risposta; il secondo, catturato,
+  faceva cadere sempre nel ripiego, rendendo codice morto il prompt di
+  estrazione dei fatti.
+- `DataStore.add_knowledge_item()` con identificativi casuali — quelli basati
+  sul conteggio si ripetevano dopo una cancellazione — e senza duplicati:
+  durante un'intervista capita di ripetersi, e ogni fatto finisce nel prompt
+  di ogni risposta.
+- `OllamaClient.genera_json()`, che chiede al modello `format: "json"` e
+  regge cio' che un modello piccolo restituisce davvero: JSON avvolto in un
+  blocco di codice, preceduto da una frase, o con stringhe al posto di
+  oggetti. Le risposte inutilizzabili non fanno cadere l'intervista.
+- Un fatto che non si riesce a salvare non interrompe piu' l'intervista.
+- **Il prefisso di invocazione Alexa si ricava dalla configurazione.** Prima
+  era un elenco scritto nel codice che conosceva solo `kyra`: rinominando la
+  skill in «hey kyra» restava appeso un «hey» davanti a ogni comando, e «hey
+  accendi la luce» non corrisponde a nessuna frase riconosciuta.
+
 ### Sicurezza
 - **Un PIN in chiaro rimasto da una versione precedente non chiude piu' fuori
   la famiglia.** `_prepara_accesso` si fermava se un profilo aveva un `pin`

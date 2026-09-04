@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 from typing import Any, Dict, List, Optional
@@ -86,11 +87,66 @@ class OllamaClient:
             }
         return {"status": "offline", "models": [], "current_model": self.model, "active_model": self.model}
 
+    async def genera_json(
+        self,
+        prompt: str,
+        system: str = "",
+        temperature: float = 0.1,
+    ) -> Optional[Dict[str, Any]]:
+        """Chiede al modello una risposta in JSON e la restituisce analizzata.
+
+        Restituisce None quando il modello non e' raggiungibile o produce
+        qualcosa di inutilizzabile: chi chiama decide come ripiegare, invece
+        di ricevere un'eccezione a meta' di un'operazione dell'utente.
+
+        `format: "json"` obbliga Ollama a emettere JSON valido. Non basta da
+        solo — il modello puo' comunque restituire una struttura diversa da
+        quella chiesta — ma elimina la classe di errori piu' comune, cioe' il
+        JSON avvolto in un blocco di codice o preceduto da una frase.
+        """
+        messaggi: List[Dict[str, Any]] = []
+        if system:
+            messaggi.append({"role": "system", "content": system})
+        messaggi.append({"role": "user", "content": prompt})
+
+        risposta = await self.chat(messages=messaggi, temperature=temperature, formato="json")
+        if not risposta.get("success"):
+            logger.warning("Estrazione JSON non riuscita: %s", risposta.get("error"))
+            return None
+
+        contenuto = (risposta.get("content") or "").strip()
+        if not contenuto:
+            return None
+
+        # Anche con format=json alcuni modelli aggiungono un involucro
+        # markdown: si toglie prima di analizzare, invece di fallire.
+        pulito = re.sub(r"^```(?:json)?\s*|\s*```$", "", contenuto).strip()
+
+        try:
+            dati = json.loads(pulito)
+        except json.JSONDecodeError:
+            # Ultimo tentativo: il primo oggetto JSON contenuto nel testo.
+            inizio, fine = pulito.find("{"), pulito.rfind("}")
+            if inizio == -1 or fine <= inizio:
+                logger.warning("Il modello non ha restituito JSON: %r", contenuto[:200])
+                return None
+            try:
+                dati = json.loads(pulito[inizio : fine + 1])
+            except json.JSONDecodeError:
+                logger.warning("JSON non analizzabile: %r", contenuto[:200])
+                return None
+
+        if not isinstance(dati, dict):
+            logger.warning("Il modello ha restituito %s invece di un oggetto.", type(dati).__name__)
+            return None
+        return dati
+
     async def chat(
         self,
         messages: List[Dict[str, Any]],
         tools: Optional[List[Dict[str, Any]]] = None,
         temperature: Optional[float] = None,
+        formato: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Invia una richiesta di chat a Ollama supportando il passaggio dei tools e keep_alive permanente.
@@ -123,6 +179,8 @@ class OllamaClient:
         }
         if supports_tools and tools:
             payload["tools"] = tools
+        if formato:
+            payload["format"] = formato
 
         req_timeout = httpx.Timeout(timeout=max(self.timeout, 180.0), connect=10.0)
 

@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-import json
 import logging
 import re
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from core.data_store import data_store
 from core.ollama_client import OllamaClient
@@ -109,12 +108,20 @@ class LearningInterviewEngine:
         # 2. Salvataggio immediato dei fatti nel data store
         new_facts = []
         for fact in extracted_info.get("facts", []):
-            if fact.get("text"):
+            if not fact.get("text"):
+                continue
+            try:
                 saved = data_store.add_knowledge_item(
                     text=fact["text"], category=fact.get("category") or current_step["category"]
                 )
-                new_facts.append(saved)
-                session["learned_facts"].append(saved)
+            except (OSError, ValueError) as e:
+                # Un fatto che non si riesce a salvare non deve interrompere
+                # l'intervista: era proprio questo il difetto BLK-01, dove
+                # l'errore arrivava fino all'utente come un 500.
+                logger.error("Fatto non salvato (%s): %s", fact.get("text", "")[:60], e)
+                continue
+            new_facts.append(saved)
+            session["learned_facts"].append(saved)
 
         # 3. Rilevamento di routine potenziali
         proposed_routine = extracted_info.get("proposed_routine")
@@ -183,21 +190,67 @@ Rispondi ESCLUSIVAMENTE con un JSON:
   "proposed_routine": null
 }}"""
 
-        try:
-            raw = await self.ollama.generate(
-                prompt=prompt,
-                system="Rispondi solo con JSON valido. Non aggiungere markdown o spiegazioni.",
-                temperature=0.1,
-            )
-            clean_json = re.sub(r"```json\s*|\s*```", "", raw.strip())
-            data = json.loads(clean_json)
-            return data
-        except Exception as e:
-            logger.warning(f"Fallback estrazione per '{step['id']}': {e}")
+        dati = await self.ollama.genera_json(
+            prompt=prompt,
+            system="Rispondi solo con JSON valido. Non aggiungere markdown o spiegazioni.",
+            temperature=0.1,
+        )
+
+        if dati is None:
+            # Ollama spento, o risposta inutilizzabile. Si conserva comunque
+            # cio' che l'utente ha detto: perdere la sua risposta sarebbe
+            # peggio che conservarla non elaborata.
+            logger.warning("Estrazione non riuscita per '%s': conservo la risposta cosi' com'e'.", step["id"])
             return {
                 "facts": [{"text": user_answer.strip(), "category": step["category"]}],
                 "proposed_routine": None,
             }
+
+        return {
+            "facts": self._fatti_validi(dati.get("facts"), step),
+            "proposed_routine": self._routine_valida(dati.get("proposed_routine")),
+        }
+
+    @staticmethod
+    def _fatti_validi(grezzi: Any, step: Dict[str, Any]) -> List[Dict[str, str]]:
+        """Tiene solo i fatti utilizzabili.
+
+        Un modello piccolo restituisce spesso stringhe al posto di oggetti, o
+        campi vuoti: senza questo filtro finirebbero nella conoscenza della
+        casa, e da li' nel prompt di ogni risposta.
+        """
+        if not isinstance(grezzi, list):
+            return []
+        puliti: List[Dict[str, str]] = []
+        for voce in grezzi:
+            if isinstance(voce, str):
+                testo, categoria = voce.strip(), step["category"]
+            elif isinstance(voce, dict):
+                testo = str(voce.get("text") or "").strip()
+                categoria = str(voce.get("category") or step["category"]).strip()
+            else:
+                continue
+            if len(testo) < 3:
+                continue
+            puliti.append({"text": testo, "category": categoria or step["category"]})
+        return puliti
+
+    @staticmethod
+    def _routine_valida(grezza: Any) -> Optional[Dict[str, Any]]:
+        """Una routine senza nome o senza azioni non e' proponibile."""
+        if not isinstance(grezza, dict):
+            return None
+        nome = str(grezza.get("name") or "").strip()
+        if not nome:
+            return None
+        azioni = grezza.get("actions")
+        grezza["name"] = nome
+        grezza["actions"] = azioni if isinstance(azioni, list) else []
+        frasi = grezza.get("trigger_phrases")
+        grezza["trigger_phrases"] = (
+            [str(f).strip() for f in frasi if str(f).strip()] if isinstance(frasi, list) else []
+        )
+        return grezza
 
     def confirm_routine(self, routine_data: Dict[str, Any]) -> Dict[str, Any]:
         if not routine_data or not routine_data.get("name"):

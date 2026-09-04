@@ -10,6 +10,62 @@ from core.user_manager import user_manager
 logger = logging.getLogger("Alexa.Skill")
 
 
+# Parole con cui una frase puo' cominciare senza portare significato: il nome
+# di invocazione, gli intercalari, e le forme di richiesta che Alexa a volte
+# lascia dentro lo slot invece di consumarle.
+_INTERCALARI = ("hey", "ehi", "ei", "ok", "okay", "ciao", "senti", "scusa")
+# "che" non compare qui di proposito: e' una parola piena in italiano,
+# e scartarla trasformerebbe "che ore sono" in "ore sono".
+_RICHIESTE = ("di", "dì", "puoi", "vorrei", "voglio")
+_NOMI_STORICI = ("kyra", "kira", "chira", "shinra")
+
+
+def _parole_di_invocazione() -> set[str]:
+    """Le parole che possono precedere un comando, senza farne parte.
+
+    Ricavate dal nome di invocazione configurato: prima era un elenco scritto
+    nel codice che conosceva solo "kyra", quindi bastava rinominare la skill
+    in "hey kyra" perche' restasse appeso un "hey" davanti a ogni comando — e
+    "hey accendi la luce" non corrisponde a nessuna frase riconosciuta.
+    """
+    parole = {"alexa", "amazon", "echo"}
+    parole.update(_INTERCALARI)
+    parole.update(_NOMI_STORICI)
+
+    configurato = (getattr(settings.alexa, "invocation_name", "") or "").lower()
+    parole.update(p for p in configurato.split() if p)
+
+    nome_assistente = (getattr(settings.assistant, "name", "") or "").lower().strip()
+    if nome_assistente:
+        parole.add(nome_assistente)
+
+    return parole
+
+
+def rimuovi_prefisso_invocazione(testo: str) -> str:
+    """Toglie dal testo le parole iniziali che non fanno parte del comando.
+
+    Si ferma alla prima parola che porta significato: cosi' "hey kyra accendi
+    la luce" diventa "accendi la luce", ma "ciao come stai" resta intero
+    quando "ciao" e' l'unica cosa detta.
+    """
+    if not testo:
+        return ""
+
+    parole = testo.strip().split()
+    da_scartare = _parole_di_invocazione()
+    indice = 0
+
+    while indice < len(parole) - 1:
+        corrente = parole[indice].lower().strip(".,!?;:'\"")
+        if corrente in da_scartare or corrente in _RICHIESTE:
+            indice += 1
+            continue
+        break
+
+    return " ".join(parole[indice:]).strip()
+
+
 def build_alexa_response(
     speech_text: str,
     reprompt_text: str = "",
@@ -111,11 +167,9 @@ async def handle_alexa_request(request_data: Dict[str, Any]) -> Dict[str, Any]:
         if not user_query:
             user_query = intent_name.replace("_", " ")
 
-        # Rimozione di eventuale prefisso di invocazione residuo che Alexa può aver catturato nello slot
-        # Es: "kyra di accendere il salotto" -> "accendere il salotto"
-        user_query = re.sub(
-            r"^(?:alexa\s+|a\s+)?(?:kyra|kira|chira|shinra)\s+(?:di\s+)?", "", user_query, flags=re.IGNORECASE
-        ).strip()
+        # Rimozione del prefisso di invocazione che Alexa puo' aver catturato
+        # dentro lo slot: "hey kyra di accendere il salotto" -> "accendere il salotto".
+        user_query = rimuovi_prefisso_invocazione(user_query)
 
         # Normalizzazione forme verbali comuni domotica
         if user_query.lower().startswith("accendere "):
