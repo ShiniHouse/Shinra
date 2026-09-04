@@ -1,6 +1,7 @@
 import json
 import logging
 import shutil
+import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -108,6 +109,43 @@ class DataStore:
                 json.dump(items, f, indent=2, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Errore scrittura knowledge.json: {e}")
+
+    def add_knowledge_item(
+        self, text: str, category: str = "generale", enabled: bool = True
+    ) -> Dict[str, Any]:
+        """Aggiunge un fatto alla conoscenza della casa e lo restituisce.
+
+        Chiamato dal motore dell'intervista a ogni risposta dell'utente. Il
+        metodo non esisteva: la chiamata sollevava AttributeError e la
+        Modalita' Apprendimento rispondeva 500 al primo passo, senza che
+        nessuno potesse completarne uno.
+
+        Se un fatto identico e' gia' presente viene restituito quello, invece
+        di accumulare doppioni: durante un'intervista capita di ripetersi, e
+        ogni fatto finisce nel prompt di sistema.
+        """
+        pulito = (text or "").strip()
+        if not pulito:
+            raise ValueError("Il testo del fatto non puo' essere vuoto.")
+
+        items = self.get_knowledge()
+
+        for esistente in items:
+            if (esistente.get("text") or "").strip().casefold() == pulito.casefold():
+                return esistente
+
+        # Identificativo casuale, non f"k_{len(items)+1}": dopo una
+        # cancellazione quel modo produce identificativi gia' usati, e la
+        # modifica di un fatto ne sovrascriverebbe un altro.
+        item: Dict[str, Any] = {
+            "id": f"k_{uuid.uuid4().hex[:8]}",
+            "text": pulito,
+            "category": (category or "generale").strip() or "generale",
+            "enabled": bool(enabled),
+        }
+        items.append(item)
+        self.save_knowledge(items)
+        return item
 
     def get_enabled_knowledge_summary(self) -> str:
         items = self.get_knowledge()
