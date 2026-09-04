@@ -58,6 +58,9 @@ config/config.yaml
 # primo avvio ogni file mancante viene creato copiando il proprio esempio.
 data/*.json
 data/*.db
+# I file di appoggio della modalita' WAL: vivono e muoiono col database.
+data/*.db-wal
+data/*.db-shm
 data/*.sqlite3
 !data/examples/
 !data/examples/*.json
