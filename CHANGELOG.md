@@ -14,6 +14,12 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+Nulla di nuovo dopo la `0.1.0`.
+
+---
+
+## [0.1.0] - 2026-09-04 — Impianto chiuso
+
 ### Corretto
 - **Cambiare l'indirizzo di Home Assistant ha effetto senza riavviare**
   (issue #9, REL-04). `core/tools/ha_tools.py` costruiva il proprio client

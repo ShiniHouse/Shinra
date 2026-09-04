@@ -19,7 +19,11 @@ Risposta entro 72 ore.
 
 ---
 
-## Difetti noti — stato al 3 settembre 2026
+## Difetti noti — tutti risolti nella `0.1.0`
+
+Individuati da una revisione completa del codice al commit `a622043` e
+chiusi uno a uno. Restano elencati perche' chi usa una versione
+precedente sappia a cosa e' esposto.
 
 Individuati da una revisione completa del codice al commit `a622043`. Sono
 pubblicati perche' **chiunque stia usando il progetto prima della `0.1.0` deve
@@ -34,9 +38,9 @@ sapere a cosa e' esposto**. Tutti sono in lavorazione nella milestone `v0.1.0`.
 | SEC-05 | Alto | `config/config.yaml` e' tracciato da git e riceve il token Home Assistant al salvataggio dalle impostazioni. | **Risolto in v0.1.0** |
 | SEC-06 | Medio | PIN in chiaro, `session_secret` inutilizzato, sessioni in memoria di processo, `restricted_topics` mai applicato, `debug: true`, nessun header di sicurezza. | **Risolto in v0.1.0**, tranne le sessioni in memoria di processo (v0.2.0, issue #12) |
 
-### Fino alla v0.1.0
+### Se usi una versione precedente alla v0.1.0
 
-Se stai usando Shinra oggi:
+Aggiorna. Nel frattempo:
 
 1. **`/api/alexa` ora si difende da solo**, ma richiede `SHINRA_ALEXA_SKILL_ID`
    in `.env`: senza, rifiuta ogni richiesta invece di accettarle tutte.
