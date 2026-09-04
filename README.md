@@ -6,37 +6,38 @@ Il nome *Shinra* nasce dall'unione concettuale con **Shinigami** (死神 — ent
 
 ---
 
-## 🚧 Stato del progetto — beta `0.1.0-dev`
+## 🚧 Stato del progetto — beta `0.1.0`
 
 Shinra è in **beta** e procede per fasi verso la `1.0.0`. Ogni versione minor
-corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino alla
-`1.0.0` una minor può introdurre modifiche incompatibili.
+corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino
+alla `1.0.0` una minor può introdurre modifiche incompatibili.
+
+**La `0.1.0` è la prima release.** Non aggiunge funzioni: chiude quelle che non
+avevano mai funzionato e le porte che erano rimaste aperte. I sei difetti di
+sicurezza individuati dalla revisione tecnica sono risolti, e la Modalità
+Apprendimento completa l'intervista per la prima volta.
+
+Note complete: [`docs/release/v0.1.0.md`](docs/release/v0.1.0.md).
 
 | Documento | Cosa contiene |
 | :--- | :--- |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le cinque fasi da `0.1.0` a `1.0.0` e i criteri di uscita di ciascuna |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Struttura attuale, struttura target e come si aggiunge un modulo nuovo |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Aggiornamento del server Debian e cosa fare se non si riesce più a entrare |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Flusso di lavoro, convenzioni sui commit, processo di rilascio |
 | [`SECURITY.md`](SECURITY.md) | Difetti di sicurezza noti e come segnalarne di nuovi |
-| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Aggiornamento del server Debian e messa in sicurezza da fare subito |
 | [`docs/backlog/`](docs/backlog/) | Il piano di lavoro completo, issue per issue |
 
-> ### ⚠️ Prima della versione `0.1.0`
+> ### ⚠️ Aggiornando dalla versione precedente
 >
-> Una revisione tecnica ha individuato difetti che chi usa oggi il progetto deve
-> conoscere. I dettagli e le mitigazioni provvisorie sono in
-> [`SECURITY.md`](SECURITY.md); in sintesi:
->
-> - ~~**Non esporre `/api/alexa` su Internet**~~ — **risolto**: l'endpoint verifica
->   la firma di Amazon, l'`applicationId` e l'età della richiesta. Serve però
->   impostare `SHINRA_ALEXA_SKILL_ID` in `.env`, altrimenti rifiuta tutto.
-> - Trentotto endpoint su trentanove non richiedono autenticazione: chiunque sia
->   sulla rete di casa può comandare l'impianto.
-> - ~~`config/config.yaml` è tracciato da git~~ — **risolto**: i segreti stanno
->   in `.env` (vedi `.env.example`) e i file di stato non sono più versionati.
-> - **La Modalità Apprendimento non funziona** (errore 500 a ogni risposta) e i
->   **promemoria non vengono mai eseguiti**. Entrambi sono in lavorazione nella
->   milestone `v0.1.0`.
+> - **L'autenticazione è attiva per difetto.** Al primo avvio, se nessun profilo
+>   ha un PIN, ne viene generato uno e scritto nel log una volta sola:
+>   `journalctl -u shinra --no-pager | grep "PRIMO ACCESSO"`. Se è già scorso
+>   via, si reimposta con `scripts/imposta_pin.py`.
+> - **L'endpoint Alexa richiede `SHINRA_ALEXA_SKILL_ID` in `.env`**: senza,
+>   rifiuta ogni richiesta.
+> - I segreti rimasti in `config/config.yaml` vengono spostati in `.env` al
+>   primo avvio e cancellati da lì.
 
 ---
 
