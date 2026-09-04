@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>{{ nome_assistente }} — Accesso</title>
+<style>
+  /* Pagina volutamente autonoma: nessuna risorsa esterna, nessuno script
+     della dashboard. Serve a chi non e' ancora autenticato, quindi non deve
+     portare con se' nulla che appartenga alla parte protetta. */
+  :root{ color-scheme: dark; }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100dvh; display:grid; place-items:center; padding:24px;
+    background:#0b1120; color:#e2e8f0;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  .riquadro{
+    width:100%; max-width:400px; background:#111a2e; border:1px solid #1e293b;
+    border-radius:24px; padding:32px 28px; box-shadow:0 24px 60px -30px #000;
+  }
+  .segno{
+    width:56px; height:56px; margin:0 auto 20px; border-radius:18px;
+    background:linear-gradient(135deg,#f59e0b,#4f46e5);
+    display:grid; place-items:center; font-size:26px;
+  }
+  h1{ font-size:20px; margin:0 0 6px; text-align:center; letter-spacing:-.01em; }
+  p.guida{ margin:0 0 22px; text-align:center; font-size:13px; color:#94a3b8; }
+  .profili{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .profilo{
+    display:flex; align-items:center; gap:10px; padding:12px;
+    background:#0b1120; border:1px solid #1e293b; border-radius:16px;
+    color:#e2e8f0; font-size:14px; font-weight:600; cursor:pointer; text-align:left;
+    font-family:inherit;
+  }
+  .profilo:hover, .profilo:focus-visible{ border-color:#4f46e5; outline:none; }
+  .iniziale{
+    width:32px; height:32px; border-radius:11px; flex:none; display:grid;
+    place-items:center; background:#312e81; color:#c7d2fe; font-size:14px;
+  }
+  form{ display:none; }
+  form.visibile{ display:block; }
+  .chi{ text-align:center; font-size:14px; margin:0 0 14px; }
+  .chi button{
+    background:none; border:none; color:#818cf8; font-size:12px;
+    text-decoration:underline; cursor:pointer; font-family:inherit; padding:0 0 0 6px;
+  }
+  input[type=password]{
+    width:100%; padding:14px; text-align:center; font-size:22px;
+    letter-spacing:.5em; text-indent:.5em;
+    background:#0b1120; border:1px solid #334155; border-radius:16px;
+    color:#fbbf24; font-family:ui-monospace,monospace;
+  }
+  input[type=password]:focus{ outline:none; border-color:#f59e0b; }
+  button.entra{
+    width:100%; margin-top:14px; padding:14px; border:none; border-radius:16px;
+    background:linear-gradient(90deg,#f59e0b,#4f46e5); color:#fff;
+    font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  .errore{ margin-top:12px; font-size:12.5px; color:#fda4af; text-align:center; min-height:1.2em; }
+  .nota{ margin-top:22px; font-size:11.5px; color:#64748b; text-align:center; line-height:1.5; }
+  @media (max-width:400px){ .profili{ grid-template-columns:1fr; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+  <main class="riquadro">
+    <div class="segno" aria-hidden="true">🔒</div>
+    <h1 id="titolo">Chi sei?</h1>
+    <p class="guida" id="guida">Scegli il tuo profilo per accedere.</p>
+
+    <div class="profili" id="profili"></div>
+
+    <form id="modulo" onsubmit="return entra(event)">
+      <p class="chi"><strong id="scelto"></strong><button type="button" onclick="indietro()">cambia</button></p>
+      <input type="password" id="pin" inputmode="numeric" autocomplete="current-password"
+             maxlength="12" placeholder="••••" aria-label="PIN">
+      <button type="submit" class="entra">Entra</button>
+    </form>
+
+    <div class="errore" id="errore" role="alert"></div>
+    <p class="nota" id="nota"></p>
+  </main>
+
+<script>
+let scelto = null;
+
+async function carica() {
+  const box = document.getElementById('profili');
+  try {
+    const res = await fetch('/api/auth/profili');
+    const profili = (await res.json()).filter(p => p.ha_pin);
+
+    if (!profili.length) {
+      box.innerHTML = '';
+      document.getElementById('nota').textContent =
+        "Nessun profilo ha ancora un PIN. Quello del primo accesso è nel log del server, " +
+        "oppure si imposta con scripts/imposta_pin.py";
+      return;
+    }
+    if (profili.length === 1) { box.style.display = 'none'; scegli(profili[0]); return; }
+
+    box.innerHTML = '';
+    for (const p of profili) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'profilo';
+      const i = document.createElement('span');
+      i.className = 'iniziale';
+      i.textContent = (p.name || '?').charAt(0).toUpperCase();
+      const n = document.createElement('span');
+      n.textContent = p.name || p.id;   // textContent, non innerHTML: il nome è dato dall'utente
+      b.append(i, n);
+      b.onclick = () => scegli(p);
+      box.appendChild(b);
+    }
+  } catch (e) {
+    document.getElementById('errore').textContent = 'Server non raggiungibile.';
+  }
+}
+
+function scegli(p) {
+  scelto = p.id;
+  document.getElementById('profili').style.display = 'none';
+  document.getElementById('modulo').classList.add('visibile');
+  document.getElementById('scelto').textContent = p.name || p.id;
+  document.getElementById('titolo').textContent = 'Bentornato';
+  document.getElementById('guida').textContent = 'Inserisci il tuo PIN.';
+  setTimeout(() => document.getElementById('pin').focus(), 60);
+}
+
+function indietro() {
+  scelto = null;
+  document.getElementById('profili').style.display = '';
+  document.getElementById('modulo').classList.remove('visibile');
+  document.getElementById('titolo').textContent = 'Chi sei?';
+  document.getElementById('guida').textContent = 'Scegli il tuo profilo per accedere.';
+  document.getElementById('errore').textContent = '';
+  carica();
+}
+
+async function entra(e) {
+  e.preventDefault();
+  const campo = document.getElementById('pin');
+  const errore = document.getElementById('errore');
+  const pin = campo.value.trim();
+  if (!pin) return false;
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ pin: pin, user_id: scelto })
+    });
+    if (res.ok) {
+      // La sessione sta nel cookie: si ricarica e il server serve la dashboard.
+      window.location.replace('/');
+      return false;
+    }
+    const dati = await res.json().catch(() => ({}));
+    errore.textContent = dati.detail || 'Profilo o PIN non corretti.';
+  } catch (err) {
+    errore.textContent = 'Errore di comunicazione con il server.';
+  }
+  campo.value = '';
+  campo.focus();
+  return false;
+}
+
+carica();
+</script>
+</body>
+</html>

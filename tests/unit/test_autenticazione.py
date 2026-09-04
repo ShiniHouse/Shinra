@@ -341,3 +341,111 @@ def test_senza_alcun_pin_ne_viene_generato_uno() -> None:
         user_manager.save_users(salvati)
         settings.security.auth_enabled = era_attiva
         sicurezza.azzera_stato()
+
+
+# ------------------------------------------- il blocco avviene sul server
+
+
+def test_la_dashboard_non_viene_servita_a_chi_non_e_entrato(casa_chiusa) -> None:
+    """SEC-03: prima la schermata di blocco era un rettangolo disegnato sopra
+    una dashboard gia' arrivata al browser. Bastava chiudere l'overlay dagli
+    strumenti sviluppatore — o disattivare JavaScript — per averla intera."""
+    with TestClient(app) as c:
+        r = c.get("/")
+        assert r.status_code == 401
+        assert "living-core" not in r.text, "il markup della dashboard e' stato servito comunque"
+        assert "Chi sei?" in r.text
+
+
+def test_dopo_l_accesso_la_dashboard_arriva(casa_chiusa) -> None:
+    with TestClient(app) as c:
+        c.post("/api/auth/login", json={"pin": PIN_DI_PROVA, "user_id": casa_chiusa.id})
+        r = c.get("/")
+        assert r.status_code == 200
+        assert "living-core" in r.text
+
+
+def test_la_pagina_di_accesso_non_espone_dati_di_casa(casa_chiusa) -> None:
+    with TestClient(app) as c:
+        testo = c.get("/").text
+    for indizio in ("entity_id", "light.", "homeassistant", "token"):
+        assert indizio not in testo.lower(), f"la pagina di accesso contiene {indizio!r}"
+
+
+# --------------------------------------------------- intestazioni e errori
+
+
+@pytest.mark.parametrize(
+    ("intestazione", "atteso"),
+    [
+        ("x-content-type-options", "nosniff"),
+        ("x-frame-options", "DENY"),
+        ("referrer-policy", "same-origin"),
+    ],
+)
+def test_le_intestazioni_di_sicurezza_ci_sono(intestazione: str, atteso: str) -> None:
+    with TestClient(app) as c:
+        assert c.get("/health").headers.get(intestazione) == atteso
+
+
+# --------------------------------------------- limitazione dietro il proxy
+
+
+def test_x_forwarded_for_ignorato_da_client_non_fidati(casa_chiusa) -> None:
+    """Chiunque puo' scrivere quell'intestazione: fidarsene sempre
+    permetterebbe di azzerare il contatore cambiando un valore a ogni tentativo."""
+    settings.security.trusted_proxies = []
+    with TestClient(app) as c:
+        for i in range(sicurezza.TENTATIVI_MAX):
+            c.post(
+                "/api/auth/login",
+                json={"pin": "000000", "user_id": casa_chiusa.id},
+                headers={"X-Forwarded-For": f"10.0.0.{i}"},
+            )
+        r = c.post(
+            "/api/auth/login",
+            json={"pin": "000000", "user_id": casa_chiusa.id},
+            headers={"X-Forwarded-For": "10.0.0.99"},
+        )
+        assert r.status_code == 429, "cambiare X-Forwarded-For ha aggirato la limitazione"
+
+
+def test_dietro_un_proxy_fidato_i_client_sono_distinti(casa_chiusa) -> None:
+    """Il difetto opposto: senza leggere l'intestazione, dietro reverse proxy
+    tutti hanno lo stesso indirizzo e il quinto tentativo sbagliato di uno
+    sconosciuto blocca il proprietario di casa."""
+    with TestClient(app) as c:
+        settings.security.trusted_proxies = ["testclient"]
+        try:
+            for _ in range(sicurezza.TENTATIVI_MAX):
+                c.post(
+                    "/api/auth/login",
+                    json={"pin": "000000", "user_id": casa_chiusa.id},
+                    headers={"X-Forwarded-For": "203.0.113.7"},
+                )
+            # Un altro client, dietro lo stesso proxy, non deve risultare bloccato.
+            r = c.post(
+                "/api/auth/login",
+                json={"pin": PIN_DI_PROVA, "user_id": casa_chiusa.id},
+                headers={"X-Forwarded-For": "192.168.1.50"},
+            )
+            assert r.status_code == 200
+        finally:
+            settings.security.trusted_proxies = []
+
+
+# ------------------------------------------------------- token firmati
+
+
+def test_un_token_inventato_non_apre_nulla(casa_chiusa) -> None:
+    with TestClient(app) as c:
+        r = c.get("/api/modes", headers={"X-Shinra-Auth": "Bearer un-token-inventato"})
+        assert r.status_code == 401
+
+
+def test_un_token_con_firma_alterata_non_vale(casa_chiusa) -> None:
+    token = sicurezza.crea_sessione(casa_chiusa.id)
+    grezzo, _, _ = token.rpartition(".")
+    assert sicurezza.sessione_valida(token) is not None
+    assert sicurezza.sessione_valida(f"{grezzo}.0000000000000000000000000000000") is None
+    assert sicurezza.sessione_valida(grezzo) is None

@@ -5,8 +5,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -132,6 +132,39 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="Shinra AI Hub", version="2.0.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+@app.middleware("http")
+async def intestazioni_di_sicurezza(request: Request, call_next):
+    """Aggiunge a ogni risposta le intestazioni che il browser sa far rispettare.
+
+    Nessuna di queste sostituisce i controlli lato server: riducono il danno
+    di un difetto che sfuggisse, e costano una riga ciascuna.
+    """
+    risposta = await call_next(request)
+    risposta.headers.setdefault("X-Content-Type-Options", "nosniff")
+    risposta.headers.setdefault("X-Frame-Options", "DENY")
+    risposta.headers.setdefault("Referrer-Policy", "same-origin")
+    risposta.headers.setdefault("Permissions-Policy", "geolocation=(), camera=()")
+    # microphone=() non compare: la dashboard usa il microfono per i comandi vocali.
+    return risposta
+
+
+@app.exception_handler(Exception)
+async def errore_non_gestito(request: Request, exc: Exception):
+    """Un errore imprevisto non deve raccontare com'e' fatto il server.
+
+    Prima la traccia completa finiva nella risposta: nomi di file, percorsi,
+    righe di codice. Ora resta nel log, dove serve, e al client arriva un
+    messaggio generico.
+    """
+    logger.error("Errore non gestito su %s: %s", request.url.path, exc, exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Si e' verificato un errore interno. Il dettaglio e' nel log del server."},
+    )
+
+
 app.include_router(auth_router)  # pubblico: e' l'accesso stesso
 app.include_router(admin_router)  # protetto per difetto
 
@@ -150,7 +183,20 @@ from core.tts_engine import NEURAL_VOICES, generate_speech_mp3
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    """Serve la dashboard web dell'assistente."""
+    """Serve la dashboard, oppure la pagina di accesso a chi non e' entrato.
+
+    Prima la dashboard veniva servita sempre, e la schermata di blocco era un
+    rettangolo disegnato sopra: il markup era gia' arrivato al browser, e
+    bastava chiudere l'overlay dagli strumenti sviluppatore — o disattivare
+    JavaScript — per averla intera. La decisione ora e' del server.
+    """
+    if sicurezza.autenticazione_attiva() and sicurezza.utente_corrente(request) is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="accesso.html",
+            context={"nome_assistente": settings.assistant.name},
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
     return templates.TemplateResponse(request=request, name="index.html", context={"settings": settings})
 
 

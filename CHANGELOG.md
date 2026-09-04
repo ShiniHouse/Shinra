@@ -45,6 +45,28 @@ installabile e utilizzabile.
   accendi la luce» non corrisponde a nessuna frase riconosciuta.
 
 ### Sicurezza
+- **La dashboard non viene piu' servita a chi non e' entrato** (issue #5,
+  SEC-03). La schermata di blocco era un rettangolo disegnato sopra un markup
+  gia' arrivato al browser: bastava chiudere l'overlay dagli strumenti
+  sviluppatore, o disattivare JavaScript. Ora `GET /` decide sul server e
+  serve una pagina di accesso autonoma, senza risorse ne' dati della casa.
+- **`X-Forwarded-For` viene letto solo dai proxy dichiarati fidati** (issue #6,
+  SEC-04). Fidarsene sempre permetterebbe di azzerare il contatore dei
+  tentativi cambiando un valore; non fidarsene mai, dietro reverse proxy,
+  faceva si' che il quinto tentativo sbagliato di uno sconosciuto bloccasse il
+  proprietario di casa. Si configura in `security.trusted_proxies`.
+- I token di sessione sono firmati con `session_secret`, che era dichiarato in
+  configurazione e non usato da nessuna riga.
+- Intestazioni di sicurezza su ogni risposta: `X-Content-Type-Options`,
+  `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`.
+- Un errore imprevisto non racconta piu' com'e' fatto il server: la traccia
+  resta nel log, al client arriva un messaggio generico.
+- **`restricted_topics` viene finalmente applicato** (issue #8). Il campo
+  esisteva da sempre e non era letto: il profilo «bambino» cambiava solo il
+  tono delle risposte. Il controllo precede il fast-path, altrimenti una
+  richiesta vietata potrebbe accendere una luce prima di essere rifiutata.
+  E' un limite dichiarato, non un controllo parentale: confronta parole,
+  quindi si aggira riformulando, e i ruoli veri sono la issue #19.
 - **Un PIN in chiaro rimasto da una versione precedente non chiude piu' fuori
   la famiglia.** `_prepara_accesso` si fermava se un profilo aveva un `pin`
   qualsiasi: con un valore non cifrato, l'autenticazione risultava attiva,

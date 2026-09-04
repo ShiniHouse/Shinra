@@ -44,6 +44,22 @@ class ShinraAgent:
                 users = user_manager.get_users()
                 profile = users[0] if users else None
 
+        # 1b. Argomenti vietati al profilo: si controlla prima di qualunque
+        # altra cosa, altrimenti il fast-path potrebbe agire su una richiesta
+        # che questo utente non ha il diritto di fare.
+        from core.argomenti_vietati import RISPOSTA_PREDEFINITA, consenti
+
+        vietato = consenti(user_text, profile)
+        if vietato:
+            mem.add_user_message(user_text)
+            mem.add_assistant_message(RISPOSTA_PREDEFINITA)
+            return {
+                "response": RISPOSTA_PREDEFINITA,
+                "actions": [],
+                "user": profile.model_dump() if profile else None,
+                "success": True,
+            }
+
         # 2. Recupero riepilogo dispositivi da Home Assistant se abilitato
         ha_summary = ""
         if settings.home_assistant.enabled:

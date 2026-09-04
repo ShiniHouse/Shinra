@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import yaml
 from pydantic import BaseModel, Field
@@ -66,6 +66,12 @@ class SecurityConfig(BaseModel):
     # non e' un segreto. Viene generato al primo avvio e scritto in .env.
     session_secret: Optional[str] = ""
     protect_dashboard: bool = True
+    # Indirizzi dei reverse proxy di cui fidarsi per leggere X-Forwarded-For.
+    # Vuoto significa: non fidarsi di nessuno, e usare l'indirizzo osservato.
+    # Un'intestazione X-Forwarded-For arriva dal client e chiunque puo'
+    # scriverla: fidarsene senza sapere da dove viene la richiesta permette a
+    # chi attacca di aggirare la limitazione dei tentativi cambiando un valore.
+    trusted_proxies: List[str] = Field(default_factory=list)
 
 
 class AppConfig(BaseModel):
