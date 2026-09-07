@@ -9,23 +9,23 @@ codice morto il prompt di estrazione.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
+from core.archivio import importazione
 from core.data_store import DataStore
 from core.interview_engine import INTERVIEW_STEPS, LearningInterviewEngine
 from core.ollama_client import OllamaClient
 
+RADICE = Path(__file__).resolve().parent.parent.parent
+
 
 @pytest.fixture()
-def archivio(tmp_path, monkeypatch) -> DataStore:
-    """Un DataStore isolato: i test non toccano la conoscenza vera della casa."""
-    import core.data_store as modulo
-
-    monkeypatch.setattr(modulo, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(modulo, "EXAMPLES_DIR", tmp_path / "examples")
-    monkeypatch.setattr(modulo, "KNOWLEDGE_FILE", tmp_path / "knowledge.json")
-    (tmp_path / "knowledge.json").write_text("[]", encoding="utf-8")
-    return DataStore()
+def archivio(tmp_path) -> DataStore:
+    """Un database vuoto: i test non toccano la conoscenza vera della casa."""
+    importazione.crea_vuoto(tmp_path / "shinra.db")
+    yield DataStore()
 
 
 # ------------------------------------------------------------------- BLK-01

@@ -268,7 +268,12 @@ indietro finche' non ti sei convinto che il database funziona.
    un backup su cui non si puo' contare e' peggio di nessun backup.
 2. **`alembic upgrade head`**, che allinea lo schema prima del riavvio.
 
-La migrazione dei dati dai JSON al database si esegue una volta sola:
+**La migrazione avviene da sola al primo avvio**, se il database e' vuoto e i
+file JSON ci sono. Non devi lanciare niente: aggiorni, il servizio riparte e
+nel log trovi quante voci ha importato. Un database gia' pieno non viene mai
+toccato, quindi riavviare non riporta indietro dati cancellati nel frattempo.
+
+Se preferisci farla a mano prima di riavviare, o vuoi solo controllare:
 
 ```bash
 cd /opt/Shinra
@@ -277,7 +282,16 @@ sudo -u shinra .venv/bin/python scripts/migra_da_json.py           # esegue
 sudo -u shinra .venv/bin/python scripts/migra_da_json.py --verifica  # ricontrolla
 ```
 
-Al termine confronta, entita' per entita', quante voci c'erano nei file e
+Per tornare ai file leggibili in qualsiasi momento:
+
+```bash
+sudo -u shinra .venv/bin/python scripts/esporta_json.py
+```
+
+Scrive in `data/esportazione/` e **non** sovrascrive i JSON originali, che
+restano la copia di sicurezza pre-migrazione.
+
+Lo script di migrazione confronta, entita' per entita', quante voci c'erano nei file e
 quante sono nel database. Se un solo numero non torna lo dice e restituisce
 un codice d'errore: i JSON sono intatti, si cancella il database e si
 riprova. Lo script si rifiuta di scrivere sopra un database che contiene

@@ -1,19 +1,15 @@
-import json
 import logging
 import re
 import time
 import uuid
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-logger = logging.getLogger("Shinra.TimerEngine")
+from core.archivio import depositi
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-TIMERS_FILE = DATA_DIR / "timers.json"
-REMINDERS_FILE = DATA_DIR / "reminders.json"
+logger = logging.getLogger("Shinra.TimerEngine")
 
 
 class TimerItem(BaseModel):
@@ -36,49 +32,42 @@ class ReminderItem(BaseModel):
 
 
 class TimerEngine:
-    def __init__(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
+    """Timer e promemoria.
 
-    # --- Timers ---
+    Dalla v0.2.0 stanno nel database. Le firme restano quelle di prima: le
+    usano le rotte, l'agente, lo scheduler e la skill Alexa.
+    """
+
+    # ---------------------------------------------------------------- timer
+
     def get_timers(self) -> List[Dict[str, Any]]:
-        try:
-            if TIMERS_FILE.exists():
-                with open(TIMERS_FILE, "r", encoding="utf-8") as f:
-                    timers = json.load(f)
-                    now = time.time()
-                    # Aggiunge tempo rimanente calcolato
-                    for t in timers:
-                        remaining = max(0, int(t.get("expires_at", now) - now))
-                        t["remaining_seconds"] = remaining
-                    return timers
-            return []
-        except Exception as e:
-            logger.error(f"Errore lettura timers.json: {e}")
-            return []
+        adesso = time.time()
+        timers = depositi.timer.elenco()
+        for t in timers:
+            # Calcolato al momento della lettura, non salvato: un valore
+            # scritto su disco sarebbe sbagliato un secondo dopo.
+            t["remaining_seconds"] = max(0, int(t.get("expires_at", adesso) - adesso))
+        return timers
 
     def save_timers(self, items: List[Dict[str, Any]]) -> None:
-        try:
-            with open(TIMERS_FILE, "w", encoding="utf-8") as f:
-                json.dump(items, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            logger.error(f"Errore scrittura timers.json: {e}")
+        """Riscrive tutti i timer. Resta per compatibilita': preferisci add/delete."""
+        depositi.timer.sostituisci_tutto(items)
 
     def add_timer(self, label: str, duration_seconds: int, user_id: str = "alessio") -> Dict[str, Any]:
-        timers = self.get_timers()
-        now = time.time()
+        adesso = time.time()
         t_id = f"timer_{uuid.uuid4().hex[:6]}"
-        item = {
-            "id": t_id,
-            "label": label or "Timer",
-            "duration_seconds": duration_seconds,
-            "started_at": now,
-            "expires_at": now + duration_seconds,
-            "user_id": user_id,
-            "completed": False,
-            "remaining_seconds": duration_seconds,
-        }
-        timers.append(item)
-        self.save_timers(timers)
+        item = depositi.timer.aggiungi(
+            {
+                "id": t_id,
+                "label": label or "Timer",
+                "duration_seconds": duration_seconds,
+                "started_at": adesso,
+                "expires_at": adesso + duration_seconds,
+                "user_id": user_id,
+                "completed": False,
+            }
+        )
+        item["remaining_seconds"] = duration_seconds
 
         # Il conto alla rovescia non vive piu' solo nel browser: alla scadenza
         # e' lo scheduler a suonare, anche a scheda chiusa.
@@ -91,109 +80,41 @@ class TimerEngine:
         from core.scheduler import scheduler
 
         scheduler.annulla_timer(timer_id)
-        timers = self.get_timers()
-        filtered = [t for t in timers if t.get("id") != timer_id]
-        if len(filtered) != len(timers):
-            self.save_timers(filtered)
-            return True
-        return False
+        return depositi.timer.cancella(timer_id)
 
     def segna_completato(self, timer_id: str) -> bool:
         """Marca un timer come scaduto.
 
-        Prima nessuno lo faceva: `completed` restava sempre falso, timers.json
+        Prima nessuno lo faceva: `completed` restava sempre falso, l'elenco
         cresceva all'infinito e ogni voce vecchia riappariva scaduta al
         caricamento successivo della dashboard.
         """
-        timers = self.get_timers()
-        trovato = False
-        for t in timers:
-            if t.get("id") == timer_id:
-                t["completed"] = True
-                t["completed_at"] = datetime.now().isoformat()
-                trovato = True
-        if trovato:
-            self.save_timers(timers)
-        return trovato
-
-    def segna_promemoria_completato(self, reminder_id: str) -> bool:
-        reminders = self.get_reminders()
-        trovato = False
-        for r in reminders:
-            if r.get("id") == reminder_id:
-                r["completed"] = True
-                r["completed_at"] = datetime.now().isoformat()
-                trovato = True
-        if trovato:
-            self.save_reminders(reminders)
-        return trovato
+        return depositi.timer.segna_completato(timer_id)
 
     def pulisci_scaduti(self, conserva_ore: int = 24) -> int:
         """Rimuove i timer completati piu' vecchi del periodo di conservazione."""
-        limite = time.time() - conserva_ore * 3600
-        timers = self.get_timers()
-        rimasti = [t for t in timers if not t.get("completed") or float(t.get("expires_at", 0)) > limite]
-        if len(rimasti) != len(timers):
-            self.save_timers(rimasti)
-        return len(timers) - len(rimasti)
+        return depositi.timer.pulisci_completati(conserva_ore)
 
-    def ripristina_job(self) -> dict[str, int]:
-        """Riprogramma i job per timer e promemoria ancora attivi.
+    # ----------------------------------------------------------- promemoria
 
-        Serve dopo un riavvio: l'archivio dei job di APScheduler li conserva,
-        ma un'installazione che aggiorna da una versione senza scheduler ha
-        timer e promemoria in attesa e nessun job corrispondente.
-        """
-        from core.scheduler import scheduler
-
-        contati = {"timer": 0, "promemoria": 0}
-        for t in self.get_timers():
-            if t.get("completed"):
-                continue
-            if scheduler.programma_timer(
-                t["id"], t.get("label", "Timer"), t.get("expires_at", 0), t.get("user_id", "")
-            ):
-                contati["timer"] += 1
-        for r in self.get_reminders():
-            if r.get("completed"):
-                continue
-            if scheduler.programma_promemoria(
-                r["id"], r.get("text", ""), r.get("remind_at", ""), r.get("user_id", "")
-            ):
-                contati["promemoria"] += 1
-        return contati
-
-    # --- Reminders ---
     def get_reminders(self) -> List[Dict[str, Any]]:
-        try:
-            if REMINDERS_FILE.exists():
-                with open(REMINDERS_FILE, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            return []
-        except Exception as e:
-            logger.error(f"Errore lettura reminders.json: {e}")
-            return []
+        return depositi.promemoria.elenco()
 
     def save_reminders(self, items: List[Dict[str, Any]]) -> None:
-        try:
-            with open(REMINDERS_FILE, "w", encoding="utf-8") as f:
-                json.dump(items, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            logger.error(f"Errore scrittura reminders.json: {e}")
+        depositi.promemoria.sostituisci_tutto(items)
 
     def add_reminder(self, text: str, remind_at_iso: str, user_id: str = "alessio") -> Dict[str, Any]:
-        reminders = self.get_reminders()
         r_id = f"rem_{uuid.uuid4().hex[:6]}"
-        item = {
-            "id": r_id,
-            "text": text,
-            "remind_at": remind_at_iso,
-            "user_id": user_id,
-            "completed": False,
-            "created_at": datetime.now().isoformat(),
-        }
-        reminders.append(item)
-        self.save_reminders(reminders)
+        item = depositi.promemoria.aggiungi(
+            {
+                "id": r_id,
+                "text": text,
+                "remind_at": remind_at_iso,
+                "user_id": user_id,
+                "completed": False,
+                "created_at": datetime.now().isoformat(),
+            }
+        )
 
         from core.scheduler import scheduler
 
@@ -204,12 +125,34 @@ class TimerEngine:
         from core.scheduler import scheduler
 
         scheduler.annulla_promemoria(reminder_id)
-        reminders = self.get_reminders()
-        filtered = [r for r in reminders if r.get("id") != reminder_id]
-        if len(filtered) != len(reminders):
-            self.save_reminders(filtered)
-            return True
-        return False
+        return depositi.promemoria.cancella(reminder_id)
+
+    def segna_promemoria_completato(self, reminder_id: str) -> bool:
+        return depositi.promemoria.segna_completato(reminder_id)
+
+    # -------------------------------------------------------------- ripresa
+
+    def ripristina_job(self) -> dict[str, int]:
+        """Riprogramma i job per timer e promemoria ancora in attesa.
+
+        Serve dopo un riavvio: l'archivio dei job di APScheduler li conserva,
+        ma un'installazione che aggiorna da una versione senza scheduler ha
+        timer e promemoria in attesa e nessun job corrispondente.
+        """
+        from core.scheduler import scheduler
+
+        contati = {"timer": 0, "promemoria": 0}
+        for t in depositi.timer.attivi():
+            if scheduler.programma_timer(
+                t["id"], t.get("label", "Timer"), t.get("expires_at", 0), t.get("user_id", "")
+            ):
+                contati["timer"] += 1
+        for r in depositi.promemoria.attivi():
+            if scheduler.programma_promemoria(
+                r["id"], r.get("text", ""), r.get("remind_at", ""), r.get("user_id", "")
+            ):
+                contati["promemoria"] += 1
+        return contati
 
     # --- Natural Language Parser per Timer & Promemoria ---
     def parse_timer_or_reminder(self, user_text: str) -> Optional[Dict[str, Any]]:

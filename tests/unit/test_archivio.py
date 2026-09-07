@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from core.archivio import depositi, motore
+from core.archivio import depositi, importazione, motore
 from core.archivio.modelli import Base
 
 RADICE = Path(__file__).resolve().parent.parent.parent
@@ -28,10 +28,8 @@ RADICE = Path(__file__).resolve().parent.parent.parent
 def archivio(tmp_path):
     """Un database vuoto, tutto per questo test."""
     percorso = tmp_path / "prova.db"
-    motore.reimposta(percorso)
-    Base.metadata.create_all(motore.motore())
+    importazione.crea_vuoto(percorso)
     yield percorso
-    motore.reimposta(RADICE / "data" / "shinra.db")
 
 
 # ------------------------------------------------------------- impostazioni
@@ -149,7 +147,7 @@ def test_un_processo_ucciso_a_meta_scrittura_non_rovina_il_database(archivio, tm
     programma = textwrap.dedent(f"""
         import os, signal, sys
         sys.path.insert(0, {str(RADICE)!r})
-        from core.archivio import motore
+        from core.archivio import importazione, motore
         from core.archivio.modelli import Fatto
         motore.reimposta({str(archivio)!r})
         s = motore.motore()
@@ -190,16 +188,13 @@ def test_le_migrazioni_producono_esattamente_i_modelli(tmp_path):
 
     percorso = tmp_path / "schema.db"
     motore.reimposta(percorso)
-    try:
-        cfg = Config(str(RADICE / "alembic.ini"))
-        cfg.set_main_option("script_location", str(RADICE / "migrazioni"))
-        command.upgrade(cfg, "head")
+    cfg = Config(str(RADICE / "alembic.ini"))
+    cfg.set_main_option("script_location", str(RADICE / "migrazioni"))
+    command.upgrade(cfg, "head")
 
-        with motore.motore().connect() as connessione:
-            contesto = MigrationContext.configure(connessione)
-            differenze = compare_metadata(contesto, Base.metadata)
-    finally:
-        motore.reimposta(RADICE / "data" / "shinra.db")
+    with motore.motore().connect() as connessione:
+        contesto = MigrationContext.configure(connessione)
+        differenze = compare_metadata(contesto, Base.metadata)
 
     assert differenze == [], (
         "lo schema creato dalle migrazioni non corrisponde ai modelli: "
@@ -238,28 +233,24 @@ def test_la_migrazione_importa_tutto_e_non_tocca_i_json(tmp_path, monkeypatch):
         (sorgente / nome).write_text(json.dumps(dati, ensure_ascii=False), encoding="utf-8")
         impronte[nome] = (sorgente / nome).read_bytes()
 
+    from core.archivio import importazione
+
     script = _carica_script()
-    monkeypatch.setattr(script, "DATA_DIR", sorgente)
+    monkeypatch.setattr(importazione, "DATA_DIR", sorgente)
 
     destinazione = tmp_path / "migrato.db"
-    try:
-        esito = script.migra(destinazione, prova=False)
-    finally:
-        motore.reimposta(RADICE / "data" / "shinra.db")
+    esito = script.migra(destinazione, prova=False)
 
     assert esito == 0
     for nome, contenuto in impronte.items():
         assert (sorgente / nome).read_bytes() == contenuto, f"{nome} e' stato modificato"
 
     motore.reimposta(destinazione)
-    try:
-        assert depositi.utenti.conta() == 1
-        assert depositi.fatti.conta() == 1
-        assert depositi.promemoria.conta() == 1
-        assert depositi.timer.conta() == 0
-        assert depositi.modalita.per_id("m1")["trigger_phrases"] == ["cinema"]
-    finally:
-        motore.reimposta(RADICE / "data" / "shinra.db")
+    assert depositi.utenti.conta() == 1
+    assert depositi.fatti.conta() == 1
+    assert depositi.promemoria.conta() == 1
+    assert depositi.timer.conta() == 0
+    assert depositi.modalita.per_id("m1")["trigger_phrases"] == ["cinema"]
 
 
 def test_la_migrazione_si_rifiuta_di_scrivere_sopra_dati_esistenti(tmp_path, monkeypatch):
@@ -277,12 +268,137 @@ def test_la_migrazione_si_rifiuta_di_scrivere_sopra_dati_esistenti(tmp_path, mon
         (sorgente / nome).write_text("[]", encoding="utf-8")
     (sorgente / "knowledge.json").write_text(json.dumps([{"id": "k1", "text": "primo"}]), encoding="utf-8")
 
+    from core.archivio import importazione
+
     script = _carica_script()
-    monkeypatch.setattr(script, "DATA_DIR", sorgente)
+    monkeypatch.setattr(importazione, "DATA_DIR", sorgente)
     destinazione = tmp_path / "migrato.db"
 
-    try:
-        assert script.migra(destinazione, prova=False) == 0
-        assert script.migra(destinazione, prova=False) == 2  # la seconda volta si ferma
-    finally:
-        motore.reimposta(RADICE / "data" / "shinra.db")
+    assert script.migra(destinazione, prova=False) == 0
+    assert script.migra(destinazione, prova=False) == 2  # la seconda volta si ferma
+
+
+# ------------------------------------------------------------- primo avvio
+
+
+def test_al_primo_avvio_i_dati_di_esempio_finiscono_nel_database(tmp_path, monkeypatch):
+    """Un'installazione nuova deve trovarsi una casa d'esempio funzionante,
+    senza che nessuno lanci niente a mano."""
+    import shutil as _shutil
+
+    from core import data_store as modulo_dati
+    from core.archivio import importazione
+    from server import app as modulo_app
+
+    cartella = tmp_path / "data"
+    cartella.mkdir()
+    _shutil.copytree(RADICE / "data" / "examples", cartella / "examples")
+
+    monkeypatch.setattr(modulo_dati, "DATA_DIR", cartella)
+    monkeypatch.setattr(modulo_dati, "EXAMPLES_DIR", cartella / "examples")
+    monkeypatch.setattr(importazione, "DATA_DIR", cartella)
+    motore.reimposta(tmp_path / "nuovo.db")
+
+    modulo_app._prepara_archivio()
+
+    assert depositi.utenti.conta() >= 1
+    assert depositi.fonti.conta() >= 1
+    # E i file JSON esistono: sono il backup, e la sorgente se si ricomincia.
+    assert (cartella / "users.json").exists()
+
+
+def test_un_riavvio_non_riporta_indietro_cio_che_e_stato_cancellato(tmp_path, monkeypatch):
+    """`importa_se_vuoto` importa solo su un database completamente vuoto.
+
+    Senza questa condizione, ogni riavvio del servizio rimetterebbe dentro i
+    profili e i fatti cancellati dalle impostazioni: l'utente li toglie, il
+    servizio riparte, e sono di nuovo li'.
+    """
+    from core.archivio import importazione
+
+    cartella = tmp_path / "data"
+    cartella.mkdir()
+    (cartella / "knowledge.json").write_text(
+        json.dumps([{"id": "k_vecchio", "text": "cancellato dall'utente"}]), encoding="utf-8"
+    )
+    monkeypatch.setattr(importazione, "DATA_DIR", cartella)
+
+    # Il database di questo test non e' vuoto: la fixture lo riempie con la
+    # casa d'esempio, esattamente come lo sarebbe quello di una casa vera.
+    assert not importazione.archivio_vuoto()
+
+    assert importazione.importa_se_vuoto() == {}
+    assert depositi.fatti.per_id("k_vecchio") is None
+
+
+def test_l_esportazione_rende_i_dati_leggibili_senza_shinra(tmp_path):
+    """Il JSON resta il formato di backup: si apre con un editor, anche fra
+    dieci anni e senza avere Shinra installato."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("esporta_json", RADICE / "scripts" / "esporta_json.py")
+    script = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(script)
+
+    depositi.fatti.aggiungi({"id": "k_1", "text": "La caldaia e' in bagno"})
+
+    destinazione = tmp_path / "esportazione"
+    scritti = script.esporta(destinazione)
+
+    assert scritti["knowledge.json"] >= 1
+    contenuto = json.loads((destinazione / "knowledge.json").read_text(encoding="utf-8"))
+    assert any(f["text"] == "La caldaia e' in bagno" for f in contenuto)
+
+
+# --------------------------------- le funzioni di prima, dopo la migrazione
+
+
+@pytest.mark.parametrize(
+    "rotta",
+    [
+        "/api/users",
+        "/api/knowledge",
+        "/api/sources",
+        "/api/aliases",
+        "/api/modes",
+        "/api/timers",
+        "/api/reminders",
+    ],
+)
+def test_le_rotte_di_lettura_rispondono_dal_database(rotta, cliente_autenticato):
+    """Criterio di accettazione della issue #12: dopo la migrazione tutto
+    funziona come prima. Queste sono le sette rotte che leggono lo stato."""
+    risposta = cliente_autenticato.get(rotta)
+
+    assert risposta.status_code == 200
+    assert isinstance(risposta.json(), list)
+
+
+def test_creare_e_cancellare_un_fatto_dalle_rotte(cliente_autenticato):
+    """E le scritture: una riga alla volta, senza riscrivere l'elenco."""
+    quanti_prima = len(cliente_autenticato.get("/api/knowledge").json())
+
+    creato = cliente_autenticato.post(
+        "/api/knowledge", json={"text": "Il gatto mangia alle 19", "category": "casa"}
+    )
+    assert creato.status_code == 200
+    identificativo = creato.json()["item"]["id"]
+    assert identificativo  # generato, non dedotto dal conteggio
+
+    assert len(cliente_autenticato.get("/api/knowledge").json()) == quanti_prima + 1
+
+    assert cliente_autenticato.delete(f"/api/knowledge/{identificativo}").json()["success"] is True
+    assert len(cliente_autenticato.get("/api/knowledge").json()) == quanti_prima
+
+
+def test_gli_identificativi_non_si_ripetono_dopo_una_cancellazione(cliente_autenticato):
+    """Le rotte generavano `k_{len(elenco)+1}`: cancellata una voce, il
+    conteggio torna su un numero gia' usato e il salvataggio successivo
+    sovrascrive un altro record invece di crearne uno. In silenzio."""
+    primo = cliente_autenticato.post("/api/knowledge", json={"text": "primo fatto"}).json()["item"]["id"]
+    cliente_autenticato.delete(f"/api/knowledge/{primo}")
+    secondo = cliente_autenticato.post("/api/knowledge", json={"text": "secondo fatto"}).json()["item"]["id"]
+
+    assert secondo != primo
+    testi = {f["text"] for f in cliente_autenticato.get("/api/knowledge").json()}
+    assert "secondo fatto" in testi
