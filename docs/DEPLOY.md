@@ -264,13 +264,27 @@ cd /opt/Shinra
 sudo ./scripts/deploy.sh --dry-run main
 ```
 
-**Poi** l'aggiornamento vero. `main` va indicato esplicitamente finche' non
-esiste il tag `v0.2.0`: senza argomenti lo script installa l'ultimo tag, che
-oggi e' ancora `v0.1.0`, e non farebbe niente.
+**Poi** l'aggiornamento vero, ma **non con lo script che c'e' sul server**.
+
+Quello installato e' ancora la versione `v0.1.0`, che si aggiorna da sola a
+meta' esecuzione — e' il difetto corretto proprio in questa versione. Per
+questa volta soltanto, si prende lo script nuovo e lo si esegue da fuori:
 
 ```bash
-sudo ./scripts/deploy.sh main
+cd /opt/Shinra
+PROPRIETARIO="$(stat -c '%U' /opt/Shinra)"
+sudo -u "$PROPRIETARIO" git fetch origin
+sudo -u "$PROPRIETARIO" git show origin/main:scripts/deploy.sh > /tmp/deploy-nuovo.sh
+sudo chmod +x /tmp/deploy-nuovo.sh
+
+sudo /tmp/deploy-nuovo.sh --dry-run main   # prova a vuoto, con lo script nuovo
+sudo /tmp/deploy-nuovo.sh main             # aggiornamento vero
 ```
+
+Dalla volta successiva basta il comando normale, `sudo ./scripts/deploy.sh`,
+perche' lo script aggiornato si mette al riparo da solo. `main` va indicato
+esplicitamente finche' non esiste il tag `v0.2.0`: senza argomenti lo script
+installa l'ultimo tag, che oggi e' ancora `v0.1.0`.
 
 **Dopo**, tre verifiche in un minuto:
 

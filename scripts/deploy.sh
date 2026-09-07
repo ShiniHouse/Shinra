@@ -98,7 +98,10 @@ done
 cd "$APP_DIR"
 PROPRIETARIO="$(stat -c '%U' "$APP_DIR")"
 RIPARO="$(mktemp -d)"
-trap 'rm -rf "$RIPARO"' EXIT
+# Un secondo `trap ... EXIT` *sostituisce* il primo, non si aggiunge: qui si
+# ripulisce anche la copia dello script, altrimenti resterebbe in /tmp a ogni
+# aggiornamento. (Sbagliato una volta, in questa stessa correzione.)
+trap 'rm -rf "$RIPARO"; rm -f "${SHINRA_DEPLOY_COPIA:-}"' EXIT
 git_utente() { sudo -u "$PROPRIETARIO" git "$@"; }
 
 # La porta la leggiamo dalla configurazione, con ricaduta su 8000.
