@@ -14,6 +14,32 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Corretto
+- **«Che temperatura c'è in salotto» legge il sensore, non le previsioni**
+  (issue #17). Il percorso rapido scattava sulla sola parola «temperatura» e
+  interrogava Open-Meteo: alla domanda sulla stanza si rispondeva con la
+  temperatura esterna della citta'. Sbagliata, e detta con sicurezza. Nuovo
+  tool `get_indoor_temperature`, e se un sensore non c'e' l'assistente lo
+  dice invece di ripiegare sul meteo.
+- **I nomi di citta' composti non si spezzano piu'.** L'espressione
+  catturava una parola sola: «Reggio Emilia» diventava «Reggio». E al posto
+  della lista di parole da escludere scritta a mano, una citta' che la
+  geocodifica non riconosce fa ripiegare sulla predefinita.
+- Il parser capisce i numeri detti a voce («un minuto», «venticinque
+  minuti», «mezz'ora») e l'ora tonda senza minuti («alle 18»), che e' come
+  si parla davvero. Cadono gli ultimi due xfail del parser.
+
+### Modificato
+- **`process_user_input` da 250 righe a un instradamento** (issue #17). Ogni
+  intento — apprendimento, timer, modalita', dispositivi, temperatura
+  interna, meteo, notizie, enciclopedia — e' un oggetto in `core/intenti/`
+  con la sua priorita' e i suoi test. Aggiungerne uno vuol dire scrivere una
+  classe e registrarla: l'agente non si tocca. `core/agent.py` passa da 530
+  a 260 righe.
+- Il riepilogo della casa si chiede solo quando la richiesta arriva al
+  modello: prima veniva chiesto a Home Assistant per ogni frase, anche per
+  «accendi la luce della cucina» che si risolve senza.
+
 ### Aggiunto
 - **Registro delle azioni: chi ha fatto cosa in casa, e com'e' andata**
   (issue #15). Shinra comanda luci, prese e clima — e presto serrature e

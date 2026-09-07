@@ -91,21 +91,40 @@ def test_ignora_le_frasi_non_pertinenti(motore: TimerEngine, frase: str) -> None
 # --------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Il parser richiede una cifra: 'un minuto' non e' riconosciuto — issue v0.2.0 #17",
-)
 def test_riconosce_i_numeri_scritti_in_lettere(motore: TimerEngine) -> None:
+    """Risolto dalla issue #17: «un minuto» e' italiano normale, e prima
+    finiva al modello perche' la regex pretendeva una cifra."""
     risultato = motore.parse_timer_or_reminder("metti un timer di un minuto")
     assert risultato is not None
     assert risultato["duration_seconds"] == 60
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="L'orario senza minuti non e' riconosciuto: la regex esige [:.]MM — issue v0.2.0 #17",
-)
 def test_riconosce_l_orario_senza_minuti(motore: TimerEngine) -> None:
+    """Risolto dalla issue #17: chi parla dice l'ora tonda molto piu' spesso
+    di quella con i minuti."""
     risultato = motore.parse_timer_or_reminder("ricordami di uscire alle 18")
     assert risultato is not None
     assert datetime.fromisoformat(risultato["remind_at"]).hour == 18
+
+
+def test_riconosce_mezz_ora(motore: TimerEngine) -> None:
+    """«Mezz'ora» non ha un numero da estrarre, e si dice piu' spesso di
+    «trenta minuti»."""
+    risultato = motore.parse_timer_or_reminder("metti un timer di mezz'ora per il forno")
+    assert risultato is not None
+    assert risultato["duration_seconds"] == 1800
+    assert "forno" in risultato["label"].lower()
+
+
+def test_riconosce_i_numeri_a_parole_anche_nei_promemoria(motore: TimerEngine) -> None:
+    risultato = motore.parse_timer_or_reminder("ricordami di girare l'arrosto tra venti minuti")
+    assert risultato is not None
+    assert risultato["type"] == "reminder"
+
+
+def test_venticinque_non_diventa_venti(motore: TimerEngine) -> None:
+    """L'alternativa della regex prova i numeri dal piu' lungo al piu' corto:
+    al contrario, «venticinque minuti» diventerebbe un timer di venti."""
+    risultato = motore.parse_timer_or_reminder("timer di venticinque minuti")
+    assert risultato is not None
+    assert risultato["duration_seconds"] == 25 * 60

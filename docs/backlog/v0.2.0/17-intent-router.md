@@ -24,16 +24,16 @@ Ci sono anche due difetti di riconoscimento gia' individuati:
 
 ## Cosa fare
 
-- [ ] Estrarre ogni intento in un handler con interfaccia comune: verifica di applicabilita', priorita', esecuzione
-- [ ] Registro degli handler ordinato per priorita', al posto della catena di `if`/`elif`
-- [ ] Un intento nuovo si aggiunge registrando un handler, senza toccare l'agente
-- [ ] Distinguere temperatura interna (sensore HA) da temperatura esterna (meteo)
-- [ ] Estrazione della citta' su nomi composti, verificata contro la geocodifica invece che con una lista di esclusioni
-- [ ] Un test per ogni handler
+- [x] Estrarre ogni intento in un handler con interfaccia comune: verifica di applicabilita', priorita', esecuzione
+- [x] Registro degli handler ordinato per priorita', al posto della catena di `if`/`elif`
+- [x] Un intento nuovo si aggiunge registrando un handler, senza toccare l'agente
+- [x] Distinguere temperatura interna (sensore HA) da temperatura esterna (meteo)
+- [x] Estrazione della citta' su nomi composti, verificata contro la geocodifica invece che con una lista di esclusioni
+- [x] Un test per ogni handler
 
 ## Criteri di accettazione
 
-- [ ] «Che temperatura c'e' in salotto» legge il sensore, non il meteo
-- [ ] «Che tempo fa a Reggio Emilia» risolve la citta' corretta
-- [ ] Aggiungere un intento non richiede modifiche a `process_user_input`
-- [ ] Ogni handler ha almeno un test, senza rete
+- [x] «Che temperatura c'e' in salotto» legge il sensore, non il meteo
+- [x] «Che tempo fa a Reggio Emilia» risolve la citta' corretta
+- [x] Aggiungere un intento non richiede modifiche a `process_user_input`
+- [x] Ogni handler ha almeno un test, senza rete
