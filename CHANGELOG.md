@@ -14,6 +14,22 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Corretto
+- **`scripts/deploy.sh` non si aggiorna piu' sotto i piedi.** Bash legge uno
+  script mentre lo esegue, tenendo il segno con una posizione nel file: al
+  passo che aggiorna il codice — compreso lo script stesso — quella
+  posizione finiva a indicare righe di un file diverso, e l'esecuzione
+  proseguiva su testo che non c'entrava piu' niente, nel mezzo di un
+  aggiornamento. Fra la v0.1.0 e la v0.2.0 quel file e' cresciuto di ottanta
+  righe. Ora si copia da parte in /tmp e riparte dalla copia. Dimostrato con
+  una prova: senza la protezione, una riga aggiunta al file a meta'
+  esecuzione viene eseguita davvero.
+- **Quando non c'e' un tag nuovo, lo script lo dice.** Senza argomenti
+  distribuisce l'ultimo tag di release — un server di casa non deve seguire
+  il ramo di sviluppo — ma se `main` e' avanti e nessuno lo dice, sembra che
+  l'aggiornamento non funzioni. Ora indica quanti commit ci sono e come
+  installarli.
+
 ### Aggiunto
 - **Copertura all'80% e controlli obbligatori** (issue #18). La v0.2.0 ha
   riscritto persistenza, memoria e struttura: senza rete di sicurezza

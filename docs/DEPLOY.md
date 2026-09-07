@@ -251,6 +251,55 @@ scappatoia, non una configurazione.
 
 ---
 
+## Il salto dalla v0.1.0 alla v0.2.0
+
+E' l'aggiornamento piu' grosso finora: arrivano il database, lo scheduler, i
+ruoli, i dispositivi fidati e il registro delle azioni, e con loro quattro
+dipendenze nuove. Vale la pena farlo con calma.
+
+**Prima**, una prova a vuoto. Non tocca niente e dice cosa farebbe:
+
+```bash
+cd /opt/Shinra
+sudo ./scripts/deploy.sh --dry-run main
+```
+
+**Poi** l'aggiornamento vero. `main` va indicato esplicitamente finche' non
+esiste il tag `v0.2.0`: senza argomenti lo script installa l'ultimo tag, che
+oggi e' ancora `v0.1.0`, e non farebbe niente.
+
+```bash
+sudo ./scripts/deploy.sh main
+```
+
+**Dopo**, tre verifiche in un minuto:
+
+```bash
+# 1. il servizio risponde
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8000/health   # atteso: 200
+
+# 2. i dati sono stati importati, e i JSON sono ancora al loro posto
+sudo journalctl -u shinra -n 50 --no-pager | grep -i "migrazione a SQLite"
+ls -l /opt/Shinra/data/*.json
+
+# 3. i ruoli predefiniti sono nati
+sudo journalctl -u shinra -n 50 --no-pager | grep -i "ruoli predefiniti"
+```
+
+Se qualcosa va storto, lo script torna indietro da solo quando il servizio
+non risponde. Per farlo a mano: `sudo ./scripts/deploy.sh --rollback`. I
+file JSON non vengono toccati in nessun caso, quindi anche il ritorno alla
+v0.1.0 ritrova i dati di casa dove erano.
+
+**Cosa cambia per chi usa la casa**, e conviene saperlo prima: da questo
+aggiornamento ogni persona ha un ruolo con i suoi permessi. I ruoli
+predefiniti ricalcano i valori gia' presenti nei profili — chi era `admin`
+resta amministratore, chi era `adult` comanda tutto tranne profili e
+impostazioni, `teen` e `child` non aprono serrature. Si modificano da
+`/api/ruoli`.
+
+---
+
 ## Il database (dalla v0.2.0)
 
 Dalla `v0.2.0` i dati di casa hanno una destinazione nuova: `data/shinra.db`,
