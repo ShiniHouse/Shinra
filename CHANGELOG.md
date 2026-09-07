@@ -26,6 +26,16 @@ installabile e utilizzabile.
   un errore in `config/` o `core/`, o se i ganci pre-commit non passano.
 
 ### Corretto
+- **La CI e i ganci pre-commit usavano due versioni diverse di black.** I
+  ganci fissavano `24.8.0`, la CI installava l'ultima disponibile: lo stesso
+  file risultava formattato bene per una parte e da riformattare per
+  l'altra. Il disallineamento era li' da mesi e nessuno poteva accorgersene,
+  perche' i ganci non giravano in CI. Ora le versioni sono fissate in
+  entrambi i posti e un test fallisce se tornano a divergere.
+- I controlli dei ganci pre-commit sono anche test della suite: a capo
+  finale, spazi in coda, file troppo grandi, chiavi private. I ganci veri
+  hanno bisogno di scaricare i propri repository e non si possono eseguire
+  ovunque; il loro effetto ora si verifica dove gira sempre tutto.
 - Dodici errori di tipo in `core/` e `config/`, fra cui due dizionari di
   parametri per Home Assistant il cui tipo veniva dedotto dalla prima chiave
   e non ammetteva i numeri che ci finivano dopo.

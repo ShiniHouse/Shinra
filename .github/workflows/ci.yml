@@ -70,6 +70,17 @@ jobs:
       # farebbe fallire tutto senza dire niente di utile.
       - run: SKIP=no-commit-to-branch pre-commit run --all-files --show-diff-on-failure
 
+      # I ganci che correggono da soli (spazi in coda, a capo finale) falliscono
+      # dicendo «files were modified by this hook» senza dire quali. Questo
+      # passo lo dice, e fa risparmiare mezz'ora a chi legge il log.
+      - name: Cosa hanno cambiato i ganci
+        if: failure()
+        run: |
+          echo "== file modificati =="
+          git status --porcelain
+          echo "== differenze =="
+          git --no-pager diff
+
   test:
     name: Test — Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
