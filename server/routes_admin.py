@@ -103,29 +103,13 @@ async def list_knowledge():
 
 @router.post("/knowledge")
 async def save_knowledge(item: Dict[str, Any]):
-    items = data_store.get_knowledge()
-    item_id = item.get("id") or f"k_{len(items) + 1}"
-    item["id"] = item_id
-
-    updated = False
-    for i, k in enumerate(items):
-        if k.get("id") == item_id:
-            items[i] = item
-            updated = True
-            break
-    if not updated:
-        items.append(item)
-
-    data_store.save_knowledge(items)
-    return {"success": True, "item": item}
+    salvato = data_store.salva_fatto(item)
+    return {"success": True, "item": salvato}
 
 
 @router.delete("/knowledge/{item_id}")
 async def delete_knowledge(item_id: str):
-    items = data_store.get_knowledge()
-    filtered = [k for k in items if k.get("id") != item_id]
-    data_store.save_knowledge(filtered)
-    return {"success": True}
+    return {"success": data_store.cancella_fatto(item_id)}
 
 
 # --- SOURCES (RSS) ENDPOINTS ---
@@ -136,39 +120,20 @@ async def list_sources():
 
 @router.post("/sources")
 async def save_source(source: Dict[str, Any]):
-    sources = data_store.get_sources()
-    s_id = source.get("id") or f"src_{len(sources) + 1}"
-    source["id"] = s_id
-
-    updated = False
-    for i, s in enumerate(sources):
-        if s.get("id") == s_id:
-            sources[i] = source
-            updated = True
-            break
-    if not updated:
-        sources.append(source)
-
-    data_store.save_sources(sources)
-    return {"success": True, "source": source}
+    salvata = data_store.salva_fonte(source)
+    return {"success": True, "source": salvata}
 
 
 @router.post("/sources/bulk-toggle")
 async def bulk_toggle_sources(payload: Dict[str, Any]):
-    enabled = bool(payload.get("enabled", True))
-    sources = data_store.get_sources()
-    for s in sources:
-        s["enabled"] = enabled
-    data_store.save_sources(sources)
-    return {"success": True, "count": len(sources), "enabled": enabled}
+    attive = bool(payload.get("enabled", True))
+    quante = data_store.imposta_tutte_le_fonti(attive)
+    return {"success": True, "count": quante, "enabled": attive}
 
 
 @router.delete("/sources/{source_id}")
 async def delete_source(source_id: str):
-    sources = data_store.get_sources()
-    filtered = [s for s in sources if s.get("id") != source_id]
-    data_store.save_sources(filtered)
-    return {"success": True}
+    return {"success": data_store.cancella_fonte(source_id)}
 
 
 @router.get("/sources/test")
@@ -292,29 +257,13 @@ async def list_aliases():
 
 @router.post("/aliases")
 async def save_alias(alias: Dict[str, Any]):
-    aliases = data_store.get_aliases()
-    a_id = alias.get("id") or f"alias_{len(aliases) + 1}"
-    alias["id"] = a_id
-
-    updated = False
-    for i, a in enumerate(aliases):
-        if a.get("id") == a_id:
-            aliases[i] = alias
-            updated = True
-            break
-    if not updated:
-        aliases.append(alias)
-
-    data_store.save_aliases(aliases)
-    return {"success": True, "alias": alias}
+    salvato = data_store.salva_alias(alias)
+    return {"success": True, "alias": salvato}
 
 
 @router.delete("/aliases/{alias_id}")
 async def delete_alias(alias_id: str):
-    aliases = data_store.get_aliases()
-    filtered = [a for a in aliases if a.get("id") != alias_id]
-    data_store.save_aliases(filtered)
-    return {"success": True}
+    return {"success": data_store.cancella_alias(alias_id)}
 
 
 # --- MODES ENDPOINTS ---
@@ -325,29 +274,13 @@ async def list_modes():
 
 @router.post("/modes")
 async def save_mode(mode: Dict[str, Any]):
-    modes = data_store.get_modes()
-    m_id = mode.get("id") or f"mode_{len(modes) + 1}"
-    mode["id"] = m_id
-
-    updated = False
-    for i, m in enumerate(modes):
-        if m.get("id") == m_id:
-            modes[i] = mode
-            updated = True
-            break
-    if not updated:
-        modes.append(mode)
-
-    data_store.save_modes(modes)
-    return {"success": True, "mode": mode}
+    salvata = data_store.salva_modalita(mode)
+    return {"success": True, "mode": salvata}
 
 
 @router.delete("/modes/{mode_id}")
 async def delete_mode(mode_id: str):
-    modes = data_store.get_modes()
-    filtered = [m for m in modes if m.get("id") != mode_id]
-    data_store.save_modes(filtered)
-    return {"success": True}
+    return {"success": data_store.cancella_modalita(mode_id)}
 
 
 @router.post("/modes/{mode_name}/activate")

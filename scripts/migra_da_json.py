@@ -18,7 +18,6 @@ restituisce un codice d'errore: e' il criterio di accettazione della issue
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -27,115 +26,67 @@ RADICE = Path(__file__).resolve().parent.parent
 if str(RADICE) not in sys.path:
     sys.path.insert(0, str(RADICE))
 
-DATA_DIR = RADICE / "data"
-
-# nome del file JSON -> nome della tabella
-SORGENTI = {
-    "users.json": "users",
-    "knowledge.json": "knowledge",
-    "device_aliases.json": "device_aliases",
-    "modes.json": "modes",
-    "sources.json": "sources",
-    "timers.json": "timers",
-    "reminders.json": "reminders",
-}
-
 VERDE, GIALLO, ROSSO, GRIGIO, FINE = "\033[32m", "\033[33m", "\033[31m", "\033[90m", "\033[0m"
 
 
-def leggi(percorso: Path) -> list[dict[str, Any]]:
-    if not percorso.exists():
-        return []
-    with open(percorso, "r", encoding="utf-8") as f:
-        contenuto = json.load(f)
-    if not isinstance(contenuto, list):
-        raise ValueError(f"{percorso.name} non contiene un elenco")
-    return contenuto
-
-
-def prepara_schema(archivio: Path) -> None:
-    """Applica le migrazioni al database indicato.
-
-    Non `create_all`: cosi' il database nasce gia' con il segno della
-    revisione applicata, e i prossimi aggiornamenti di schema partono dal
-    punto giusto invece di ritrovarsi tabelle che «esistono gia'».
-    """
-    from alembic import command
-    from alembic.config import Config
-
-    from core.archivio import motore as modulo_motore
-
-    modulo_motore.reimposta(archivio)
-    cfg = Config(str(RADICE / "alembic.ini"))
-    cfg.set_main_option("script_location", str(RADICE / "migrazioni"))
-    command.upgrade(cfg, "head")
+def _riepilogo(letti: dict[str, list[dict[str, Any]]], sorgente: Path, destinazione: Path) -> int:
+    print(f"\n{GRIGIO}Sorgente:{FINE} {sorgente}")
+    print(f"{GRIGIO}Destinazione:{FINE} {destinazione}\n")
+    for tabella, voci in letti.items():
+        print(f"  {tabella:<16} {len(voci):>4} voci")
+    totale = sum(len(v) for v in letti.values())
+    print(f"  {'':<16} {'':->4}")
+    print(f"  {'totale':<16} {totale:>4}\n")
+    return totale
 
 
 def migra(archivio: Path, prova: bool) -> int:
+    from core.archivio import importazione
+    from core.archivio import motore as modulo_motore
     from core.archivio.depositi import DEPOSITI
 
-    letti: dict[str, list[dict[str, Any]]] = {}
-    for nome_file, tabella in SORGENTI.items():
-        letti[tabella] = leggi(DATA_DIR / nome_file)
-
-    totale = sum(len(v) for v in letti.values())
-    print(f"\n{GRIGIO}Sorgente:{FINE} {DATA_DIR}")
-    print(f"{GRIGIO}Destinazione:{FINE} {archivio}\n")
-
-    for tabella, voci in letti.items():
-        print(f"  {tabella:<16} {len(voci):>4} voci")
-    print(f"  {'':<16} {'':->4}")
-    print(f"  {'totale':<16} {totale:>4}\n")
+    letti = importazione.leggi_tutto()
+    _riepilogo(letti, importazione.DATA_DIR, archivio)
 
     if prova:
         print(f"{GIALLO}Prova: nulla e' stato scritto.{FINE}\n")
         return 0
 
-    if archivio.exists():
-        prepara_schema(archivio)
-        occupate = [t for t, d in DEPOSITI.items() if d.conta() > 0]
-        if occupate:
-            print(f"{ROSSO}Il database contiene gia' dati in: {', '.join(occupate)}.{FINE}")
-            print("Migrare sopra dati esistenti li duplicherebbe. Sposta o cancella")
-            print(f"{archivio} e riprova.\n")
-            return 2
-    else:
-        prepara_schema(archivio)
+    modulo_motore.reimposta(archivio)
+    importazione.applica_migrazioni()
 
-    for tabella, voci in letti.items():
-        if voci:
-            DEPOSITI[tabella].sostituisci_tutto(voci)
+    occupate = [t for t, d in DEPOSITI.items() if d.conta() > 0]
+    if occupate:
+        print(f"{ROSSO}Il database contiene gia' dati in: {', '.join(occupate)}.{FINE}")
+        print("Migrare sopra dati esistenti li duplicherebbe. Sposta o cancella")
+        print(f"{archivio} e riprova.\n")
+        return 2
 
-    return verifica(archivio, letti)
+    importazione.importa(letti)
+    return _mostra_verifica(importazione.verifica(letti))
 
 
-def verifica(archivio: Path, letti: dict[str, list[dict[str, Any]]] | None = None) -> int:
+def verifica(archivio: Path) -> int:
+    from core.archivio import importazione
     from core.archivio import motore as modulo_motore
-    from core.archivio.depositi import DEPOSITI
 
     modulo_motore.reimposta(archivio)
+    return _mostra_verifica(importazione.verifica(importazione.leggi_tutto()))
 
-    if letti is None:
-        letti = {tab: leggi(DATA_DIR / nome) for nome, tab in SORGENTI.items()}
 
+def _mostra_verifica(esito: dict[str, tuple[int, int, int]]) -> int:
     print(f"{GRIGIO}Verifica per conteggio:{FINE}\n")
     tutto_bene = True
-    for tabella, voci in letti.items():
-        nel_database = DEPOSITI[tabella].conta()
-        atteso = len(voci)
-        # Un file puo' contenere due volte lo stesso identificativo: nel
-        # database la chiave primaria ne tiene una sola. Non e' una perdita,
-        # ma va detto, non nascosto.
-        unici = len({v.get("id") for v in voci})
-        if nel_database == atteso:
-            print(f"  {VERDE}ok{FINE}      {tabella:<16} {nel_database:>4} / {atteso}")
-        elif nel_database == unici:
+    for tabella, (nel_file, distinti, nel_database) in esito.items():
+        if nel_database == nel_file:
+            print(f"  {VERDE}ok{FINE}      {tabella:<16} {nel_database:>4} / {nel_file}")
+        elif nel_database == distinti:
             print(
-                f"  {GIALLO}nota{FINE}    {tabella:<16} {nel_database:>4} / {atteso}"
-                f"  ({atteso - unici} identificativi ripetuti nel file)"
+                f"  {GIALLO}nota{FINE}    {tabella:<16} {nel_database:>4} / {nel_file}"
+                f"  ({nel_file - distinti} identificativi ripetuti nel file)"
             )
         else:
-            print(f"  {ROSSO}PERSI{FINE}   {tabella:<16} {nel_database:>4} / {atteso}")
+            print(f"  {ROSSO}PERSI{FINE}   {tabella:<16} {nel_database:>4} / {nel_file}")
             tutto_bene = False
 
     if tutto_bene:

@@ -10,12 +10,14 @@ from __future__ import annotations
 
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pytest
 
 from core import consegna
 from core import scheduler as modulo_scheduler
 from core import timer_engine as modulo_timer
+from core.archivio import importazione
 from core.eventi import PROMEMORIA_SCADUTO, TIMER_SCADUTO, BusEventi, Evento, bus
 from core.scheduler import (
     PREFISSO_PROMEMORIA,
@@ -34,18 +36,19 @@ def _iso_fra(secondi: float) -> str:
     return (datetime.now() + timedelta(seconds=secondi)).strftime("%Y-%m-%dT%H:%M:%S")
 
 
+RADICE = Path(__file__).resolve().parent.parent.parent
+
+
 @pytest.fixture
 def archivio(tmp_path, monkeypatch):
-    """Sposta l'archivio dei job e i file di stato in una cartella temporanea.
+    """Archivio dei job e database in una cartella temporanea.
 
     Senza questo, eseguire i test sovrascriverebbe i timer veri di casa.
     """
     monkeypatch.setattr(modulo_scheduler, "DATA_DIR", tmp_path)
     monkeypatch.setattr(modulo_scheduler, "ARCHIVIO_JOB", tmp_path / "scheduler.db")
-    monkeypatch.setattr(modulo_timer, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(modulo_timer, "TIMERS_FILE", tmp_path / "timers.json")
-    monkeypatch.setattr(modulo_timer, "REMINDERS_FILE", tmp_path / "reminders.json")
-    return tmp_path
+    importazione.crea_vuoto(tmp_path / "shinra.db")
+    yield tmp_path
 
 
 @pytest.fixture
@@ -314,24 +317,20 @@ def test_descrivi_include_la_frase_pronunciata():
 # --------------------------------------------------- la catena intera, viva
 
 
-def test_un_timer_creato_dall_api_arriva_sul_websocket(archivio, monkeypatch):
+# `archivio` va prima di `cliente_autenticato` nella firma: pytest costruisce
+# le fixture nell'ordine in cui compaiono, e l'archivio dei job va spostato
+# nella cartella temporanea prima che l'avvio del servizio accenda lo
+# scheduler — altrimenti il test scriverebbe nel database dei timer di casa.
+def test_un_timer_creato_dall_api_arriva_sul_websocket(archivio, cliente_autenticato):
     """La prova che chiude la issue.
 
-    Non verifica un pezzo: crea un timer come lo crea la dashboard, aspetta
-    che scada davvero e controlla che l'avviso esca dal WebSocket con la
-    frase da pronunciare. E' il percorso che per tutta la v0.1.0 non
-    esisteva — il timer viveva in un `setInterval` del browser.
+    Non verifica un pezzo: entra in casa con il PIN come fa la dashboard,
+    crea un timer, aspetta che scada davvero e controlla che l'avviso esca
+    dal WebSocket con la frase da pronunciare. E' il percorso che per tutta
+    la v0.1.0 non esisteva — il timer viveva in un `setInterval` del browser.
     """
-    from fastapi.testclient import TestClient
-
-    from config.settings import settings
-
-    monkeypatch.setattr(settings.security, "auth_enabled", False, raising=False)
-
-    from server.app import app
-
-    with TestClient(app) as client, client.websocket_connect("/ws/eventi") as ws:
-        creato = client.post(
+    with cliente_autenticato.websocket_connect("/ws/eventi") as ws:
+        creato = cliente_autenticato.post(
             "/api/timers",
             json={"label": "pasta", "duration_seconds": 1, "user_id": "alessio"},
         )

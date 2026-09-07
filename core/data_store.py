@@ -1,4 +1,19 @@
-import json
+"""I dati della casa: conoscenza, alias, modalita', fonti.
+
+Dalla v0.2.0 stanno nel database (`core/archivio/`), non piu' in file JSON
+riscritti per intero a ogni modifica. I nomi dei metodi e la forma di cio'
+che restituiscono non sono cambiati: sopra ci sono le rotte HTTP,
+l'interfaccia e l'agente, e la migrazione doveva spostare i dati, non
+riscrivere meta' applicazione.
+
+Cio' che e' cambiato davvero sono i metodi `salva_*`/`cancella_*`: toccano
+una riga sola. I vecchi `save_*(elenco)` restano perche' qualcuno li usa
+ancora, ma riscrivono l'intera tabella — con due richieste sovrapposte, una
+delle due modifiche sparisce lo stesso. Sono da considerarsi in uscita.
+"""
+
+from __future__ import annotations
+
 import logging
 import shutil
 import uuid
@@ -7,24 +22,20 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
+from core.archivio import depositi
+
 logger = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 EXAMPLES_DIR = DATA_DIR / "examples"
-KNOWLEDGE_FILE = DATA_DIR / "knowledge.json"
-SOURCES_FILE = DATA_DIR / "sources.json"
-ALIASES_FILE = DATA_DIR / "device_aliases.json"
-MODES_FILE = DATA_DIR / "modes.json"
 
 
 def assicura_dati_iniziali() -> list[str]:
-    """Crea i file di stato mancanti copiandoli da data/examples/.
+    """Crea i file di esempio mancanti in data/.
 
-    I file in data/ non sono versionati: contengono i nomi della famiglia e le
-    abitudini di una casa reale. Un'installazione nuova parte dagli esempi;
-    un'installazione esistente non viene mai toccata.
-
-    Restituisce i nomi dei file creati.
+    Serve ancora: un'installazione nuova parte da questi file, che l'avvio
+    importa poi nel database. Un'installazione esistente non viene toccata,
+    e i file di una casa vera restano dove sono — sono il backup.
     """
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     if not EXAMPLES_DIR.is_dir():
@@ -88,155 +99,132 @@ class ModeItem(BaseModel):
     actions: List[Dict[str, Any]] = []
 
 
-class DataStore:
-    def __init__(self):
-        assicura_dati_iniziali()
+def _identificativo(dati: Dict[str, Any], prefisso: str) -> str:
+    """Un identificativo che non collide mai.
 
-    # --- Knowledge ---
+    Prima era `f"k_{len(items) + 1}"`: dopo una cancellazione quel conteggio
+    torna su un numero gia' usato, e la modifica successiva sovrascrive un
+    altro record invece di crearne uno. Silenziosamente.
+    """
+    esistente = (dati.get("id") or "").strip()
+    return esistente or f"{prefisso}_{uuid.uuid4().hex[:8]}"
+
+
+class DataStore:
+    # ------------------------------------------------------------ conoscenza
+
     def get_knowledge(self) -> List[Dict[str, Any]]:
-        try:
-            if KNOWLEDGE_FILE.exists():
-                with open(KNOWLEDGE_FILE, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            return []
-        except Exception as e:
-            logger.error(f"Errore lettura knowledge.json: {e}")
-            return []
+        return depositi.fatti.elenco()
 
     def save_knowledge(self, items: List[Dict[str, Any]]) -> None:
-        try:
-            with open(KNOWLEDGE_FILE, "w", encoding="utf-8") as f:
-                json.dump(items, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            logger.error(f"Errore scrittura knowledge.json: {e}")
+        depositi.fatti.sostituisci_tutto(items)
+
+    def salva_fatto(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        dati = dict(item)
+        dati["id"] = _identificativo(dati, "k")
+        return depositi.fatti.salva(dati)
+
+    def cancella_fatto(self, identificativo: str) -> bool:
+        return depositi.fatti.cancella(identificativo)
 
     def add_knowledge_item(
         self, text: str, category: str = "generale", enabled: bool = True
     ) -> Dict[str, Any]:
-        """Aggiunge un fatto alla conoscenza della casa e lo restituisce.
+        """Aggiunge un fatto imparato durante un'intervista.
 
-        Chiamato dal motore dell'intervista a ogni risposta dell'utente. Il
-        metodo non esisteva: la chiamata sollevava AttributeError e la
-        Modalita' Apprendimento rispondeva 500 al primo passo, senza che
-        nessuno potesse completarne uno.
-
-        Se un fatto identico e' gia' presente viene restituito quello, invece
-        di accumulare doppioni: durante un'intervista capita di ripetersi, e
-        ogni fatto finisce nel prompt di sistema.
+        Se un fatto identico c'e' gia' restituisce quello: durante
+        un'intervista capita di ripetersi, e ogni fatto finisce nel prompt di
+        ogni risposta.
         """
-        pulito = (text or "").strip()
-        if not pulito:
-            raise ValueError("Il testo del fatto non puo' essere vuoto.")
-
-        items = self.get_knowledge()
-
-        for esistente in items:
-            if (esistente.get("text") or "").strip().casefold() == pulito.casefold():
-                return esistente
-
-        # Identificativo casuale, non f"k_{len(items)+1}": dopo una
-        # cancellazione quel modo produce identificativi gia' usati, e la
-        # modifica di un fatto ne sovrascriverebbe un altro.
-        item: Dict[str, Any] = {
-            "id": f"k_{uuid.uuid4().hex[:8]}",
-            "text": pulito,
-            "category": (category or "generale").strip() or "generale",
-            "enabled": bool(enabled),
-        }
-        items.append(item)
-        self.save_knowledge(items)
-        return item
+        return depositi.fatti.aggiungi_fatto(text, category, enabled)
 
     def get_enabled_knowledge_summary(self) -> str:
-        items = self.get_knowledge()
-        active = [f"- {item['text']}" for item in items if item.get("enabled", True)]
-        return "\n".join(active) if active else "Nessuna informazione personalizzata registrata."
+        attivi = [f"- {f['text']}" for f in depositi.fatti.elenco() if f.get("enabled", True)]
+        return "\n".join(attivi) if attivi else "Nessuna informazione personalizzata registrata."
 
-    # --- Sources ---
+    # ---------------------------------------------------------------- fonti
+
     def get_sources(self) -> List[Dict[str, Any]]:
-        try:
-            if SOURCES_FILE.exists():
-                with open(SOURCES_FILE, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            return []
-        except Exception as e:
-            logger.error(f"Errore lettura sources.json: {e}")
-            return []
+        return depositi.fonti.elenco()
 
     def save_sources(self, items: List[Dict[str, Any]]) -> None:
-        try:
-            with open(SOURCES_FILE, "w", encoding="utf-8") as f:
-                json.dump(items, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            logger.error(f"Errore scrittura sources.json: {e}")
+        depositi.fonti.sostituisci_tutto(items)
 
-    # --- Device Aliases ---
+    def salva_fonte(self, fonte: Dict[str, Any]) -> Dict[str, Any]:
+        dati = dict(fonte)
+        dati["id"] = _identificativo(dati, "src")
+        return depositi.fonti.salva(dati)
+
+    def cancella_fonte(self, identificativo: str) -> bool:
+        return depositi.fonti.cancella(identificativo)
+
+    def imposta_tutte_le_fonti(self, attive: bool) -> int:
+        fonti = depositi.fonti.elenco()
+        for f in fonti:
+            depositi.fonti.aggiorna(f["id"], {"enabled": attive})
+        return len(fonti)
+
+    # ---------------------------------------------------------------- alias
+
     def get_aliases(self) -> List[Dict[str, Any]]:
-        try:
-            if ALIASES_FILE.exists():
-                with open(ALIASES_FILE, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            return []
-        except Exception as e:
-            logger.error(f"Errore lettura device_aliases.json: {e}")
-            return []
+        return depositi.alias.elenco()
 
     def save_aliases(self, items: List[Dict[str, Any]]) -> None:
-        try:
-            with open(ALIASES_FILE, "w", encoding="utf-8") as f:
-                json.dump(items, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            logger.error(f"Errore scrittura device_aliases.json: {e}")
+        depositi.alias.sostituisci_tutto(items)
+
+    def salva_alias(self, alias: Dict[str, Any]) -> Dict[str, Any]:
+        dati = dict(alias)
+        dati["id"] = _identificativo(dati, "alias")
+        return depositi.alias.salva(dati)
+
+    def cancella_alias(self, identificativo: str) -> bool:
+        return depositi.alias.cancella(identificativo)
 
     def resolve_alias_or_entity(self, query_name: str) -> str:
-        """Risolve un nome naturale nell'entity_id esatto di Home Assistant."""
-        clean = query_name.strip().lower()
-        if "." in clean:
-            # È già un entity_id esatto come light.salotto
-            return clean
+        """Risolve un nome detto a voce nell'entity_id esatto di Home Assistant."""
+        pulito = query_name.strip().lower()
+        if "." in pulito:
+            return pulito  # e' gia' un entity_id, tipo light.salotto
 
-        aliases = self.get_aliases()
-        for item in aliases:
-            if item.get("alias", "").lower() == clean or clean in item.get("alias", "").lower():
-                return item.get("entity_id", clean)
-        return clean
+        for item in depositi.alias.elenco():
+            nome = (item.get("alias") or "").lower()
+            if nome == pulito or pulito in nome:
+                return item.get("entity_id", pulito)
+        return pulito
 
     def get_aliases_summary(self) -> str:
-        aliases = self.get_aliases()
-        lines = [
-            f"- '{item.get('alias')}' → `{item.get('entity_id')}` ({item.get('room', 'Generale')})"
-            for item in aliases
+        righe = [
+            f"- '{a.get('alias')}' → `{a.get('entity_id')}` ({a.get('room') or 'Generale'})"
+            for a in depositi.alias.elenco()
         ]
-        return "\n".join(lines) if lines else "Nessun alias configurato."
+        return "\n".join(righe) if righe else "Nessun alias configurato."
 
-    # --- Modes / Routines ---
+    # ----------------------------------------------------------- modalita'
+
     def get_modes(self) -> List[Dict[str, Any]]:
-        try:
-            if MODES_FILE.exists():
-                with open(MODES_FILE, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            return []
-        except Exception as e:
-            logger.error(f"Errore lettura modes.json: {e}")
-            return []
+        return depositi.modalita.elenco()
 
     def save_modes(self, items: List[Dict[str, Any]]) -> None:
-        try:
-            with open(MODES_FILE, "w", encoding="utf-8") as f:
-                json.dump(items, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            logger.error(f"Errore scrittura modes.json: {e}")
+        depositi.modalita.sostituisci_tutto(items)
+
+    def salva_modalita(self, modalita: Dict[str, Any]) -> Dict[str, Any]:
+        dati = dict(modalita)
+        dati["id"] = _identificativo(dati, "mode")
+        return depositi.modalita.salva(dati)
+
+    def cancella_modalita(self, identificativo: str) -> bool:
+        return depositi.modalita.cancella(identificativo)
 
     def get_modes_summary(self) -> str:
-        modes = self.get_modes()
-        lines = []
-        for m in modes:
+        righe = []
+        for m in depositi.modalita.elenco():
             if m.get("enabled", True):
-                triggers = ", ".join([f"'{t}'" for t in m.get("trigger_phrases", [])])
-                lines.append(
-                    f"- Modalità '{m.get('name')}' (frasi di attivazione: {triggers}): {m.get('description', '')}"
+                frasi = ", ".join(f"'{t}'" for t in (m.get("trigger_phrases") or []))
+                righe.append(
+                    f"- Modalità '{m.get('name')}' (frasi di attivazione: {frasi}): "
+                    f"{m.get('description') or ''}"
                 )
-        return "\n".join(lines) if lines else "Nessuna modalità configurata."
+        return "\n".join(righe) if righe else "Nessuna modalità configurata."
 
 
 data_store = DataStore()

@@ -78,6 +78,20 @@ installabile e utilizzabile.
   falliva su una copia pulita del repository e non su quella di lavoro.
 
 ### Modificato
+- **`DataStore`, `UserManager` e `TimerEngine` leggono e scrivono nel
+  database** (issue #12, seconda parte). I nomi dei metodi e la forma di cio'
+  che restituiscono non cambiano: cambia dove stanno i dati.
+- La migrazione avviene **da sola al primo avvio**, se il database e' vuoto e
+  i file JSON ci sono. Un database gia' popolato non viene mai toccato,
+  quindi un riavvio non riporta indietro cio' che era stato cancellato.
+- Le rotte di conoscenza, fonti, alias e modalita' scrivono **una riga alla
+  volta** invece di riscrivere l'intero elenco. Sparisce con loro un difetto
+  che nessuno aveva notato: gli identificativi erano `k_{numero di voci + 1}`,
+  quindi dopo una cancellazione il conteggio tornava su un numero gia' usato
+  e il salvataggio successivo sovrascriveva un altro record. In silenzio.
+- `scripts/esporta_json.py`: il JSON resta il formato di backup — si apre con
+  un editor anche fra dieci anni, senza avere Shinra installato.
+- I test girano su un database temporaneo, mai su quello di casa.
 - Il conto alla rovescia nel browser e' ora solo estetico: chi decide che un
   timer e' scaduto e' il server. Se il collegamento agli eventi manca, la
   scheda torna a suonare da sola — meglio un avviso locale che nessuno.

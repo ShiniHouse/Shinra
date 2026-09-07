@@ -20,6 +20,7 @@ from config.settings import (
 )
 from core.agent import agent
 from core.consegna import descrivi, registra_canali
+from core.data_store import assicura_dati_iniziali
 from core.eventi import PROMEMORIA_SCADUTO, TIMER_SCADUTO, Evento, bus
 from core.ha_client import client_home_assistant
 from core.ollama_client import OllamaClient
@@ -106,6 +107,34 @@ def _prepara_accesso() -> None:
 
 
 @asynccontextmanager
+def _prepara_archivio() -> None:
+    """Allinea lo schema e, la prima volta, porta dentro i dati dai file JSON.
+
+    L'importazione avviene solo se il database e' completamente vuoto: cosi'
+    riavviare il servizio non riporta mai indietro dati cancellati nel
+    frattempo. I file JSON non vengono toccati — restano il modo di tornare
+    indietro finche' non ci si fida del database.
+
+    Se qualcosa va storto non si blocca l'avvio: una casa senza controllo e'
+    peggio di una casa con l'anagrafica vecchia. Il problema finisce nel log
+    e resta visibile.
+    """
+    from core.archivio import importazione
+
+    try:
+        assicura_dati_iniziali()
+        importazione.applica_migrazioni()
+        importati = importazione.importa_se_vuoto()
+        if importati:
+            logger.warning(
+                "Prima migrazione a SQLite: importate %d voci dai file JSON, "
+                "che restano intatti in data/ come backup.",
+                sum(importati.values()),
+            )
+    except Exception as e:
+        logger.error("Preparazione del database non riuscita: %s", e, exc_info=True)
+
+
 async def lifespan(_: FastAPI):
     """Controlli e migrazioni all'avvio.
 
@@ -123,6 +152,10 @@ async def lifespan(_: FastAPI):
 
     if assicura_segreto_sessione():
         logger.info("Generato il segreto di sessione di questa installazione.")
+
+    # Il database prima di tutto il resto: sotto ci sono l'anagrafica, i
+    # timer e la conoscenza di casa, e ogni passo che segue li legge.
+    _prepara_archivio()
 
     _prepara_accesso()
 

@@ -264,18 +264,8 @@ Rispondi ESCLUSIVAMENTE con un JSON:
         if "icon" not in routine_data:
             routine_data["icon"] = "workflow"
 
-        modes = data_store.get_modes()
-        updated = False
-        for i, m in enumerate(modes):
-            if m.get("id") == routine_id:
-                modes[i] = routine_data
-                updated = True
-                break
-        if not updated:
-            modes.append(routine_data)
-
-        data_store.save_modes(modes)
-        return {"success": True, "routine": routine_data}
+        salvata = data_store.salva_modalita(routine_data)
+        return {"success": True, "routine": salvata}
 
     def stop_session(self, user_id: str) -> None:
         if user_id in self._active_sessions:
