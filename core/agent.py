@@ -7,7 +7,7 @@ from config.prompt_templates import get_system_prompt
 from config.settings import settings
 from core.data_store import data_store
 from core.ha_client import client_home_assistant
-from core.memory import ConversationMemory, memory
+from core.memory import ConversationMemory, gestore_memorie
 from core.ollama_client import OllamaClient
 from core.tools.registry import TOOLS_SCHEMA, execute_tool
 from core.user_manager import UserProfile, user_manager
@@ -31,7 +31,6 @@ class ShinraAgent:
         """
         Elabora l'input dell'utente calibrando il comportamento sul profilo (adulto/bambino/ospite).
         """
-        mem = session_memory or memory
         actions_taken: List[Dict[str, Any]] = []
 
         # 1. Risoluzione profilo utente
@@ -43,6 +42,13 @@ class ShinraAgent:
                 # Profilo admin predefinito se non specificato
                 users = user_manager.get_users()
                 profile = users[0] if users else None
+
+        # 1a. La memoria della conversazione e' di questa persona, non di
+        # tutta la casa. Si sceglie qui, dopo aver risolto il profilo, e non
+        # nel chiamante: cosi' nessuna rotta nuova puo' dimenticarsene — che
+        # e' esattamente com'e' nato il difetto (REL-03). Chi vuole una
+        # memoria propria — un test, un canale separato — la passa e vince.
+        mem = session_memory or gestore_memorie.per_utente(profile.id if profile else user_id)
 
         # 1b. Argomenti vietati al profilo: si controlla prima di qualunque
         # altra cosa, altrimenti il fast-path potrebbe agire su una richiesta
@@ -263,6 +269,11 @@ class ShinraAgent:
                 )
                 resp = f"{matched_alias_name.capitalize()} {'acceso' if is_turn_on else 'spento'}."
                 mem.add_user_message(user_text)
+                # Senza questa riga «spegnila» non puo' funzionare: nella
+                # cronologia non resterebbe scritto quale luce e' stata accesa.
+                mem.add_tool_interaction(
+                    "control_device", {"entity_id": matched_entity, "action": action_code}, ha_res
+                )
                 mem.add_assistant_message(resp)
                 return {
                     "response": resp,
@@ -471,6 +482,7 @@ class ShinraAgent:
                     logger.info(f"[Shinra] Rilevato tool testuale: '{t_name}' con {t_args}")
                     t_res = await execute_tool(t_name, t_args)
                     actions_taken.append({"tool": t_name, "args": t_args, "result": t_res})
+                    mem.add_tool_interaction(t_name, t_args, t_res)
 
                     # Aggiunge il risultato per consentire a Shinra di formulare la risposta vocale naturale
                     conversation_messages.append({"role": "assistant", "content": content})
@@ -510,6 +522,7 @@ class ShinraAgent:
                 tool_result = await execute_tool(tool_name, args)
 
                 actions_taken.append({"tool": tool_name, "args": args, "result": tool_result})
+                mem.add_tool_interaction(tool_name, args, tool_result)
 
                 conversation_messages.append(
                     {

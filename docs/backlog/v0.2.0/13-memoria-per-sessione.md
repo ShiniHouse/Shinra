@@ -22,11 +22,15 @@ puo' funzionare.
 
 ## Cosa fare
 
-- [ ] Gestore delle sessioni indicizzato per `(utente, canale)`
-- [ ] `session_memory` passato da `/api/chat` e dal gestore Alexa
-- [ ] Scadenza delle sessioni inattive, con limite al numero di sessioni in memoria
-- [ ] Implementare `add_tool_interaction`, cosi' che le azioni eseguite entrino nel contesto
-- [ ] Continuita' fra canali: una conversazione iniziata sull'Echo prosegue sul telefono per lo stesso utente
+- [x] Gestore delle sessioni indicizzato per **utente**, non per
+      `(utente, canale)`: i due punti di questa scheda si contraddicevano,
+      perche' l'ultimo criterio di accettazione chiede che una conversazione
+      iniziata sull'Echo prosegua sul telefono. Vince il criterio: cio' che
+      va tenuto separato sono le persone, non i dispositivi.
+- [x] `session_memory` passato da `/api/chat` e dal gestore Alexa
+- [x] Scadenza delle sessioni inattive, con limite al numero di sessioni in memoria
+- [x] Implementare `add_tool_interaction`, cosi' che le azioni eseguite entrino nel contesto
+- [x] Continuita' fra canali: una conversazione iniziata sull'Echo prosegue sul telefono per lo stesso utente
 
 ## Criteri di accettazione
 
