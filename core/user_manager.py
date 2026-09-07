@@ -115,6 +115,16 @@ def auto_detect_avatar(u: UserProfile) -> UserProfile:
     return u
 
 
+class UltimoAmministratore(Exception):
+    """Sollevata quando si sta per restare senza nessuno che comanda.
+
+    Cancellare o declassare l'ultimo amministratore chiude fuori tutti dalle
+    impostazioni, dai profili e dai PIN — e non c'e' modo di rientrare se non
+    mettendo le mani sul server. E' il genere di errore che si fa una volta
+    sola, di sera, e si paga il giorno dopo.
+    """
+
+
 class UserManager:
     """L'anagrafica di casa.
 
@@ -184,8 +194,24 @@ class UserManager:
         cifrato = cifra_pin(pin.strip()) if pin and pin.strip() else None
         return depositi.utenti.imposta_pin(user_id, cifrato)
 
+    def amministratori(self) -> List[UserProfile]:
+        return [u for u in self.get_users() if u.role == "admin"]
+
+    def _sarebbe_l_ultimo(self, user_id: str) -> bool:
+        amministratori = self.amministratori()
+        return len(amministratori) == 1 and amministratori[0].id == user_id
+
     def upsert_user(self, user: UserProfile) -> None:
         esistente = depositi.utenti.per_id(user.id)
+        if (
+            esistente
+            and esistente.get("role") == "admin"
+            and user.role != "admin"
+            and self._sarebbe_l_ultimo(user.id)
+        ):
+            raise UltimoAmministratore(
+                "Non posso togliere i poteri all'ultimo amministratore: " "nomina prima qualcun altro."
+            )
         dati = user.model_dump()
         if esistente and not dati.get("pin"):
             # L'interfaccia non rimanda il PIN quando salva un profilo: senza
@@ -195,6 +221,10 @@ class UserManager:
         depositi.utenti.salva(dati)
 
     def delete_user(self, user_id: str) -> bool:
+        if self._sarebbe_l_ultimo(user_id):
+            raise UltimoAmministratore(
+                "Non posso cancellare l'ultimo amministratore: nomina prima qualcun altro."
+            )
         return depositi.utenti.cancella(user_id)
 
 

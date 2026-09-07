@@ -141,7 +141,17 @@ class HomeAssistantClient:
     async def call_service(
         self, domain: str, service: str, service_data: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Chiama un servizio su Home Assistant (es. light.turn_on, climate.set_temperature)."""
+        """Chiama un servizio su Home Assistant (es. light.turn_on, climate.set_temperature).
+
+        E' il passaggio obbligato di ogni azione sulla casa: comandi diretti,
+        scenari e le azioni dentro una routine. Per questo il controllo dei
+        permessi sta qui — e' l'unico modo perche' «esegui una routine con i
+        permessi di chi la invoca» sia vero e non una promessa.
+        """
+        from core.permessi import esigi_per_dominio
+
+        esigi_per_dominio(domain)
+
         if not self.token or self.token.startswith("INSERISCI_QUI"):
             return {"success": False, "error": "Token Home Assistant non configurato."}
         try:

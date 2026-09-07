@@ -18,7 +18,7 @@ from config.settings import (
     settings,
     verifica_configurazione,
 )
-from core import registro
+from core import permessi, registro
 from core.agent import agent
 from core.consegna import descrivi, registra_canali
 from core.data_store import assicura_dati_iniziali
@@ -131,6 +131,12 @@ def _prepara_archivio() -> None:
         assicura_dati_iniziali()
         importazione.applica_migrazioni()
         importati = importazione.importa_se_vuoto()
+        # I ruoli nascono qui, dopo lo schema e dopo l'eventuale importazione:
+        # i loro identificativi coincidono con i valori che il campo `role` ha
+        # gia' nei profili, quindi chi aggiorna si ritrova gia' assegnato.
+        creati = permessi.assicura_ruoli_predefiniti()
+        if creati:
+            logger.info("Ruoli predefiniti creati: %s", ", ".join(creati))
         if importati:
             logger.warning(
                 "Prima migrazione a SQLite: importate %d voci dai file JSON, "

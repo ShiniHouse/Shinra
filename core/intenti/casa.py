@@ -121,6 +121,14 @@ class ControlloDispositivo(Intento):
             # cronologia non resterebbe scritto quale luce e' stata accesa.
             richiesta.memoria.add_tool_interaction("control_device", argomenti, esito)
 
+        if esito.get("permesso_negato"):
+            return Risposta(esito.get("spiegazione", "Non hai il permesso di comandare questo dispositivo."))
+        if esito.get("error") or esito.get("success") is False:
+            # Prima si rispondeva «acceso» comunque, anche quando il comando
+            # non era arrivato: peggio che tacere, perche' chi ascolta se ne
+            # va convinto che la luce sia accesa.
+            return Risposta(f"Non sono riuscito a comandare {nome}.")
+
         return Risposta(f"{nome.capitalize()} {'acceso' if accende else 'spento'}.")
 
     @staticmethod

@@ -21,7 +21,7 @@ from typing import Any, Optional, Sequence, Type
 
 from sqlalchemy import delete, select
 
-from core.archivio.modelli import Alias, Base, Fatto, Fonte, Modalita, Promemoria, Timer, Utente
+from core.archivio.modelli import Alias, Base, Fatto, Fonte, Modalita, Promemoria, Ruolo, Timer, Utente
 from core.archivio.motore import sessione
 
 logger = logging.getLogger("Shinra.Archivio")
@@ -134,6 +134,12 @@ class DepositoUtenti(Deposito):
             return True
 
 
+class DepositoRuoli(Deposito):
+    modello = Ruolo
+    campi = ("id", "nome", "descrizione", "permessi", "predefinito")
+    ordine = "nome"
+
+
 class DepositoFatti(Deposito):
     modello = Fatto
     campi = ("id", "text", "category", "enabled")
@@ -238,6 +244,7 @@ class DepositoPromemoria(Deposito):
 
 
 utenti = DepositoUtenti()
+ruoli = DepositoRuoli()
 fatti = DepositoFatti()
 alias = DepositoAlias()
 modalita = DepositoModalita()
@@ -247,6 +254,7 @@ promemoria = DepositoPromemoria()
 
 DEPOSITI: dict[str, Deposito] = {
     "users": utenti,
+    "ruoli": ruoli,
     "knowledge": fatti,
     "device_aliases": alias,
     "modes": modalita,

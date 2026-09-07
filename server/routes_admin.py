@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
@@ -8,12 +9,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from config.settings import AppConfig, reload_settings, save_config, settings
-from core import registro
+from core import permessi, registro
+from core.archivio import depositi
 from core.data_store import data_store
 from core.ha_client import client_home_assistant
 from core.tools.ha_tools import activate_mode
-from core.user_manager import UserProfile, user_manager
-from server.sicurezza import chiudi_sessioni_di, richiedi_amministratore, richiedi_autenticazione
+from core.user_manager import UltimoAmministratore, UserProfile, user_manager
+from server.sicurezza import (
+    chiudi_sessioni_di,
+    richiedi_amministratore,
+    richiedi_autenticazione,
+    richiedi_permesso,
+)
 
 logger = logging.getLogger("Shinra.Admin")
 # Ogni rotta di questo router richiede una sessione valida. E' l'inversione
@@ -39,17 +46,25 @@ async def list_users():
     return user_manager.get_users()
 
 
-@router.post("/users")
+@router.post("/users", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_UTENTI))])
 async def save_user(user: UserProfile):
-    user_manager.upsert_user(user)
+    try:
+        user_manager.upsert_user(user)
+    except UltimoAmministratore as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    registro.registra("profilo.modificato", dettagli={"profilo": user.id, "ruolo": user.role})
     return {"success": True, "user": user}
 
 
-@router.delete("/users/{user_id}", dependencies=[Depends(richiedi_amministratore)])
+@router.delete("/users/{user_id}", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_UTENTI))])
 async def delete_user(user_id: str):
-    success = user_manager.delete_user(user_id)
+    try:
+        success = user_manager.delete_user(user_id)
+    except UltimoAmministratore as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     if not success:
         raise HTTPException(status_code=404, detail="Utente non trovato")
+    registro.registra("profilo.cancellato", dettagli={"profilo": user_id})
     return {"success": True}
 
 
@@ -57,7 +72,7 @@ class ImpostaPinReq(BaseModel):
     pin: Optional[str] = None
 
 
-@router.post("/users/{user_id}/pin")
+@router.post("/users/{user_id}/pin", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_UTENTI))])
 async def imposta_pin_utente(
     user_id: str,
     payload: ImpostaPinReq,
@@ -103,13 +118,13 @@ async def list_knowledge():
     return data_store.get_knowledge()
 
 
-@router.post("/knowledge")
+@router.post("/knowledge", dependencies=[Depends(richiedi_permesso(permessi.SCRIVI_CONOSCENZA))])
 async def save_knowledge(item: Dict[str, Any]):
     salvato = data_store.salva_fatto(item)
     return {"success": True, "item": salvato}
 
 
-@router.delete("/knowledge/{item_id}")
+@router.delete("/knowledge/{item_id}", dependencies=[Depends(richiedi_permesso(permessi.SCRIVI_CONOSCENZA))])
 async def delete_knowledge(item_id: str):
     return {"success": data_store.cancella_fatto(item_id)}
 
@@ -257,13 +272,15 @@ async def list_aliases():
     return data_store.get_aliases()
 
 
-@router.post("/aliases")
+@router.post("/aliases", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_IMPOSTAZIONI))])
 async def save_alias(alias: Dict[str, Any]):
     salvato = data_store.salva_alias(alias)
     return {"success": True, "alias": salvato}
 
 
-@router.delete("/aliases/{alias_id}")
+@router.delete(
+    "/aliases/{alias_id}", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_IMPOSTAZIONI))]
+)
 async def delete_alias(alias_id: str):
     return {"success": data_store.cancella_alias(alias_id)}
 
@@ -274,18 +291,20 @@ async def list_modes():
     return data_store.get_modes()
 
 
-@router.post("/modes")
+@router.post("/modes", dependencies=[Depends(richiedi_permesso(permessi.MODIFICA_MODALITA))])
 async def save_mode(mode: Dict[str, Any]):
     salvata = data_store.salva_modalita(mode)
     return {"success": True, "mode": salvata}
 
 
-@router.delete("/modes/{mode_id}")
+@router.delete("/modes/{mode_id}", dependencies=[Depends(richiedi_permesso(permessi.MODIFICA_MODALITA))])
 async def delete_mode(mode_id: str):
     return {"success": data_store.cancella_modalita(mode_id)}
 
 
-@router.post("/modes/{mode_name}/activate")
+@router.post(
+    "/modes/{mode_name}/activate", dependencies=[Depends(richiedi_permesso(permessi.ATTIVA_MODALITA))]
+)
 async def trigger_mode(mode_name: str):
     result = await activate_mode(mode_name)
     return result
@@ -306,7 +325,7 @@ def is_masked(secret: Optional[str]) -> bool:
     return "••••" in secret or "********" in secret or "***" in secret
 
 
-@router.get("/settings", dependencies=[Depends(richiedi_amministratore)])
+@router.get("/settings", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_IMPOSTAZIONI))])
 async def get_app_settings():
     # Qui la rilettura da disco e' voluta, ed e' l'unico posto che la fa.
     # Dalla issue #14 nessun altro punto del progetto legge config.yaml
@@ -323,7 +342,7 @@ async def get_app_settings():
     return current
 
 
-@router.post("/settings", dependencies=[Depends(richiedi_amministratore)])
+@router.post("/settings", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_IMPOSTAZIONI))])
 async def update_app_settings(new_settings: AppConfig):
     current_cfg = reload_settings()
 
@@ -579,3 +598,74 @@ async def azioni_registrate():
     """L'elenco dei tipi di azione presenti, per costruire i filtri."""
     voci = registro.voci(limite=1000)
     return sorted({v["azione"] for v in voci})
+
+
+# --- RUOLI E PERMESSI ---
+@router.get("/permessi")
+async def elenco_permessi():
+    """Il catalogo dei permessi: serve alla schermata dei ruoli."""
+    return [{"id": p, "descrizione": d} for p, d in permessi.PERMESSI.items()]
+
+
+@router.get("/ruoli")
+async def elenco_ruoli():
+    return depositi.ruoli.elenco()
+
+
+@router.post("/ruoli", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_UTENTI))])
+async def salva_ruolo(ruolo: Dict[str, Any]):
+    """Crea o modifica un ruolo.
+
+    I predefiniti si modificano — e' voluto: chi vuole togliere le serrature
+    agli adulti deve poterlo fare senza inventarsi un ruolo nuovo. Quello che
+    non si puo' fare e' cancellarli, o togliere all'amministratore il potere
+    di gestire i profili: sarebbe il modo piu' rapido di chiudersi fuori.
+    """
+    identificativo = (ruolo.get("id") or "").strip().lower()
+    if not identificativo:
+        identificativo = re.sub(r"[^a-z0-9_]+", "_", (ruolo.get("nome") or "").strip().lower())
+    if not identificativo:
+        raise HTTPException(status_code=400, detail="Il ruolo deve avere un nome.")
+
+    scelti = [p for p in (ruolo.get("permessi") or []) if p in permessi.PERMESSI]
+    if identificativo == "admin" and permessi.GESTISCI_UTENTI not in scelti:
+        raise HTTPException(
+            status_code=400,
+            detail="L'amministratore deve poter gestire i profili: senza, nessuno potrebbe piu' farlo.",
+        )
+
+    esistente = depositi.ruoli.per_id(identificativo)
+    salvato = depositi.ruoli.salva(
+        {
+            "id": identificativo,
+            "nome": ruolo.get("nome") or identificativo,
+            "descrizione": ruolo.get("descrizione") or "",
+            "permessi": scelti,
+            "predefinito": bool(esistente["predefinito"]) if esistente else False,
+        }
+    )
+    registro.registra(
+        "ruolo.modificato" if esistente else "ruolo.creato",
+        dettagli={"ruolo": identificativo, "permessi": scelti},
+    )
+    return {"success": True, "ruolo": salvato}
+
+
+@router.delete("/ruoli/{id_ruolo}", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_UTENTI))])
+async def cancella_ruolo(id_ruolo: str):
+    ruolo = depositi.ruoli.per_id(id_ruolo)
+    if ruolo is None:
+        raise HTTPException(status_code=404, detail="Ruolo non trovato.")
+    if ruolo.get("predefinito"):
+        raise HTTPException(status_code=400, detail="I ruoli predefiniti non si cancellano: si modificano.")
+
+    assegnati = [u.name for u in user_manager.get_users() if u.role == id_ruolo]
+    if assegnati:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Il ruolo e' assegnato a {', '.join(assegnati)}: cambia prima il loro ruolo.",
+        )
+
+    depositi.ruoli.cancella(id_ruolo)
+    registro.registra("ruolo.cancellato", dettagli={"ruolo": id_ruolo})
+    return {"success": True}
