@@ -53,6 +53,30 @@ esegui() {
     fi
 }
 
+# ------------------------------------------------- si copia da parte e riparte
+#
+# Bash non legge tutto lo script in memoria: lo legge a pezzi, mentre lo
+# esegue, tenendo il segno con una posizione nel file. Al passo 4 questo
+# script aggiorna il codice — **compreso se stesso** — e da quel momento la
+# posizione tenuta da bash indica righe di un file diverso. L'esecuzione
+# prosegue su testo che non c'entra piu' niente, e lo fa in mezzo a un
+# aggiornamento, che e' il momento peggiore possibile.
+#
+# Non e' teoria: fra la v0.1.0 e la v0.2.0 questo file e' cresciuto di
+# ottanta righe. Si lavora su una copia in /tmp, che nessun aggiornamento
+# puo' toccare.
+if [[ -z "${SHINRA_DEPLOY_COPIA:-}" ]]; then
+    COPIA_DI_LAVORO="$(mktemp /tmp/shinra-deploy.XXXXXXXX.sh)"
+    cp "$(readlink -f "$0")" "$COPIA_DI_LAVORO"
+    chmod +x "$COPIA_DI_LAVORO"
+    export SHINRA_DEPLOY_COPIA="$COPIA_DI_LAVORO"
+    exec "$COPIA_DI_LAVORO" "$@"
+fi
+
+# Da qui in poi si sta eseguendo la copia: si cancella da sola alla fine,
+# comunque vada.
+trap 'rm -f "${SHINRA_DEPLOY_COPIA:-}"' EXIT
+
 # ---------------------------------------------------------------- argomenti
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -250,6 +274,17 @@ NUOVO="$(git_utente rev-parse "$RIFERIMENTO^{commit}")"
 
 if [[ "$ATTUALE" == "$NUOVO" ]]; then
     verde "Gia' aggiornato a $(git_utente log --oneline -1 HEAD)."
+    # Senza argomenti si distribuisce l'ultimo *tag*, non l'ultimo commit: e'
+    # voluto, perche' un server di casa non deve seguire il ramo di sviluppo.
+    # Ma se main e' avanti e nessuno lo dice, sembra che l'aggiornamento non
+    # funzioni — ed e' successo davvero.
+    AVANTI="$(git_utente rev-list --count "HEAD..origin/main" 2>/dev/null || echo 0)"
+    if [[ "$AVANTI" -gt 0 ]]; then
+        echo
+        giallo "Su origin/main ci sono $AVANTI commit piu' recenti, senza un tag di release."
+        info "Per installarli comunque:   sudo $0 main"
+        info "Oppure attendi il prossimo tag: e' cio' che questo script installa da solo."
+    fi
     exit 0
 fi
 
