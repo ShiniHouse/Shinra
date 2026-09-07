@@ -262,6 +262,13 @@ def test_ogni_rotta_che_cambia_qualcosa_dichiara_un_permesso():
         ("POST", "/api/learning/answer"),
         ("POST", "/api/learning/confirm-routine"),
         ("POST", "/api/learning/stop"),
+        # I dispositivi fidati non si proteggono con un permesso fisso: la
+        # regola e' «i tuoi, oppure tutti se amministri», e dipende da chi
+        # chiede e da chi possiede il dispositivo. Un permesso statico
+        # direbbe la cosa sbagliata in meta' dei casi; il controllo di
+        # proprieta' e' dentro le rotte, e ha i suoi test.
+        ("DELETE", "/api/dispositivi/{id_dispositivo}"),
+        ("POST", "/api/dispositivi/revoca-tutti"),
     }
 
     mancanti = []

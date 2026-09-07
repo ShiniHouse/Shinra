@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 from core import registro
 from core.user_manager import user_manager
-from server import sicurezza
+from server import dispositivi, sicurezza
 
 logger = logging.getLogger("Shinra.Auth")
 router = APIRouter(prefix="/api/auth", tags=["Accesso"])
@@ -24,6 +24,11 @@ router = APIRouter(prefix="/api/auth", tags=["Accesso"])
 class RichiestaAccesso(BaseModel):
     pin: str
     user_id: Optional[str] = None
+    # «Ricorda questo dispositivo»: il compromesso che rende sopportabile un
+    # PIN per persona su un telefono. Senza, la protezione verrebbe
+    # disattivata dall'uso quotidiano nel giro di una settimana.
+    ricorda_dispositivo: bool = False
+    nome_dispositivo: Optional[str] = None
 
 
 @router.get("/status")
@@ -111,10 +116,25 @@ async def accedi(req: RichiestaAccesso, request: Request, response: Response):
     registro.imposta_attore(profilo.id)
     registro.registra("accesso.riuscito", dettagli={"nome": profilo.name}, canale="web")
 
+    ricordato = False
+    if req.ricorda_dispositivo:
+        credenziale = dispositivi.ricorda(
+            profilo.id,
+            nome=req.nome_dispositivo or "Dispositivo",
+            indirizzo=request.client.host if request.client else "",
+            firma=sicurezza.firma_credenziale,
+        )
+        sicurezza.imposta_cookie_dispositivo(response, credenziale)
+        registro.registra(
+            "dispositivo.ricordato", dettagli={"nome": req.nome_dispositivo or ""}, canale="web"
+        )
+        ricordato = True
+
     return {
         "success": True,
         "token": token,  # per i client che non usano i cookie
         "utente": profilo.model_dump(exclude={"pin"}),
+        "dispositivo_ricordato": ricordato,
     }
 
 
@@ -123,5 +143,7 @@ async def esci(request: Request, response: Response):
     profilo = sicurezza.utente_corrente(request)
     sicurezza.chiudi_sessione(sicurezza.token_dalla_richiesta(request))
     registro.registra("uscita", attore=profilo.id if profilo else None, canale="web")
+    # Uscire non revoca il dispositivo: si esce per cambiare persona, non
+    # perche' il telefono non sia piu' di casa. Per quello c'e' la revoca.
     sicurezza.rimuovi_cookie_sessione(response)
     return {"success": True}

@@ -148,6 +148,26 @@ class Promemoria(Base):
     completed_at: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
 
 
+class DispositivoFidato(Base):
+    """Un telefono, un tablet, un computer che non deve richiedere il PIN.
+
+    **Della credenziale si conserva solo l'impronta**, come per i PIN. Se un
+    giorno il database finisse dove non deve, quelle righe non aprirebbero
+    nessuna casa: l'originale ce l'ha soltanto il dispositivo, nel suo
+    cookie.
+    """
+
+    __tablename__ = "dispositivi_fidati"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    impronta: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    nome: Mapped[str] = mapped_column(String(120), default="Dispositivo")
+    creato_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
+    ultimo_uso: Mapped[datetime] = mapped_column(DateTime, default=adesso)
+    ultimo_indirizzo: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
+
 class VoceRegistro(Base):
     """Una riga del registro delle azioni: chi ha fatto cosa, e com'e' andata.
 

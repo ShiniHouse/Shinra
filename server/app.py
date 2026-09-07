@@ -220,7 +220,7 @@ async def contesto_del_registro(request: Request, call_next):
     si e' accesa la luce») si ritrova nel registro senza cercare a mano.
     """
     ctx = registro.apri_contesto(canale="web")
-    sessione = sicurezza.sessione_valida(sicurezza.token_dalla_richiesta(request))
+    sessione = sicurezza.sessione_dalla_richiesta(request)
     if sessione:
         ctx.attore = sessione.user_id
 

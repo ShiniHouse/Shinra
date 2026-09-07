@@ -171,6 +171,71 @@ def sessione_valida(token: Optional[str]) -> Optional[Sessione]:
     return sessione
 
 
+def sessione_dalla_richiesta(request: Request) -> Optional[Sessione]:
+    """La sessione di questa richiesta, anche quando arriva da un dispositivo fidato.
+
+    Il dispositivo non e' una scorciatoia parallela: la sua credenziale
+    diventa una sessione normale, con lo stesso identificativo utente e gli
+    stessi permessi. Cosi' tutto cio' che viene dopo — permessi, registro,
+    chiusura delle sessioni al cambio di PIN — continua a funzionare senza
+    sapere che esistono i dispositivi fidati.
+    """
+    sessione = sessione_valida(token_dalla_richiesta(request))
+    if sessione is not None:
+        return sessione
+
+    from server import dispositivi
+
+    credenziale = request.cookies.get(dispositivi.NOME_COOKIE)
+    if not credenziale:
+        return None
+
+    # La credenziale e' firmata come i token di sessione, e riusata come
+    # chiave: cosi' le richieste successive ritrovano la stessa sessione
+    # invece di crearne una nuova ogni volta.
+    if not _firma_valida(credenziale):
+        return None
+    esistente = _stato.sessioni.get(credenziale)
+    if esistente is not None:
+        return sessione_valida(credenziale)
+
+    indirizzo = request.client.host if request.client else ""
+    user_id = dispositivi.riconosci(credenziale, indirizzo)
+    if not user_id:
+        return None
+
+    ora = time.time()
+    _pota_sessioni(ora)
+    _stato.sessioni[credenziale] = Sessione(token=credenziale, user_id=user_id, creata_il=ora, vista_il=ora)
+    logger.info("Accesso da dispositivo fidato: %s", user_id)
+    return _stato.sessioni[credenziale]
+
+
+def firma_credenziale(grezza: str) -> str:
+    """Firma una credenziale di dispositivo come si firma un token di sessione."""
+    return f"{grezza}.{_firma(grezza)}"
+
+
+def imposta_cookie_dispositivo(response: Response, credenziale: str) -> None:
+    from server import dispositivi
+
+    response.set_cookie(
+        key=dispositivi.NOME_COOKIE,
+        value=credenziale,
+        max_age=dispositivi.DURATA_GIORNI * 24 * 3600,
+        httponly=True,  # non leggibile da JavaScript: e' il punto
+        samesite="lax",
+        secure=False,  # in casa si accede anche in HTTP sulla rete locale
+        path="/",
+    )
+
+
+def rimuovi_cookie_dispositivo(response: Response) -> None:
+    from server import dispositivi
+
+    response.delete_cookie(key=dispositivi.NOME_COOKIE, path="/")
+
+
 def chiudi_sessione(token: Optional[str]) -> None:
     if token:
         _stato.sessioni.pop(token, None)
@@ -301,7 +366,7 @@ def utente_corrente(request: Request) -> Optional[UserProfile]:
     """Il profilo della sessione, o None. Non solleva eccezioni."""
     if not autenticazione_attiva():
         return None
-    sessione = sessione_valida(token_dalla_richiesta(request))
+    sessione = sessione_dalla_richiesta(request)
     if not sessione:
         return None
     return user_manager.get_user_by_id(sessione.user_id)
@@ -312,7 +377,7 @@ def richiedi_autenticazione(request: Request) -> Optional[UserProfile]:
     if not autenticazione_attiva():
         return None
 
-    sessione = sessione_valida(token_dalla_richiesta(request))
+    sessione = sessione_dalla_richiesta(request)
     if not sessione:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
