@@ -14,6 +14,22 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Corretto
+- **Ogni persona ha la sua conversazione** (issue #13, REL-03). C'era
+  un'unica memoria globale: la chat del salotto, quella del telefono e ogni
+  richiesta ad Alexa scrivevano nella stessa cronologia, quindi il contesto
+  di un adulto finiva nella sessione di un bambino e due persone che
+  parlavano insieme si confondevano a vicenda. Il parametro `session_memory`
+  esisteva gia': non lo passava nessuno.
+- **L'assistente ricorda cosa ha appena fatto.** `add_tool_interaction()`
+  aveva corpo `pass`, quindi le azioni eseguite non entravano nel contesto:
+  «accendi la luce della cucina» seguito da «spegnila» non poteva
+  funzionare, perche' quale luce non era scritto da nessuna parte.
+- Le conversazioni ferme da mezz'ora vengono liberate, e oltre le cinquanta
+  esce quella inattiva da piu' tempo: gli ospiti non registrati creano un
+  profilo ciascuno, e un processo che gira per mesi non deve crescere senza
+  motivo.
+
 ### Aggiunto
 - **Un database al posto di sette file JSON** (issue #12, prima parte).
   `data/shinra.db`, SQLite in modalita' WAL, con SQLAlchemy 2 e Alembic per
