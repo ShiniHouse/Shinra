@@ -330,6 +330,28 @@ def richiedi_autenticazione(request: Request) -> Optional[UserProfile]:
     return profilo
 
 
+def richiedi_permesso(permesso: str):
+    """Costruisce la dipendenza che protegge una rotta con un permesso.
+
+        @router.post("/modes", dependencies=[Depends(richiedi_permesso("modalita.modifica"))])
+
+    Il rifiuto non e' muto: il messaggio dice quale permesso manca. Un 403
+    secco lascia solo l'impressione che qualcosa sia rotto, e chi lo riceve
+    non sa nemmeno cosa chiedere a chi amministra la casa.
+    """
+    from core.permessi import PermessoNegato, esigi
+
+    def verifica(profilo: Optional[UserProfile] = Depends(richiedi_autenticazione)) -> Optional[UserProfile]:
+        try:
+            esigi(profilo, permesso)
+        except PermessoNegato as negato:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=negato.spiegazione) from negato
+        return profilo
+
+    verifica.__name__ = f"richiedi_{permesso.replace('.', '_')}"
+    return verifica
+
+
 def richiedi_amministratore(
     profilo: Optional[UserProfile] = Depends(richiedi_autenticazione),
 ) -> Optional[UserProfile]:

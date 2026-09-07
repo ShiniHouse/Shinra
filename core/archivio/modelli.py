@@ -51,6 +51,25 @@ class Utente(Base):
     aggiornato_il: Mapped[datetime] = mapped_column(DateTime, default=adesso, onupdate=adesso)
 
 
+class Ruolo(Base):
+    """Un insieme di permessi con un nome.
+
+    I permessi appartengono al ruolo, non alla persona: cosi' se ne possono
+    creare di nuovi — «Collaboratrice domestica», «Nonno», «Ospite fine
+    settimana» — senza toccare il codice. `predefinito` marca i cinque che
+    nascono con l'installazione: si possono modificare, non cancellare,
+    perche' qualcuno ci e' assegnato.
+    """
+
+    __tablename__ = "ruoli"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    nome: Mapped[str] = mapped_column(String(120), nullable=False)
+    descrizione: Mapped[Optional[str]] = mapped_column(Text, default="")
+    permessi: Mapped[list[str]] = mapped_column(JSON, default=list)
+    predefinito: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
 class Fatto(Base):
     """Un'informazione sulla casa, imparata o inserita a mano."""
 

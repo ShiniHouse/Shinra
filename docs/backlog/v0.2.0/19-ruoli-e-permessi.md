@@ -22,36 +22,41 @@ Motivazioni e alternative in [ADR 0004](../../adr/0004-identita-ruoli-e-permessi
 
 ## Cosa fare
 
-- [ ] Modello `Ruolo`: nome, descrizione, insieme di permessi. Quattro
+- [x] Modello `Ruolo`: nome, descrizione, insieme di permessi. Quattro
       predefiniti, modificabili, piu' quelli creati dall'utente
-- [ ] Ogni utente ha un ruolo; l'ultimo amministratore non puo' essere
+- [x] Ogni utente ha un ruolo; l'ultimo amministratore non puo' essere
       declassato ne' cancellato
-- [ ] Insieme minimo dei permessi:
+- [x] Insieme minimo dei permessi:
       `dispositivi.comanda`, `sicurezza.comanda`, `modalita.attiva`,
       `modalita.modifica`, `conoscenza.leggi`, `conoscenza.scrivi`,
       `utenti.gestisci`, `impostazioni.gestisci`
-- [ ] `sicurezza.comanda` separato dagli altri dispositivi: serrature e allarme
+- [x] `sicurezza.comanda` separato dagli altri dispositivi: serrature e allarme
       hanno conseguenze diverse da una lampadina
-- [ ] Verifica dei permessi come dipendenza FastAPI, dichiarata su ogni rotta
-- [ ] **L'esecuzione di una routine verifica i permessi di chi la invoca**, non
+- [x] Verifica dei permessi come dipendenza FastAPI, dichiarata su ogni rotta
+- [x] **L'esecuzione di una routine verifica i permessi di chi la invoca**, non
       di chi l'ha scritta: altrimenti il controllo si aggira scrivendo una routine
-- [ ] Applicare finalmente `restricted_topics` prima dell'invio al modello e
-      sulla risposta
-- [ ] Schermata di gestione ruoli e assegnazione
-- [ ] Ogni rifiuto finisce nel registro delle azioni (issue #15)
-- [ ] Un rifiuto si spiega: «non hai il permesso di aprire la serratura»,
+- [x] Applicare finalmente `restricted_topics` prima dell'invio al modello e
+      sulla risposta — gia' fatto nella v0.1.0 (`core/argomenti_vietati.py`,
+      issue #5), verificato dai suoi test
+- [ ] Schermata di gestione ruoli e assegnazione — **non fatta in questa PR.**
+      Le rotte ci sono (`/api/ruoli`, `/api/permessi`) e i permessi sono gia'
+      applicati: la casa e' protetta. Manca l'interfaccia per modificarli senza
+      chiamare l'API a mano. Va in una PR sua, perche' e' lavoro di frontend e
+      non deve ritardare il controllo.
+- [x] Ogni rifiuto finisce nel registro delle azioni (issue #15)
+- [x] Un rifiuto si spiega: «non hai il permesso di aprire la serratura»,
       non un 403 muto
 
 ## Criteri di accettazione
 
-- [ ] Un profilo senza `dispositivi.comanda` non accende una luce, ne' da chat
+- [x] Un profilo senza `dispositivi.comanda` non accende una luce, ne' da chat
       ne' da API diretta
-- [ ] Un profilo senza `sicurezza.comanda` non apre una serratura nemmeno
+- [x] Un profilo senza `sicurezza.comanda` non apre una serratura nemmeno
       tramite una routine che lo farebbe
-- [ ] Un ruolo creato dall'utente e assegnato produce esattamente i permessi scelti
-- [ ] L'ultimo amministratore non e' cancellabile ne' declassabile
-- [ ] Ogni rifiuto e' tracciato e spiegato all'utente
-- [ ] Un test elenca le rotte e fallisce se una non dichiara il permesso richiesto
+- [x] Un ruolo creato dall'utente e assegnato produce esattamente i permessi scelti
+- [x] L'ultimo amministratore non e' cancellabile ne' declassabile
+- [x] Ogni rifiuto e' tracciato e spiegato all'utente
+- [x] Un test elenca le rotte e fallisce se una non dichiara il permesso richiesto
 
 ## Limite dichiarato
 

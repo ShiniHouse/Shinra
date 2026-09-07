@@ -3,6 +3,7 @@ import logging
 from typing import Any, Callable, Dict, List
 
 from core import registro
+from core.permessi import PermessoNegato
 from core.tools.ha_tools import (
     activate_mode,
     activate_scene_or_routine,
@@ -243,6 +244,19 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, A
                 esito = await handler(**arguments)
             else:
                 esito = handler(**arguments)
+        except PermessoNegato as negato:
+            # Un rifiuto non e' un guasto, e non va raccontato come tale: chi
+            # ha chiesto deve sapere cosa gli manca, non che «qualcosa e'
+            # andato storto». Il registro lo ha gia' scritto in `esigi`.
+            logger.info("Permesso negato su %s: %s", tool_name, negato.permesso)
+            voce["esito"] = registro.ESITO_NEGATO
+            voce["dettagli"]["permesso"] = negato.permesso
+            return {
+                "success": False,
+                "error": negato.spiegazione,
+                "permesso_negato": True,
+                "spiegazione": negato.spiegazione,
+            }
         except Exception as e:
             logger.error(f"Errore durante l'esecuzione del tool {tool_name} con args {arguments}: {e}")
             voce["esito"] = registro.ESITO_ERRORE

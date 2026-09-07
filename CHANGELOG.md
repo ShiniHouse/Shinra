@@ -14,6 +14,35 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Aggiunto
+- **Ruoli e permessi per ogni persona di casa** (issue #19, ADR 0004). Fino a
+  ieri il profilo distingueva adulto, ragazzo e bambino, ma quella distinzione
+  cambiava **solo il tono delle risposte**: un bambino poteva comandare
+  qualunque cosa.
+- Cinque ruoli predefiniti — Amministratore, Adulto, Ragazzo, Bambino,
+  Ospite — con identificativi che coincidono con i valori gia' presenti nei
+  profili: chi aggiorna si ritrova gia' assegnato, senza fare niente. Sono
+  modificabili, e se ne possono creare altri («Collaboratrice domestica»,
+  «Nonno», «Ospite fine settimana») dalle rotte `/api/ruoli`.
+- **`sicurezza.comanda` e' un permesso a parte**: serrature e allarme non
+  sono lampadine, e chi puo' accendere una luce non deve per questo poter
+  aprire la porta di casa.
+- Il controllo sta in `HomeAssistantClient.call_service`, dove passa ogni
+  azione — comandi diretti, scenari e le azioni dentro una routine. E' cosi'
+  che **una routine si esegue con i permessi di chi la invoca**, non di chi
+  l'ha scritta: altrimenti per aggirare il controllo basterebbe scriversi
+  una routine.
+- Un rifiuto viene spiegato («non hai il permesso di aprire la serratura»)
+  invece di essere un 403 muto, e finisce nel registro delle azioni.
+- **L'ultimo amministratore non si cancella e non si declassa.** E' il genere
+  di errore che si fa una volta sola, di sera, e si paga il giorno dopo.
+
+### Corretto
+- **«Acceso» non viene piu' detto quando il comando non e' arrivato.** Il
+  percorso rapido annunciava il successo senza guardare l'esito: peggio che
+  tacere, perche' chi ascolta se ne va convinto che la luce sia accesa.
+
+
 ### Corretto
 - **«Che temperatura c'è in salotto» legge il sensore, non le previsioni**
   (issue #17). Il percorso rapido scattava sulla sola parola «temperatura» e
