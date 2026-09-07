@@ -306,6 +306,12 @@ def is_masked(secret: Optional[str]) -> bool:
 
 @router.get("/settings", dependencies=[Depends(richiedi_amministratore)])
 async def get_app_settings():
+    # Qui la rilettura da disco e' voluta, ed e' l'unico posto che la fa.
+    # Dalla issue #14 nessun altro punto del progetto legge config.yaml
+    # durante una richiesta: si lavora sull'oggetto condiviso, che il
+    # salvataggio aggiorna al suo posto. Il pannello impostazioni pero' deve
+    # mostrare cosa c'e' davvero sul disco, perche' su un server capita di
+    # correggere il file a mano.
     current = reload_settings().model_dump()
     # Maschera token sensibili
     if current.get("home_assistant", {}).get("token"):

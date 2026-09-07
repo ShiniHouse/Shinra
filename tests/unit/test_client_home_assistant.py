@@ -31,13 +31,13 @@ def _client_pulito():
 def configurazione(monkeypatch) -> AppConfig:
     """Sostituisce la sorgente che il client legge davvero.
 
-    Le property rileggono la configurazione a ogni accesso — oggi da disco,
-    dalla v0.2.0 da una cache (issue #14). Il test agisce su quella sorgente,
-    non sull'oggetto in memoria, altrimenti verificherebbe qualcosa che il
-    codice non guarda.
+    Fino alla issue #14 le property rileggevano `config.yaml` da disco a ogni
+    accesso; ora leggono l'oggetto condiviso della configurazione. Il test
+    agisce su quella sorgente, non su una copia, altrimenti verificherebbe
+    qualcosa che il codice non guarda.
     """
     cfg = AppConfig()
-    monkeypatch.setattr(modulo, "reload_settings", lambda: cfg)
+    monkeypatch.setattr(modulo, "settings", cfg)
     return cfg
 
 

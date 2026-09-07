@@ -15,6 +15,14 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Corretto
+- **La configurazione non si rilegge piu' dal disco a ogni domanda**
+  (issue #14, REL-06). `base_url`, `model`, `timeout` di Ollama e `token`,
+  `headers` di Home Assistant aprivano e analizzavano `config.yaml` **dentro
+  la property**, quindi dentro l'event loop asincrono. Misurato: cinque
+  letture per una sola chiamata al modello piu' un riepilogo della casa, e il
+  ciclo dei tool di un turno puo' ripeterle quattro volte. Ora zero. Le
+  impostazioni salvate restano immediate, perche' esiste un solo oggetto
+  condiviso aggiornato al suo posto — non una cache da invalidare.
 - **Ogni persona ha la sua conversazione** (issue #13, REL-03). C'era
   un'unica memoria globale: la chat del salotto, quella del telefono e ogni
   richiesta ad Alexa scrivevano nella stessa cronologia, quindi il contesto

@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from config.settings import reload_settings
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -53,15 +53,13 @@ class HomeAssistantClient:
     def base_url(self) -> str:
         if self._base_url:
             return self._base_url.rstrip("/")
-        cfg = reload_settings()
-        return cfg.home_assistant.url.rstrip("/")
+        return settings.home_assistant.url.rstrip("/")
 
     @property
     def token(self) -> str:
         if self._token:
             return self._token
-        cfg = reload_settings()
-        return cfg.home_assistant.token
+        return settings.home_assistant.token
 
     @property
     def headers(self) -> Dict[str, str]:
