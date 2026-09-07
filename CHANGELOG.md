@@ -15,6 +15,16 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **`test_tools.py` diventa test veri** (issue #10, l'ultimo punto rimasto
+  aperto della `0.1.0`). Era uno script di `print` nella radice del progetto:
+  chiamava Open-Meteo, Wikipedia e i feed ANSA e stampava cio' che tornava,
+  senza una sola asserzione. Ora sono due cose distinte: i test che
+  chiamano davvero quei servizi stanno in `tests/integration/`, marcati
+  `network` ed esclusi dalla CI (`pytest -m network` per eseguirli a mano), e
+  dieci test in `tests/unit/` che verificano **il nostro codice** con le
+  risposte simulate — compreso cosa succede quando un servizio risponde 403,
+  cambia forma o restituisce un feed vuoto. E' la parte che si rompe
+  davvero, ed e' l'unica che si puo' verificare a ogni commit.
 - **Dispositivi fidati: il telefono non chiede il PIN ogni volta** (issue
   #20, ADR 0004). Un PIN per persona rende i permessi reali, ma su un
   telefono diventa un fastidio quotidiano — e una protezione fastidiosa

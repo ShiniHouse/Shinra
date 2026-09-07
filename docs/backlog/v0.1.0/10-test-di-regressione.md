@@ -14,19 +14,19 @@ test che avesse eseguito quel percorso li avrebbe intercettati.**
 
 ## Cosa fare
 
-- [ ] Struttura `tests/unit/` e `tests/integration/`
-- [ ] Un test per ogni difetto della revisione, che fallisce prima della correzione
-- [ ] Finche' un difetto e' aperto, il test porta `@pytest.mark.xfail(strict=True)`: quando la correzione arriva il test diventa rosso, obbligando a togliere il marcatore. Nessun difetto puo' essere dichiarato risolto senza prova.
-- [ ] Test degli endpoint con `TestClient`, per verificare le protezioni di SEC-01
-- [ ] Simulare le chiamate HTTP con `respx`: nessuna rete nei test unitari
-- [ ] Convertire `test_tools.py` in test veri, marcati `network`
-- [ ] Test del parser dei timer, che e' pura logica e oggi non e' coperto
+- [x] Struttura `tests/unit/` e `tests/integration/`
+- [x] Un test per ogni difetto della revisione, che fallisce prima della correzione
+- [x] Finche' un difetto e' aperto, il test porta `@pytest.mark.xfail(strict=True)`: quando la correzione arriva il test diventa rosso, obbligando a togliere il marcatore. Nessun difetto puo' essere dichiarato risolto senza prova.
+- [x] Test degli endpoint con `TestClient`, per verificare le protezioni di SEC-01
+- [x] Simulare le chiamate HTTP con `respx`: nessuna rete nei test unitari
+- [x] Convertire `test_tools.py` in test veri, marcati `network`
+- [x] Test del parser dei timer, che e' pura logica e oggi non e' coperto
 - [x] Rimuovere `duckduckgo-search` da `requirements.txt`: non e' importato da nessuna parte
       (fatto in v0.2.0: requirements.txt rimanda a pyproject.toml, unica fonte)
 
 ## Criteri di accettazione
 
-- [ ] `pytest -m "not network and not integration"` e' verde e non tocca la rete
-- [ ] Ogni difetto della revisione ha un test corrispondente
-- [ ] La CI esegue i test su Python 3.10, 3.11 e 3.12
-- [ ] Il tempo di esecuzione della suite resta sotto i trenta secondi
+- [x] `pytest -m "not network and not integration"` e' verde e non tocca la rete
+- [x] Ogni difetto della revisione ha un test corrispondente
+- [x] La CI esegue i test su Python 3.10, 3.11 e 3.12
+- [x] Il tempo di esecuzione della suite resta sotto i trenta secondi
