@@ -1,5 +1,13 @@
 # Installazione:  pre-commit install
 # Esecuzione manuale su tutto:  pre-commit run --all-files
+#
+# ATTENZIONE alle versioni qui sotto. I ganci installano la versione fissata
+# in `rev`, la CI installa quella dichiarata in pyproject.toml: se le due
+# divergono, lo stesso file risulta formattato bene da una parte e male
+# dall'altra. E' successo davvero — black 24 e black 26 formattano in modo
+# diverso, e il disallineamento e' rimasto invisibile finche' i ganci non
+# hanno girato anche in CI. `tests/unit/test_stile.py` ora fallisce se le
+# versioni non coincidono.
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
@@ -17,13 +25,13 @@ repos:
         args: ["--branch", "main"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.7
+    rev: v0.16.5
     hooks:
       - id: ruff
         args: [--fix]
 
   - repo: https://github.com/psf/black
-    rev: 24.8.0
+    rev: 26.5.1
     hooks:
       - id: black
 
