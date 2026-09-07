@@ -15,6 +15,15 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Corretto
+- **L'aggiornamento si fermava al primo tentativo, dopo il backup.** La
+  pulizia dei backup vecchi usava `ls` su un modello che al primo
+  aggiornamento non trova niente — l'istantanea del database non esiste
+  ancora — e `ls` esce con errore: con `set -o pipefail` quell'errore
+  fermava tutto. Cioe' falliva esattamente la prima volta, che e' l'unica in
+  cui non puo' permetterselo. Ora la pulizia passa da una funzione che regge
+  il caso vuoto, provata su quattro casi compreso quello.
+
+### Corretto
 - **`scripts/deploy.sh` non si aggiorna piu' sotto i piedi.** Bash legge uno
   script mentre lo esegue, tenendo il segno con una posizione nel file: al
   passo che aggiorna il codice — compreso lo script stesso — quella

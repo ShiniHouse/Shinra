@@ -300,7 +300,12 @@ ls -l /opt/Shinra/data/*.json
 sudo journalctl -u shinra -n 50 --no-pager | grep -i "ruoli predefiniti"
 ```
 
-Se qualcosa va storto, lo script torna indietro da solo quando il servizio
+Se lo script si ferma **prima** del passo «Aggiornamento del codice», non ha
+toccato niente: fino a quel punto legge, fa il backup e basta. Il servizio
+sta ancora girando sulla versione di prima. Si corregge il motivo e si
+rilancia.
+
+Se qualcosa va storto dopo, lo script torna indietro da solo quando il servizio
 non risponde. Per farlo a mano: `sudo ./scripts/deploy.sh --rollback`. I
 file JSON non vengono toccati in nessun caso, quindi anche il ritorno alla
 v0.1.0 ritrova i dati di casa dove erano.
