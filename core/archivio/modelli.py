@@ -20,7 +20,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.types import JSON
 
@@ -142,8 +142,20 @@ class VoceRegistro(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     momento: Mapped[datetime] = mapped_column(DateTime, default=adesso, index=True)
-    attore: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # Nessun vincolo verso `users`, ed e' una decisione, non una svista. Un
+    # registro deve poter scrivere chi ha agito **anche** se quella persona
+    # non e' nell'anagrafica: un ospite che parla all'Echo, un profilo
+    # cancellato dopo il fatto. Con la chiave esterna quelle righe venivano
+    # rifiutate dal database — cioe' proprio le azioni che piu' interessa
+    # ritrovare sparivano, e in silenzio, perche' il registro non solleva.
+    attore: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
     canale: Mapped[str] = mapped_column(String(32), default="")
     azione: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     dettagli: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     esito: Mapped[str] = mapped_column(String(32), default="")
+    # Quanto e' durata, e a quale richiesta apparteneva. La correlazione lega
+    # fra loro le righe di un unico turno: «accendi le luci di sotto» puo'
+    # produrre tre comandi, e senza un filo comune sembrano tre eventi
+    # scollegati avvenuti nello stesso secondo.
+    durata_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    correlazione: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, index=True)

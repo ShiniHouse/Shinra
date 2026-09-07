@@ -2,6 +2,7 @@ import inspect
 import logging
 from typing import Any, Callable, Dict, List
 
+from core import registro
 from core.tools.ha_tools import activate_mode, activate_scene_or_routine, control_device, get_home_status
 from core.tools.news_search import get_latest_news, search_web
 from core.tools.reminders import add_reminder, list_reminders
@@ -214,16 +215,37 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
 
 
 async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
-    """Esegue un tool registrato passando gli argomenti forniti dal modello LLM."""
+    """Esegue un tool registrato passando gli argomenti forniti dal modello LLM.
+
+    E' il passaggio obbligato di ogni azione: comandi ai dispositivi,
+    attivazione di modalita', meteo, notizie, promemoria. Per questo il
+    registro delle azioni (issue #15) si attacca qui e non in dieci posti
+    diversi — un tool nuovo risulta tracciato senza che nessuno se ne debba
+    ricordare.
+    """
     handler = TOOL_HANDLERS.get(tool_name)
     if not handler:
+        registro.registra(
+            f"tool.{tool_name}", esito=registro.ESITO_ERRORE, dettagli={"errore": "tool sconosciuto"}
+        )
         return {"success": False, "error": f"Tool '{tool_name}' non trovato nel registro."}
 
-    try:
-        if inspect.iscoroutinefunction(handler):
-            return await handler(**arguments)
-        else:
-            return handler(**arguments)
-    except Exception as e:
-        logger.error(f"Errore durante l'esecuzione del tool {tool_name} con args {arguments}: {e}")
-        return {"success": False, "error": str(e)}
+    with registro.traccia(f"tool.{tool_name}", {"parametri": arguments}) as voce:
+        try:
+            if inspect.iscoroutinefunction(handler):
+                esito = await handler(**arguments)
+            else:
+                esito = handler(**arguments)
+        except Exception as e:
+            logger.error(f"Errore durante l'esecuzione del tool {tool_name} con args {arguments}: {e}")
+            voce["esito"] = registro.ESITO_ERRORE
+            voce["dettagli"]["errore"] = str(e)
+            return {"success": False, "error": str(e)}
+
+        # I tool segnalano i guasti restituendoli, non sollevandoli: senza
+        # questo controllo un comando fallito comparirebbe nel registro come
+        # riuscito, che e' il modo peggiore di avere un registro.
+        if isinstance(esito, dict) and (esito.get("error") or esito.get("success") is False):
+            voce["esito"] = registro.ESITO_ERRORE
+            voce["dettagli"]["errore"] = str(esito.get("error") or "operazione non riuscita")
+        return esito

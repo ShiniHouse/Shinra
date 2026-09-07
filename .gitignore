@@ -61,6 +61,8 @@ data/*.db
 # I file di appoggio della modalita' WAL: vivono e muoiono col database.
 data/*.db-wal
 data/*.db-shm
+# Log applicativo strutturato, con rotazione (issue #15).
+data/log/
 data/*.sqlite3
 !data/examples/
 !data/examples/*.json

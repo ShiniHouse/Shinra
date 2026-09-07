@@ -25,11 +25,21 @@ def _archivio_modello(tmp_path_factory) -> Path:
     """Un database gia' pronto, costruito una volta sola per tutta la suite."""
     global _MODELLO
     if _MODELLO is None:
-        from core.archivio import importazione
+        from core.archivio import importazione, motore
 
         _MODELLO = tmp_path_factory.mktemp("modello") / "modello.db"
         importazione.crea_vuoto(_MODELLO)
         importazione.importa(importazione.leggi_tutto(RADICE / "data" / "examples"))
+
+        # Il database e' in modalita' WAL: finche' non si fa il checkpoint,
+        # parte delle scritture vive nel file `.db-wal` accanto. Copiare solo
+        # il `.db` produce un database a cui mancano pezzi — e' successo:
+        # dopo una migrazione che ricrea una tabella, quella tabella
+        # semplicemente non c'era. E' lo stesso motivo per cui deploy.sh non
+        # fa il backup con tar.
+        with motore.motore().connect() as connessione:
+            connessione.exec_driver_sql("PRAGMA wal_checkpoint(TRUNCATE)")
+        motore.reimposta(_MODELLO)
     return _MODELLO
 
 
