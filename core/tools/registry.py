@@ -3,7 +3,13 @@ import logging
 from typing import Any, Callable, Dict, List
 
 from core import registro
-from core.tools.ha_tools import activate_mode, activate_scene_or_routine, control_device, get_home_status
+from core.tools.ha_tools import (
+    activate_mode,
+    activate_scene_or_routine,
+    control_device,
+    get_home_status,
+    get_indoor_temperature,
+)
 from core.tools.news_search import get_latest_news, search_web
 from core.tools.reminders import add_reminder, list_reminders
 from core.tools.weather import get_weather
@@ -15,6 +21,7 @@ logger = logging.getLogger(__name__)
 TOOL_HANDLERS: Dict[str, Callable] = {
     "control_device": control_device,
     "get_home_status": get_home_status,
+    "get_indoor_temperature": get_indoor_temperature,
     "activate_scene_or_routine": activate_scene_or_routine,
     "activate_mode": activate_mode,
     "get_weather": get_weather,

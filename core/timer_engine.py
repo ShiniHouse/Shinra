@@ -3,13 +3,17 @@ import re
 import time
 import uuid
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from pydantic import BaseModel
 
 from core.archivio import depositi
 
 logger = logging.getLogger("Shinra.TimerEngine")
+
+# Ordinati per lunghezza decrescente: nell'alternativa della regex
+# "venticinque" deve essere provato prima di "venti".
+NUMERI_TIMER: list[str] = []  # riempito sotto, dopo la definizione della mappa
 
 
 class TimerItem(BaseModel):
@@ -155,17 +159,71 @@ class TimerEngine:
         return contati
 
     # --- Natural Language Parser per Timer & Promemoria ---
+
+    # I numeri che si dicono a voce. «Metti un timer di un minuto» e'
+    # italiano normale: prima non veniva riconosciuto perche' la regex
+    # pretendeva una cifra, e la frase finiva al modello.
+    NUMERI_A_PAROLE: ClassVar[Dict[str, int]] = {
+        "un": 1,
+        "uno": 1,
+        "una": 1,
+        "due": 2,
+        "tre": 3,
+        "quattro": 4,
+        "cinque": 5,
+        "sei": 6,
+        "sette": 7,
+        "otto": 8,
+        "nove": 9,
+        "dieci": 10,
+        "undici": 11,
+        "dodici": 12,
+        "quindici": 15,
+        "venti": 20,
+        "venticinque": 25,
+        "trenta": 30,
+        "quaranta": 40,
+        "quarantacinque": 45,
+        "cinquanta": 50,
+        "sessanta": 60,
+        "novanta": 90,
+    }
+
+    @classmethod
+    def _quantita(cls, testo: str) -> Optional[int]:
+        testo = (testo or "").strip().lower()
+        if testo.isdigit():
+            return int(testo)
+        return cls.NUMERI_A_PAROLE.get(testo)
+
     def parse_timer_or_reminder(self, user_text: str) -> Optional[Dict[str, Any]]:
         """Estrae durata, etichetta o orario da frasi in linguaggio naturale."""
         t_lower = user_text.lower().strip()
 
+        # "mezz'ora" non ha un numero da estrarre: si tratta a parte.
+        mezzora = re.search(
+            r"\btimer\s+(?:di\s+)?(?:mezz.ora|mezzora)\b(?:\s+(?:per|da|chiamato)\s+(.+))?", t_lower
+        )
+        if mezzora:
+            etichetta = (mezzora.group(1) or "Timer").strip(" .?!,")
+            return {
+                "type": "timer",
+                "label": etichetta.capitalize(),
+                "duration_seconds": 1800,
+                "amount": 30,
+                "unit": "minuti",
+            }
+
         # 1. Parsing Timer: "timer 10 minuti", "timer di 5 minuti per la pasta", "metti un timer di 30 secondi"
+        numeri = "|".join(NUMERI_TIMER)
         timer_match = re.search(
-            r"\b(?:metti|imposta|avvia|crea)?\s*(?:un\s+)?timer\s+(?:di\s+)?(\d+)\s*(minuti|minuto|secondi|secondo|ore|ora)\b(?:\s+(?:per|da|chiamato)\s+(.+))?",
+            rf"\b(?:metti|imposta|avvia|crea)?\s*(?:un\s+)?timer\s+(?:di\s+)?({numeri}|\d+)\s*(minuti|minuto|secondi|secondo|ore|ora)\b(?:\s+(?:per|da|chiamato)\s+(.+))?",
             t_lower,
         )
         if timer_match:
-            amount = int(timer_match.group(1))
+            amount = self._quantita(timer_match.group(1))
+            if amount is None:
+                return None
             unit = timer_match.group(2)
             label = timer_match.group(3) or "Timer"
             label = label.strip(" .?!,")
@@ -186,11 +244,11 @@ class TimerEngine:
 
         # 2. Parsing Promemoria temporizzato: "ricordami di comprare il pane alle 17:30" / "ricordami di prendere le medicine tra 20 minuti"
         remind_delta_match = re.search(
-            r"\bricordami\s+di\s+(.+?)\s+tra\s+(\d+)\s*(minuti|minuto|ore|ora)\b", t_lower
+            rf"\bricordami\s+di\s+(.+?)\s+tra\s+({numeri}|\d+)\s*(minuti|minuto|ore|ora)\b", t_lower
         )
         if remind_delta_match:
             action = remind_delta_match.group(1).strip()
-            amount = int(remind_delta_match.group(2))
+            amount = self._quantita(remind_delta_match.group(2)) or 0
             unit = remind_delta_match.group(3)
             delta = timedelta(minutes=amount) if "minut" in unit else timedelta(hours=amount)
             target_time = datetime.now() + delta
@@ -201,11 +259,15 @@ class TimerEngine:
                 "formatted_time": target_time.strftime("alle ore %H:%M"),
             }
 
-        remind_time_match = re.search(r"\bricordami\s+di\s+(.+?)\s+alle\s+(\d{1,2})[:.](\d{2})\b", t_lower)
+        # I minuti sono facoltativi: «alle 18» vale quanto «alle 18:00». Chi
+        # parla dice l'ora tonda molto piu' spesso di quella con i minuti.
+        remind_time_match = re.search(
+            r"\bricordami\s+di\s+(.+?)\s+alle\s+(\d{1,2})(?:[:.](\d{2}))?\b", t_lower
+        )
         if remind_time_match:
             action = remind_time_match.group(1).strip()
             hours = int(remind_time_match.group(2))
-            minutes = int(remind_time_match.group(3))
+            minutes = int(remind_time_match.group(3) or 0)
             now = datetime.now()
             target_time = now.replace(hour=hours, minute=minutes, second=0, microsecond=0)
             if target_time < now:
@@ -219,5 +281,7 @@ class TimerEngine:
 
         return None
 
+
+NUMERI_TIMER.extend(sorted(TimerEngine.NUMERI_A_PAROLE, key=len, reverse=True))
 
 timer_engine = TimerEngine()

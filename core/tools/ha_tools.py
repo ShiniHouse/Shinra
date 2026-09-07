@@ -272,3 +272,42 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
         "azioni_eseguite": executed_actions,
         "messaggio": final_msg,
     }
+
+
+async def get_indoor_temperature(room: str = "") -> Dict[str, Any]:
+    """Legge i sensori di temperatura di casa, eventualmente di una stanza sola.
+
+    Esiste perche' «che temperatura c'e' in salotto» non e' una domanda sul
+    meteo: prima quella frase finiva a Open-Meteo e riceveva la temperatura
+    esterna della citta'. Sbagliata, e detta con sicurezza.
+    """
+    states = await client_home_assistant().get_states()
+    if not states:
+        return {
+            "success": False,
+            "message": "Non riesco a leggere i sensori: Home Assistant non risponde.",
+        }
+
+    cercata = (room or "").strip().lower()
+    letture = []
+    for entity in states:
+        entity_id = entity.get("entity_id", "")
+        if not entity_id.startswith("sensor."):
+            continue
+        attributi = entity.get("attributes", {})
+        unita = (attributi.get("unit_of_measurement") or "").strip()
+        classe = (attributi.get("device_class") or "").lower()
+        if classe != "temperature" and unita not in ("°C", "°F"):
+            continue
+
+        stato = entity.get("state", "")
+        if stato in ("unknown", "unavailable", "", None):
+            continue
+
+        nome = attributi.get("friendly_name", entity_id)
+        if cercata and cercata not in nome.lower() and cercata not in entity_id.lower():
+            continue
+
+        letture.append({"entita": entity_id, "nome": nome, "valore": stato, "unita": unita})
+
+    return {"success": True, "stanza": room, "letture": letture}
