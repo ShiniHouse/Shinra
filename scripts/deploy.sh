@@ -53,6 +53,18 @@ esegui() {
     fi
 }
 
+# Tiene i piu' recenti N file che corrispondono al modello e cancella gli
+# altri. Sembra una riga sola e infatti lo era, ma `ls` esce con errore
+# quando il modello non trova niente, e con `pipefail` quell'errore fermava
+# l'aggiornamento — al primo avvio, quando l'istantanea del database non
+# esiste ancora. Cioe' esattamente la volta in cui serve che funzioni.
+conserva_ultimi() {
+    local modello="$1" quanti="$2" vecchi
+    vecchi="$(ls -1t $modello 2>/dev/null | tail -n "+$((quanti + 1))" || true)"
+    [[ -n "$vecchi" ]] && printf '%s\n' "$vecchi" | xargs -r rm -f
+    return 0
+}
+
 # ------------------------------------------------- si copia da parte e riparte
 #
 # Bash non legge tutto lo script in memoria: lo legge a pezzi, mentre lo
@@ -336,10 +348,8 @@ if [[ $DRY_RUN -eq 0 ]]; then
     chmod 600 "$ARCHIVIO"
     info "Salvato in $ARCHIVIO ($(du -h "$ARCHIVIO" | cut -f1))"
     # Conserva solo gli ultimi N backup.
-    ls -1t "$BACKUP_DIR"/shinra-*.tar.gz 2>/dev/null \
-        | tail -n "+$((BACKUP_DA_TENERE + 1))" | xargs -r rm -f
-    ls -1t "$BACKUP_DIR"/shinra-db-*.db 2>/dev/null \
-        | tail -n "+$((BACKUP_DA_TENERE + 1))" | xargs -r rm -f
+    conserva_ultimi "$BACKUP_DIR/shinra-*.tar.gz" "$BACKUP_DA_TENERE"
+    conserva_ultimi "$BACKUP_DIR/shinra-db-*.db" "$BACKUP_DA_TENERE"
 else
     info "[simulazione] tar -czf $ARCHIVIO config data .env"
 fi
