@@ -18,7 +18,7 @@ from config.settings import (
     settings,
     verifica_configurazione,
 )
-from core import permessi, registro
+from core import permessi, registro, versione
 from core.agent import agent
 from core.consegna import descrivi, registra_canali
 from core.data_store import assicura_dati_iniziali
@@ -292,7 +292,13 @@ async def index(request: Request):
             context={"nome_assistente": settings.assistant.name},
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
-    return templates.TemplateResponse(request=request, name="index.html", context={"settings": settings})
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        # La versione arriva col disegno della pagina: nessuna chiamata in
+        # piu', e resta corretta anche se il resto non risponde.
+        context={"settings": settings, "versione": versione.dettaglio()},
+    )
 
 
 @app.post("/api/chat", dependencies=[Depends(sicurezza.richiedi_autenticazione)])
@@ -457,6 +463,7 @@ async def status_endpoint():
 
     return {
         "status": "running",
+        "versione": versione.dettaglio(),
         "ollama": ollama_health,
         "home_assistant": ha_health,
         "alexa_endpoint": "/api/alexa",
