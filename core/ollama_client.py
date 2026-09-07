@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from config.settings import reload_settings
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -22,20 +22,17 @@ class OllamaClient:
     def base_url(self) -> str:
         if self._base_url:
             return self._base_url.rstrip("/")
-        cfg = reload_settings()
-        return cfg.llm.ollama_url.rstrip("/")
+        return settings.llm.ollama_url.rstrip("/")
 
     @property
     def model(self) -> str:
         if self._model:
             return self._model
-        cfg = reload_settings()
-        return cfg.llm.model
+        return settings.llm.model
 
     @property
     def timeout(self) -> float:
-        cfg = reload_settings()
-        return float(cfg.llm.timeout_seconds or 180)
+        return float(settings.llm.timeout_seconds or 180)
 
     async def get_models_detailed(self) -> List[Dict[str, Any]]:
         """Recupera la lista dettagliata dei modelli installati con dimensioni e dettagli."""
@@ -151,9 +148,9 @@ class OllamaClient:
         """
         Invia una richiesta di chat a Ollama supportando il passaggio dei tools e keep_alive permanente.
         """
-        cfg = reload_settings()
+        cfg = settings
         curr_model = self.model
-        curr_temp = temperature if temperature is not None else cfg.llm.temperature
+        curr_temp = temperature if temperature is not None else settings.llm.temperature
         url = f"{self.base_url}/api/chat"
 
         # Verifica se il modello è noto per non supportare tools (evita richiesta inutile che fallisce con 400)
@@ -164,7 +161,9 @@ class OllamaClient:
             and not any(k in curr_model.lower() for k in ["gemma", "deepseek-r1", "phi"])
         )
 
-        max_tok = cfg.llm.max_tokens if hasattr(cfg.llm, "max_tokens") and cfg.llm.max_tokens else 150
+        max_tok = (
+            settings.llm.max_tokens if hasattr(cfg.llm, "max_tokens") and settings.llm.max_tokens else 150
+        )
         payload = {
             "model": curr_model,
             "messages": messages,
