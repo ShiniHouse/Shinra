@@ -13,6 +13,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
+from core import registro
 from core.user_manager import user_manager
 from server import sicurezza
 
@@ -66,6 +67,7 @@ async def accedi(req: RichiestaAccesso, request: Request, response: Response):
         logger.warning(
             "Troppi tentativi di accesso falliti da %s", request.client.host if request.client else "?"
         )
+        registro.registra("accesso.bloccato", esito=registro.ESITO_NEGATO, canale="web")
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Troppi tentativi errati. Riprova fra cinque minuti.",
@@ -89,6 +91,15 @@ async def accedi(req: RichiestaAccesso, request: Request, response: Response):
             request.client.host if request.client else "?",
             req.user_id or "non indicato",
         )
+        # Nel registro finisce quale profilo e' stato tentato, mai il PIN
+        # provato: un registro che raccoglie PIN sbagliati e' un elenco di
+        # quasi-PIN giusti.
+        registro.registra(
+            "accesso.rifiutato",
+            esito=registro.ESITO_NEGATO,
+            dettagli={"profilo_richiesto": req.user_id or "non indicato"},
+            canale="web",
+        )
         # Un solo messaggio per PIN errato e profilo inesistente: dire quale
         # dei due e' sbagliato aiuterebbe solo chi prova a indovinare.
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Profilo o PIN non corretti.")
@@ -97,6 +108,8 @@ async def accedi(req: RichiestaAccesso, request: Request, response: Response):
     token = sicurezza.crea_sessione(profilo.id)
     sicurezza.imposta_cookie_sessione(response, token)
     logger.info("Accesso riuscito: %s", profilo.name)
+    registro.imposta_attore(profilo.id)
+    registro.registra("accesso.riuscito", dettagli={"nome": profilo.name}, canale="web")
 
     return {
         "success": True,
@@ -107,6 +120,8 @@ async def accedi(req: RichiestaAccesso, request: Request, response: Response):
 
 @router.post("/logout")
 async def esci(request: Request, response: Response):
+    profilo = sicurezza.utente_corrente(request)
     sicurezza.chiudi_sessione(sicurezza.token_dalla_richiesta(request))
+    registro.registra("uscita", attore=profilo.id if profilo else None, canale="web")
     sicurezza.rimuovi_cookie_sessione(response)
     return {"success": True}

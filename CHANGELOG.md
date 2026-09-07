@@ -14,6 +14,32 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Aggiunto
+- **Registro delle azioni: chi ha fatto cosa in casa, e com'e' andata**
+  (issue #15). Shinra comanda luci, prese e clima — e presto serrature e
+  allarme — e finora non restava traccia di niente: alla domanda «chi ha
+  spento il riscaldamento alle tre di notte?» non c'era risposta.
+- Ogni esecuzione di tool, ogni attivazione di modalita', ogni accesso
+  riuscito, rifiutato o bloccato e ogni modifica alle impostazioni lascia una
+  voce con momento, persona, canale, parametri, esito e durata. L'aggancio e'
+  in `execute_tool`, il passaggio obbligato di ogni azione: un tool nuovo
+  risulta tracciato senza che nessuno se ne debba ricordare.
+- Identificativo di correlazione che segue la richiesta fino ai tool e torna
+  al client nell'intestazione `X-Correlazione`: «accendi le luci di sotto»
+  produce tre comandi, e senza un filo comune sembrerebbero tre eventi
+  scollegati avvenuti nello stesso secondo.
+- `GET /api/registro` con filtri, **riservato agli amministratori**. Non e'
+  formalita': quelle righe dicono a che ora qualcuno rientra e quando esce.
+- **I segreti non entrano mai nel registro**: i campi il cui nome contiene
+  token, pin, password, secret o authorization sono sostituiti con `***`,
+  a qualsiasi profondita'. Un accesso rifiutato registra quale profilo e'
+  stato tentato, mai il PIN provato.
+- Log applicativo in JSON con rotazione in `data/log/`, che porta con se' la
+  stessa correlazione: dal registro si passa al log e viceversa.
+- Conservazione configurabile (`registro.retention_days`, novanta giorni per
+  difetto; zero significa conservare tutto), con pulizia giornaliera affidata
+  allo scheduler.
+
 ### Corretto
 - **La configurazione non si rilegge piu' dal disco a ogni domanda**
   (issue #14, REL-06). `base_url`, `model`, `timeout` di Ollama e `token`,

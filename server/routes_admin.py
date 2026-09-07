@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import feedparser
@@ -7,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from config.settings import AppConfig, reload_settings, save_config, settings
+from core import registro
 from core.data_store import data_store
 from core.ha_client import client_home_assistant
 from core.tools.ha_tools import activate_mode
@@ -339,7 +341,15 @@ async def update_app_settings(new_settings: AppConfig):
     ):
         new_settings.security.admin_pin = current_cfg.security.admin_pin
 
+    # Nel registro finisce **quali sezioni** sono cambiate, mai i valori:
+    # qui dentro passano il token di Home Assistant e il PIN di casa.
+    cambiate = [
+        sezione
+        for sezione in new_settings.model_dump()
+        if new_settings.model_dump()[sezione] != current_cfg.model_dump().get(sezione)
+    ]
     save_config(new_settings)
+    registro.registra("impostazioni.modificate", dettagli={"sezioni": cambiate})
     return await get_app_settings()
 
 
@@ -533,3 +543,39 @@ async def stop_learning_session(payload: StartLearningReq):
 async def get_learning_status(user_id: str = "alessio"):
     session = interview_engine.get_session(user_id)
     return {"is_active": interview_engine.is_session_active(user_id), "session": session}
+
+
+# --- REGISTRO DELLE AZIONI ---
+@router.get("/registro", dependencies=[Depends(richiedi_amministratore)])
+async def leggi_registro(
+    limite: int = Query(100, ge=1, le=1000),
+    attore: Optional[str] = None,
+    azione: Optional[str] = None,
+    canale: Optional[str] = None,
+    esito: Optional[str] = None,
+    correlazione: Optional[str] = None,
+    ore: Optional[int] = Query(None, ge=1, le=24 * 365),
+):
+    """Chi ha fatto cosa in casa, e com'e' andata.
+
+    Riservato agli amministratori, e non per formalita': queste righe dicono
+    a che ora qualcuno e' rientrato, quando accende le luci, quando esce.
+    Sono i movimenti della famiglia. Il ruolo `adult` non basta.
+    """
+    dal = datetime.now(timezone.utc) - timedelta(hours=ore) if ore else None
+    return registro.voci(
+        limite=limite,
+        attore=attore,
+        azione=azione,
+        canale=canale,
+        esito=esito,
+        correlazione=correlazione,
+        dal=dal,
+    )
+
+
+@router.get("/registro/azioni", dependencies=[Depends(richiedi_amministratore)])
+async def azioni_registrate():
+    """L'elenco dei tipi di azione presenti, per costruire i filtri."""
+    voci = registro.voci(limite=1000)
+    return sorted({v["azione"] for v in voci})

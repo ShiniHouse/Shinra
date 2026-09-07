@@ -24,6 +24,7 @@ from typing import Any, Optional
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 from core.eventi import PROMEMORIA_SCADUTO, TIMER_SCADUTO, Evento, bus
 
@@ -123,6 +124,24 @@ class ServizioScheduler:
             quando=quando,
             tolleranza=TOLLERANZA_PROMEMORIA,
         )
+
+    def programma_periodico(self, identificativo: str, funzione: Any, ore: float) -> bool:
+        """Un lavoro che si ripete: per ora solo la pulizia del registro.
+
+        `replace_existing` conta: l'archivio dei job e' persistente, quindi a
+        ogni avvio il lavoro verrebbe aggiunto una seconda volta.
+        """
+        if not self.attivo:
+            return False
+        self._scheduler.add_job(
+            funzione,
+            trigger=IntervalTrigger(hours=ore),
+            id=identificativo,
+            replace_existing=True,
+            misfire_grace_time=3600,
+            coalesce=True,
+        )
+        return True
 
     def annulla(self, identificativo: str) -> bool:
         if not self.attivo:

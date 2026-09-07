@@ -74,6 +74,17 @@ class SecurityConfig(BaseModel):
     trusted_proxies: List[str] = Field(default_factory=list)
 
 
+class RegistroConfig(BaseModel):
+    """Il registro delle azioni eseguite in casa (issue #15)."""
+
+    enabled: bool = True
+    # Per quanti giorni conservare le voci. Novanta giorni bastano a
+    # rispondere a «chi ha spento il riscaldamento il mese scorso» senza
+    # accumulare anni di storia sul disco di un piccolo server. Zero o meno
+    # significa: conserva tutto, non cancellare mai.
+    retention_days: int = 90
+
+
 class AppConfig(BaseModel):
     server: ServerConfig = Field(default_factory=ServerConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
@@ -81,6 +92,7 @@ class AppConfig(BaseModel):
     alexa: AlexaConfig = Field(default_factory=AlexaConfig)
     assistant: AssistantConfig = Field(default_factory=AssistantConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
+    registro: RegistroConfig = Field(default_factory=RegistroConfig)
 
 
 # --------------------------------------------------------------------------

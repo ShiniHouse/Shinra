@@ -18,6 +18,7 @@ from config.settings import (
     settings,
     verifica_configurazione,
 )
+from core import registro
 from core.agent import agent
 from core.consegna import descrivi, registra_canali
 from core.data_store import assicura_dati_iniziali
@@ -107,6 +108,11 @@ def _prepara_accesso() -> None:
 
 
 @asynccontextmanager
+async def _pulisci_registro() -> None:
+    """Eseguita una volta al giorno dallo scheduler."""
+    registro.pulisci(settings.registro.retention_days)
+
+
 def _prepara_archivio() -> None:
     """Allinea lo schema e, la prima volta, porta dentro i dati dai file JSON.
 
@@ -173,6 +179,16 @@ async def lifespan(_: FastAPI):
             rimossi,
         )
 
+    # Registro delle azioni: log strutturato e pulizia periodica.
+    if settings.registro.enabled:
+        percorso = registro.configura_log_json()
+        if percorso:
+            logger.info("Log strutturato in %s", percorso)
+        giorni = settings.registro.retention_days
+        if giorni > 0:
+            scheduler.programma_periodico("registro.pulizia", _pulisci_registro, ore=24)
+            registro.pulisci(giorni)
+
     for problema in verifica_configurazione():
         logger.warning("Configurazione: %s", problema)
 
@@ -185,6 +201,26 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="Shinra AI Hub", version="2.0.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+@app.middleware("http")
+async def contesto_del_registro(request: Request, call_next):
+    """Apre il contesto della richiesta: chi, da dove, con quale correlazione.
+
+    Sta in un middleware e non nelle singole rotte per la stessa ragione per
+    cui la memoria si sceglie dentro l'agente: cosi' nessuna rotta nuova puo'
+    dimenticarsene. L'identificativo di correlazione torna anche al client
+    nell'intestazione della risposta, cosi' una segnalazione («stamattina non
+    si e' accesa la luce») si ritrova nel registro senza cercare a mano.
+    """
+    ctx = registro.apri_contesto(canale="web")
+    sessione = sicurezza.sessione_valida(sicurezza.token_dalla_richiesta(request))
+    if sessione:
+        ctx.attore = sessione.user_id
+
+    risposta = await call_next(request)
+    risposta.headers["X-Correlazione"] = ctx.correlazione
+    return risposta
 
 
 @app.middleware("http")
@@ -302,6 +338,11 @@ async def alexa_skill_endpoint(request: Request):
     sessione — Amazon non ne ha una — ma dalla firma che Amazon appone su ogni
     richiesta. Chi non la supera non arriva all'agente.
     """
+    # Il canale conta nel registro: «chi ha spento il riscaldamento» ha una
+    # risposta diversa se e' stato detto a voce in cucina o cliccato dalla
+    # dashboard. Il middleware l'ha aperto come "web", qui si corregge.
+    registro.contesto().canale = "alexa"
+
     if not settings.alexa.enabled:
         raise HTTPException(status_code=404, detail="Integrazione Alexa disattivata.")
 
