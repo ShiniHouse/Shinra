@@ -581,6 +581,15 @@
                     <div class="flex items-center gap-2">
                         <h1 class="text-xl font-extrabold bg-gradient-to-r from-amber-200 via-violet-200 to-indigo-300 dark:from-amber-200 dark:via-violet-200 dark:to-indigo-300 light:from-amber-700 light:via-violet-700 light:to-indigo-800 bg-clip-text text-transparent">Shinra</h1>
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">AI Hub</span>
+                        {% if versione %}
+                        <!-- Serve a rispondere a «a che versione siamo?» guardando
+                             la pagina, invece di entrare in SSH sul server. Il
+                             suggerimento porta commit e ramo, che sono cio' che
+                             identifica davvero il codice in esecuzione. -->
+                        <span id="badge-versione"
+                              class="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide bg-slate-800/80 text-slate-400 border border-slate-700/80 cursor-default"
+                              title="{{ versione.descrizione }}{% if versione.ramo and versione.ramo != 'HEAD' %} · ramo {{ versione.ramo }}{% endif %}{% if versione.commit %} · commit {{ versione.commit }}{% endif %}">{{ versione.descrizione }}</span>
+                        {% endif %}
                     </div>
                     <p id="empathetic-greeting" class="text-[11px] text-slate-400 font-medium hidden sm:block">Buon pomeriggio. Casa pronta e accogliente.</p>
                 </div>

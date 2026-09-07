@@ -14,6 +14,26 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Aggiunto
+- **La versione si legge dalla dashboard**, accanto al nome. Un server di
+  casa si aggiorna ogni tanto e si riavvia da solo: a distanza di settimane
+  non c'e' modo di ricordare se ha preso l'ultimo aggiornamento o si e'
+  fermato due mesi fa, e la domanda merita una risposta guardando la pagina
+  invece di entrare in SSH.
+- Accanto al numero c'e' il commit — `0.2.0.dev0+489c072` — perche' il
+  numero da solo mente: fra un tag e il successivo passano decine di commit,
+  e un server aggiornato su `main` mostrerebbe la versione del tag
+  precedente pur avendo tutt'altro codice. Su una release taggata compare
+  solo il tag. Il suggerimento del badge porta anche ramo e commit per
+  esteso, e `/api/status` restituisce tutto.
+- La versione del progetto passa a `0.2.0.dev0`: `main` non e' piu' la
+  `0.1.0` e non e' ancora la `0.2.0`, ed e' onesto che lo dica.
+
+### Sicurezza
+- La versione **non** compare nella pagina di accesso: e' la prima
+  informazione utile a chi cerca una vulnerabilita' nota, ed e' inutile a
+  chi deve solo digitare il PIN.
+
 ### Corretto
 - **L'aggiornamento si fermava al primo tentativo, dopo il backup.** La
   pulizia dei backup vecchi usava `ls` su un modello che al primo
