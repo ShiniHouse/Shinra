@@ -258,7 +258,7 @@ def pulisci(giorni: int) -> int:
     limite = datetime.now(timezone.utc) - timedelta(days=giorni)
     with sessione() as s:
         esito = s.execute(delete(VoceRegistro).where(VoceRegistro.momento < limite))
-        quante = esito.rowcount or 0
+        quante = esito.rowcount or 0  # type: ignore[attr-defined]
     if quante:
         logger.info("Registro: %d voci oltre i %d giorni rimosse.", quante, giorni)
     return quante

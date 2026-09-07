@@ -99,7 +99,7 @@ class Deposito:
 
     def conta(self) -> int:
         with sessione() as s:
-            return len(s.scalars(select(self.modello.id)).all())
+            return len(s.scalars(select(self.modello.id)).all())  # type: ignore[attr-defined]
 
 
 class DepositoUtenti(Deposito):

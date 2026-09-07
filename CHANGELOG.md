@@ -15,6 +15,22 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **Copertura all'80% e controlli obbligatori** (issue #18). La v0.2.0 ha
+  riscritto persistenza, memoria e struttura: senza rete di sicurezza
+  sarebbe stata una riscrittura al buio.
+- Trentacinque test nuovi sui due moduli che erano quasi scoperti, e non a
+  caso i due che contano di piu': `core/tools/ha_tools.py` dal 13% al 55% —
+  e' quello che accende le luci, cambia la temperatura e apre le tapparelle —
+  e l'adattatore Alexa dal 14% al 91%, l'unica porta affacciata su Internet.
+- La CI ora **fallisce** se la copertura scende sotto il 70%, se mypy trova
+  un errore in `config/` o `core/`, o se i ganci pre-commit non passano.
+
+### Corretto
+- Dodici errori di tipo in `core/` e `config/`, fra cui due dizionari di
+  parametri per Home Assistant il cui tipo veniva dedotto dalla prima chiave
+  e non ammetteva i numeri che ci finivano dopo.
+
+### Aggiunto
 - **`test_tools.py` diventa test veri** (issue #10, l'ultimo punto rimasto
   aperto della `0.1.0`). Era uno script di `print` nella radice del progetto:
   chiamava Open-Meteo, Wikipedia e i feed ANSA e stampava cio' che tornava,

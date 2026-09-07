@@ -131,7 +131,7 @@ class ServizioScheduler:
         `replace_existing` conta: l'archivio dei job e' persistente, quindi a
         ogni avvio il lavoro verrebbe aggiunto una seconda volta.
         """
-        if not self.attivo:
+        if not self.attivo or self._scheduler is None:
             return False
         self._scheduler.add_job(
             funzione,
@@ -144,7 +144,7 @@ class ServizioScheduler:
         return True
 
     def annulla(self, identificativo: str) -> bool:
-        if not self.attivo:
+        if not self.attivo or self._scheduler is None:
             return False
         try:
             self._scheduler.remove_job(identificativo)
@@ -159,7 +159,7 @@ class ServizioScheduler:
         return self.annulla(f"{PREFISSO_PROMEMORIA}{promemoria_id}")
 
     def job_programmati(self) -> list[dict[str, Any]]:
-        if not self.attivo:
+        if not self.attivo or self._scheduler is None:
             return []
         return [
             {
@@ -179,7 +179,7 @@ class ServizioScheduler:
         quando: datetime,
         tolleranza: int,
     ) -> bool:
-        if not self.attivo:
+        if not self.attivo or self._scheduler is None:
             logger.warning("Scheduler non attivo: %s non programmato.", identificativo)
             return False
 
