@@ -15,6 +15,24 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **Dispositivi fidati: il telefono non chiede il PIN ogni volta** (issue
+  #20, ADR 0004). Un PIN per persona rende i permessi reali, ma su un
+  telefono diventa un fastidio quotidiano — e una protezione fastidiosa
+  viene disattivata: a quel punto la casa e' aperta come prima, con in piu'
+  l'illusione di essere protetta.
+- Al primo accesso compare «ricorda questo dispositivo». La credenziale sta
+  in un cookie `HttpOnly` che JavaScript non puo' leggere, vale trenta giorni
+  e si rinnova a ogni uso: un telefono usato tutti i giorni non chiede mai il
+  PIN, uno lasciato in un cassetto per un mese lo richiede.
+- **Nel database si conserva solo l'impronta della credenziale**, come per i
+  PIN: se un giorno finisse dove non deve, quelle righe non aprirebbero
+  nessuna casa.
+- Revoca singola, «revoca tutti» per il telefono perso (risparmiando quello
+  da cui si chiede), revoca automatica quando si cancella un profilo, e
+  revoca degli altri dispositivi quando si cambia il PIN — altrimenti un
+  telefono ancora fidato renderebbe inutile il cambio.
+- **Un dispositivo fidato identifica, non promuove**: il telefono di un
+  ragazzo resta il telefono di un ragazzo.
 - **Ruoli e permessi per ogni persona di casa** (issue #19, ADR 0004). Fino a
   ieri il profilo distingueva adulto, ragazzo e bambino, ma quella distinzione
   cambiava **solo il tono delle risposte**: un bambino poteva comandare

@@ -62,6 +62,9 @@
   .nota{ margin-top:22px; font-size:11.5px; color:#64748b; text-align:center; line-height:1.5; }
   @media (max-width:400px){ .profili{ grid-template-columns:1fr; } }
   @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  .ricorda { display:flex; align-items:center; gap:.5rem; justify-content:center;
+              font-size:.85rem; color:#94a3b8; margin:.2rem 0 .8rem; cursor:pointer; }
+  .ricorda input { width:auto; margin:0; }
 </style>
 </head>
 <body>
@@ -76,6 +79,7 @@
       <p class="chi"><strong id="scelto"></strong><button type="button" onclick="indietro()">cambia</button></p>
       <input type="password" id="pin" inputmode="numeric" autocomplete="current-password"
              maxlength="12" placeholder="••••" aria-label="PIN">
+      <label class="ricorda"><input type="checkbox" id="ricorda"> Ricorda questo dispositivo</label>
       <button type="submit" class="entra">Entra</button>
     </form>
 
@@ -140,6 +144,17 @@ function indietro() {
   carica();
 }
 
+function nomeDispositivo() {
+  const ua = navigator.userAgent || '';
+  if (/iPhone/i.test(ua)) return 'iPhone';
+  if (/iPad/i.test(ua)) return 'iPad';
+  if (/Android/i.test(ua)) return /Mobile/i.test(ua) ? 'Telefono Android' : 'Tablet Android';
+  if (/Macintosh/i.test(ua)) return 'Mac';
+  if (/Windows/i.test(ua)) return 'Computer Windows';
+  if (/Linux/i.test(ua)) return 'Computer Linux';
+  return 'Dispositivo';
+}
+
 async function entra(e) {
   e.preventDefault();
   const campo = document.getElementById('pin');
@@ -151,7 +166,15 @@ async function entra(e) {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ pin: pin, user_id: scelto })
+      body: JSON.stringify({
+        pin: pin,
+        user_id: scelto,
+        ricorda_dispositivo: document.getElementById('ricorda').checked,
+        // Il nome serve a riconoscerlo nell'elenco dei dispositivi fidati.
+        // Non e' un'impronta: e' cio' che il browser dice di se stesso, e
+        // basta a distinguere il telefono dal computer di cucina.
+        nome_dispositivo: nomeDispositivo()
+      })
     });
     if (res.ok) {
       // La sessione sta nel cookie: si ricarica e il server serve la dashboard.

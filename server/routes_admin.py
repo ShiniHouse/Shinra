@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import feedparser
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from config.settings import AppConfig, reload_settings, save_config, settings
@@ -15,6 +15,7 @@ from core.data_store import data_store
 from core.ha_client import client_home_assistant
 from core.tools.ha_tools import activate_mode
 from core.user_manager import UltimoAmministratore, UserProfile, user_manager
+from server import dispositivi
 from server.sicurezza import (
     chiudi_sessioni_di,
     richiedi_amministratore,
@@ -64,8 +65,9 @@ async def delete_user(user_id: str):
         raise HTTPException(status_code=400, detail=str(e)) from e
     if not success:
         raise HTTPException(status_code=404, detail="Utente non trovato")
-    registro.registra("profilo.cancellato", dettagli={"profilo": user_id})
-    return {"success": True}
+    revocati = dispositivi.revoca_tutti(user_id)
+    registro.registra("profilo.cancellato", dettagli={"profilo": user_id, "dispositivi_revocati": revocati})
+    return {"success": True, "dispositivi_revocati": revocati}
 
 
 class ImpostaPinReq(BaseModel):
@@ -76,6 +78,7 @@ class ImpostaPinReq(BaseModel):
 async def imposta_pin_utente(
     user_id: str,
     payload: ImpostaPinReq,
+    request: Request,
     chiamante: Optional[UserProfile] = Depends(richiedi_autenticazione),
 ):
     """Imposta o rimuove il PIN di un profilo.
@@ -96,8 +99,25 @@ async def imposta_pin_utente(
     # Cambiare il PIN chiude le sessioni aperte con quello vecchio: se e' stato
     # cambiato perche' qualcuno lo aveva scoperto, lasciarle aperte sarebbe inutile.
     chiuse = chiudi_sessioni_di(user_id)
-    logger.info("PIN aggiornato per %s (%d sessioni chiuse)", user_id, chiuse)
-    return {"success": True, "sessioni_chiuse": chiuse, "pin_impostato": bool(pin)}
+
+    # E revoca i dispositivi ricordati, tranne quello da cui si sta cambiando:
+    # se il PIN e' stato cambiato perche' qualcuno lo aveva scoperto, un
+    # telefono ancora fidato renderebbe il cambio inutile. Risparmiare il
+    # proprio evita che l'unica conseguenza visibile sia doverlo ridigitare
+    # subito — che e' il modo in cui una funzione di sicurezza viene evitata.
+    revocati = dispositivi.revoca_tutti(
+        user_id, tranne_credenziale=request.cookies.get(dispositivi.NOME_COOKIE)
+    )
+    logger.info(
+        "PIN aggiornato per %s (%d sessioni chiuse, %d dispositivi revocati)", user_id, chiuse, revocati
+    )
+    registro.registra("pin.cambiato", dettagli={"profilo": user_id, "dispositivi_revocati": revocati})
+    return {
+        "success": True,
+        "sessioni_chiuse": chiuse,
+        "dispositivi_revocati": revocati,
+        "pin_impostato": bool(pin),
+    }
 
 
 @router.post("/users/identify")
@@ -669,3 +689,49 @@ async def cancella_ruolo(id_ruolo: str):
     depositi.ruoli.cancella(id_ruolo)
     registro.registra("ruolo.cancellato", dettagli={"ruolo": id_ruolo})
     return {"success": True}
+
+
+# --- DISPOSITIVI FIDATI ---
+@router.get("/dispositivi")
+async def elenco_dispositivi(chiamante: Optional[UserProfile] = Depends(richiedi_autenticazione)):
+    """I dispositivi ricordati.
+
+    Chi amministra li vede tutti; chiunque altro vede i propri. Sapere quali
+    telefoni entrano in casa e' informazione di casa, non pubblica.
+    """
+    if chiamante is None or chiamante.role == "admin":
+        return dispositivi.elenco()
+    return dispositivi.elenco(chiamante.id)
+
+
+@router.delete("/dispositivi/{id_dispositivo}")
+async def revoca_dispositivo(
+    id_dispositivo: str, chiamante: Optional[UserProfile] = Depends(richiedi_autenticazione)
+):
+    proprietari = {d["id"]: d["user_id"] for d in dispositivi.elenco()}
+    if id_dispositivo not in proprietari:
+        raise HTTPException(status_code=404, detail="Dispositivo non trovato.")
+    if chiamante is not None and chiamante.role != "admin" and proprietari[id_dispositivo] != chiamante.id:
+        raise HTTPException(status_code=403, detail="Puoi revocare solo i tuoi dispositivi.")
+
+    dispositivi.revoca(id_dispositivo)
+    registro.registra("dispositivo.revocato", dettagli={"dispositivo": id_dispositivo})
+    return {"success": True}
+
+
+@router.post("/dispositivi/revoca-tutti")
+async def revoca_tutti_i_dispositivi(
+    request: Request, chiamante: Optional[UserProfile] = Depends(richiedi_autenticazione)
+):
+    """Il telefono perso.
+
+    Tiene in vita quello da cui si sta chiedendo: chi ha perso il telefono lo
+    fa dal computer di casa, e restare chiusi fuori nello stesso momento non
+    aiuterebbe nessuno.
+    """
+    di_chi = None if (chiamante is None or chiamante.role == "admin") else chiamante.id
+    revocati = dispositivi.revoca_tutti(
+        di_chi, tranne_credenziale=request.cookies.get(dispositivi.NOME_COOKIE)
+    )
+    registro.registra("dispositivi.revocati", dettagli={"quanti": revocati})
+    return {"success": True, "revocati": revocati}

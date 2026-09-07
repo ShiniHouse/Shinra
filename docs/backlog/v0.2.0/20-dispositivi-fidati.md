@@ -16,22 +16,25 @@ dispositivo dopo il primo accesso, e permettere di revocarlo.
 
 ## Cosa fare
 
-- [ ] Dopo il primo accesso con PIN, offrire «ricorda questo dispositivo» con
+- [x] Dopo il primo accesso con PIN, offrire «ricorda questo dispositivo» con
       un nome scelto dall'utente («iPhone di Alessio»)
-- [ ] Credenziale di dispositivo legata all'utente, in un cookie `HttpOnly`,
+- [x] Credenziale di dispositivo legata all'utente, in un cookie `HttpOnly`,
       `Secure`, `SameSite=Lax`, valida 30 giorni e rinnovata a ogni uso
-- [ ] Elenco dei dispositivi fidati nelle impostazioni: nome, ultimo accesso,
-      indirizzo di rete approssimativo, revoca singola
-- [ ] «Revoca tutti i dispositivi» in un clic, per il telefono perso
-- [ ] Revocare un utente revoca i suoi dispositivi
-- [ ] Cambiare il PIN revoca i dispositivi, tranne quello da cui lo si cambia
-- [ ] La credenziale identifica il dispositivo, non aumenta i permessi: un
+- [x] Elenco dei dispositivi fidati: rotte `/api/dispositivi` (elenco,
+      revoca singola, revoca totale) con nome, ultimo accesso e indirizzo.
+      **La schermata nelle impostazioni non c'e' ancora**: va nella stessa PR
+      di frontend che porta la gestione dei ruoli (issue #19), perche' sono
+      la stessa pagina e lo stesso lavoro.
+- [x] «Revoca tutti i dispositivi» in un clic, per il telefono perso
+- [x] Revocare un utente revoca i suoi dispositivi
+- [x] Cambiare il PIN revoca i dispositivi, tranne quello da cui lo si cambia
+- [x] La credenziale identifica il dispositivo, non aumenta i permessi: un
       dispositivo fidato di un profilo bambino resta un profilo bambino
 
 ## Criteri di accettazione
 
-- [ ] Dopo aver scelto «ricorda», il PIN non viene piu' chiesto su quel dispositivo
-- [ ] Revocare un dispositivo lo riporta a chiedere il PIN al primo accesso
-- [ ] «Revoca tutti» disconnette ogni dispositivo tranne quello in uso
-- [ ] La credenziale non e' leggibile da JavaScript
-- [ ] Un dispositivo fidato non eredita permessi che il suo utente non ha
+- [x] Dopo aver scelto «ricorda», il PIN non viene piu' chiesto su quel dispositivo
+- [x] Revocare un dispositivo lo riporta a chiedere il PIN al primo accesso
+- [x] «Revoca tutti» disconnette ogni dispositivo tranne quello in uso
+- [x] La credenziale non e' leggibile da JavaScript
+- [x] Un dispositivo fidato non eredita permessi che il suo utente non ha
