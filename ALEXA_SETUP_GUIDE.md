@@ -184,8 +184,8 @@ Alexa risponderà: *"Kyra online, Alessio. Dimmi pure."* e l'anello luminoso rim
 * *"Modalità Relax"*
 
 ### B. Comando One-Shot Diretto
-> **"Alexa, chiedi a Kyra che tempo fa a Roma"**  
-> **"Alexa, dì a Kyra di accendere il salotto"**  
+> **"Alexa, chiedi a Kyra che tempo fa a Roma"**
+> **"Alexa, dì a Kyra di accendere il salotto"**
 > **"Alexa, chiedi a Kyra le notizie del giorno"**
 
 ---

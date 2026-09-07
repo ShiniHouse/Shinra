@@ -165,3 +165,30 @@ Tre regole non negoziabili in ogni PR:
    dichiarazione, e' protetto.
 3. Ogni input che raggiunge Home Assistant e' validato. Un `entity_id` che
    arriva dal modello non e' un dato fidato.
+
+---
+
+## Protezione del ramo `main`
+
+La CI verde non basta se si puo' unire lo stesso. La protezione si attiva
+una volta sola, dal proprietario del repository:
+
+```bash
+gh api -X PUT repos/ShiniHouse/Shinra/branches/main/protection \
+  -H "Accept: application/vnd.github+json" \
+  -f "required_status_checks[strict]=true" \
+  -f "required_status_checks[contexts][]=Lint e formattazione" \
+  -f "required_status_checks[contexts][]=Ganci pre-commit" \
+  -f "required_status_checks[contexts][]=Test — Python 3.10" \
+  -f "required_status_checks[contexts][]=Test — Python 3.11" \
+  -f "required_status_checks[contexts][]=Test — Python 3.12" \
+  -f "required_status_checks[contexts][]=Controllo segreti" \
+  -F "enforce_admins=false" \
+  -F "required_pull_request_reviews=null" \
+  -F "restrictions=null"
+```
+
+`enforce_admins=false` e' voluto: in un progetto con un solo manutentore,
+bloccare anche l'amministratore significa non poter piu' rimediare a una CI
+rotta se non disattivando la protezione. Il resto vale comunque, perche' il
+lavoro passa dalle pull request.

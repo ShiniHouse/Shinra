@@ -38,9 +38,37 @@ jobs:
       - name: Black
         run: black --check --diff .
 
-      - name: Mypy
-        run: mypy config core server integrations
-        continue-on-error: true   # informativo finche' la tipizzazione non e' completa (issue v0.2.0)
+      # Su config/ e core/ la tipizzazione e' pulita e il controllo e'
+      # obbligatorio: sono i moduli dove passano configurazione, permessi e
+      # dati di casa. Su server/ e integrations/ resta informativo finche'
+      # non tocca anche a loro — dichiararlo obbligatorio senza esserlo
+      # sarebbe peggio che dirlo.
+      - name: Mypy — obbligatorio su config e core
+        run: mypy --explicit-package-bases config core
+
+      - name: Mypy — informativo su server e integrations
+        run: mypy --explicit-package-bases server integrations
+        continue-on-error: true
+
+  ganci:
+    name: Ganci pre-commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install pre-commit
+      # Gli stessi controlli che girano prima di ogni commit su una macchina
+      # di sviluppo. Averli anche qui evita che restino disallineati: un
+      # gancio che nessuno esegue in CI smette di funzionare senza che
+      # nessuno se ne accorga.
+      # `no-commit-to-branch` protegge chi sviluppa dal committare su main
+      # per distrazione; in CI si lavora proprio su quel ramo, quindi qui
+      # farebbe fallire tutto senza dire niente di utile.
+      - run: SKIP=no-commit-to-branch pre-commit run --all-files --show-diff-on-failure
 
   test:
     name: Test — Python ${{ matrix.python-version }}
@@ -69,7 +97,11 @@ jobs:
       - name: Pytest
         # I test marcati network o integration richiedono Internet, Ollama o
         # Home Assistant: non hanno posto in CI.
-        run: pytest -m "not network and not integration" --cov --cov-report=term-missing
+        # La soglia e' al 70% mentre la copertura reale e' all'80%: sotto il
+        # valore attuale perche' non fallisca per un test spostato, sopra il
+        # 60% chiesto dalla issue #18 perche' significhi qualcosa. Si alza
+        # quando sale la copertura, non prima.
+        run: pytest -m "not network and not integration" --cov --cov-report=term-missing --cov-fail-under=70
 
   segreti:
     name: Controllo segreti

@@ -141,7 +141,7 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
     if nodes and edges:
         # Costruisce la mappa dei nodi e l'adiacenza
         node_map = {n["id"]: n for n in nodes if "id" in n}
-        adj = {}
+        adj: Dict[str, list] = {}
         in_degree = {n["id"]: 0 for n in nodes if "id" in n}
         for e in edges:
             u, v = e.get("from"), e.get("to")
@@ -182,7 +182,7 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
                 if entity_id:
                     resolved_entity = data_store.resolve_alias_or_entity(entity_id)
                     domain = resolved_entity.split(".")[0] if "." in resolved_entity else "homeassistant"
-                    s_data = {"entity_id": resolved_entity}
+                    s_data: Dict[str, Any] = {"entity_id": resolved_entity}
                     if n_data.get("brightness") is not None:
                         s_data["brightness_pct"] = int(n_data["brightness"])
                     if n_data.get("temperature") is not None:

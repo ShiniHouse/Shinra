@@ -57,7 +57,7 @@ async def search_wikipedia(query: str, language: str = "it") -> Dict[str, Any]:
                 "format": "json",
                 "srlimit": 1,
             }
-            search_res = await client.get(search_api, params=params, headers=WIKI_HEADERS)
+            search_res = await client.get(search_api, params=params, headers=WIKI_HEADERS)  # type: ignore[arg-type]
             if search_res.status_code == 200:
                 search_data = search_res.json()
                 results = search_data.get("query", {}).get("search", [])

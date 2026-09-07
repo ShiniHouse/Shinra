@@ -152,7 +152,7 @@
 
         /* Ambient Mesh Glows */
         .ambient-mesh {
-            background-image: 
+            background-image:
                 radial-gradient(at 0% 0%, var(--mesh-1) 0px, transparent 50%),
                 radial-gradient(at 100% 0%, var(--mesh-2) 0px, transparent 50%),
                 radial-gradient(at 50% 100%, var(--mesh-1) 0px, transparent 60%);
@@ -1646,7 +1646,7 @@
                     if (pinInput) pinInput.value = '';
                     const lockModal = document.getElementById('lock-screen-modal');
                     if (lockModal) lockModal.style.display = 'none';
-                    
+
                     // Ricarica i dati protetti
                     checkSystemHealth();
                     loadKnowledge();
@@ -2124,7 +2124,7 @@
 
         async function speakText(text) {
             if (voiceMuted) return;
-            
+
             const clean = cleanTextForSpeech(text);
             if (!clean) return;
 
@@ -2185,7 +2185,7 @@
             const previewText = neuralVoice.includes('Diego') || neuralVoice.includes('Giuseppe')
                 ? "Sistemi operativi. Voce neurale ad alta definizione calibrata e pronta."
                 : "Ciao, sono Shinra. La mia voce neurale ad alta definizione è pronta.";
-            
+
             const wasMuted = voiceMuted;
             voiceMuted = false;
             await speakText(previewText);
@@ -3348,7 +3348,7 @@
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const now = ctx.currentTime;
-                
+
                 const osc1 = ctx.createOscillator();
                 const gain1 = ctx.createGain();
                 osc1.type = 'sine';
@@ -3438,10 +3438,10 @@
                 </h3>
                 <label class="text-slate-400 text-xs block mb-1">Nome o Etichetta (es. Pasta, Tè, Forno):</label>
                 <input type="text" id="new-timer-label" value="Timer" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-3 focus:outline-none focus:border-amber-500">
-                
+
                 <label class="text-slate-400 text-xs block mb-1">Durata (Minuti):</label>
                 <input type="number" id="new-timer-min" min="1" max="180" value="5" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-4 focus:outline-none focus:border-amber-500">
-                
+
                 <div class="flex justify-end gap-2">
                     <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Annulla</button>
                     <button onclick="saveNewTimerManual()" class="px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-xs text-white font-semibold">Avvia Timer</button>
@@ -3640,7 +3640,7 @@
                     const triggers = (m.trigger_phrases || []).map(t => `<span class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] text-slate-300 font-mono">"${t}"</span>`).join(' ');
                     const actions = m.actions || [];
                     const isOpen = Boolean(_modeAccordionState[m.id]);
-                    
+
                     const stepsHtml = actions.map((act, idx) => {
                         let icon = 'zap';
                         let title = 'Azione';
@@ -3949,7 +3949,7 @@
 
             // Costruisce opzioni dispositivi per select
             const aliases = (typeof data_store !== 'undefined' ? [] : (_haEntitiesCache ? Object.values(_haEntitiesCache.groups).flat() : []));
-            
+
             container.innerHTML = _canvasState.nodes.map(node => {
                 let headerBg = 'from-indigo-600 to-violet-600';
                 let icon = 'workflow';
@@ -4024,7 +4024,7 @@
                     <div id="c-node-${node.id}" class="flow-node absolute w-60 rounded-xl bg-slate-950/90 border border-slate-700 shadow-xl backdrop-blur" style="left: ${node.x}px; top: ${node.y}px;">
                         <!-- Input Pin (Left) -->
                         ${hasInputPin ? `<div onmouseup="onPinMouseUp('${node.id}', event)" class="port-pin port-pin-in" title="Collega qui il cavo in ingresso"></div>` : ''}
-                        
+
                         <!-- Output Pin (Right) -->
                         ${hasOutputPin ? `<div onmousedown="onPinMouseDown('${node.id}', event)" class="port-pin port-pin-out" title="Trascina cavo verso un altro nodo"></div>` : ''}
 
@@ -4389,7 +4389,7 @@
                     </h3>
                     <button onclick="closeModal()" class="text-slate-500 hover:text-slate-300 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
                 </div>
-                
+
                 <div class="space-y-4 pt-3">
                     <div>
                         <label class="text-[11px] font-semibold text-slate-400 block mb-1.5">1. Scegli l'Icona / Avatar:</label>
@@ -4530,9 +4530,9 @@
                 const res = await fetch('/api/settings', { headers: getAuthHeaders() });
                 const cfg = await res.json();
                 document.getElementById('cfg-ollama-url').value = cfg.llm.ollama_url || '';
-                
+
                 await loadOllamaModels(cfg.llm.model);
-                
+
                 const maxTok = cfg.llm.max_tokens || 150;
                 document.getElementById('cfg-max-tokens').value = maxTok;
                 updateMaxTokensLabel(maxTok);
@@ -4719,7 +4719,7 @@
                 headers: getAuthHeaders(),
                 body: JSON.stringify(cfg)
             });
-            
+
             if (saveRes.ok) {
                 alert('Impostazioni salvate con successo.');
                 await checkAuthStatus();
