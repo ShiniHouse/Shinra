@@ -20,8 +20,8 @@ import httpx
 import pytest
 import respx
 
-from core.tools.weather import get_weather
-from core.tools.wikipedia_tool import search_wikipedia
+from shinra.skills.weather import get_weather
+from shinra.skills.wikipedia_tool import search_wikipedia
 
 GEOCODIFICA = {
     "results": [{"name": "Reggio Emilia", "latitude": 44.7, "longitude": 10.63, "country": "Italia"}]
@@ -150,7 +150,7 @@ async def test_un_termine_inesistente_non_esplode():
 async def test_le_notizie_leggono_un_feed_rss(monkeypatch):
     """feedparser non passa da httpx, quindi si sostituisce lui: cio' che
     conta e' che sappiamo estrarre i titoli dalla struttura che restituisce."""
-    import core.tools.news_search as modulo
+    import shinra.skills.news_search as modulo
 
     finto = SimpleNamespace(
         entries=[
@@ -170,7 +170,7 @@ async def test_le_notizie_leggono_un_feed_rss(monkeypatch):
 async def test_un_feed_vuoto_non_esplode(monkeypatch):
     """Un feed irraggiungibile o malformato capita: non deve diventare un
     errore in faccia a chi ha chiesto le notizie."""
-    import core.tools.news_search as modulo
+    import shinra.skills.news_search as modulo
 
     monkeypatch.setattr(modulo.feedparser, "parse", lambda url: SimpleNamespace(entries=[], bozo=True))
 

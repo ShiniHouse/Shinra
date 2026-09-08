@@ -14,10 +14,10 @@ from __future__ import annotations
 
 import pytest
 
-from core.archivio import depositi
-from core.intenti import Richiesta, instrada, intenti
-from core.intenti.casa import ControlloDispositivo, TemperaturaInterna
-from core.intenti.informazioni import Meteo
+from shinra.infra.db import depositi
+from shinra.services.intenti import Richiesta, instrada, intenti
+from shinra.services.intenti.casa import ControlloDispositivo, TemperaturaInterna
+from shinra.services.intenti.informazioni import Meteo
 
 
 @pytest.fixture
@@ -48,14 +48,14 @@ def casa(monkeypatch):
         chiamate.append((nome, argomenti))
         return risposte.get(nome, {"success": True})
 
-    for modulo in ("core.intenti.casa", "core.intenti.informazioni"):
+    for modulo in ("shinra.services.intenti.casa", "shinra.services.intenti.informazioni"):
         monkeypatch.setattr(f"{modulo}.execute_tool", finto_execute_tool)
 
     return {"chiamate": chiamate, "risposte": risposte}
 
 
 def _richiesta(testo: str) -> Richiesta:
-    from core.memory import ConversationMemory
+    from shinra.services.memory import ConversationMemory
 
     return Richiesta(testo=testo, memoria=ConversationMemory())
 
@@ -78,8 +78,8 @@ def test_aggiungere_un_intento_non_richiede_di_toccare_l_agente():
     incastra dentro `process_user_input`."""
     import inspect
 
-    from core import agent as modulo_agente
-    from core.intenti.base import Intento, Risposta, registra
+    from shinra.services import agent as modulo_agente
+    from shinra.services.intenti.base import Intento, Risposta, registra
 
     class Saluto(Intento):
         nome = "saluto-di-prova"
@@ -97,7 +97,7 @@ def test_aggiungere_un_intento_non_richiede_di_toccare_l_agente():
         assert any(i.nome == "saluto-di-prova" for i in intenti())
         assert sorgente_prima == inspect.getsource(modulo_agente.ShinraAgent.process_user_input)
     finally:
-        from core.intenti import base
+        from shinra.services.intenti import base
 
         base._INTENTI[:] = [i for i in base._INTENTI if i.nome != "saluto-di-prova"]
 
@@ -170,7 +170,7 @@ def test_i_nomi_composti_non_si_spezzano(frase, attesa):
 
 
 def test_senza_citta_si_usa_quella_predefinita():
-    from config.settings import settings
+    from shinra.config.settings import settings
 
     assert Meteo.citta("che tempo fa domani") == (settings.assistant.default_city or "Roma")
 
@@ -191,7 +191,7 @@ async def test_una_citta_inventata_ripiega_sulla_predefinita(casa):
             "previsioni": [{"temp_max": 16}],
         }
 
-    import core.intenti.informazioni as modulo
+    import shinra.services.intenti.informazioni as modulo
 
     modulo.execute_tool = secondo_tentativo
     risposta = await instrada(_richiesta("che tempo fa a Casa Mia"))

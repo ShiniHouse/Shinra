@@ -15,9 +15,9 @@ from pathlib import Path
 
 import pytest
 
-import core.ha_client as modulo
-from config.settings import AppConfig
-from core.ha_client import HomeAssistantClient, client_home_assistant
+import shinra.infra.homeassistant.client as modulo
+from shinra.config.settings import AppConfig
+from shinra.infra.homeassistant.client import HomeAssistantClient, client_home_assistant
 
 
 @pytest.fixture(autouse=True)
@@ -82,13 +82,12 @@ def test_nessun_modulo_costruisce_un_client_con_valori_fissi() -> None:
     """La guardia contro il ripetersi del difetto."""
     radice = Path(__file__).resolve().parent.parent.parent
     colpevoli = []
-    for cartella in ("core", "server", "integrations"):
-        for percorso in (radice / cartella).rglob("*.py"):
-            if "__pycache__" in percorso.parts:
-                continue
-            for chiamata in re.findall(r"HomeAssistantClient\([^)]*\)", percorso.read_text(encoding="utf-8")):
-                if "base_url" in chiamata or "token" in chiamata:
-                    colpevoli.append(f"{percorso.relative_to(radice)}: {chiamata}")
+    for percorso in (radice / "src" / "shinra").rglob("*.py"):
+        if "__pycache__" in percorso.parts:
+            continue
+        for chiamata in re.findall(r"HomeAssistantClient\([^)]*\)", percorso.read_text(encoding="utf-8")):
+            if "base_url" in chiamata or "token" in chiamata:
+                colpevoli.append(f"{percorso.relative_to(radice)}: {chiamata}")
 
     assert not colpevoli, (
         "Client Home Assistant costruiti con valori congelati:\n  "

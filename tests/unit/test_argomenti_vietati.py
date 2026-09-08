@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import pytest
 
-from core.argomenti_vietati import argomento_vietato, consenti
-from core.user_manager import UserProfile
+from shinra.domain.argomenti_vietati import argomento_vietato, consenti
+from shinra.services.user_manager import UserProfile
 
 
 @pytest.fixture()
@@ -72,8 +72,8 @@ async def test_l_agente_si_ferma_prima_di_agire(figlio: UserProfile, monkeypatch
     Se arrivasse dopo, una richiesta vietata potrebbe comunque accendere una
     luce o attivare una modalita' prima di essere rifiutata.
     """
-    from core.agent import ShinraAgent
-    from core.memory import ConversationMemory
+    from shinra.services.agent import ShinraAgent
+    from shinra.services.memory import ConversationMemory
 
     agente = ShinraAgent()
 

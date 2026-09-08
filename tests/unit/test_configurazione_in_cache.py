@@ -22,7 +22,7 @@ RADICE = Path(__file__).resolve().parent.parent.parent
 @pytest.fixture
 def letture_dal_disco(monkeypatch):
     """Conta quante volte qualcuno apre config.yaml."""
-    from config import settings as modulo
+    from shinra.config import settings as modulo
 
     conteggio = {"letture": 0}
     originale = modulo._leggi_yaml
@@ -39,7 +39,7 @@ def letture_dal_disco(monkeypatch):
 
 
 def test_chiedere_indirizzo_e_modello_non_tocca_il_disco(letture_dal_disco):
-    from core.ollama_client import OllamaClient
+    from shinra.infra.llm.ollama import OllamaClient
 
     cliente = OllamaClient()
     for _ in range(20):
@@ -51,7 +51,7 @@ def test_chiedere_indirizzo_e_modello_non_tocca_il_disco(letture_dal_disco):
 
 
 def test_il_client_home_assistant_non_tocca_il_disco(letture_dal_disco):
-    from core.ha_client import client_home_assistant
+    from shinra.infra.homeassistant.client import client_home_assistant
 
     ha = client_home_assistant()
     for _ in range(20):
@@ -75,8 +75,8 @@ async def test_una_chiamata_al_modello_e_alla_casa_non_legge_la_configurazione(l
     import httpx
     import respx
 
-    from core.ha_client import HomeAssistantClient
-    from core.ollama_client import OllamaClient
+    from shinra.infra.homeassistant.client import HomeAssistantClient
+    from shinra.infra.llm.ollama import OllamaClient
 
     cliente = OllamaClient()
     ha = HomeAssistantClient()
@@ -102,8 +102,8 @@ def test_cambiare_la_configurazione_ha_effetto_subito():
     """Togliere la rilettura da disco non deve reintrodurre REL-04, cioe' un
     valore congelato all'avvio. I client leggono l'oggetto condiviso, che il
     salvataggio aggiorna al suo posto."""
-    from config.settings import settings
-    from core.ollama_client import OllamaClient
+    from shinra.config.settings import settings
+    from shinra.infra.llm.ollama import OllamaClient
 
     cliente = OllamaClient()
     originale = settings.llm.ollama_url
@@ -116,8 +116,8 @@ def test_cambiare_la_configurazione_ha_effetto_subito():
 
 def test_un_salvataggio_arriva_ai_client(monkeypatch):
     """Il percorso completo: si salva, si ricarica, e i client lo vedono."""
-    from config import settings as modulo
-    from core.ha_client import client_home_assistant
+    from shinra.config import settings as modulo
+    from shinra.infra.homeassistant.client import client_home_assistant
 
     aggiornata = modulo.load_config()
     aggiornata.home_assistant.url = "http://casa-nuova.local:8123"
@@ -138,17 +138,16 @@ def test_nessun_modulo_del_percorso_di_richiesta_rilegge_il_disco():
     """`reload_settings()` puo' comparire solo dove la rilettura e' voluta:
     in config/settings.py, che la definisce, e nel pannello impostazioni, che
     deve mostrare cosa c'e' davvero sul file. Ovunque altro e' il difetto."""
-    consentiti = {"config/settings.py", "server/routes_admin.py"}
+    consentiti = {"src/shinra/config/settings.py", "src/shinra/api/routes_admin.py"}
     colpevoli = []
-    for cartella in ("core", "server", "config", "integrations"):
-        for percorso in (RADICE / cartella).rglob("*.py"):
-            if "__pycache__" in percorso.parts:
-                continue
-            relativo = percorso.relative_to(RADICE).as_posix()
-            if relativo in consentiti:
-                continue
-            if "reload_settings" in percorso.read_text(encoding="utf-8"):
-                colpevoli.append(relativo)
+    for percorso in (RADICE / "src" / "shinra").rglob("*.py"):
+        if "__pycache__" in percorso.parts:
+            continue
+        relativo = percorso.relative_to(RADICE).as_posix()
+        if relativo in consentiti:
+            continue
+        if "reload_settings" in percorso.read_text(encoding="utf-8"):
+            colpevoli.append(relativo)
 
     assert colpevoli == [], (
         f"{colpevoli} rilegge la configurazione da disco: usa l'oggetto "

@@ -1,11 +1,12 @@
-import uvicorn
+"""Avvio del servizio.
 
-from config.settings import settings
+Resta come alias del comando `shinra` installato dal pacchetto: il servizio
+in produzione parte da qui (`deploy/shinra.service`) e cambiare il modo di
+avviarlo insieme al resto avrebbe reso lo spostamento della issue #16 un
+aggiornamento che non riparte.
+"""
+
+from shinra.avvio import principale
 
 if __name__ == "__main__":
-    print("🟣 Shinra — Assistente Domestico Intelligente")
-    print(f"   Server: http://localhost:{settings.server.port}")
-    print(f"   Alexa Skill Endpoint: http://localhost:{settings.server.port}/api/alexa")
-    uvicorn.run(
-        "server.app:app", host=settings.server.host, port=settings.server.port, reload=settings.server.debug
-    )
+    principale()

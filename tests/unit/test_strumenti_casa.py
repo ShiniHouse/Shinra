@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import pytest
 
-from core.archivio import depositi
-from core.tools import ha_tools
+from shinra.infra.db import depositi
+from shinra.skills import ha_tools
 
 
 @pytest.fixture

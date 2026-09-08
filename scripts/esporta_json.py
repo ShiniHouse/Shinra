@@ -20,16 +20,19 @@ import json
 import sys
 from pathlib import Path
 
+# Gli script si lanciano dalla copia di lavoro, dove il pacchetto puo' non
+# essere installato: senza questo, `import shinra` fallirebbe.
 RADICE = Path(__file__).resolve().parent.parent
-if str(RADICE) not in sys.path:
-    sys.path.insert(0, str(RADICE))
+SORGENTI = RADICE / "src"
+if SORGENTI.is_dir() and str(SORGENTI) not in sys.path:
+    sys.path.insert(0, str(SORGENTI))
 
 VERDE, GRIGIO, FINE = "\033[32m", "\033[90m", "\033[0m"
 
 
 def esporta(destinazione: Path) -> dict[str, int]:
-    from core.archivio.depositi import DEPOSITI
-    from core.archivio.importazione import SORGENTI
+    from shinra.infra.db.depositi import DEPOSITI
+    from shinra.infra.db.importazione import SORGENTI
 
     destinazione.mkdir(parents=True, exist_ok=True)
     scritti: dict[str, int] = {}

@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from core import versione
+from shinra import versione
 
 RADICE = Path(__file__).resolve().parent.parent.parent
 
@@ -71,10 +71,10 @@ def test_la_pagina_di_accesso_non_la_mostra():
     """Chi non e' entrato non deve sapere quale versione gira: e' la prima
     informazione utile a chi cerca una vulnerabilita' nota, ed e' inutile a
     chi deve solo digitare il PIN."""
-    from config.settings import settings
-    from core.user_manager import user_manager
-    from server import sicurezza
-    from server.app import app
+    from shinra.api import sicurezza
+    from shinra.api.app import app
+    from shinra.config.settings import settings
+    from shinra.services.user_manager import user_manager
 
     era_attiva = settings.security.auth_enabled
     settings.security.auth_enabled = True

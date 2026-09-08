@@ -20,7 +20,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from core import percorsi
+from shinra import percorsi
 
 RADICE_VERA = Path(__file__).resolve().parent.parent.parent
 
@@ -71,10 +71,10 @@ def test_senza_variabile_si_risale_fino_al_segnale(monkeypatch):
 
 # Questi tre trovano la radice *per poterla mettere in `sys.path`*: devono
 # farlo prima di poter importare qualunque cosa del progetto, quindi non
-# possono chiedere a `core.percorsi`. E' un avvio, non un percorso di dati.
+# possono chiedere a `shinra.percorsi`. E' un avvio, non un percorso di dati.
 # Dopo la #16 il pacchetto sara' installato e spariranno anche loro.
 AVVIO = {
-    "core/percorsi.py",
+    "src/shinra/percorsi.py",
     "migrazioni/env.py",
     "scripts/esporta_json.py",
     "scripts/imposta_pin.py",
@@ -89,13 +89,13 @@ def test_nessun_modulo_calcola_la_radice_per_conto_suo():
     colpevoli = []
     for file in sorted(RADICE_VERA.glob("**/*.py")):
         relativo = file.relative_to(RADICE_VERA).as_posix()
-        if relativo in AVVIO or relativo.startswith((".venv/", "tests/", "build/")):
+        if relativo in AVVIO or relativo.startswith((".venv/", "tests/", "build/", "src/shinra.egg-info/")):
             continue
         if CATENA.search(file.read_text(encoding="utf-8")):
             colpevoli.append(relativo)
 
     assert colpevoli == [], (
-        "questi moduli si calcolano la radice da soli invece di chiederla a " f"core.percorsi: {colpevoli}"
+        "questi moduli si calcolano la radice da soli invece di chiederla a " f"shinra.percorsi: {colpevoli}"
     )
 
 
@@ -103,7 +103,7 @@ def test_percorsi_non_dipende_da_niente_del_progetto():
     """`config.settings` lo importa: se un giorno importasse `config`
     indietro, l'applicazione non partirebbe piu' e il messaggio parlerebbe
     di import circolari invece che di percorsi."""
-    testo = (RADICE_VERA / "core" / "percorsi.py").read_text(encoding="utf-8")
+    testo = (RADICE_VERA / "src" / "shinra" / "percorsi.py").read_text(encoding="utf-8")
 
-    interni = re.findall(r"^\s*(?:from|import)\s+(core|config|server|integrations)\b", testo, re.M)
-    assert interni == [], f"core/percorsi.py importa dal progetto: {interni}"
+    interni = re.findall(r"^\s*(?:from|import)\s+shinra\b", testo, re.M)
+    assert interni == [], f"src/shinra/percorsi.py importa dal progetto: {interni}"

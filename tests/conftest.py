@@ -25,7 +25,7 @@ def _archivio_modello(tmp_path_factory) -> Path:
     """Un database gia' pronto, costruito una volta sola per tutta la suite."""
     global _MODELLO
     if _MODELLO is None:
-        from core.archivio import importazione, motore
+        from shinra.infra.db import importazione, motore
 
         _MODELLO = tmp_path_factory.mktemp("modello") / "modello.db"
         importazione.crea_vuoto(_MODELLO)
@@ -56,7 +56,7 @@ def archivio_isolato(tmp_path_factory):
     la casa di esempio, quella che vede anche chi installa Shinra per la
     prima volta.
     """
-    from core.archivio import motore
+    from shinra.infra.db import motore
 
     percorso = tmp_path_factory.mktemp("archivio") / "prova.db"
     # Costruire schema e dati di esempio a ogni test costa quasi mezzo minuto
@@ -84,9 +84,9 @@ def cliente_autenticato():
     """
     from fastapi.testclient import TestClient
 
-    from core.user_manager import user_manager
-    from server import sicurezza
-    from server.app import app
+    from shinra.api import sicurezza
+    from shinra.api.app import app
+    from shinra.services.user_manager import user_manager
 
     with TestClient(app) as client:
         utente = user_manager.get_users()[0]

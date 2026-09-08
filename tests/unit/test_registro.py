@@ -17,9 +17,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from core import registro
-from core.archivio.modelli import VoceRegistro
-from core.archivio.motore import sessione
+from shinra.infra.db.modelli import VoceRegistro
+from shinra.infra.db.motore import sessione
+from shinra.services import registro
 
 
 @pytest.fixture(autouse=True)
@@ -64,7 +64,7 @@ def test_cio_che_non_e_segreto_resta_leggibile():
 
 
 async def test_un_tool_chiamato_con_un_segreto_non_lo_scrive(monkeypatch):
-    from core.tools import registry
+    from shinra.skills import registry
 
     async def finto(**argomenti):
         return {"success": True}
@@ -79,7 +79,7 @@ async def test_un_tool_chiamato_con_un_segreto_non_lo_scrive(monkeypatch):
 
 
 async def test_ogni_azione_domotica_lascia_una_voce(monkeypatch):
-    from core.tools import registry
+    from shinra.skills import registry
 
     async def finto(**argomenti):
         return {"success": True}
@@ -100,7 +100,7 @@ async def test_un_comando_fallito_non_risulta_riuscito(monkeypatch):
     """I tool segnalano i guasti restituendoli, non sollevandoli. Senza
     controllarlo, un comando fallito comparirebbe nel registro come riuscito:
     il modo peggiore di avere un registro."""
-    from core.tools import registry
+    from shinra.skills import registry
 
     async def finto(**argomenti):
         return {"success": False, "error": "Home Assistant irraggiungibile"}
@@ -114,7 +114,7 @@ async def test_un_comando_fallito_non_risulta_riuscito(monkeypatch):
 
 
 async def test_un_tool_che_solleva_e_registrato_e_non_propaga(monkeypatch):
-    from core.tools import registry
+    from shinra.skills import registry
 
     async def finto(**argomenti):
         raise RuntimeError("connessione persa")
@@ -128,7 +128,7 @@ async def test_un_tool_che_solleva_e_registrato_e_non_propaga(monkeypatch):
 
 async def test_un_tool_inesistente_lascia_traccia():
     """Un modello che inventa un tool e' un'informazione utile, non rumore."""
-    await __import__("core.tools.registry", fromlist=["x"]).execute_tool("tool_inventato", {})
+    await __import__("shinra.skills.registry", fromlist=["x"]).execute_tool("tool_inventato", {})
 
     assert _voci()[0]["azione"] == "tool.tool_inventato"
     assert _voci()[0]["esito"] == registro.ESITO_ERRORE
@@ -140,7 +140,7 @@ async def test_un_tool_inesistente_lascia_traccia():
 async def test_le_azioni_di_uno_stesso_turno_hanno_lo_stesso_filo(monkeypatch):
     """«Accendi le luci di sotto» puo' produrre tre comandi: senza un filo
     comune sembrano tre eventi scollegati avvenuti nello stesso secondo."""
-    from core.tools import registry
+    from shinra.skills import registry
 
     async def finto(**argomenti):
         return {"success": True}
@@ -154,7 +154,7 @@ async def test_le_azioni_di_uno_stesso_turno_hanno_lo_stesso_filo(monkeypatch):
 
 
 async def test_due_richieste_diverse_hanno_fili_diversi(monkeypatch):
-    from core.tools import registry
+    from shinra.skills import registry
 
     async def finto(**argomenti):
         return {"success": True}
@@ -218,7 +218,7 @@ def test_un_guasto_del_registro_non_ferma_la_casa(monkeypatch):
     def rotto():
         raise RuntimeError("disco pieno")
 
-    monkeypatch.setattr("core.archivio.motore.sessione", rotto)
+    monkeypatch.setattr("shinra.infra.db.motore.sessione", rotto)
 
     registro.registra("azione.qualunque")  # non deve sollevare
 
@@ -257,10 +257,10 @@ def test_un_familiare_non_amministratore_non_lo_legge():
     quando accende le luci, quando esce. Sono i movimenti della famiglia."""
     from fastapi.testclient import TestClient
 
-    from core.archivio import depositi
-    from core.user_manager import user_manager
-    from server import sicurezza
-    from server.app import app
+    from shinra.api import sicurezza
+    from shinra.api.app import app
+    from shinra.infra.db import depositi
+    from shinra.services.user_manager import user_manager
 
     with TestClient(app) as client:
         depositi.utenti.salva({"id": "sonia", "name": "Sonia", "role": "adult"})
@@ -285,9 +285,9 @@ def test_un_accesso_rifiutato_finisce_nel_registro_senza_il_pin_provato():
     giusti: la cosa piu' pericolosa che si possa scrivere su un disco."""
     from fastapi.testclient import TestClient
 
-    from core.user_manager import user_manager
-    from server import sicurezza
-    from server.app import app
+    from shinra.api import sicurezza
+    from shinra.api.app import app
+    from shinra.services.user_manager import user_manager
 
     with TestClient(app) as client:
         utente = user_manager.get_users()[0]

@@ -14,10 +14,10 @@ from __future__ import annotations
 
 import pytest
 
-from core import permessi, registro
-from core.archivio import depositi
-from core.permessi import PermessoNegato
-from core.user_manager import UltimoAmministratore, UserProfile, user_manager
+from shinra.infra.db import depositi
+from shinra.services import permessi, registro
+from shinra.services.permessi import PermessoNegato
+from shinra.services.user_manager import UltimoAmministratore, UserProfile, user_manager
 
 
 @pytest.fixture(autouse=True)
@@ -122,7 +122,7 @@ def test_le_serrature_chiedono_un_permesso_diverso_dalle_luci():
 async def test_chi_non_puo_comandare_non_accende_la_luce(monkeypatch):
     """Criterio di accettazione: ne' da chat ne' da API diretta. Il controllo
     e' in `call_service`, dove passa tutto."""
-    from core.ha_client import HomeAssistantClient
+    from shinra.infra.homeassistant.client import HomeAssistantClient
 
     registro.apri_contesto(attore="ospite", canale="web")
     chiamate = []
@@ -147,7 +147,7 @@ async def test_una_routine_non_aggira_il_permesso_sulle_serrature(monkeypatch):
     scritta, per aggirare il controllo basterebbe scriversi una routine —
     e chiunque puo' scriverne una.
     """
-    from core.ha_client import HomeAssistantClient
+    from shinra.infra.homeassistant.client import HomeAssistantClient
 
     registro.apri_contesto(attore="thomas", canale="web")  # ragazzo: niente serrature
     client = HomeAssistantClient(base_url="http://x", token="t" * 30)
@@ -177,12 +177,12 @@ class _FintoHttp:
 async def test_il_rifiuto_e_spiegato_e_tracciato(monkeypatch):
     """Un 403 muto lascia solo l'impressione che qualcosa sia rotto: chi lo
     riceve non sa nemmeno cosa chiedere a chi amministra la casa."""
-    from core.tools import registry
+    from shinra.skills import registry
 
     registro.apri_contesto(attore="ospite", canale="web")
 
     async def finto_control(**argomenti):
-        from core.permessi import esigi_per_dominio
+        from shinra.services.permessi import esigi_per_dominio
 
         esigi_per_dominio("light")
         return {"success": True}
@@ -238,7 +238,7 @@ def test_ogni_rotta_che_cambia_qualcosa_dichiara_un_permesso():
     """Il presidio che impedisce al problema di tornare: una rotta nuova che
     scrive senza dichiarare il permesso fa fallire questo test, invece di
     passare inosservata per sei mesi."""
-    from server.app import app
+    from shinra.api.app import app
     from tests.unit.test_autenticazione import rotte_api
 
     # Rotte che scrivono ma non richiedono un permesso: sono elencate qui una

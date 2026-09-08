@@ -15,7 +15,7 @@ import time
 
 import pytest
 
-from core.memory import ConversationMemory, GestoreMemorie, gestore_memorie
+from shinra.services.memory import ConversationMemory, GestoreMemorie, gestore_memorie
 
 
 @pytest.fixture(autouse=True)
@@ -149,8 +149,8 @@ def test_il_conteggio_dei_messaggi_non_cresce_all_infinito():
 @pytest.fixture
 def casa_finta(monkeypatch):
     """Un alias configurato e nessuna rete: solo il percorso rapido dell'agente."""
-    from core.agent import agent
-    from core.archivio import depositi
+    from shinra.infra.db import depositi
+    from shinra.services.agent import agent
 
     depositi.alias.sostituisci_tutto(
         [{"id": "a1", "alias": "luce cucina", "entity_id": "light.cucina", "room": "Cucina"}]
@@ -171,7 +171,7 @@ def casa_finta(monkeypatch):
     async def niente_riepilogo():
         return ""
 
-    monkeypatch.setattr("core.agent.execute_tool", finto_execute_tool)
+    monkeypatch.setattr("shinra.services.agent.execute_tool", finto_execute_tool)
     monkeypatch.setattr(agent.ha, "get_relevant_entities_summary", niente_riepilogo)
     return eseguiti
 
@@ -179,7 +179,7 @@ def casa_finta(monkeypatch):
 async def test_l_agente_scrive_nella_conversazione_di_chi_ha_parlato(casa_finta):
     """Il difetto REL-03 per intero: due persone, due schede, nessuna
     contaminazione. Prima finivano nella stessa cronologia globale."""
-    from core.agent import agent
+    from shinra.services.agent import agent
 
     await agent.process_user_input("accendi la luce cucina", user_id="alessio")
 
@@ -190,7 +190,7 @@ async def test_l_agente_scrive_nella_conversazione_di_chi_ha_parlato(casa_finta)
 async def test_dopo_accendi_la_memoria_sa_quale_luce_e_accesa(casa_finta):
     """La condizione perche' «spegnila» possa funzionare: nella cronologia
     deve restare scritto `light.cucina`, non solo «acceso»."""
-    from core.agent import agent
+    from shinra.services.agent import agent
 
     await agent.process_user_input("accendi la luce cucina", user_id="alessio")
 
@@ -202,7 +202,7 @@ async def test_dopo_accendi_la_memoria_sa_quale_luce_e_accesa(casa_finta):
 async def test_una_richiesta_da_alexa_non_entra_nella_chat_di_un_altro(casa_finta):
     """Criterio di accettazione: la voce in cucina non deve comparire nella
     scheda che qualcun altro ha aperta in salotto."""
-    from core.agent import agent
+    from shinra.services.agent import agent
 
     await agent.process_user_input("accendi la luce cucina", user_id="alessio")  # da Alexa
     prima_di_sonia = len(gestore_memorie.per_utente("sonia").get_messages())
@@ -216,7 +216,7 @@ async def test_una_richiesta_da_alexa_non_entra_nella_chat_di_un_altro(casa_fint
 async def test_una_memoria_passata_esplicitamente_ha_la_precedenza(casa_finta):
     """Chi vuole una conversazione separata — un test, un canale futuro — la
     passa e vince sul gestore."""
-    from core.agent import agent
+    from shinra.services.agent import agent
 
     mia = ConversationMemory()
 
@@ -240,12 +240,11 @@ def test_nessun_modulo_si_costruisce_una_memoria_tutta_sua():
 
     radice = Path(__file__).resolve().parent.parent.parent
     colpevoli = []
-    for cartella in ("core", "server", "integrations"):
-        for percorso in (radice / cartella).rglob("*.py"):
-            if percorso.name == "memory.py" or "__pycache__" in percorso.parts:
-                continue
-            if "ConversationMemory(" in percorso.read_text(encoding="utf-8"):
-                colpevoli.append(str(percorso.relative_to(radice)))
+    for percorso in (radice / "src" / "shinra").rglob("*.py"):
+        if percorso.name == "memory.py" or "__pycache__" in percorso.parts:
+            continue
+        if "ConversationMemory(" in percorso.read_text(encoding="utf-8"):
+            colpevoli.append(str(percorso.relative_to(radice)))
 
     assert colpevoli == [], (
         f"{colpevoli} si costruisce una ConversationMemory per conto suo: "

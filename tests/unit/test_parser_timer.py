@@ -10,7 +10,7 @@ from datetime import datetime
 
 import pytest
 
-from core.timer_engine import TimerEngine
+from shinra.services.timer_engine import TimerEngine
 
 
 @pytest.fixture()

@@ -27,7 +27,7 @@ pytestmark = [pytest.mark.network, pytest.mark.integration]
 
 
 async def test_il_meteo_risponde_con_i_campi_che_leggiamo():
-    from core.tools.weather import get_weather
+    from shinra.skills.weather import get_weather
 
     esito = await get_weather("Roma", days=2)
 
@@ -41,7 +41,7 @@ async def test_il_meteo_risponde_con_i_campi_che_leggiamo():
 async def test_il_meteo_di_una_citta_composta():
     """Il difetto della issue #17 arrivava fin qui: se la geocodifica non
     riconosce «Reggio Emilia», l'intento ripiega e nessuno se ne accorge."""
-    from core.tools.weather import get_weather
+    from shinra.skills.weather import get_weather
 
     esito = await get_weather("Reggio Emilia", days=1)
 
@@ -50,7 +50,7 @@ async def test_il_meteo_di_una_citta_composta():
 
 
 async def test_wikipedia_restituisce_un_estratto():
-    from core.tools.wikipedia_tool import search_wikipedia
+    from shinra.skills.wikipedia_tool import search_wikipedia
 
     esito = await search_wikipedia("Bologna")
 
@@ -59,7 +59,7 @@ async def test_wikipedia_restituisce_un_estratto():
 
 
 async def test_le_notizie_arrivano_con_un_titolo():
-    from core.tools.news_search import get_latest_news
+    from shinra.skills.news_search import get_latest_news
 
     esito = await get_latest_news("mondo", max_items=2)
 
@@ -69,7 +69,7 @@ async def test_le_notizie_arrivano_con_un_titolo():
 
 
 async def test_la_ricerca_web_risponde():
-    from core.tools.news_search import search_web
+    from shinra.skills.news_search import search_web
 
     esito = await search_web("previsioni economiche italia", max_results=2)
 

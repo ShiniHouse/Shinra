@@ -69,13 +69,21 @@ Repository = "https://github.com/ShiniHouse/Shinra"
 Changelog = "https://github.com/ShiniHouse/Shinra/blob/main/CHANGELOG.md"
 Roadmap = "https://github.com/ShiniHouse/Shinra/blob/main/docs/ROADMAP.md"
 
-# ---------------------------------------------------------------------------
-# Nota: fino alla v0.2.0 il codice vive nelle cartelle di primo livello
-# (core/, server/, config/, integrations/). Lo spostamento sotto src/shinra/
-# e' pianificato nella issue "Layout src/ e packaging" della milestone v0.2.0.
-# ---------------------------------------------------------------------------
+# Il codice vive sotto src/. Non e' una convenzione estetica: con le cartelle
+# in cima al repository, un `import config` puo' risolvere sulla directory di
+# lavoro invece che sul progetto — e `config` e' un nome che hanno in molti.
+# Sotto src/ il pacchetto e' raggiungibile solo se installato, quindi i test
+# provano cio' che si installa davvero. Riferimento: issue #16.
 [tool.setuptools]
-packages = ["config", "core", "core.tools", "integrations", "integrations.alexa", "server"]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# `shinra` da riga di comando. `run.py` resta come alias: il servizio in
+# produzione parte da li' (deploy/shinra.service).
+[project.scripts]
+shinra = "shinra.avvio:principale"
 
 # --------------------------------- Ruff -----------------------------------
 [tool.ruff]
@@ -110,11 +118,14 @@ ignore = [
 "tests/*" = ["S101", "S105", "S106", "S303", "S603", "S607"]
 # Lo script di importazione invoca gh: e' il suo scopo.
 "scripts/import_backlog.py" = ["S603", "S607"]
+# Gli script mettono `src/` in sys.path prima di poter importare il
+# pacchetto: gli import devono per forza venire dopo.
+"scripts/imposta_pin.py" = ["E402"]
 # L'agente importa alcuni moduli dentro le funzioni per evitare import
 # circolari. Sara' risolto dall'intent router (issue v0.2.0 #17).
-"core/agent.py" = ["E402"]
-"server/routes_admin.py" = ["E402"]
-"server/app.py" = ["E402"]
+"src/shinra/services/agent.py" = ["E402"]
+"src/shinra/api/routes_admin.py" = ["E402"]
+"src/shinra/api/app.py" = ["E402"]
 
 # --------------------------------- Black ----------------------------------
 [tool.black]
@@ -134,7 +145,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["core", "server", "config", "integrations"]
+source = ["shinra"]
 omit = ["*/tests/*", "*/.venv/*"]
 
 [tool.coverage.report]

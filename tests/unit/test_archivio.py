@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-from core.archivio import depositi, importazione, motore
-from core.archivio.modelli import Base
+from shinra.infra.db import depositi, importazione, motore
+from shinra.infra.db.modelli import Base
 
 RADICE = Path(__file__).resolve().parent.parent.parent
 
@@ -147,8 +147,8 @@ def test_un_processo_ucciso_a_meta_scrittura_non_rovina_il_database(archivio, tm
     programma = textwrap.dedent(f"""
         import os, signal, sys
         sys.path.insert(0, {str(RADICE)!r})
-        from core.archivio import importazione, motore
-        from core.archivio.modelli import Fatto
+        from shinra.infra.db import importazione, motore
+        from shinra.infra.db.modelli import Fatto
         motore.reimposta({str(archivio)!r})
         s = motore.motore()
         from sqlalchemy.orm import Session
@@ -233,7 +233,7 @@ def test_la_migrazione_importa_tutto_e_non_tocca_i_json(tmp_path, monkeypatch):
         (sorgente / nome).write_text(json.dumps(dati, ensure_ascii=False), encoding="utf-8")
         impronte[nome] = (sorgente / nome).read_bytes()
 
-    from core.archivio import importazione
+    from shinra.infra.db import importazione
 
     script = _carica_script()
     monkeypatch.setattr(importazione, "DATA_DIR", sorgente)
@@ -268,7 +268,7 @@ def test_la_migrazione_si_rifiuta_di_scrivere_sopra_dati_esistenti(tmp_path, mon
         (sorgente / nome).write_text("[]", encoding="utf-8")
     (sorgente / "knowledge.json").write_text(json.dumps([{"id": "k1", "text": "primo"}]), encoding="utf-8")
 
-    from core.archivio import importazione
+    from shinra.infra.db import importazione
 
     script = _carica_script()
     monkeypatch.setattr(importazione, "DATA_DIR", sorgente)
@@ -286,9 +286,9 @@ def test_al_primo_avvio_i_dati_di_esempio_finiscono_nel_database(tmp_path, monke
     senza che nessuno lanci niente a mano."""
     import shutil as _shutil
 
-    from core import data_store as modulo_dati
-    from core.archivio import importazione
-    from server import app as modulo_app
+    from shinra.api import app as modulo_app
+    from shinra.infra import data_store as modulo_dati
+    from shinra.infra.db import importazione
 
     cartella = tmp_path / "data"
     cartella.mkdir()
@@ -314,7 +314,7 @@ def test_un_riavvio_non_riporta_indietro_cio_che_e_stato_cancellato(tmp_path, mo
     profili e i fatti cancellati dalle impostazioni: l'utente li toglie, il
     servizio riparte, e sono di nuovo li'.
     """
-    from core.archivio import importazione
+    from shinra.infra.db import importazione
 
     cartella = tmp_path / "data"
     cartella.mkdir()

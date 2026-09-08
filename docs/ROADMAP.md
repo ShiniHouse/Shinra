@@ -133,7 +133,7 @@ Sono un investimento unico che sblocca l'intero resto della roadmap.
 Criteri di uscita, tutti obbligatori:
 
 1. Nessun difetto aperto di gravita' critica o alta.
-2. Copertura dei test ≥ 70% su `core/` e `server/`.
+2. Copertura dei test ≥ 70% su `src/shinra/`.
 3. Installazione da zero eseguita e verificata su una macchina pulita seguendo
    solo la documentazione.
 4. Trenta giorni di esercizio reale senza regressioni.

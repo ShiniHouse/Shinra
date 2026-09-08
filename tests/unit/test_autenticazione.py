@@ -17,10 +17,10 @@ from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from config.settings import settings
-from core.user_manager import user_manager
-from server import sicurezza
-from server.app import app
+from shinra.api import sicurezza
+from shinra.api.app import app
+from shinra.config.settings import settings
+from shinra.services.user_manager import user_manager
 
 PIN_DI_PROVA = "482913"
 DIPENDENZE_PROTETTE = {"richiedi_autenticazione", "richiedi_amministratore"}
@@ -110,7 +110,7 @@ def test_ogni_rotta_dichiara_la_propria_protezione() -> None:
         "Rotte senza protezione e non dichiarate pubbliche:\n  "
         + "\n  ".join(sorted(set(scoperte)))
         + "\n\nProteggila con Depends(richiedi_autenticazione), oppure aggiungila a "
-        "server/sicurezza.py ROTTE_PUBBLICHE spiegando perche'."
+        "src/shinra/api/sicurezza.py ROTTE_PUBBLICHE spiegando perche'."
     )
 
 
@@ -292,7 +292,7 @@ def test_un_pin_in_chiaro_non_chiude_fuori_la_famiglia() -> None:
     poteva essere riconosciuto perche' il confronto si aspetta un hash:
     nessuno riusciva piu' a entrare, e non c'era modo di accorgersene.
     """
-    from server.app import _prepara_accesso
+    from shinra.api.app import _prepara_accesso
 
     era_attiva = settings.security.auth_enabled
     originali = user_manager.get_users()
@@ -321,7 +321,7 @@ def test_un_pin_in_chiaro_non_chiude_fuori_la_famiglia() -> None:
 
 def test_senza_alcun_pin_ne_viene_generato_uno() -> None:
     """Nessuno deve restare chiuso fuori: se non c'e' modo di entrare, se ne crea uno."""
-    from server.app import _prepara_accesso
+    from shinra.api.app import _prepara_accesso
 
     era_attiva = settings.security.auth_enabled
     salvati = [u.model_copy(deep=True) for u in user_manager.get_users()]

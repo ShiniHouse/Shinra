@@ -1,7 +1,7 @@
 """Configurazione di Alembic.
 
 L'indirizzo del database non e' scritto in alembic.ini: viene da
-`core/archivio/motore.py`, che e' l'unico posto che sa dove vive l'archivio.
+`shinra.infra.db.motore`, che e' l'unico posto che sa dove vive l'archivio.
 Duplicarlo significherebbe, prima o poi, migrare un file e usarne un altro.
 """
 
@@ -13,12 +13,15 @@ from pathlib import Path
 
 from alembic import context
 
-RADICE = Path(__file__).resolve().parent.parent
-if str(RADICE) not in sys.path:
-    sys.path.insert(0, str(RADICE))
+# Alembic si lancia anche da una copia di lavoro dove il pacchetto non e'
+# stato installato: senza questo, `import shinra` fallirebbe. In
+# un'installazione la riga non fa danno, perche' il percorso c'e' gia'.
+SORGENTI = Path(__file__).resolve().parent.parent / "src"
+if SORGENTI.is_dir() and str(SORGENTI) not in sys.path:
+    sys.path.insert(0, str(SORGENTI))
 
-from core.archivio.modelli import Base  # noqa: E402
-from core.archivio.motore import motore  # noqa: E402
+from shinra.infra.db.modelli import Base  # noqa: E402
+from shinra.infra.db.motore import motore  # noqa: E402
 
 config = context.config
 if config.config_file_name is not None:
@@ -28,7 +31,7 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    from core.archivio.motore import percorso_archivio
+    from shinra.infra.db.motore import percorso_archivio
 
     context.configure(
         url=f"sqlite:///{percorso_archivio()}",

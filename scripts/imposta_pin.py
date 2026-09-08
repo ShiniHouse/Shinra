@@ -24,10 +24,14 @@ import secrets
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# Gli script si lanciano dalla copia di lavoro, dove il pacchetto puo' non
+# essere installato: senza questo, `import shinra` fallirebbe.
+_SORGENTI = Path(__file__).resolve().parent.parent / "src"
+if _SORGENTI.is_dir():
+    sys.path.insert(0, str(_SORGENTI))
 
-from core.user_manager import user_manager
-from server.sicurezza import verifica_pin
+from shinra.api.sicurezza import verifica_pin
+from shinra.services.user_manager import user_manager
 
 
 def elenca() -> int:
