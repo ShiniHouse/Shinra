@@ -100,6 +100,14 @@ Una modifica incompatibile si segnala con `!` dopo l'ambito e una nota
 - [ ] `ruff check .` senza errori
 - [ ] `black --check .` senza differenze
 - [ ] `pytest` verde
+- [ ] `mypy src/shinra/config src/shinra/domain src/shinra/infra src/shinra/services src/shinra/skills`
+      senza errori — e' un passo **bloccante** della CI, e mancava da questo
+      elenco: una PR e' arrivata rossa proprio perche' chi la scriveva aveva
+      eseguito gli altri tre e non questo. Non sta fra i ganci pre-commit
+      perche' mypy ha bisogno delle dipendenze installate per vedere i tipi:
+      dentro un gancio darebbe risposte diverse da quelle della CI, ed e'
+      esattamente il difetto che `tests/unit/test_stile.py` presidia per
+      ruff e black
 - [ ] I nuovi comportamenti hanno almeno un test; le correzioni hanno un test
       che **fallisce senza la correzione**
 - [ ] Nessun segreto nel diff (token, PIN, indirizzi IP privati, nomi di persone reali)

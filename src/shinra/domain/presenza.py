@@ -76,7 +76,8 @@ def leggi(persone: dict[str, str]) -> StatoCasa:
     Chi ha uno stato ignoto non finisce ne' fra i presenti ne' fra gli
     assenti: non sapere dov'e' una persona non e' saperla fuori.
     """
-    presenti, assenti = set(), set()
+    presenti: set[str] = set()
+    assenti: set[str] = set()
     for entita, valore in persone.items():
         pulito = (valore or "").strip().lower()
         if pulito in IGNOTO:
