@@ -1,5 +1,6 @@
 ---
 title: "test: portare la copertura al 60% e attivare i controlli automatici"
+issue: 18
 milestone: "v0.2.0"
 labels: ["tipo: attivita'", "area: infra"]
 ---

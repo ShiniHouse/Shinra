@@ -1,5 +1,6 @@
 ---
 title: "feat(casa): liste condivise, calendario e scadenze di manutenzione"
+issue: 25
 milestone: "v0.3.0"
 labels: ["tipo: funzione", "area: core"]
 ---

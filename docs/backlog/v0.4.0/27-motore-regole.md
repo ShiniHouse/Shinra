@@ -1,5 +1,6 @@
 ---
 title: "feat(automazioni): motore di regole con trigger su evento, stato e orario"
+issue: 27
 milestone: "v0.4.0"
 labels: ["tipo: funzione", "area: core", "gravita': alta"]
 ---

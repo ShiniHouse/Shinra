@@ -1,5 +1,6 @@
 ---
 title: "refactor(agent): estrarre l'intent router da process_user_input"
+issue: 17
 milestone: "v0.2.0"
 labels: ["tipo: attivita'", "area: core"]
 ---

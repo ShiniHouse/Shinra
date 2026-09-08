@@ -1,5 +1,6 @@
 ---
 title: "security(web): il blocco della dashboard deve avvenire sul server"
+issue: 5
 milestone: "v0.1.0"
 labels: ["tipo: difetto", "area: sicurezza", "area: frontend", "gravita': alta"]
 riferimento: SEC-03

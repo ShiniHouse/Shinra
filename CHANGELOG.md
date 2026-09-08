@@ -66,6 +66,20 @@ installabile e utilizzabile.
   chi deve solo digitare il PIN.
 
 ### Corretto
+- **I riferimenti alle issue nel codice puntavano nel posto sbagliato.** Le
+  schede del backlog diventano issue su GitHub, e il numero lo assegna
+  GitHub: finora l'unico riferimento era il numero nel nome del file, che
+  pero' e' solo un ordinamento e coincideva per caso. Tre schede scritte dopo
+  la prima importazione hanno ricevuto i numeri 46, 47 e 48 pur chiamandosi
+  `19-`, `20-` e `34-`. I numeri 19 e 20 erano gia' altre due issue della
+  `v0.3.0` — il WebSocket verso Home Assistant e i tool per serrature, media
+  player e aspirapolvere — e due commit che scrivevano `Closes #19` e
+  `Closes #20` intendendo le schede le hanno chiuse come completate. Sono
+  rimaste chiuse per giorni, con la milestone `v0.2.0` che sembrava indietro
+  e la `v0.3.0` che sembrava avviata. Le due issue sono state riaperte, i
+  riferimenti nel codice corretti, e adesso il numero sta nell'intestazione
+  della scheda: `import_backlog.py` ce lo scrive da solo, e
+  `tests/unit/test_backlog.py` fallisce se torna a divergere.
 - Le date dei dispositivi fidati dichiarano il fuso. Uscivano nude
   (`2026-09-08T20:15:00`) e il browser le leggeva come ora locale: d'estate,
   due ore di scarto sull'«ultimo accesso» di ogni telefono.
@@ -139,7 +153,7 @@ installabile e utilizzabile.
   cambia forma o restituisce un feed vuoto. E' la parte che si rompe
   davvero, ed e' l'unica che si puo' verificare a ogni commit.
 - **Dispositivi fidati: il telefono non chiede il PIN ogni volta** (issue
-  #20, ADR 0004). Un PIN per persona rende i permessi reali, ma su un
+  #47, ADR 0004). Un PIN per persona rende i permessi reali, ma su un
   telefono diventa un fastidio quotidiano — e una protezione fastidiosa
   viene disattivata: a quel punto la casa e' aperta come prima, con in piu'
   l'illusione di essere protetta.
@@ -156,7 +170,7 @@ installabile e utilizzabile.
   telefono ancora fidato renderebbe inutile il cambio.
 - **Un dispositivo fidato identifica, non promuove**: il telefono di un
   ragazzo resta il telefono di un ragazzo.
-- **Ruoli e permessi per ogni persona di casa** (issue #19, ADR 0004). Fino a
+- **Ruoli e permessi per ogni persona di casa** (issue #46, ADR 0004). Fino a
   ieri il profilo distingueva adulto, ragazzo e bambino, ma quella distinzione
   cambiava **solo il tono delle risposte**: un bambino poteva comandare
   qualunque cosa.
@@ -430,7 +444,7 @@ installabile e utilizzabile.
   tono delle risposte. Il controllo precede il fast-path, altrimenti una
   richiesta vietata potrebbe accendere una luce prima di essere rifiutata.
   E' un limite dichiarato, non un controllo parentale: confronta parole,
-  quindi si aggira riformulando, e i ruoli veri sono la issue #19.
+  quindi si aggira riformulando, e i ruoli veri sono la issue #46.
 - **Un PIN in chiaro rimasto da una versione precedente non chiude piu' fuori
   la famiglia.** `_prepara_accesso` si fermava se un profilo aveva un `pin`
   qualsiasi: con un valore non cifrato, l'autenticazione risultava attiva,
@@ -462,7 +476,7 @@ installabile e utilizzabile.
   modelli e indirizzo di Home Assistant.
 - Le operazioni distruttive — cancellare un utente, cambiare la configurazione
   — richiedono il ruolo amministratore. Provvisorio: i ruoli veri sono la
-  issue #19 della `v0.2.0`.
+  issue #46 della `v0.2.0`.
 - **I segreti non stanno piu' nel repository** (issue #07, SEC-05).
   `config/config.yaml`, `data/users.json`, `data/knowledge.json` e gli altri
   file di stato non sono piu' tracciati da git. Token di Home Assistant, PIN

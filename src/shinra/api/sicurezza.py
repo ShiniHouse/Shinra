@@ -422,7 +422,7 @@ def richiedi_amministratore(
 ) -> Optional[UserProfile]:
     """Riservato all'amministratore.
 
-    Provvisorio: i ruoli veri arrivano con la issue #19 della v0.2.0. Qui
+    Provvisorio: i ruoli veri arrivano con la issue #46 della v0.2.0. Qui
     protegge le operazioni piu' distruttive — cancellare utenti, cambiare la
     configurazione — senza aspettare quel lavoro.
     """

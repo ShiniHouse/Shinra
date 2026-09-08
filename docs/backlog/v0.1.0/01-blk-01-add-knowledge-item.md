@@ -1,5 +1,6 @@
 ---
 title: "fix(data-store): aggiunge il metodo add_knowledge_item mancante"
+issue: 1
 milestone: "v0.1.0"
 labels: ["tipo: difetto", "area: core", "gravita': critica"]
 riferimento: BLK-01

@@ -1,5 +1,6 @@
 ---
 title: "fix(home-assistant): un unico client, con configurazione dinamica"
+issue: 9
 milestone: "v0.1.0"
 labels: ["tipo: difetto", "area: core", "area: integrazioni", "gravita': alta"]
 riferimento: REL-04

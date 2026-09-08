@@ -1,5 +1,6 @@
 ---
 title: "refactor(persistenza): SQLite e SQLAlchemy al posto dei file JSON"
+issue: 12
 milestone: "v0.2.0"
 labels: ["tipo: attivita'", "area: infra", "gravita': alta"]
 riferimento: "REL-05 — ADR 0002"

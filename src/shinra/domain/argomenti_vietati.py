@@ -6,7 +6,7 @@ non cio' a cui poteva accedere.
 
 Cosa **non** e' questo filtro: un controllo parentale. Confronta parole, quindi
 si aggira riformulando, e chiunque puo' cambiare profilo dal menu finche' i
-ruoli veri non arrivano (issue #19 della v0.2.0). E' un limite dichiarato, non
+ruoli veri non arrivano (issue #46 della v0.2.0). E' un limite dichiarato, non
 una svista: serve a evitare che un argomento indesiderato compaia per caso, non
 a fermare chi lo cerca apposta.
 """

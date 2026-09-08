@@ -1,5 +1,6 @@
 ---
 title: "feat(voce): riconoscimento vocale locale al posto della Web Speech API"
+issue: 31
 milestone: "v0.4.0"
 labels: ["tipo: funzione", "area: core", "area: sicurezza", "gravita': alta"]
 ---

@@ -1,5 +1,6 @@
 ---
 title: "fix(memoria): contesto di conversazione separato per utente e canale"
+issue: 13
 milestone: "v0.2.0"
 labels: ["tipo: difetto", "area: core", "gravita': alta"]
 riferimento: REL-03

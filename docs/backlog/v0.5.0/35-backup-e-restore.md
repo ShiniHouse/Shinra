@@ -1,5 +1,6 @@
 ---
 title: "feat(dati): backup, ripristino e versione di schema"
+issue: 35
 milestone: "v0.5.0"
 labels: ["tipo: funzione", "area: infra"]
 ---

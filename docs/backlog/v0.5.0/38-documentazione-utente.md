@@ -1,5 +1,6 @@
 ---
 title: "docs: documentazione utente e installazione verificata"
+issue: 38
 milestone: "v0.5.0"
 labels: ["tipo: attivita'", "area: documentazione"]
 ---

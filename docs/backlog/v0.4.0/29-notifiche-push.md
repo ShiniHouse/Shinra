@@ -1,5 +1,6 @@
 ---
 title: "feat(notifiche): web push verso la PWA"
+issue: 29
 milestone: "v0.4.0"
 labels: ["tipo: funzione", "area: frontend", "area: infra"]
 ---

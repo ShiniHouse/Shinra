@@ -1,5 +1,6 @@
 ---
 title: "security(auth): PIN con hash, login corretto e rate limit dietro proxy"
+issue: 6
 milestone: "v0.1.0"
 labels: ["tipo: difetto", "area: sicurezza", "gravita': alta"]
 riferimento: SEC-04

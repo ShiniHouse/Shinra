@@ -1,5 +1,6 @@
 ---
 title: "fix(config): collegare le impostazioni esposte e mai lette"
+issue: 26
 milestone: "v0.3.0"
 labels: ["tipo: difetto", "area: core", "gravita': media"]
 ---

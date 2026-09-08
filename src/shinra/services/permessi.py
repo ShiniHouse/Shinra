@@ -15,7 +15,7 @@ oltre ai predefiniti possono nascere «Collaboratrice domestica», «Nonno»,
 sbagliare li' ha conseguenze di un altro ordine, e chi puo' accendere una
 luce non deve per questo poter aprire la porta di casa.
 
-Riferimento: issue #19, ADR 0004.
+Riferimento: issue #46, ADR 0004.
 """
 
 from __future__ import annotations

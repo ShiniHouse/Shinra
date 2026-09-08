@@ -1,5 +1,6 @@
 ---
 title: "security(alexa): verifica la firma Amazon e l'applicationId"
+issue: 4
 milestone: "v0.1.0"
 labels: ["tipo: difetto", "area: sicurezza", "area: integrazioni", "gravita': critica"]
 riferimento: SEC-02

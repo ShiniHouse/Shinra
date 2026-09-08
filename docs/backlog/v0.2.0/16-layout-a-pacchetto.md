@@ -1,5 +1,6 @@
 ---
 title: "refactor(struttura): layout src/shinra e pacchetto installabile"
+issue: 16
 milestone: "v0.2.0"
 labels: ["tipo: attivita'", "area: infra"]
 riferimento: "docs/ARCHITECTURE.md §3"

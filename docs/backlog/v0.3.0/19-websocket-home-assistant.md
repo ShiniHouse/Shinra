@@ -1,5 +1,6 @@
 ---
 title: "feat(home-assistant): connessione WebSocket per stato ed eventi in tempo reale"
+issue: 19
 milestone: "v0.3.0"
 labels: ["tipo: funzione", "area: integrazioni", "gravita': alta"]
 ---

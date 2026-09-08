@@ -2,7 +2,7 @@
 
 Fino alla v0.2.0 il profilo distingueva adulto, ragazzo e bambino ma quella
 distinzione cambiava **solo il tono delle risposte**: un bambino poteva
-comandare qualunque cosa. Riferimento: issue #19, ADR 0004.
+comandare qualunque cosa. Riferimento: issue #46, ADR 0004.
 
 Il test piu' importante di questo file e'
 `test_una_routine_non_aggira_il_permesso_sulle_serrature`: e' il modo ovvio

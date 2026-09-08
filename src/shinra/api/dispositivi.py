@@ -17,7 +17,7 @@ JavaScript non puo' leggere.
 **Un dispositivo fidato identifica, non promuove.** Dice «questo e' il
 telefono di Thomas», e Thomas resta un ragazzo con i permessi da ragazzo.
 
-Riferimento: issue #20, ADR 0004.
+Riferimento: issue #47, ADR 0004.
 """
 
 from __future__ import annotations

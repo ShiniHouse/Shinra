@@ -6,6 +6,13 @@ Richiede GitHub CLI autenticato:  gh auth status
 Lo script e' idempotente: riconosce per titolo le issue gia' presenti e non le
 duplica. Usare --dry-run per vedere cosa farebbe senza scrivere nulla.
 
+Dopo aver creato una issue, il suo numero viene riscritto nell'intestazione del
+file (`issue: NN`). Serve perche' il numero non e' prevedibile: si prende
+quello che GitHub assegna, e un file aggiunto dopo la prima importazione
+riceve un numero lontano dal suo posto nell'ordine. E' successo — i file 19 e
+20 della v0.2.0 sono diventati le issue #46 e #47, mentre #19 e #20 erano gia'
+altre due issue della v0.3.0, e due commit le hanno chiuse per sbaglio.
+
     python scripts/import_backlog.py --dry-run
     python scripts/import_backlog.py
     python scripts/import_backlog.py --milestone v0.1.0
@@ -15,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -67,6 +75,8 @@ def parse(path: Path) -> dict:
         chiave, valore = chiave.strip(), valore.strip()
         if valore.startswith("["):
             meta[chiave] = [v.strip().strip('"') for v in valore[1:-1].split(",") if v.strip()]
+        elif chiave == "issue":
+            meta[chiave] = int(valore)
         else:
             meta[chiave] = valore.strip('"')
 
@@ -77,6 +87,24 @@ def parse(path: Path) -> dict:
     meta["body"] = corpo.strip()
     meta["file"] = str(path.relative_to(BASE))
     return meta
+
+
+def annota_numero(percorso: Path, numero: int) -> None:
+    """Scrive `issue: NN` nell'intestazione, sotto il titolo.
+
+    Il numero lo decide GitHub, non noi: annotarlo e' l'unico modo perche' un
+    commento nel codice possa dire «issue #46» ed essere ancora vero fra sei
+    mesi. Senza, l'unico riferimento e' il numero nel nome del file, che e'
+    solo un ordinamento e prima o poi diverge.
+    """
+    testo = percorso.read_text(encoding="utf-8")
+    if re.search(r"^issue:\s*\d+\s*$", testo, re.M):
+        return
+    aggiornato = re.sub(r'(^title:\s*".*"\s*$)', rf"\1\nissue: {numero}", testo, count=1, flags=re.M)
+    if aggiornato == testo:
+        print(f"    ! non sono riuscito ad annotare il numero in {percorso.name}", file=sys.stderr)
+        return
+    percorso.write_text(aggiornato, encoding="utf-8")
 
 
 def assicura_etichette(dry: bool) -> None:
@@ -175,6 +203,11 @@ def main() -> int:
             if res.returncode != 0:
                 print(f"    ! errore: {res.stderr.strip()}", file=sys.stderr)
                 continue
+            # `gh issue create` stampa l'URL della issue: l'ultimo pezzo e' il numero.
+            trovato = re.search(r"/issues/(\d+)", res.stdout)
+            if trovato:
+                annota_numero(percorso, int(trovato.group(1)))
+                print(f"    -> #{trovato.group(1)}")
         creati += 1
 
     modo = " (simulazione, nulla e' stato scritto)" if args.dry_run else ""
