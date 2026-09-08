@@ -43,6 +43,7 @@ from shinra.services.agent import agent
 from shinra.services.allarme import allarme
 from shinra.services.consegna import descrivi, registra_canali
 from shinra.services.presenza import presenza
+from shinra.services.simulazione import servizio_simulazione
 from shinra.services.timer_engine import timer_engine
 from shinra.services.user_manager import user_manager
 
@@ -199,6 +200,12 @@ async def lifespan(_: FastAPI):
     # L'allarme che scatta mentre nessuno guarda la dashboard non ha
     # avvisato nessuno: qui almeno diventa un evento sul bus.
     allarme.avvia()
+
+    # La simulazione di presenza si spegne da sola quando qualcuno rientra:
+    # senza questo ascolto continuerebbe ad accendere e spegnere le luci
+    # addosso a chi ci vive.
+    servizio_simulazione.avvia()
+
     registra_canali()
     ripresi = timer_engine.ripristina_job()
     rimossi = timer_engine.pulisci_scaduti()
@@ -227,6 +234,7 @@ async def lifespan(_: FastAPI):
 
     # Spegnimento: i job restano nell'archivio per la prossima accensione.
     scheduler.ferma()
+    servizio_simulazione.ferma()
     allarme.ferma()
     await presenza.ferma()
     await eventi_casa.ferma()
