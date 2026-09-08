@@ -40,6 +40,7 @@ from shinra.infra.llm.ollama import OllamaClient
 from shinra.infra.scheduler.motore import scheduler
 from shinra.services import eventi_casa, permessi, registro
 from shinra.services.agent import agent
+from shinra.services.allarme import allarme
 from shinra.services.consegna import descrivi, registra_canali
 from shinra.services.presenza import presenza
 from shinra.services.timer_engine import timer_engine
@@ -194,6 +195,10 @@ async def lifespan(_: FastAPI):
     # Chi c'e' in casa. Dopo la connessione agli eventi, perche' la prima
     # fotografia la legge dalla cache che quella riempie.
     await presenza.avvia()
+
+    # L'allarme che scatta mentre nessuno guarda la dashboard non ha
+    # avvisato nessuno: qui almeno diventa un evento sul bus.
+    allarme.avvia()
     registra_canali()
     ripresi = timer_engine.ripristina_job()
     rimossi = timer_engine.pulisci_scaduti()
@@ -222,6 +227,7 @@ async def lifespan(_: FastAPI):
 
     # Spegnimento: i job restano nell'archivio per la prossima accensione.
     scheduler.ferma()
+    allarme.ferma()
     await presenza.ferma()
     await eventi_casa.ferma()
     await client_home_assistant().chiudi()

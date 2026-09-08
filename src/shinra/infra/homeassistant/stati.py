@@ -30,7 +30,7 @@ DOMINI_CONTROLLABILI = frozenset({"light", "switch", "climate", "cover", "media_
 # comandabili: `person` non si comanda e sapere chi c'e' in casa e'
 # l'informazione piu' utile che passi di qui (issue #22). Coincidevano
 # finche' l'unico consumatore era la dashboard.
-DOMINI_OSSERVATI = DOMINI_CONTROLLABILI | {"person"}
+DOMINI_OSSERVATI = DOMINI_CONTROLLABILI | {"person", "alarm_control_panel"}
 
 # Quanti dispositivi entrano nel riassunto dato al modello. Non e' un limite
 # tecnico ma di attenzione: un elenco lunghissimo peggiora le risposte invece
