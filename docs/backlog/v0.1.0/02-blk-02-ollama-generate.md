@@ -1,5 +1,6 @@
 ---
 title: "fix(ollama): l'estrazione dei fatti chiama un metodo inesistente"
+issue: 2
 milestone: "v0.1.0"
 labels: ["tipo: difetto", "area: core", "gravita': critica"]
 riferimento: BLK-02

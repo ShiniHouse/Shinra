@@ -1,5 +1,6 @@
 ---
 title: "feat(skills): clima completo e tapparelle con posizione"
+issue: 21
 milestone: "v0.3.0"
 labels: ["tipo: funzione", "area: core"]
 ---

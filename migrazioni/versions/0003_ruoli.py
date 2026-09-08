@@ -1,4 +1,4 @@
-"""Ruoli e permessi (issue #19).
+"""Ruoli e permessi (issue #46).
 
 La tabella nasce vuota e viene riempita all'avvio con i cinque ruoli
 predefiniti, i cui identificativi coincidono con i valori che il campo `role`

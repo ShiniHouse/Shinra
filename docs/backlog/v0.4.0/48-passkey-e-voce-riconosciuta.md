@@ -1,5 +1,6 @@
 ---
 title: "feat(sicurezza): passkey al posto del PIN, e riconoscimento di chi parla"
+issue: 48
 milestone: "v0.4.0"
 labels: ["tipo: funzione", "area: sicurezza"]
 riferimento: "ADR 0004"

@@ -1,5 +1,6 @@
 ---
 title: "refactor(frontend): scomporre index.html in moduli ES"
+issue: 34
 milestone: "v0.5.0"
 labels: ["tipo: attivita'", "area: frontend"]
 ---

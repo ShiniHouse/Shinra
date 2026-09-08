@@ -1,5 +1,6 @@
 ---
 title: "security(api): richiede autenticazione su tutti gli endpoint di gestione"
+issue: 3
 milestone: "v0.1.0"
 labels: ["tipo: difetto", "area: sicurezza", "gravita': critica"]
 riferimento: SEC-01

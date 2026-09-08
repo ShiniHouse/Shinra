@@ -1,5 +1,6 @@
 ---
 title: "test: rete di regressione sui difetti della revisione tecnica"
+issue: 10
 milestone: "v0.1.0"
 labels: ["tipo: attivita'", "area: infra", "gravita': alta"]
 ---

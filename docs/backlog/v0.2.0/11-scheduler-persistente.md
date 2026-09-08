@@ -1,5 +1,6 @@
 ---
 title: "feat(scheduler): scheduler persistente per timer, promemoria e automazioni"
+issue: 11
 milestone: "v0.2.0"
 labels: ["tipo: funzione", "area: infra", "gravita': critica"]
 riferimento: "REL-01, REL-02 — ADR 0003"

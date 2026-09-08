@@ -1,5 +1,6 @@
 ---
 title: "feat(canali): satelliti vocali per stanza"
+issue: 33
 milestone: "v0.4.0"
 labels: ["tipo: funzione", "area: integrazioni"]
 ---

@@ -12,7 +12,7 @@ Provano le tre cose che si rompono davvero e in silenzio — la sintassi, gli
 identificativi cercati e non trovati, le chiamate a rotte che non esistono —
 piu' due guardie sulle scelte di questa versione.
 
-Riferimento: issue #19 e #20.
+Riferimento: issue #46 e #47.
 """
 
 from __future__ import annotations

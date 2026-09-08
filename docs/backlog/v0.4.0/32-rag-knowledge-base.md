@@ -1,5 +1,6 @@
 ---
 title: "feat(conoscenza): recupero per similarita' al posto dell'iniezione totale"
+issue: 32
 milestone: "v0.4.0"
 labels: ["tipo: funzione", "area: core"]
 ---

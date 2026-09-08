@@ -1,5 +1,6 @@
 ---
 title: "security(server): debug disattivato, header di sicurezza e CORS"
+issue: 8
 milestone: "v0.1.0"
 labels: ["tipo: attivita'", "area: sicurezza", "gravita': media"]
 riferimento: SEC-06

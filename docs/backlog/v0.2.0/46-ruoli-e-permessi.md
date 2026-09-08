@@ -1,5 +1,6 @@
 ---
 title: "feat(sicurezza): ruoli personalizzati e permessi per utente"
+issue: 46
 milestone: "v0.2.0"
 labels: ["tipo: funzione", "area: sicurezza", "gravita': alta"]
 riferimento: "ADR 0004"
@@ -39,7 +40,7 @@ Motivazioni e alternative in [ADR 0004](../../adr/0004-identita-ruoli-e-permessi
       sulla risposta — gia' fatto nella v0.1.0 (`core/argomenti_vietati.py`,
       issue #5), verificato dai suoi test
 - [x] Schermata di gestione ruoli e assegnazione — fatta nella PR di frontend
-      che porta anche i dispositivi fidati (issue #20). I permessi di ogni
+      che porta anche i dispositivi fidati (issue #47). I permessi di ogni
       ruolo sono caselle da spuntare, i ruoli propri si creano dalla pagina, i
       predefiniti si modificano ma non si cancellano. E il ruolo di un profilo
       **si sceglie**: veniva dedotto da avatar e fascia d'eta', e la fascia

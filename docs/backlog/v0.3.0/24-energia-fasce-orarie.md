@@ -1,5 +1,6 @@
 ---
 title: "feat(energia): consumi, costi e fasce orarie italiane"
+issue: 24
 milestone: "v0.3.0"
 labels: ["tipo: funzione", "area: core"]
 ---

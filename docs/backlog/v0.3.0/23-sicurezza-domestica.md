@@ -1,5 +1,6 @@
 ---
 title: "feat(sicurezza-casa): allarme, aperture e notifiche di intrusione"
+issue: 23
 milestone: "v0.3.0"
 labels: ["tipo: funzione", "area: core"]
 ---

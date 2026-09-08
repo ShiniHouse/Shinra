@@ -1,5 +1,6 @@
 ---
 title: "feat(audit): registro delle azioni eseguite in casa"
+issue: 15
 milestone: "v0.2.0"
 labels: ["tipo: funzione", "area: sicurezza", "area: infra"]
 ---

@@ -1,5 +1,6 @@
 ---
 title: "feat(skills): tool per serrature, media player, aspirapolvere e ventilatori"
+issue: 20
 milestone: "v0.3.0"
 labels: ["tipo: funzione", "area: core"]
 ---

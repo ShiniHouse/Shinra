@@ -1,4 +1,4 @@
-"""Dispositivi fidati (issue #20).
+"""Dispositivi fidati (issue #47).
 
 Della credenziale si conserva solo l'impronta, come per i PIN: se il
 database finisse dove non deve, queste righe non aprirebbero nessuna casa.

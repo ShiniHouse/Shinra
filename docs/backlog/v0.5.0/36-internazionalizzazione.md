@@ -1,5 +1,6 @@
 ---
 title: "feat(i18n): separare le stringhe dalla logica"
+issue: 36
 milestone: "v0.5.0"
 labels: ["tipo: attivita'", "area: core", "area: frontend"]
 ---

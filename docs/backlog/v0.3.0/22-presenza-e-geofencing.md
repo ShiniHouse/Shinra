@@ -1,5 +1,6 @@
 ---
 title: "feat(presenza): presenza delle persone e automazioni di arrivo e uscita"
+issue: 22
 milestone: "v0.3.0"
 labels: ["tipo: funzione", "area: core"]
 ---

@@ -3,7 +3,7 @@
 Un PIN per persona rende i permessi reali, ma su un telefono diventa un
 fastidio quotidiano — e una protezione fastidiosa viene disattivata. A quel
 punto la casa e' aperta come prima, con in piu' l'illusione di essere
-protetta. Riferimento: issue #20, ADR 0004.
+protetta. Riferimento: issue #47, ADR 0004.
 """
 
 from __future__ import annotations

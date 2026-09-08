@@ -12,6 +12,22 @@ tutto il resto.
 L'intestazione YAML contiene i metadati usati dallo script di importazione.
 Il corpo e' il testo della issue.
 
+Il campo `issue` e' il numero che GitHub ha assegnato: lo scrive
+`import_backlog.py` subito dopo aver creato la issue, e **non si modifica a
+mano**. Il numero nel nome del file deve coincidere con quello, e c'e' un test
+che lo verifica (`tests/unit/test_backlog.py`).
+
+Non e' pignoleria. Il numero lo decide GitHub, non l'ordine in cui abbiamo
+scritto i file: tre schede aggiunte dopo la prima importazione hanno ricevuto
+i numeri 46, 47 e 48 pur chiamandosi `19-`, `20-` e `34-`. I numeri 19 e 20
+erano gia' altre due issue della v0.3.0, e due commit che scrivevano
+`Closes #19` e `Closes #20` intendendo le schede hanno chiuso come completate
+due lavori che nessuno aveva iniziato.
+
+Quando si aggiunge una scheda nuova, la si chiama con un numero qualunque
+(l'ultimo piu' uno va bene), si esegue l'importazione, e **poi** si rinomina
+il file con il numero che GitHub ha dato.
+
 ## Importazione su GitHub
 
 Serve [GitHub CLI](https://cli.github.com/) autenticato:

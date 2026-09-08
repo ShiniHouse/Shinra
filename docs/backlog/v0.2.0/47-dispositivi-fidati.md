@@ -1,5 +1,6 @@
 ---
 title: "feat(sicurezza): dispositivi fidati, per non chiedere il PIN ogni volta"
+issue: 47
 milestone: "v0.2.0"
 labels: ["tipo: funzione", "area: sicurezza", "area: frontend"]
 riferimento: "ADR 0004"
@@ -23,7 +24,7 @@ dispositivo dopo il primo accesso, e permettere di revocarlo.
 - [x] Elenco dei dispositivi fidati: rotte `/api/dispositivi` (elenco,
       revoca singola, revoca totale) con nome, ultimo accesso e indirizzo.
       La schermata sta nella scheda «Gestione Utenti», insieme ai ruoli
-      (issue #19): sono la stessa pagina e sono state lo stesso lavoro. Ogni
+      (issue #46): sono la stessa pagina e sono state lo stesso lavoro. Ogni
       riga dice anche se e' il dispositivo da cui si sta guardando — senza,
       l'elenco e' una fila di nomi identici e si revoca il proprio.
 - [x] «Revoca tutti i dispositivi» in un clic, per il telefono perso

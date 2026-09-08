@@ -1,5 +1,6 @@
 ---
 title: "feat(canvas): nodi condizione e trigger temporale nell'editor a grafo"
+issue: 28
 milestone: "v0.4.0"
 labels: ["tipo: funzione", "area: frontend"]
 ---

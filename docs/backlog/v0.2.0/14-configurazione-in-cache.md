@@ -1,5 +1,6 @@
 ---
 title: "perf(config): configurazione in cache con invalidazione al salvataggio"
+issue: 14
 milestone: "v0.2.0"
 labels: ["tipo: attivita'", "area: infra", "gravita': media"]
 riferimento: REL-06

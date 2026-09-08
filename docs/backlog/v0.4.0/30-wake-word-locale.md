@@ -1,5 +1,6 @@
 ---
 title: "feat(voce): parola di attivazione locale"
+issue: 30
 milestone: "v0.4.0"
 labels: ["tipo: funzione", "area: core"]
 ---

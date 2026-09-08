@@ -1,5 +1,6 @@
 ---
 title: "security(config): sposta i segreti fuori dal repository"
+issue: 7
 milestone: "v0.1.0"
 labels: ["tipo: difetto", "area: sicurezza", "area: infra", "gravita': alta"]
 riferimento: SEC-05

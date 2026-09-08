@@ -1,5 +1,6 @@
 ---
 title: "feat(distribuzione): immagine Docker e add-on per Home Assistant OS"
+issue: 37
 milestone: "v0.5.0"
 labels: ["tipo: funzione", "area: infra"]
 ---
