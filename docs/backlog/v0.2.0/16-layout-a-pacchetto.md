@@ -23,16 +23,29 @@ La struttura target e le regole di dipendenza sono in
 
 ## Cosa fare
 
-- [ ] Spostare il codice sotto `src/shinra/` con i livelli `domain`, `infra`, `services`, `skills`, `channels`, `api`
-- [ ] Aggiornare gli import; verificare che i test passino a ogni passo intermedio
-- [ ] `__version__` in `src/shinra/__init__.py`, letto da `pyproject.toml`
-- [ ] Punto di ingresso `shinra` come comando da console, mantenendo `run.py` come alias
-- [ ] Aggiungere a ruff la regola di divieto import fra livelli (`flake8-tidy-imports`), cosi' che una violazione fallisca in CI
-- [ ] Aggiornare `ARCHITECTURE.md` con la struttura effettiva
+- [x] Spostare il codice sotto `src/shinra/` con i livelli `domain`, `infra`, `services`, `skills`, `channels`, `api`
+- [x] Aggiornare gli import; verificare che i test passino a ogni passo intermedio
+- [x] `__version__` in `src/shinra/__init__.py`, letto da `pyproject.toml`
+- [x] Punto di ingresso `shinra` come comando da console, mantenendo `run.py` come alias
+- [x] La regola di divieto import fra livelli fallisce in CI — ma con un test
+      (`tests/unit/test_architettura.py`) e non con `flake8-tidy-imports`. La
+      regola di ruff sa dire «vietato», non «vietato tranne queste diciannove
+      che esistevano prima»: o si accettano tutte come eccezioni permanenti,
+      o la CI e' rossa dal primo giorno. Il test invece congela l'elenco:
+      una violazione nuova fallisce, e una riparata fallisce anche lei
+      finche' non la si toglie. Il debito e' scritto e puo' solo accorciarsi.
+- [x] Aggiornare `ARCHITECTURE.md` con la struttura effettiva
 
 ## Criteri di accettazione
 
-- [ ] `pip install -e .` seguito da `shinra` avvia il servizio
-- [ ] `domain/` non importa nulla da `infra/`, `api/` o `channels/`
-- [ ] La regola di dipendenza e' verificata automaticamente in CI
-- [ ] Nessuna regressione funzionale: tutti i test passano
+- [x] `pip install -e .` seguito da `shinra` avvia il servizio
+- [x] `domain/` non importa nulla da `infra/`, `api/` o `channels/`
+- [x] La regola di dipendenza e' verificata automaticamente in CI
+- [x] Nessuna regressione funzionale: tutti i test passano
+
+## Cosa resta
+
+Le diciannove violazioni delle regole di dipendenza, elencate in
+`tests/unit/test_architettura.py`. Ripararle dentro allo spostamento avrebbe
+prodotto una modifica illeggibile: sono un lavoro suo, da fare un gruppo
+alla volta. Il primo e' `api -> infra` (dodici voci su diciannove).

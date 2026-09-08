@@ -13,10 +13,10 @@ from pathlib import Path
 
 import pytest
 
-from core.archivio import importazione
-from core.data_store import DataStore
-from core.interview_engine import INTERVIEW_STEPS, LearningInterviewEngine
-from core.ollama_client import OllamaClient
+from shinra.infra.data_store import DataStore
+from shinra.infra.db import importazione
+from shinra.infra.llm.ollama import OllamaClient
+from shinra.services.interview_engine import INTERVIEW_STEPS, LearningInterviewEngine
 
 RADICE = Path(__file__).resolve().parent.parent.parent
 
@@ -143,7 +143,7 @@ async def test_l_intervista_arriva_in_fondo(archivio: DataStore, monkeypatch) ->
     Prima di questa correzione la prima risposta sollevava AttributeError e
     l'utente vedeva un 500.
     """
-    import core.interview_engine as modulo
+    import shinra.services.interview_engine as modulo
 
     monkeypatch.setattr(modulo, "data_store", archivio)
     motore = LearningInterviewEngine()
@@ -168,7 +168,7 @@ async def test_l_intervista_arriva_in_fondo(archivio: DataStore, monkeypatch) ->
 @pytest.mark.asyncio
 async def test_un_fatto_non_salvabile_non_ferma_l_intervista(archivio, monkeypatch) -> None:
     """Era esattamente il difetto BLK-01: l'errore arrivava all'utente come 500."""
-    import core.interview_engine as modulo
+    import shinra.services.interview_engine as modulo
 
     def rifiuta(*a, **k):
         raise OSError("disco pieno")

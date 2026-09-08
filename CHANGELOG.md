@@ -200,6 +200,36 @@ installabile e utilizzabile.
   si parla davvero. Cadono gli ultimi due xfail del parser.
 
 ### Modificato
+- **Il codice sta sotto `src/shinra/`**, diviso nei livelli dichiarati da
+  `docs/ARCHITECTURE.md`: `config`, `domain`, `infra`, `services`, `skills`,
+  `channels`, `api`. Le cartelle di primo livello spariscono — `core/`,
+  `server/`, `config/`, `integrations/` — e con loro il rischio che un
+  `import config` risolvesse sulla directory di lavoro invece che sul
+  progetto: `config` e' un nome che hanno in molti. Sotto `src/` il pacchetto
+  si raggiunge solo se installato, quindi i test provano cio' che si
+  installa davvero.
+- **La regola di dipendenza fra i livelli adesso si verifica.** Era scritta
+  in `ARCHITECTURE.md` dalla `0.1.0` e nessuno poteva farla rispettare,
+  perche' i livelli non esistevano come cartelle. `tests/unit/test_architettura.py`
+  la controlla a ogni esecuzione della suite. Le diciannove violazioni
+  ereditate sono elencate li' una per una con il loro motivo: una nuova fa
+  fallire i test, e una riparata fa fallire anche lei finche' non si toglie
+  dall'elenco. Il debito e' scritto e puo' solo accorciarsi.
+- **La radice del progetto si calcola in un posto solo** (`shinra/percorsi.py`),
+  invece che in nove moduli ognuno con la sua catena di `.parent`. Sbagliare
+  quella catena non solleva niente: la cartella dei dati punta altrove, il
+  `mkdir` che segue la crea, e il servizio riparte con un database vuoto —
+  nessun errore, solo la casa che ha dimenticato tutto. Era la premessa
+  necessaria allo spostamento, che cambia la profondita' di ogni modulo.
+- Il servizio si avvia con il comando `shinra`, installato dal pacchetto.
+  `run.py` resta come alias, perche' e' da li' che parte `shinra.service` e
+  cambiare anche quello avrebbe reso lo spostamento un aggiornamento che non
+  riparte.
+- `scripts/deploy.sh` rimuove `core/`, `server/` e `integrations/` dal server
+  dopo l'aggiornamento. Git le lascia indietro perche' dentro resta il
+  `__pycache__`, che non e' tracciato, e un `.pyc` di un modulo che non
+  esiste piu' e' il genere di cosa che un giorno spiega un errore assurdo.
+  Le cancella solo se git non ci tiene piu' niente.
 - **`process_user_input` da 250 righe a un instradamento** (issue #17). Ogni
   intento — apprendimento, timer, modalita', dispositivi, temperatura
   interna, meteo, notizie, enciclopedia — e' un oggetto in `core/intenti/`

@@ -107,7 +107,7 @@ def test_ogni_chiamata_api_della_pagina_corrisponde_a_una_rotta():
     dati», non «ho sbagliato indirizzo». Rinominare una rotta lato server
     senza toccare la pagina si nota solo aprendola.
     """
-    from server.app import app
+    from shinra.api.app import app
     from tests.unit.test_autenticazione import rotte_api
 
     def normalizza(percorso: str) -> str:

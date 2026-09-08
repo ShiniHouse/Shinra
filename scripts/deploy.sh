@@ -393,6 +393,20 @@ if [[ $DRY_RUN -eq 0 && ${#STATO_MESSO_DA_PARTE[@]} -gt 0 ]]; then
     verde "Stato locale conservato: ${#STATO_MESSO_DA_PARTE[@]} file."
 fi
 
+# ---------------------------------------------- 4b. cartelle abbandonate
+# Lo spostamento sotto src/ (issue #16) lascia indietro core/, server/ e
+# integrations/: git non le rimuove perche' dentro c'e' ancora __pycache__,
+# che non e' tracciato. Restano a confondere chi guarda la cartella, e un
+# .pyc di un modulo che non esiste piu' e' il genere di cosa che un giorno
+# spiega un errore assurdo. Si cancellano solo se git non ci tiene piu'
+# niente: la condizione e' la garanzia che non si stia buttando via codice.
+for vecchia in core server integrations; do
+    if [[ -d "$APP_DIR/$vecchia" && -z "$(git_utente ls-files "$vecchia")" ]]; then
+        info "Rimuovo la cartella abbandonata $vecchia/."
+        esegui rm -rf "${APP_DIR:?}/$vecchia"
+    fi
+done
+
 # ------------------------------------------------------- 5. dipendenze
 passo "Dipendenze"
 if git_utente diff --quiet "$ATTUALE" "$NUOVO" -- pyproject.toml requirements.txt; then

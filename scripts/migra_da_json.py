@@ -22,9 +22,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# Gli script si lanciano dalla copia di lavoro, dove il pacchetto puo' non
+# essere installato: senza questo, `import shinra` fallirebbe.
 RADICE = Path(__file__).resolve().parent.parent
-if str(RADICE) not in sys.path:
-    sys.path.insert(0, str(RADICE))
+SORGENTI = RADICE / "src"
+if SORGENTI.is_dir() and str(SORGENTI) not in sys.path:
+    sys.path.insert(0, str(SORGENTI))
 
 VERDE, GIALLO, ROSSO, GRIGIO, FINE = "\033[32m", "\033[33m", "\033[31m", "\033[90m", "\033[0m"
 
@@ -41,9 +44,9 @@ def _riepilogo(letti: dict[str, list[dict[str, Any]]], sorgente: Path, destinazi
 
 
 def migra(archivio: Path, prova: bool) -> int:
-    from core.archivio import importazione
-    from core.archivio import motore as modulo_motore
-    from core.archivio.depositi import DEPOSITI
+    from shinra.infra.db import importazione
+    from shinra.infra.db import motore as modulo_motore
+    from shinra.infra.db.depositi import DEPOSITI
 
     letti = importazione.leggi_tutto()
     _riepilogo(letti, importazione.DATA_DIR, archivio)
@@ -67,8 +70,8 @@ def migra(archivio: Path, prova: bool) -> int:
 
 
 def verifica(archivio: Path) -> int:
-    from core.archivio import importazione
-    from core.archivio import motore as modulo_motore
+    from shinra.infra.db import importazione
+    from shinra.infra.db import motore as modulo_motore
 
     modulo_motore.reimposta(archivio)
     return _mostra_verifica(importazione.verifica(importazione.leggi_tutto()))
@@ -108,7 +111,7 @@ def main() -> int:
     )
     argomenti = p.parse_args()
 
-    from core.archivio.motore import percorso_archivio
+    from shinra.infra.db.motore import percorso_archivio
 
     archivio = argomenti.archivio or percorso_archivio()
 

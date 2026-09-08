@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 RADICE = Path(__file__).resolve().parent.parent.parent
-SORGENTI = [RADICE / "core", RADICE / "server", RADICE / "config", RADICE / "integrations"]
+SORGENTI = [RADICE / "src" / "shinra"]
 
 
 def occorrenze(simbolo: str, escludi: tuple[str, ...] = ()) -> list[str]:
@@ -46,7 +46,7 @@ def occorrenze(simbolo: str, escludi: tuple[str, ...] = ()) -> list[str]:
 def test_le_fonti_rss_configurate_sono_usate() -> None:
     assert occorrenze("get_sources", escludi=("data_store.py", "routes_admin.py")), (
         "data/sources.json e il gestore fonti dell'interfaccia non hanno alcun effetto: "
-        "core/tools/news_search.py usa un dizionario RSS_FEEDS scritto nel codice"
+        "src/shinra/skills/news_search.py usa un dizionario RSS_FEEDS scritto nel codice"
     )
 
 
@@ -92,7 +92,7 @@ def test_l_annuncio_su_echo_e_utilizzato() -> None:
     """Risolto dalla issue #11: il canale di consegna la usa per annunciare
     timer e promemoria scaduti su un dispositivo Echo."""
     assert occorrenze("speak_on_alexa", escludi=("ha_client.py",)), (
-        "core/ha_client.py definisce speak_on_alexa() ma nessuno la chiama: "
+        "src/shinra/infra/homeassistant/client.py definisce speak_on_alexa() ma nessuno la chiama: "
         "l'assistente non puo' parlare spontaneamente su un dispositivo Echo"
     )
 
@@ -121,12 +121,12 @@ def test_nessuna_dipendenza_dichiarata_e_inutilizzata() -> None:
 
 
 MODULI_CHE_IMPORTANO_SETTINGS = (
-    "server.sicurezza",
-    "server.routes_admin",
-    "core.agent",
-    "core.consegna",
-    "config.prompt_templates",
-    "integrations.alexa.skill_handler",
+    "shinra.api.sicurezza",
+    "shinra.api.routes_admin",
+    "shinra.services.agent",
+    "shinra.services.consegna",
+    "shinra.config.prompt_templates",
+    "shinra.channels.alexa.skill_handler",
 )
 
 
@@ -140,7 +140,7 @@ def test_c_e_una_sola_configurazione_per_tutti() -> None:
     """
     import importlib
 
-    from config import settings as modulo
+    from shinra.config import settings as modulo
 
     for nome in MODULI_CHE_IMPORTANO_SETTINGS:
         m = importlib.import_module(nome)
@@ -151,8 +151,8 @@ def test_c_e_una_sola_configurazione_per_tutti() -> None:
 
 def test_dopo_un_ricarico_i_moduli_vedono_i_valori_nuovi(monkeypatch) -> None:
     """La prova che conta: cambiare la configurazione arriva a chi la usa."""
-    from config import settings as modulo
-    from server import sicurezza
+    from shinra.api import sicurezza
+    from shinra.config import settings as modulo
 
     nome_originale = modulo.settings.assistant.name
 

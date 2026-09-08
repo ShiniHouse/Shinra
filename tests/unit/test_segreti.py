@@ -13,8 +13,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from config import secrets as segreti
-from config.settings import AppConfig, migra_segreti_su_env, save_config, verifica_configurazione
+from shinra.config import secrets as segreti
+from shinra.config.settings import AppConfig, migra_segreti_su_env, save_config, verifica_configurazione
 
 RADICE = Path(__file__).resolve().parent.parent.parent
 # Ha la forma di un JWT perche' il test deve somigliare al caso reale.
@@ -29,7 +29,7 @@ def ambiente_isolato(tmp_path, monkeypatch):
     env = tmp_path / ".env"
     cfg = tmp_path / "config.yaml"
     monkeypatch.setattr(segreti, "ENV_PATH", env)
-    import config.settings as impostazioni
+    import shinra.config.settings as impostazioni
 
     monkeypatch.setattr(impostazioni, "CONFIG_PATH", cfg)
     for variabile, _ in segreti.CAMPI_DA_AMBIENTE.values():

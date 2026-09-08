@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.tts_engine import clean_text_for_tts
+from shinra.infra.tts import clean_text_for_tts
 
 
 @pytest.mark.parametrize(

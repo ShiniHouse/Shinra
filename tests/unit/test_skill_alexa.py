@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import pytest
 
-from core.archivio import depositi
-from integrations.alexa import skill_handler
+from shinra.channels.alexa import skill_handler
+from shinra.infra.db import depositi
 
 
 @pytest.fixture

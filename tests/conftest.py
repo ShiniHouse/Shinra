@@ -1,22 +1,21 @@
 """Configurazione comune della suite di test.
 
-Finche' il codice non e' sotto `src/shinra/` (issue #16, milestone v0.2.0) la
-radice del progetto va aggiunta a sys.path perche' `import core` risolva.
+La suite gira sul pacchetto installato (`pip install -e ".[dev]"`), non sui
+file: e' il motivo per cui il codice sta sotto `src/` (issue #16). Se
+`src/shinra/` fosse raggiungibile dalla cartella di lavoro, i test
+proverebbero i sorgenti invece di cio' che si installa davvero — e le due
+cose possono differire, per esempio quando `pyproject.toml` dimentica un
+pacchetto.
 """
 
 from __future__ import annotations
 
-import sys
+import shutil
 from pathlib import Path
 
+import pytest
+
 RADICE = Path(__file__).resolve().parent.parent
-if str(RADICE) not in sys.path:
-    sys.path.insert(0, str(RADICE))
-
-
-import shutil  # noqa: E402
-
-import pytest  # noqa: E402
 
 _MODELLO: Path | None = None
 
@@ -25,7 +24,7 @@ def _archivio_modello(tmp_path_factory) -> Path:
     """Un database gia' pronto, costruito una volta sola per tutta la suite."""
     global _MODELLO
     if _MODELLO is None:
-        from core.archivio import importazione, motore
+        from shinra.infra.db import importazione, motore
 
         _MODELLO = tmp_path_factory.mktemp("modello") / "modello.db"
         importazione.crea_vuoto(_MODELLO)
@@ -56,7 +55,7 @@ def archivio_isolato(tmp_path_factory):
     la casa di esempio, quella che vede anche chi installa Shinra per la
     prima volta.
     """
-    from core.archivio import motore
+    from shinra.infra.db import motore
 
     percorso = tmp_path_factory.mktemp("archivio") / "prova.db"
     # Costruire schema e dati di esempio a ogni test costa quasi mezzo minuto
@@ -84,9 +83,9 @@ def cliente_autenticato():
     """
     from fastapi.testclient import TestClient
 
-    from core.user_manager import user_manager
-    from server import sicurezza
-    from server.app import app
+    from shinra.api import sicurezza
+    from shinra.api.app import app
+    from shinra.services.user_manager import user_manager
 
     with TestClient(app) as client:
         utente = user_manager.get_users()[0]

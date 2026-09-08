@@ -14,18 +14,18 @@ from pathlib import Path
 
 import pytest
 
-from core import consegna
-from core import scheduler as modulo_scheduler
-from core import timer_engine as modulo_timer
-from core.archivio import importazione
-from core.eventi import PROMEMORIA_SCADUTO, TIMER_SCADUTO, BusEventi, Evento, bus
-from core.scheduler import (
+from shinra.domain.eventi import PROMEMORIA_SCADUTO, TIMER_SCADUTO, BusEventi, Evento, bus
+from shinra.infra.db import importazione
+from shinra.infra.scheduler import motore as modulo_scheduler
+from shinra.infra.scheduler.motore import (
     PREFISSO_PROMEMORIA,
     PREFISSO_TIMER,
     TOLLERANZA_PROMEMORIA,
     TOLLERANZA_TIMER,
     ServizioScheduler,
 )
+from shinra.services import consegna
+from shinra.services import timer_engine as modulo_timer
 
 
 def _fra(secondi: float) -> float:
@@ -302,7 +302,9 @@ async def test_senza_echo_configurato_l_annuncio_non_tenta_home_assistant(monkey
         chiamate.append(True)
         raise AssertionError("non doveva contattare Home Assistant")
 
-    monkeypatch.setattr("core.ha_client.client_home_assistant", non_chiamare, raising=False)
+    monkeypatch.setattr(
+        "shinra.infra.homeassistant.client.client_home_assistant", non_chiamare, raising=False
+    )
 
     await consegna.annuncia_su_echo(Evento(tipo=TIMER_SCADUTO, dati={"etichetta": "pasta"}))
     assert chiamate == []

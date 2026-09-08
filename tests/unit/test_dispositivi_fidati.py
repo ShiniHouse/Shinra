@@ -13,11 +13,11 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from fastapi.testclient import TestClient
 
-from core import permessi
-from core.archivio import depositi
-from core.user_manager import user_manager
-from server import dispositivi, sicurezza
-from server.app import app
+from shinra.api import dispositivi, sicurezza
+from shinra.api.app import app
+from shinra.infra.db import depositi
+from shinra.services import permessi
+from shinra.services.user_manager import user_manager
 
 PIN = "482913"
 
@@ -25,7 +25,7 @@ PIN = "482913"
 @pytest.fixture
 def casa_chiusa():
     """Autenticazione attiva, due profili con PIN, tutto azzerato."""
-    from config.settings import settings
+    from shinra.config.settings import settings
 
     era_attiva = settings.security.auth_enabled
     settings.security.auth_enabled = True
@@ -58,8 +58,8 @@ def _entra(client: TestClient, utente: str = "alessio", pin: str = PIN, ricorda:
 
 def _sposta_ultimo_uso(identificativo: str, quando: datetime) -> None:
     """Fa invecchiare una riga senza aspettare dieci giorni."""
-    from core.archivio.modelli import DispositivoFidato
-    from core.archivio.motore import sessione
+    from shinra.infra.db.modelli import DispositivoFidato
+    from shinra.infra.db.motore import sessione
 
     with sessione() as s:
         s.get(DispositivoFidato, identificativo).ultimo_uso = quando
@@ -139,8 +139,8 @@ def test_nel_database_c_e_solo_l_impronta(casa_chiusa):
 
     from sqlalchemy import select
 
-    from core.archivio.modelli import DispositivoFidato
-    from core.archivio.motore import sessione
+    from shinra.infra.db.modelli import DispositivoFidato
+    from shinra.infra.db.motore import sessione
 
     with sessione() as s:
         righe = s.scalars(select(DispositivoFidato)).all()
@@ -160,8 +160,8 @@ def test_un_dispositivo_lasciato_nel_cassetto_scade():
 
     from sqlalchemy import select
 
-    from core.archivio.modelli import DispositivoFidato
-    from core.archivio.motore import sessione
+    from shinra.infra.db.modelli import DispositivoFidato
+    from shinra.infra.db.motore import sessione
 
     with sessione() as s:
         riga = s.scalars(select(DispositivoFidato)).first()
@@ -178,8 +178,8 @@ def test_ogni_uso_rinnova_la_scadenza():
 
     from sqlalchemy import select
 
-    from core.archivio.modelli import DispositivoFidato
-    from core.archivio.motore import sessione
+    from shinra.infra.db.modelli import DispositivoFidato
+    from shinra.infra.db.motore import sessione
 
     with sessione() as s:
         s.scalars(select(DispositivoFidato)).first().ultimo_uso = datetime.now(timezone.utc) - timedelta(

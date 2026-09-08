@@ -22,8 +22,8 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.x509.oid import NameOID
 
-from integrations.alexa import verifica_firma as vf
-from integrations.alexa.verifica_firma import FirmaNonValida
+from shinra.channels.alexa import verifica_firma as vf
+from shinra.channels.alexa.verifica_firma import FirmaNonValida
 
 SKILL_ID = "amzn1.ask.skill.0000-1111-2222"
 URL_VALIDO = "https://s3.amazonaws.com/echo.api/echo-api-cert-1.pem"

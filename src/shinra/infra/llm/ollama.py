@@ -1,0 +1,228 @@
+import json
+import logging
+import re
+from typing import Any, Dict, List, Optional
+
+import httpx
+
+from shinra.config.settings import settings
+
+logger = logging.getLogger(__name__)
+
+# Set dei modelli che non supportano tools nativi via API Ollama
+_NON_TOOL_MODELS = {"gemma", "gemma2", "gemma3", "deepseek-r1", "phi", "phi3"}
+
+
+class OllamaClient:
+    def __init__(self, base_url: Optional[str] = None, model: Optional[str] = None):
+        self._base_url = base_url
+        self._model = model
+
+    @property
+    def base_url(self) -> str:
+        if self._base_url:
+            return self._base_url.rstrip("/")
+        return settings.llm.ollama_url.rstrip("/")
+
+    @property
+    def model(self) -> str:
+        if self._model:
+            return self._model
+        return settings.llm.model
+
+    @property
+    def timeout(self) -> float:
+        return float(settings.llm.timeout_seconds or 180)
+
+    async def get_models_detailed(self) -> List[Dict[str, Any]]:
+        """Recupera la lista dettagliata dei modelli installati con dimensioni e dettagli."""
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(6.0, connect=3.0)) as client:
+                res = await client.get(f"{self.base_url}/api/tags")
+                if res.status_code == 200:
+                    data = res.json()
+                    models_list = []
+                    for m in data.get("models", []):
+                        size_gb = round(m.get("size", 0) / (1024**3), 2)
+                        details = m.get("details", {})
+                        param_size = details.get("parameter_size", "")
+                        quant = details.get("quantization_level", "")
+                        models_list.append(
+                            {
+                                "name": m.get("name"),
+                                "size_gb": f"{size_gb} GB" if size_gb > 0 else "",
+                                "parameter_size": param_size,
+                                "quantization": quant,
+                                "family": details.get("family", ""),
+                            }
+                        )
+                    return models_list
+                return []
+        except Exception as e:
+            logger.warning(f"Impossibile contattare Ollama su {self.base_url}: {e}")
+            return []
+
+    async def get_available_models(self) -> List[str]:
+        """Recupera la lista dei nomi dei modelli installati su Ollama."""
+        detailed = await self.get_models_detailed()
+        return [m["name"] for m in detailed if "name" in m]
+
+    async def check_health(self) -> Dict[str, Any]:
+        """Verifica se Ollama è raggiungibile e quali modelli sono pronti."""
+        models = await self.get_available_models()
+        if models:
+            selected_model = self.model
+            if self.model not in models:
+                qwen_models = [m for m in models if "qwen" in m.lower() or "gemma" in m.lower()]
+                if qwen_models:
+                    selected_model = qwen_models[0]
+            return {
+                "status": "online",
+                "models": models,
+                "current_model": selected_model,
+                "active_model": selected_model,
+            }
+        return {"status": "offline", "models": [], "current_model": self.model, "active_model": self.model}
+
+    async def genera_json(
+        self,
+        prompt: str,
+        system: str = "",
+        temperature: float = 0.1,
+    ) -> Optional[Dict[str, Any]]:
+        """Chiede al modello una risposta in JSON e la restituisce analizzata.
+
+        Restituisce None quando il modello non e' raggiungibile o produce
+        qualcosa di inutilizzabile: chi chiama decide come ripiegare, invece
+        di ricevere un'eccezione a meta' di un'operazione dell'utente.
+
+        `format: "json"` obbliga Ollama a emettere JSON valido. Non basta da
+        solo — il modello puo' comunque restituire una struttura diversa da
+        quella chiesta — ma elimina la classe di errori piu' comune, cioe' il
+        JSON avvolto in un blocco di codice o preceduto da una frase.
+        """
+        messaggi: List[Dict[str, Any]] = []
+        if system:
+            messaggi.append({"role": "system", "content": system})
+        messaggi.append({"role": "user", "content": prompt})
+
+        risposta = await self.chat(messages=messaggi, temperature=temperature, formato="json")
+        if not risposta.get("success"):
+            logger.warning("Estrazione JSON non riuscita: %s", risposta.get("error"))
+            return None
+
+        contenuto = (risposta.get("content") or "").strip()
+        if not contenuto:
+            return None
+
+        # Anche con format=json alcuni modelli aggiungono un involucro
+        # markdown: si toglie prima di analizzare, invece di fallire.
+        pulito = re.sub(r"^```(?:json)?\s*|\s*```$", "", contenuto).strip()
+
+        try:
+            dati = json.loads(pulito)
+        except json.JSONDecodeError:
+            # Ultimo tentativo: il primo oggetto JSON contenuto nel testo.
+            inizio, fine = pulito.find("{"), pulito.rfind("}")
+            if inizio == -1 or fine <= inizio:
+                logger.warning("Il modello non ha restituito JSON: %r", contenuto[:200])
+                return None
+            try:
+                dati = json.loads(pulito[inizio : fine + 1])
+            except json.JSONDecodeError:
+                logger.warning("JSON non analizzabile: %r", contenuto[:200])
+                return None
+
+        if not isinstance(dati, dict):
+            logger.warning("Il modello ha restituito %s invece di un oggetto.", type(dati).__name__)
+            return None
+        return dati
+
+    async def chat(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: Optional[List[Dict[str, Any]]] = None,
+        temperature: Optional[float] = None,
+        formato: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Invia una richiesta di chat a Ollama supportando il passaggio dei tools e keep_alive permanente.
+        """
+        cfg = settings
+        curr_model = self.model
+        curr_temp = temperature if temperature is not None else settings.llm.temperature
+        url = f"{self.base_url}/api/chat"
+
+        # Verifica se il modello è noto per non supportare tools (evita richiesta inutile che fallisce con 400)
+        model_family = curr_model.split(":")[0].lower()
+        supports_tools = (
+            tools
+            and (model_family not in _NON_TOOL_MODELS)
+            and not any(k in curr_model.lower() for k in ["gemma", "deepseek-r1", "phi"])
+        )
+
+        max_tok = (
+            settings.llm.max_tokens if hasattr(cfg.llm, "max_tokens") and settings.llm.max_tokens else 150
+        )
+        payload = {
+            "model": curr_model,
+            "messages": messages,
+            "stream": False,
+            "keep_alive": "24h",
+            "options": {
+                "temperature": curr_temp,
+                "num_ctx": 1024 if max_tok <= 250 else 2048,
+                "num_predict": max_tok,
+                "top_p": 0.9,
+            },
+        }
+        if supports_tools and tools:
+            payload["tools"] = tools
+        if formato:
+            payload["format"] = formato
+
+        req_timeout = httpx.Timeout(timeout=max(self.timeout, 180.0), connect=10.0)
+
+        try:
+            async with httpx.AsyncClient(timeout=req_timeout) as client:
+                res = await client.post(url, json=payload)
+
+                # Fallback di sicurezza se un modello inatteso restituisce 'does not support tools'
+                if res.status_code == 400 and "does not support tools" in res.text and "tools" in payload:
+                    logger.warning(
+                        f"Il modello {curr_model} non supporta tools nativi. Retry immediato senza tools."
+                    )
+                    _NON_TOOL_MODELS.add(model_family)
+                    del payload["tools"]
+                    res = await client.post(url, json=payload)
+
+                if res.status_code == 200:
+                    data = res.json()
+                    message = data.get("message", {})
+                    content = message.get("content", "") or data.get("response", "")
+
+                    # Rimuovi eventuali tag <thought> o estrai il testo se necessario
+                    if "<thought>" in content and "</thought>" in content:
+                        content = re.sub(r"<thought>.*?</thought>", "", content, flags=re.DOTALL).strip()
+
+                    return {
+                        "success": True,
+                        "message": message,
+                        "content": content,
+                        "tool_calls": message.get("tool_calls", []),
+                    }
+                else:
+                    err_detail = res.text or f"Status {res.status_code}"
+                    logger.error(f"Errore risposta Ollama {res.status_code}: {err_detail}")
+                    return {"success": False, "error": f"Ollama HTTP {res.status_code}: {err_detail}"}
+
+        except httpx.ConnectError:
+            return {"success": False, "error": f"Impossibile connettersi ad Ollama su {self.base_url}."}
+        except httpx.TimeoutException:
+            return {
+                "success": False,
+                "error": f"Timeout durante l'elaborazione del modello {curr_model} (tempo limite superato).",
+            }
+        except Exception as e:
+            logger.error(f"Eccezione chiamata Ollama: {e}")
+            return {"success": False, "error": str(e)}

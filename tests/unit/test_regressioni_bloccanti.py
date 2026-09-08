@@ -19,9 +19,9 @@ from __future__ import annotations
 
 import inspect
 
-from core.data_store import DataStore
-from core.interview_engine import LearningInterviewEngine
-from core.ollama_client import OllamaClient
+from shinra.infra.data_store import DataStore
+from shinra.infra.llm.ollama import OllamaClient
+from shinra.services.interview_engine import LearningInterviewEngine
 
 
 def test_data_store_espone_add_knowledge_item() -> None:
@@ -71,7 +71,7 @@ def test_nessun_modulo_chiama_metodi_inesistenti_sui_propri_client() -> None:
     radice = Path(__file__).resolve().parent.parent.parent
     mancanti: list[str] = []
 
-    for percorso in (radice / "core").rglob("*.py"):
+    for percorso in (radice / "src" / "shinra").rglob("*.py"):
         if "__pycache__" in percorso.parts:
             continue
         testo = percorso.read_text(encoding="utf-8")

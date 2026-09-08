@@ -43,11 +43,11 @@ jobs:
       # dati di casa. Su server/ e integrations/ resta informativo finche'
       # non tocca anche a loro — dichiararlo obbligatorio senza esserlo
       # sarebbe peggio che dirlo.
-      - name: Mypy — obbligatorio su config e core
-        run: mypy --explicit-package-bases config core
+      - name: Mypy — obbligatorio su config, domain, infra, services e skills
+        run: mypy src/shinra/config src/shinra/domain src/shinra/infra src/shinra/services src/shinra/skills
 
-      - name: Mypy — informativo su server e integrations
-        run: mypy --explicit-package-bases server integrations
+      - name: Mypy — informativo su api e channels
+        run: mypy src/shinra/api src/shinra/channels
         continue-on-error: true
 
   ganci:

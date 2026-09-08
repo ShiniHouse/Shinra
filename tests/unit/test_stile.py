@@ -50,7 +50,29 @@ BINARI = {".png", ".jpg", ".jpeg", ".gif", ".ico", ".mp3", ".woff", ".woff2", ".
 MASSIMO_KB = 1024
 
 
-ESCLUSE = {".git", ".venv", "venv", "__pycache__", "node_modules", "data", ".ruff_cache", ".pytest_cache"}
+ESCLUSE = {
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "node_modules",
+    "data",
+    ".ruff_cache",
+    ".pytest_cache",
+    "build",
+    "dist",
+}
+
+
+def _da_saltare(parti: tuple[str, ...]) -> bool:
+    """Cio' che git avrebbe ignorato, approssimato a mano.
+
+    `*.egg-info/` non e' un nome fisso — dipende da come si chiama il
+    pacchetto — quindi non basta elencarlo fra le cartelle escluse: e' il
+    motivo per cui questa funzione esiste invece di un semplice confronto
+    di insiemi.
+    """
+    return bool(ESCLUSE & set(parti)) or any(p.endswith(".egg-info") for p in parti)
 
 
 def _file_di_testo() -> list[Path]:
@@ -72,7 +94,7 @@ def _file_di_testo() -> list[Path]:
         percorsi = [RADICE / n for n in elenco]
     except (subprocess.CalledProcessError, FileNotFoundError):
         percorsi = [
-            p for p in RADICE.rglob("*") if p.is_file() and not (ESCLUSE & set(p.relative_to(RADICE).parts))
+            p for p in RADICE.rglob("*") if p.is_file() and not _da_saltare(p.relative_to(RADICE).parts)
         ]
 
     return [p for p in percorsi if p.suffix.lower() not in BINARI and p.exists()]

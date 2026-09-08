@@ -23,26 +23,40 @@ da `settings.assistant.name`.
 
 ## 2. Struttura attuale
 
+Dalla v0.2.0 il codice sta sotto `src/`, diviso per livelli. La struttura e'
+quella descritta nel §3: qui c'e' cosa contiene ciascuna cartella.
+
 ```text
 Shinra/
-├── config/          Caricamento configurazione e template di prompt
-├── core/            Logica dell'assistente
-│   ├── agent.py         Orchestratore: fast-path, tool calling, risposta
-│   ├── ollama_client.py Client del modello locale
-│   ├── ha_client.py     Client Home Assistant (REST)
-│   ├── data_store.py    Persistenza su file JSON
-│   ├── user_manager.py  Profili utente
-│   ├── memory.py        Cronologia conversazione
-│   ├── timer_engine.py  Timer e promemoria
-│   ├── interview_engine.py  Modalita' apprendimento
-│   ├── tts_engine.py    Sintesi vocale neurale
-│   └── tools/           Funzioni invocabili dal modello
-├── server/          FastAPI: app.py (pubblico) + routes_admin.py (gestione)
-├── integrations/    Adattatori per canali esterni (oggi: Alexa)
-├── web/             Interfaccia: un unico index.html da 4.657 righe
-├── data/            Stato runtime in JSON
+├── src/shinra/
+│   ├── percorsi.py      Dove sta il progetto. Calcolato una volta sola
+│   ├── versione.py      Numero e commit in esecuzione
+│   ├── avvio.py         Punto di ingresso: il comando `shinra`
+│   ├── config/          Impostazioni, segreti, template di prompt
+│   ├── domain/          Regole senza IO: argomenti vietati, bus di eventi
+│   ├── infra/           Il mondo esterno
+│   │   ├── db/              SQLAlchemy: motore, modelli, depositi, import
+│   │   ├── homeassistant/   Client REST
+│   │   ├── llm/             Client Ollama
+│   │   ├── scheduler/       APScheduler con archivio persistente
+│   │   ├── data_store.py    I file JSON rimasti
+│   │   └── tts.py           Sintesi vocale neurale
+│   ├── services/        Agente, memoria, registro, permessi, profili,
+│   │   └── intenti/         timer, intervista, consegna — e il router
+│   ├── skills/          Le capacita' invocabili dal modello
+│   ├── channels/alexa/  Adattatore per l'Echo
+│   └── api/             FastAPI: app, rotte, sicurezza, dispositivi
+├── web/             Interfaccia: un unico index.html
+├── migrazioni/      Alembic
+├── data/            Stato runtime (database e file JSON)
 └── tests/           Suite di test
 ```
+
+Le regole di dipendenza fra i livelli sono nel §3 e non sono un'aspirazione:
+`tests/unit/test_architettura.py` le verifica a ogni esecuzione della suite.
+Le violazioni che restano dallo spostamento sono elencate una per una in
+quel file, con il motivo di ciascuna: una nuova fa fallire i test, e una
+riparata pure — cosi' l'elenco si accorcia invece di ingrassare.
 
 ### Flusso di una richiesta
 
@@ -51,51 +65,31 @@ Browser / PWA          Amazon Echo
      │                      │
      │ POST /api/chat       │ POST /api/alexa
      ▼                      ▼
-  server/app.py    integrations/alexa/skill_handler.py
+  api/app.py       channels/alexa/skill_handler.py
      └──────────┬───────────┘
                 ▼
-        core/agent.py — process_user_input()
+        services/agent.py — process_user_input()
                 │
      ┌──────────┼───────────────────────────┐
      ▼          ▼                           ▼
  fast-path   contesto                  ciclo tool
  (< 0.2s)   (HA, knowledge,          ┌────┴────┐
              alias, modalita')       ▼         ▼
-                                 Ollama    core/tools/*
+                                 Ollama     skills/*
                                               │
                                               ▼
-                                    core/ha_client.py → Home Assistant
+                                    infra/homeassistant → Home Assistant
 ```
 
 ---
 
-## 3. Struttura target (dalla v0.2.0)
+## 3. Regole di dipendenza
 
-Il codice si sposta sotto `src/` per separare il pacchetto installabile dal
-resto del repository, ed evitare che una `import core` risolva per caso sulla
-directory di lavoro.
-
-```text
-Shinra/
-├── src/shinra/
-│   ├── __init__.py          __version__
-│   ├── config/              impostazioni (pydantic-settings + env)
-│   ├── domain/              modelli e regole, senza dipendenze da IO
-│   ├── infra/
-│   │   ├── db/              SQLAlchemy: modelli, sessione, migrazioni
-│   │   ├── homeassistant/   client REST + client WebSocket
-│   │   ├── llm/             client Ollama
-│   │   └── scheduler/       APScheduler e job persistenti
-│   ├── services/            timer, promemoria, intervista, audit, regole
-│   ├── skills/              un modulo per capacita' (vedi §4)
-│   ├── channels/            web, alexa, satelliti vocali
-│   └── api/                 router FastAPI, dipendenze, sicurezza
-├── web/                     frontend a moduli ES
-├── tests/{unit,integration}
-└── migrations/
-```
-
-### Regole di dipendenza
+Il codice sta sotto `src/` per separare il pacchetto installabile dal resto
+del repository, ed evitare che una `import config` risolva per caso sulla
+directory di lavoro invece che sul progetto. Ma il motivo vero e' un altro:
+i livelli sono cartelle, quindi la regola che segue si puo' verificare
+invece che raccomandare.
 
 Le frecce vanno in una sola direzione. Una violazione e' un errore di
 architettura, non uno stile.
@@ -103,13 +97,21 @@ architettura, non uno stile.
 ```text
 api ──▶ services ──▶ domain
  │          │
+ │          ├──▶ skills ──▶ infra
  │          └──▶ infra
  └──▶ channels ──▶ services
 ```
 
 - `domain/` non importa nulla dal progetto: niente FastAPI, niente httpx, niente IO.
 - `infra/` conosce il mondo esterno ma non conosce `services/`.
+- `skills/` sta sopra l'infrastruttura e sotto chi la orchestra: una capacita'
+  non conosce ne' le rotte ne' i canali.
 - `api/` e `channels/` non parlano mai direttamente a `infra/`.
+
+`tests/unit/test_architettura.py` verifica tutto questo a ogni esecuzione
+della suite. Le diciannove violazioni ereditate dallo spostamento sono
+elencate li' una per una, con il motivo: una nuova fa fallire i test, e una
+riparata pure — l'elenco puo' solo accorciarsi.
 
 ---
 
