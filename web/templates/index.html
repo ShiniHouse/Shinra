@@ -621,6 +621,15 @@
                     <span class="w-2 h-2 rounded-full bg-slate-500"></span>
                     <span>HA</span>
                 </div>
+
+                <!-- Blocca la sessione. `checkAuthStatus` cercava questo pulsante
+                     da sempre e non lo trovava: la funzione c'era, il modo di
+                     chiamarla no, e l'unico blocco possibile era quello
+                     automatico per inattivita'. Su un tablet di casa con un PIN
+                     per persona, potersi togliere di mezzo e' il minimo. -->
+                <button id="lock-session-btn" onclick="lockSession()" style="display:none" class="px-2.5 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/70 hover:bg-rose-600 hover:border-rose-500 hover:text-white transition flex items-center gap-1.5 text-[11px] font-semibold text-slate-300" title="Blocca la sessione: al prossimo accesso servira' il PIN">
+                    <i data-lucide="lock" class="w-3.5 h-3.5"></i> Blocca
+                </button>
             </div>
 
             <!-- Mobile Controls (Hamburger + Quick Theme Toggle) (< md) -->
@@ -978,13 +987,53 @@
                     </h2>
                     <p class="text-xs text-slate-400">Registra i membri della famiglia: Shinra adatterà automaticamente il linguaggio e i filtri di sicurezza.</p>
                 </div>
-                <button onclick="openAddUserModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                <button onclick="openAddUserModal()" id="btn-nuovo-utente" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
                     <i data-lucide="user-plus" class="w-4 h-4"></i> Nuovo Utente
                 </button>
             </div>
 
             <div id="users-list" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Caricato dinamicamente -->
+            </div>
+
+            <!-- ---- Ruoli e permessi (issue #19) ---- -->
+            <div id="sezione-ruoli" class="space-y-4" style="display:none">
+                <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-indigo-400"></i> Ruoli & Permessi
+                        </h2>
+                        <p class="text-xs text-slate-400">Cosa puo' comandare ciascun ruolo. Serrature e allarme sono un permesso a se': chi accende una luce non deve per questo poter aprire la porta di casa.</p>
+                    </div>
+                    <button onclick="apriModaleRuolo(null)" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Nuovo Ruolo
+                    </button>
+                </div>
+
+                <div id="ruoli-lista" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Caricato dinamicamente -->
+                </div>
+            </div>
+
+            <!-- ---- Dispositivi fidati (issue #20) ---- -->
+            <div id="sezione-dispositivi" class="space-y-4">
+                <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="smartphone" class="w-5 h-5 text-indigo-400"></i> Dispositivi Fidati
+                        </h2>
+                        <p class="text-xs text-slate-400">
+                            I dispositivi a cui il PIN non viene piu' chiesto. <span id="dispositivi-ambito"></span>
+                        </p>
+                    </div>
+                    <button onclick="revocaTuttiDispositivi()" id="btn-revoca-tutti" style="display:none" class="px-3.5 py-2 bg-rose-600/20 hover:bg-rose-600 border border-rose-600/40 text-rose-300 hover:text-white rounded-xl text-xs font-semibold items-center gap-1.5 transition shrink-0">
+                        <i data-lucide="shield-off" class="w-4 h-4"></i> Revoca tutti
+                    </button>
+                </div>
+
+                <div id="dispositivi-lista" class="space-y-2">
+                    <!-- Caricato dinamicamente -->
+                </div>
             </div>
         </div>
 
@@ -1545,7 +1594,7 @@
                 const lockModal = document.getElementById('lock-screen-modal');
 
                 if (data.auth_enabled) {
-                    if (lockBtn) lockBtn.classList.remove('hidden');
+                    if (lockBtn) lockBtn.style.display = 'flex';
                     if (!data.authenticated && data.protect_dashboard) {
                         if (lockModal) lockModal.style.display = 'flex';
                         caricaProfiliAccesso();
@@ -1553,7 +1602,7 @@
                         if (lockModal) lockModal.style.display = 'none';
                     }
                 } else {
-                    if (lockBtn) lockBtn.classList.add('hidden');
+                    if (lockBtn) lockBtn.style.display = 'none';
                     if (lockModal) lockModal.style.display = 'none';
                 }
                 safeCreateIcons();
@@ -4335,6 +4384,15 @@
         }
 
         async function loadUsers() {
+            // I permessi si rileggono a ogni apertura della scheda: un ruolo
+            // cambiato mentre la pagina e' aperta deve valere subito, non al
+            // prossimo ricaricamento del browser.
+            await caricaPermessiCorrenti();
+            const amministra = posso('utenti.gestisci');
+
+            const btnNuovo = document.getElementById('btn-nuovo-utente');
+            if (btnNuovo) btnNuovo.style.display = amministra ? 'flex' : 'none';
+
             try {
                 const res = await fetch('/api/users', { headers: getAuthHeaders() });
                 const items = await res.json();
@@ -4353,17 +4411,21 @@
                                 </div>
                                 <div>
                                     <h4 class="font-bold text-xs text-slate-100 flex items-center gap-1.5">${u.name}</h4>
-                                    <span class="px-2 py-0.5 rounded-full ${av.bg} border ${av.border} text-[10px] ${av.text} font-semibold">${av.badge}</span>
+                                    <div class="flex flex-wrap items-center gap-1 mt-0.5">
+                                        <span class="px-2 py-0.5 rounded-full ${av.bg} border ${av.border} text-[10px] ${av.text} font-semibold">${av.badge}</span>
+                                        <span class="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[10px] text-slate-300 font-semibold" title="Cosa puo' comandare">${_testoSicuro(nomeDelRuolo(u.role))}</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="flex items-center gap-1.5">
+                                ${amministra ? `
                                 <button onclick="openEditUserModal('${u.id}')" class="px-2.5 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition" title="Modifica profilo e avatar">
                                     <i data-lucide="edit-3" class="w-3 h-3"></i> Modifica
-                                </button>
-                                ${u.id !== 'alessio' ? `
+                                </button>` : ''}
+                                ${amministra && u.id !== 'alessio' ? `
                                 <button onclick="deleteUser('${u.id}')" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition" title="Elimina profilo">
                                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                                </button>` : `<span class="text-[10px] text-indigo-400/80 font-mono px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-900/50">Admin</span>`}
+                                </button>` : (u.id === 'alessio' ? `<span class="text-[10px] text-indigo-400/80 font-mono px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-900/50">Admin</span>` : '')}
                             </div>
                         </div>
                         <p class="text-[11px] text-slate-400 leading-relaxed">${u.notes || 'Nessuna nota o preferenza specifica.'}</p>
@@ -4371,6 +4433,9 @@
                 }).join('');
                 safeCreateIcons();
             } catch (e) { console.error('loadUsers error:', e); }
+
+            await loadRuoli();
+            await loadDispositivi();
         }
 
         function openAddUserModal() {
@@ -4389,6 +4454,17 @@
             const defaultName = user ? user.name : '';
             const defaultAge = user ? (user.age_group || 'adult') : 'adult';
             const defaultNotes = user ? (user.notes || '') : '';
+            // Il ruolo si sceglie. Prima veniva dedotto da avatar e fascia
+            // d'eta', e un ragazzo finiva con il ruolo `adult`: cioe' con le
+            // serrature. La deduzione resta solo come proposta iniziale per un
+            // profilo nuovo, e si puo' cambiare.
+            const ruoloProposto = _selectedAvatarType === 'guest' ? 'guest'
+                : (defaultAge === 'child' ? 'child' : (defaultAge === 'teen' ? 'teen' : 'adult'));
+            const ruoloAttuale = user ? (user.role || ruoloProposto) : ruoloProposto;
+            const elencoRuoli = ruoliData.length ? ruoliData : [{ id: ruoloAttuale, nome: ruoloAttuale }];
+            const opzioniRuolo = elencoRuoli.map(r =>
+                `<option value="${_testoSicuro(r.id)}" ${r.id === ruoloAttuale ? 'selected' : ''}>${_testoSicuro(r.nome)}</option>`
+            ).join('');
 
             showModal(`
                 <div class="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -4445,7 +4521,17 @@
                     </div>
 
                     <div>
-                        <label class="text-[11px] font-semibold text-slate-300 block mb-1">4. Note o Preferenze (opzionale):</label>
+                        <label class="text-[11px] font-semibold text-slate-300 block mb-1">4. Ruolo (cosa puo' comandare):</label>
+                        <select id="new-u-role" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                            ${opzioniRuolo}
+                        </select>
+                        <p class="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                            Il ruolo decide cosa questa persona puo' comandare in casa. La fascia d'eta' qui sopra cambia soltanto il tono delle risposte: sono due cose diverse, e prima venivano confuse.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-300 block mb-1">5. Note o Preferenze (opzionale):</label>
                         <input type="text" id="new-u-notes" value="${defaultNotes.replace(/"/g, '&quot;')}" placeholder="es. Moglie, camera da letto, appassionata di giardinaggio" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
                     </div>
                 </div>
@@ -4474,14 +4560,16 @@
 
             const userToUpdate = existingUserId ? usersData.find(u => u.id === existingUserId) : null;
             const preferred_news_categories = userToUpdate ? (userToUpdate.preferred_news_categories || ["generale"]) : ["generale"];
+            const campoRuolo = document.getElementById('new-u-role');
+            const role = campoRuolo ? campoRuolo.value : (userToUpdate ? userToUpdate.role : 'guest');
 
-            await fetch('/api/users', {
+            const res = await fetch('/api/users', {
                 method: 'POST',
                 headers: getAuthHeaders(),
                 body: JSON.stringify({
                     id,
                     name,
-                    role: existingUserId === 'alessio' ? 'admin' : (_selectedAvatarType === 'guest' ? 'guest' : (age_group === 'child' ? 'child' : 'adult')),
+                    role,
                     age_group,
                     gender,
                     avatar_type: _selectedAvatarType,
@@ -4489,16 +4577,316 @@
                     notes
                 })
             });
+            // Declassare l'ultimo amministratore e' l'errore che chiude fuori
+            // di casa: il server lo rifiuta e dice perche'. Ignorarlo, come si
+            // faceva prima, faceva sembrare il salvataggio riuscito.
+            if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+
             closeModal();
             await loadUsers();
             await loadUsersDropdown();
         }
 
         async function deleteUser(id) {
-            if (!confirm('Rimuovere questo profilo famiglia?')) return;
-            await fetch(`/api/users/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+            if (!confirm('Rimuovere questo profilo famiglia?\n\nAnche i suoi dispositivi fidati verranno revocati.')) return;
+            const res = await fetch(`/api/users/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+            if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
             await loadUsers();
             await loadUsersDropdown();
+        }
+
+
+        // ==================== RUOLI, PERMESSI E DISPOSITIVI ====================
+        // Questa schermata non decide niente: il server rifiuta comunque, rotta
+        // per rotta. Qui si nasconde soltanto cio' che non porterebbe da nessuna
+        // parte — un pulsante che risponde sempre 403 non protegge, sembra un
+        // guasto. Riferimento: issue #19 e #20, ADR 0004.
+
+        let ruoliData = [];
+        let permessiCatalogo = [];
+        let _permessiCorrenti = [];
+
+        function posso(permesso) {
+            return _permessiCorrenti.includes(permesso);
+        }
+
+        async function caricaPermessiCorrenti() {
+            try {
+                const res = await fetch('/api/auth/status', { headers: getAuthHeaders() });
+                if (!res.ok) { _permessiCorrenti = []; return; }
+                _permessiCorrenti = (await res.json()).permessi || [];
+            } catch (e) {
+                console.warn('Permessi non leggibili:', e);
+                _permessiCorrenti = [];
+            }
+        }
+
+        // Un rifiuto si spiega. Le rotte dei ruoli rispondono con il motivo
+        // («il ruolo e' assegnato a Thomas: cambia prima il suo»), e buttarlo
+        // via per mostrare «errore» lascerebbe l'utente senza la sola cosa
+        // che gli serve sapere.
+        async function _dettaglioErrore(res) {
+            try {
+                const corpo = await res.json();
+                return corpo.detail || corpo.message || `Errore ${res.status}`;
+            } catch (e) {
+                return `Errore ${res.status}`;
+            }
+        }
+
+        function nomeDelRuolo(idRuolo) {
+            const r = ruoliData.find(x => x.id === idRuolo);
+            return r ? r.nome : (idRuolo || 'senza ruolo');
+        }
+
+        async function loadRuoli() {
+            // I ruoli servono anche al modale del profilo, quindi si leggono
+            // sempre; e' la sezione che si mostra solo a chi puo' modificarli.
+            try {
+                const [rRuoli, rPermessi] = await Promise.all([
+                    fetch('/api/ruoli', { headers: getAuthHeaders() }),
+                    fetch('/api/permessi', { headers: getAuthHeaders() })
+                ]);
+                if (rRuoli.ok) ruoliData = await rRuoli.json();
+                if (rPermessi.ok) permessiCatalogo = await rPermessi.json();
+            } catch (e) {
+                console.error('loadRuoli error:', e);
+            }
+
+            const sezione = document.getElementById('sezione-ruoli');
+            if (sezione) sezione.style.display = posso('utenti.gestisci') ? 'block' : 'none';
+            if (!posso('utenti.gestisci')) return;
+
+            const container = document.getElementById('ruoli-lista');
+            if (!container) return;
+
+            container.innerHTML = ruoliData.map(r => {
+                const scelti = r.permessi || [];
+                const etichette = permessiCatalogo.length
+                    ? permessiCatalogo.filter(p => scelti.includes(p.id)).map(p => {
+                        const rischioso = p.id === 'sicurezza.comanda';
+                        const colore = rischioso
+                            ? 'bg-rose-950/60 border-rose-900/60 text-rose-300'
+                            : 'bg-slate-800 border-slate-700 text-slate-300';
+                        return `<span class="px-2 py-0.5 rounded-full border text-[10px] ${colore}">${_testoSicuro(p.descrizione)}</span>`;
+                    }).join('')
+                    : '';
+                const quanti = usersData.filter(u => u.role === r.id).length;
+                const idSicuro = encodeURIComponent(r.id);
+                return `
+                <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3 hover:border-slate-700 transition">
+                    <div class="flex justify-between items-start gap-3">
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-100 flex items-center gap-2">
+                                ${_testoSicuro(r.nome)}
+                                ${r.predefinito ? '<span class="px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-900/50 text-[9px] text-indigo-300 font-mono">predefinito</span>' : ''}
+                            </h4>
+                            <p class="text-[11px] text-slate-400 leading-relaxed mt-0.5">${_testoSicuro(r.descrizione) || 'Nessuna descrizione.'}</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button onclick="apriModaleRuolo('${idSicuro}')" class="px-2.5 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition" title="Modifica i permessi">
+                                <i data-lucide="edit-3" class="w-3 h-3"></i> Permessi
+                            </button>
+                            ${r.predefinito ? '' : `
+                            <button onclick="cancellaRuolo('${idSicuro}')" class="text-slate-600 hover:text-rose-400 p-1 transition" title="Cancella il ruolo">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>`}
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">${etichette || `<span class="text-[10px] text-slate-500 italic">Nessun permesso: puo&#39; solo chiedere.</span>`}</div>
+                    <p class="text-[10px] text-slate-500 border-t border-slate-800 pt-2">
+                        ${quanti === 0 ? 'Nessun profilo lo usa.' : (quanti === 1 ? '1 profilo lo usa.' : `${quanti} profili lo usano.`)}
+                    </p>
+                </div>`;
+            }).join('');
+            safeCreateIcons();
+        }
+
+        function apriModaleRuolo(idRuolo) {
+            const identificativo = idRuolo ? decodeURIComponent(idRuolo) : null;
+            const ruolo = identificativo ? ruoliData.find(r => r.id === identificativo) : null;
+            const scelti = ruolo ? (ruolo.permessi || []) : [];
+            const modifica = Boolean(ruolo);
+
+            const caselle = permessiCatalogo.map(p => {
+                const rischioso = p.id === 'sicurezza.comanda';
+                return `
+                <label class="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-950 border ${rischioso ? 'border-rose-900/50' : 'border-slate-800'} hover:border-slate-700 cursor-pointer transition">
+                    <input type="checkbox" class="permesso-casella mt-0.5 accent-indigo-500" value="${_testoSicuro(p.id)}" ${scelti.includes(p.id) ? 'checked' : ''}>
+                    <span class="leading-tight">
+                        <span class="block text-[11px] font-semibold ${rischioso ? 'text-rose-300' : 'text-slate-200'}">${_testoSicuro(p.descrizione)}</span>
+                        <span class="block text-[10px] text-slate-500 font-mono">${_testoSicuro(p.id)}</span>
+                    </span>
+                </label>`;
+            }).join('');
+
+            showModal(`
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-indigo-400"></i>
+                        ${modifica ? `Permessi di ${_testoSicuro(ruolo.nome)}` : 'Nuovo Ruolo'}
+                    </h3>
+                    <button onclick="closeModal()" class="text-slate-500 hover:text-slate-300 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+
+                <div class="space-y-4 pt-3">
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-300 block mb-1">Nome del ruolo:</label>
+                        <input type="text" id="ruolo-nome" value="${_testoSicuro(ruolo ? ruolo.nome : '')}" placeholder="es. Collaboratrice domestica, Nonno, Ospite fine settimana" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-300 block mb-1">Descrizione (opzionale):</label>
+                        <input type="text" id="ruolo-descrizione" value="${_testoSicuro(ruolo ? ruolo.descrizione : '')}" placeholder="A cosa serve questo ruolo" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-300 block mb-1.5">Cosa puo' fare:</label>
+                        <div class="grid grid-cols-1 gap-1.5 max-h-72 overflow-y-auto pr-1">${caselle || '<p class="text-[11px] text-slate-500">Catalogo dei permessi non disponibile.</p>'}</div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-4 border-t border-slate-800 mt-4">
+                    <button onclick="closeModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 transition">Annulla</button>
+                    <button onclick="salvaRuolo('${identificativo ? encodeURIComponent(identificativo) : ''}')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/30">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i> ${modifica ? 'Salva Permessi' : 'Crea Ruolo'}
+                    </button>
+                </div>
+            `, false);
+        }
+
+        async function salvaRuolo(idRuolo) {
+            const identificativo = idRuolo ? decodeURIComponent(idRuolo) : '';
+            const nome = document.getElementById('ruolo-nome').value.trim();
+            if (!nome) { alert('Il ruolo deve avere un nome.'); return; }
+
+            const scelti = Array.from(document.querySelectorAll('.permesso-casella'))
+                .filter(c => c.checked)
+                .map(c => c.value);
+
+            const res = await fetch('/api/ruoli', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    id: identificativo,
+                    nome,
+                    descrizione: document.getElementById('ruolo-descrizione').value.trim(),
+                    permessi: scelti
+                })
+            });
+            if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+
+            closeModal();
+            await loadUsers();
+        }
+
+        async function cancellaRuolo(idRuolo) {
+            const identificativo = decodeURIComponent(idRuolo);
+            if (!confirm(`Cancellare il ruolo «${nomeDelRuolo(identificativo)}»?`)) return;
+
+            const res = await fetch(`/api/ruoli/${encodeURIComponent(identificativo)}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+            await loadUsers();
+        }
+
+        // ---------------------------------------------------- dispositivi fidati
+
+        function _quando(iso) {
+            if (!iso) return 'mai';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return 'mai';
+            return d.toLocaleString('it-IT', {
+                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        async function loadDispositivi() {
+            const container = document.getElementById('dispositivi-lista');
+            if (!container) return;
+
+            let elenco = [];
+            try {
+                const res = await fetch('/api/dispositivi', { headers: getAuthHeaders() });
+                if (!res.ok) throw new Error(await _dettaglioErrore(res));
+                elenco = await res.json();
+            } catch (e) {
+                console.error('loadDispositivi error:', e);
+                container.innerHTML = `<div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-rose-300">Impossibile leggere i dispositivi fidati.</div>`;
+                return;
+            }
+
+            const ambito = document.getElementById('dispositivi-ambito');
+            if (ambito) {
+                ambito.textContent = posso('utenti.gestisci')
+                    ? 'Vedi quelli di tutta la casa.'
+                    : 'Vedi i tuoi.';
+            }
+
+            const revocaTutti = document.getElementById('btn-revoca-tutti');
+            if (revocaTutti) revocaTutti.style.display = elenco.length > 1 ? 'flex' : 'none';
+
+            if (!elenco.length) {
+                container.innerHTML = `<div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
+                    Nessun dispositivo ricordato. Ne compare uno qui quando al momento del PIN si sceglie «ricorda questo dispositivo».
+                </div>`;
+                return;
+            }
+
+            const nomeDi = id => {
+                const u = usersData.find(x => x.id === id);
+                return u ? u.name : id;
+            };
+
+            container.innerHTML = elenco.map(d => `
+                <div class="p-3.5 rounded-2xl bg-slate-900/60 border ${d.questo ? 'border-indigo-600/50' : 'border-slate-800'} flex items-center justify-between gap-3 group">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                            <i data-lucide="smartphone" class="w-4 h-4 text-slate-400"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="font-bold text-xs text-slate-100 flex items-center gap-1.5 truncate">
+                                ${_testoSicuro(d.nome)}
+                                ${d.questo ? '<span class="px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-900/50 text-[9px] text-indigo-300 font-semibold shrink-0">questo dispositivo</span>' : ''}
+                            </h4>
+                            <p class="text-[10px] text-slate-500 truncate">
+                                ${_testoSicuro(nomeDi(d.user_id))} · ultimo accesso ${_quando(d.ultimo_uso)}${d.ultimo_indirizzo ? ` · ${_testoSicuro(d.ultimo_indirizzo)}` : ''}
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="revocaDispositivo('${encodeURIComponent(d.id)}', '${_testoSicuro(d.nome).replace(/'/g, "\\'")}', ${d.questo ? 'true' : 'false'})" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold shrink-0 transition">
+                        Revoca
+                    </button>
+                </div>`).join('');
+            safeCreateIcons();
+        }
+
+        async function revocaDispositivo(idDispositivo, nome, eQuesto) {
+            const avvertenza = eQuesto
+                ? '\n\nE\' il dispositivo da cui stai guardando: dovrai ridigitare il PIN.'
+                : '';
+            if (!confirm(`Revocare «${nome}»? Al prossimo accesso chiedera' di nuovo il PIN.${avvertenza}`)) return;
+
+            const res = await fetch(`/api/dispositivi/${idDispositivo}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+            await loadDispositivi();
+        }
+
+        async function revocaTuttiDispositivi() {
+            if (!confirm('Revocare tutti i dispositivi fidati?\n\nQuello da cui stai guardando resta valido: serve a questo, quando si perde un telefono.')) return;
+
+            const res = await fetch('/api/dispositivi/revoca-tutti', {
+                method: 'POST',
+                headers: getAuthHeaders()
+            });
+            if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+
+            const esito = await res.json();
+            alert(esito.revocati === 1 ? 'Un dispositivo revocato.' : `${esito.revocati} dispositivi revocati.`);
+            await loadDispositivi();
         }
 
         // ==================== SETTINGS ====================

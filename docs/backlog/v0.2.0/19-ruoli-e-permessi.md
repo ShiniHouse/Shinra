@@ -38,11 +38,12 @@ Motivazioni e alternative in [ADR 0004](../../adr/0004-identita-ruoli-e-permessi
 - [x] Applicare finalmente `restricted_topics` prima dell'invio al modello e
       sulla risposta — gia' fatto nella v0.1.0 (`core/argomenti_vietati.py`,
       issue #5), verificato dai suoi test
-- [ ] Schermata di gestione ruoli e assegnazione — **non fatta in questa PR.**
-      Le rotte ci sono (`/api/ruoli`, `/api/permessi`) e i permessi sono gia'
-      applicati: la casa e' protetta. Manca l'interfaccia per modificarli senza
-      chiamare l'API a mano. Va in una PR sua, perche' e' lavoro di frontend e
-      non deve ritardare il controllo.
+- [x] Schermata di gestione ruoli e assegnazione — fatta nella PR di frontend
+      che porta anche i dispositivi fidati (issue #20). I permessi di ogni
+      ruolo sono caselle da spuntare, i ruoli propri si creano dalla pagina, i
+      predefiniti si modificano ma non si cancellano. E il ruolo di un profilo
+      **si sceglie**: veniva dedotto da avatar e fascia d'eta', e la fascia
+      «ragazzo» finiva nel ramo `adult` — un tredicenne con le serrature.
 - [x] Ogni rifiuto finisce nel registro delle azioni (issue #15)
 - [x] Un rifiuto si spiega: «non hai il permesso di aprire la serratura»,
       non un 403 muto
