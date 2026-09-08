@@ -20,6 +20,7 @@ from shinra.skills.ha_tools import (
 from shinra.skills.news_search import get_latest_news, search_web
 from shinra.skills.reminders import add_reminder, list_reminders
 from shinra.skills.sicurezza_casa import comanda_allarme, stato_aperture
+from shinra.skills.simulazione import comanda_simulazione
 from shinra.skills.weather import get_weather
 from shinra.skills.wikipedia_tool import search_wikipedia
 
@@ -47,6 +48,7 @@ TOOL_HANDLERS: Dict[str, Callable] = {
     # L'allarme e le aperture (issue #23).
     "comanda_allarme": comanda_allarme,
     "stato_aperture": stato_aperture,
+    "comanda_simulazione": comanda_simulazione,
 }
 
 # Schemi compatibili con Ollama / OpenAI Tools
@@ -383,6 +385,22 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                         "description": "Inserisci anche con qualcosa di aperto, solo dopo che la persona lo ha confermato.",
                     },
                 },
+                "required": ["azione"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "comanda_simulazione",
+            "description": (
+                "Accende o spegne la simulazione di presenza, quella che fa "
+                "sembrare la casa abitata quando si e' via. Si spegne da sola "
+                "appena qualcuno rientra."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {"azione": {"type": "string", "enum": ["accendi", "spegni", "stato"]}},
                 "required": ["azione"],
             },
         },

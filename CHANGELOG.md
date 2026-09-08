@@ -15,6 +15,21 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **La casa finge di essere abitata quando si e' via.** Una luce che si
+  accende alle 20:00 e si spegne alle 23:00 tutte le sere non dice «c'e'
+  qualcuno», dice «c'e' un timer»: chi guarda una casa per tre sere di fila
+  lo capisce, ed e' esattamente la persona da cui ci si vorrebbe difendere.
+  Ogni sera vengono accese da tre a cinque luci, scaglionate lungo la serata
+  a partire dal tramonto vero letto da Home Assistant, e il piano di stasera
+  viene confrontato con quello di ieri: se ne esce uno uguale, si riprova.
+- **La simulazione si rifiuta di partire con qualcuno in casa e smette da
+  sola appena qualcuno rientra.** Una casa che continua a fingere mentre ci
+  vive qualcuno accende e spegne le luci addosso alle persone, ed e' il modo
+  piu' rapido perche' la funzione venga disattivata per sempre. E' cio' che
+  la presenza (#22) serviva a rendere possibile.
+- Il piano si rifa' ogni pomeriggio da solo: una casa illuminata la prima
+  notte e buia le successive dice «qui non c'e' nessuno» piu' chiaramente di
+  una casa sempre spenta.
 - **L'allarme si comanda, e non si inserisce su una casa aperta.** Era il
   dominio per cui una famiglia installa la domotica, e l'unico completamente
   scoperto. Chiedendo di inserirlo con una finestra aperta l'assistente

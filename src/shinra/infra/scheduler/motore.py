@@ -143,6 +143,29 @@ class ServizioScheduler:
         )
         return True
 
+    def programma_azione(
+        self,
+        identificativo: str,
+        funzione: Any,
+        argomenti: list[Any],
+        quando: datetime,
+        tolleranza: int = 300,
+    ) -> bool:
+        """Un'azione qualunque a un'ora precisa.
+
+        Timer e promemoria hanno i loro metodi perche' hanno una semantica
+        loro — un'etichetta, un testo, una persona a cui annunciarlo. Questo
+        e' il caso generale, e serve alla simulazione di presenza (issue
+        #23), che programma decine di accensioni e spegnimenti a sera.
+        """
+        return self._programma(
+            identificativo=identificativo,
+            funzione=funzione,
+            argomenti=argomenti,
+            quando=quando,
+            tolleranza=tolleranza,
+        )
+
     def annulla(self, identificativo: str) -> bool:
         if not self.attivo or self._scheduler is None:
             return False

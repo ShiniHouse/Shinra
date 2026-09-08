@@ -28,10 +28,14 @@ perche' e' quello per cui una famiglia installa la domotica.
       questo dominio. `casa.intrusione` viene pubblicato sul bus con dentro
       chi c'era in casa al momento, e arriva alla dashboard aperta; quando
       #29 arrivera' bastera' sottoscriverlo
-- [ ] Simulazione di presenza in vacanza — **in una PR sua.** Ha bisogno di
-      programmare accensioni nel tempo, di una memoria di cio' che ha fatto
-      ieri sera per non ripetersi, e di un modo per accorgersi che la vacanza
-      e' finita: e' una funzione, non una rifinitura di questa
+- [x] Simulazione di presenza in vacanza. Il piano di ogni sera e' calcolato
+      da `domain/simulazione.py` — puro, riproducibile da un seme, e con il
+      confronto esplicito con la sera prima. La capacita' sta in
+      `skills/simulazione.py`; l'unica parte che reagisce da sola, spegnersi
+      appena qualcuno rientra, e' in `services/simulazione.py` e ascolta
+      `casa.abitata` senza sapere chi lo pubblica. Il modo di accorgersi che
+      la vacanza e' finita e' la presenza (#22): rifiuta di partire con
+      qualcuno in casa, e smette da sola al rientro
 - [x] Il disarmo passa da `sicurezza.comanda`, imposto dal client di Home
       Assistant su ogni chiamata, e ogni rotta richiede una sessione valida.
       Da Alexa serve una conferma in piu' — con il limite scritto nel codice:
@@ -44,5 +48,8 @@ perche' e' quello per cui una famiglia installa la domotica.
 - [x] «Sono chiuse tutte le finestre?» risponde con l'elenco reale — e senza
       sensori dice che non puo' saperlo, invece di rassicurare a vuoto
 - [x] Il disarmo da Alexa richiede una conferma aggiuntiva
-- [ ] La simulazione di presenza non ripete lo stesso schema due sere di fila
-      — con la simulazione, nella sua PR
+- [x] La simulazione di presenza non ripete lo stesso schema due sere di fila.
+      Provato su dodici sere **con lo stesso seme**: e' l'unico caso in cui il
+      confronto con ieri deve fare qualcosa, perche' due semi diversi
+      darebbero due piani diversi da soli e il test passerebbe anche senza il
+      controllo
