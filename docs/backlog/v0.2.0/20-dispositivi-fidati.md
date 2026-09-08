@@ -22,9 +22,10 @@ dispositivo dopo il primo accesso, e permettere di revocarlo.
       `Secure`, `SameSite=Lax`, valida 30 giorni e rinnovata a ogni uso
 - [x] Elenco dei dispositivi fidati: rotte `/api/dispositivi` (elenco,
       revoca singola, revoca totale) con nome, ultimo accesso e indirizzo.
-      **La schermata nelle impostazioni non c'e' ancora**: va nella stessa PR
-      di frontend che porta la gestione dei ruoli (issue #19), perche' sono
-      la stessa pagina e lo stesso lavoro.
+      La schermata sta nella scheda «Gestione Utenti», insieme ai ruoli
+      (issue #19): sono la stessa pagina e sono state lo stesso lavoro. Ogni
+      riga dice anche se e' il dispositivo da cui si sta guardando — senza,
+      l'elenco e' una fila di nomi identici e si revoca il proprio.
 - [x] «Revoca tutti i dispositivi» in un clic, per il telefono perso
 - [x] Revocare un utente revoca i suoi dispositivi
 - [x] Cambiare il PIN revoca i dispositivi, tranne quello da cui lo si cambia

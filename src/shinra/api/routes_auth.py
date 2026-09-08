@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
 from shinra.api import dispositivi, sicurezza
-from shinra.services import registro
+from shinra.services import permessi, registro
 from shinra.services.user_manager import user_manager
 
 logger = logging.getLogger("Shinra.Auth")
@@ -33,14 +33,32 @@ class RichiestaAccesso(BaseModel):
 
 @router.get("/status")
 async def stato_autenticazione(request: Request):
-    """Dice al client se deve autenticarsi e, se lo e' gia', chi e'."""
+    """Dice al client se deve autenticarsi, chi e', e cosa puo' fare.
+
+    I permessi viaggiano insieme all'identita' perche' la dashboard deve
+    poter nascondere cio' che non serve: mostrare a un ragazzo il pannello
+    dei ruoli, che poi il server rifiuta, non protegge nulla e fa solo
+    sembrare rotta l'applicazione. Resta una comodita' visiva — chi decide
+    e' sempre il server, su ogni singola rotta.
+
+    Ad autenticazione spenta l'elenco e' completo: e' la stessa scelta che
+    `permessi.ha_permesso` fa con un profilo assente, ed e' bene che
+    l'interfaccia dica la verita' su com'e' configurata la casa.
+    """
     attiva = sicurezza.autenticazione_attiva()
     profilo = sicurezza.utente_corrente(request) if attiva else None
+    if not attiva:
+        concessi = list(permessi.TUTTI)
+    elif profilo is not None:
+        concessi = sorted(permessi.permessi_del_ruolo(profilo.role))
+    else:
+        concessi = []
     return {
         "auth_enabled": attiva,
         "authenticated": (profilo is not None) if attiva else True,
         "protect_dashboard": True,
         "utente": profilo.model_dump(exclude={"pin"}) if profilo else None,
+        "permessi": concessi,
     }
 
 

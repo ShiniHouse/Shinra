@@ -1,22 +1,21 @@
 """Configurazione comune della suite di test.
 
-Finche' il codice non e' sotto `src/shinra/` (issue #16, milestone v0.2.0) la
-radice del progetto va aggiunta a sys.path perche' `import core` risolva.
+La suite gira sul pacchetto installato (`pip install -e ".[dev]"`), non sui
+file: e' il motivo per cui il codice sta sotto `src/` (issue #16). Se
+`src/shinra/` fosse raggiungibile dalla cartella di lavoro, i test
+proverebbero i sorgenti invece di cio' che si installa davvero — e le due
+cose possono differire, per esempio quando `pyproject.toml` dimentica un
+pacchetto.
 """
 
 from __future__ import annotations
 
-import sys
+import shutil
 from pathlib import Path
 
+import pytest
+
 RADICE = Path(__file__).resolve().parent.parent
-if str(RADICE) not in sys.path:
-    sys.path.insert(0, str(RADICE))
-
-
-import shutil  # noqa: E402
-
-import pytest  # noqa: E402
 
 _MODELLO: Path | None = None
 

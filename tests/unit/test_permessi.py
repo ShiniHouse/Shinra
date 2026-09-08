@@ -284,3 +284,82 @@ def test_ogni_rotta_che_cambia_qualcosa_dichiara_un_permesso():
                 mancanti.append(f"{metodo} {rotta.path}")
 
     assert mancanti == [], f"queste rotte cambiano lo stato senza dichiarare un permesso: {mancanti}"
+
+
+# --------------------------------------- i permessi arrivano all'interfaccia
+#
+# La dashboard non decide niente: nasconde. Ma per nascondere le cose giuste
+# deve sapere cosa puo' fare chi la sta guardando, e finora non aveva modo di
+# saperlo — mostrava a tutti il pannello dei ruoli, che poi il server
+# rifiutava.
+
+
+def _stato(client) -> dict:
+    return client.get("/api/auth/status").json()
+
+
+def test_lo_stato_dice_cosa_puo_fare_chi_e_entrato():
+    from fastapi.testclient import TestClient
+
+    from shinra.api import sicurezza
+    from shinra.api.app import app
+    from shinra.config.settings import settings
+
+    era_attiva = settings.security.auth_enabled
+    settings.security.auth_enabled = True
+    user_manager.imposta_pin("thomas", "445566")
+    sicurezza.azzera_stato()
+    try:
+        with TestClient(app) as client:
+            client.post("/api/auth/login", json={"pin": "445566", "user_id": "thomas"})
+            concessi = set(_stato(client)["permessi"])
+    finally:
+        settings.security.auth_enabled = era_attiva
+        sicurezza.azzera_stato()
+
+    assert concessi == set(permessi.permessi_del_ruolo("teen"))
+    assert permessi.COMANDA_SICUREZZA not in concessi
+    assert permessi.GESTISCI_UTENTI not in concessi
+
+
+def test_chi_non_e_entrato_non_ha_permessi():
+    from fastapi.testclient import TestClient
+
+    from shinra.api import sicurezza
+    from shinra.api.app import app
+    from shinra.config.settings import settings
+
+    era_attiva = settings.security.auth_enabled
+    settings.security.auth_enabled = True
+    sicurezza.azzera_stato()
+    try:
+        with TestClient(app) as client:
+            stato = _stato(client)
+    finally:
+        settings.security.auth_enabled = era_attiva
+        sicurezza.azzera_stato()
+
+    assert stato["authenticated"] is False
+    assert stato["permessi"] == []
+
+
+def test_a_casa_aperta_l_elenco_e_completo():
+    """Con l'autenticazione spenta `ha_permesso` concede tutto: l'interfaccia
+    deve dire la stessa cosa, non fingere restrizioni che non ci sono."""
+    from fastapi.testclient import TestClient
+
+    from shinra.api import sicurezza
+    from shinra.api.app import app
+    from shinra.config.settings import settings
+
+    era_attiva = settings.security.auth_enabled
+    settings.security.auth_enabled = False
+    sicurezza.azzera_stato()
+    try:
+        with TestClient(app) as client:
+            stato = _stato(client)
+    finally:
+        settings.security.auth_enabled = era_attiva
+        sicurezza.azzera_stato()
+
+    assert set(stato["permessi"]) == set(permessi.TUTTI)
