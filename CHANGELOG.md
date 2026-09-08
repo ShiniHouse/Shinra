@@ -14,6 +14,35 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Aggiunto
+- **Serrature, media player, aspirapolvere e ventilatori si comandano.**
+  Erano elencati come comandabili nella mappa dispositivi e nessun tool
+  sapeva toccarli: si chiedeva, e non succedeva niente. E' il difetto che
+  erode la fiducia piu' di un errore esplicito, perche' non ha nemmeno un
+  messaggio da leggere.
+- **Prima di comandare si verifica che il dispositivo esista.**
+  L'`entity_id` lo propone il modello, e il modello inventa nomi plausibili:
+  `lock.porta_ingresso` esiste, `lock.porta_ingresso_principale` no. Senza
+  controllo la richiesta partiva, Home Assistant rispondeva 200 senza fare
+  niente, e l'assistente annunciava che la porta era chiusa mentre era
+  aperta. L'errore propone anche l'alternativa piu' simile. Se la casa non
+  risponde affatto il comando passa lo stesso: un controllo che trasforma
+  «non lo so» in «non esiste» impedirebbe di comandare la casa proprio
+  quando e' gia' in difficolta'.
+- **Aprire una serratura chiede conferma**: una seconda richiesta entro un
+  minuto, non un parametro `conferma=True` che il modello riempirebbe da
+  solo — quello sarebbe teatro. E **dalla voce non si apre affatto**, finche'
+  i profili vocali della `0.4.0` non permetteranno di sapere chi sta
+  parlando: oggi chiunque si rivolga a un Echo agisce con l'identita' della
+  sessione aperta.
+
+### Modificato
+- Il contesto della richiesta — correlazione, attore, canale — si sposta da
+  `services/registro.py` a `domain/contesto.py`. E' un valore, non un
+  servizio: il registro e' un suo consumatore, non il proprietario. Se ne e'
+  accorto il test sulle regole di dipendenza quando il tool delle serrature
+  ha avuto bisogno di sapere da quale canale arriva la richiesta.
+
 ### Corretto
 - **Il badge della versione diceva `0.1.0` su un server aggiornato da un
   minuto**, con accanto il commit giusto: la piu' insidiosa delle mezze
