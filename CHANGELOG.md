@@ -14,6 +14,35 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Corretto
+- **Spegnere una fonte di notizie adesso la spegne.** La scheda «Fonti &
+  Notizie» mostrava le testate con i loro interruttori, e il codice leggeva
+  un elenco fisso scritto dentro `news_search.py`: si disattivava ANSA
+  Politica, si chiedevano le notizie, e arrivava politica da ANSA. Nessun
+  errore — silenzio, che e' peggio, perche' non c'e' niente da leggere e si
+  finisce col dare la colpa a se stessi.
+- **Le categorie preferite di ogni profilo contano.** Erano
+  nell'anagrafica dalla prima versione, si sceglievano nell'interfaccia, e
+  non le leggeva nessuno: la rassegna era identica per tutti. Adesso due
+  persone di casa con interessi diversi ricevono notizie diverse.
+- Con piu' fonti accese si prende una notizia per fonte a giro. Leggerne
+  quattro dalla prima significherebbe che la seconda non si sente mai, e chi
+  l'ha accesa ha ragione di aspettarsi il contrario.
+- Spegnere *tutte* le fonti di una categoria adesso lo dice, invece di
+  ripiegare in silenzio su quelle scritte nel codice: era proprio la
+  mancanza di effetto il difetto.
+
+### Rimosso
+- `assistant.language` e `security.protect_dashboard`: due opzioni che
+  nessuna riga leggeva. La seconda aveva perfino una casella nelle
+  impostazioni, mentre la rotta rispondeva `True` fisso — prometteva di poter
+  *disattivare* la protezione della dashboard, cioe' di riaprire il difetto
+  SEC-03 chiuso nella `0.1.0`, dove il blocco era un rettangolo CSS sopra
+  dati gia' inviati. Un'opzione cosi' non va collegata, va tolta. Il
+  linguaggio tornera' con la internazionalizzazione (issue #36).
+- Con questa versione la suite non ha piu' nessun test marcato `xfail`: i due
+  rimasti erano proprio questi difetti, dichiarati aperti dalla `0.1.0`.
+
 ### Aggiunto
 - **Serrature, media player, aspirapolvere e ventilatori si comandano.**
   Erano elencati come comandabili nella mappa dispositivi e nessun tool

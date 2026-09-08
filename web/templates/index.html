@@ -1263,10 +1263,6 @@
                                 <input type="password" id="cfg-sec-admin-pin" placeholder="Inserisci PIN (es. 1234)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono tracking-widest">
                                 <p class="text-[10px] text-slate-500 mt-1">Se abilitato, le richieste API e le impostazioni saranno protette e i token sensibili mascherati automaticamente.</p>
                             </div>
-                            <div class="flex items-center gap-2 pt-1">
-                                <input type="checkbox" id="cfg-sec-protect-dashboard" class="w-4 h-4 accent-indigo-500 rounded cursor-pointer" checked>
-                                <label for="cfg-sec-protect-dashboard" class="text-slate-400 cursor-pointer text-xs">Blocca l'intera schermata all'apertura (Lock Screen)</label>
-                            </div>
                             <div class="pt-2 border-t border-slate-800/80">
                                 <label class="text-slate-300 block mb-1 font-semibold text-xs flex items-center gap-1.5">
                                     <i data-lucide="timer" class="w-3.5 h-3.5 text-amber-400"></i> Blocco Automatico per Inattività:
@@ -5014,8 +5010,6 @@
                 if (authCb) authCb.checked = Boolean(sec.auth_enabled);
                 const pinInput = document.getElementById('cfg-sec-admin-pin');
                 if (pinInput) pinInput.value = sec.admin_pin || '';
-                const protCb = document.getElementById('cfg-sec-protect-dashboard');
-                if (protCb) protCb.checked = (sec.protect_dashboard !== false);
 
                 // Auto-Lock Inattività
                 const autoLockVal = localStorage.getItem('shinra_inactivity_timeout_mins') || '5';
@@ -5179,7 +5173,6 @@
             if (!cfg.security) cfg.security = {};
             cfg.security.auth_enabled = Boolean(document.getElementById('cfg-sec-auth-enabled')?.checked);
             cfg.security.admin_pin = document.getElementById('cfg-sec-admin-pin')?.value.trim() || '';
-            cfg.security.protect_dashboard = Boolean(document.getElementById('cfg-sec-protect-dashboard')?.checked);
 
             const saveRes = await fetch('/api/settings', {
                 method: 'POST',

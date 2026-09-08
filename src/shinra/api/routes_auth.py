@@ -56,6 +56,12 @@ async def stato_autenticazione(request: Request):
     return {
         "auth_enabled": attiva,
         "authenticated": (profilo is not None) if attiva else True,
+        # Non e' piu' un'opzione: la dashboard non viene servita a chi non
+        # e' entrato, e basta. Era una casella nelle impostazioni che non
+        # comandava niente — questa riga era gia' `True` fissa — e prometteva
+        # di poter *disattivare* la protezione, cioe' di riaprire il difetto
+        # SEC-03 chiuso nella v0.1.0: il blocco era un rettangolo CSS sopra
+        # dati gia' inviati. Resta nella risposta perche' la pagina la legge.
         "protect_dashboard": True,
         "utente": profilo.model_dump(exclude={"pin"}) if profilo else None,
         "permessi": concessi,

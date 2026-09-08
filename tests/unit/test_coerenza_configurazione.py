@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 RADICE = Path(__file__).resolve().parent.parent.parent
 SORGENTI = [RADICE / "src" / "shinra"]
 
@@ -39,21 +37,17 @@ def occorrenze(simbolo: str, escludi: tuple[str, ...] = ()) -> list[str]:
     return trovati
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Le fonti RSS configurabili non sono lette: news_search.py usa RSS_FEEDS scritto nel codice — issue v0.3.0 #26",
-)
 def test_le_fonti_rss_configurate_sono_usate() -> None:
+    """Era `xfail(strict=True)` dalla v0.1.0. Il marcatore e' caduto con la
+    issue #26, che e' il modo in cui questo progetto dichiara risolto un
+    difetto: quando la correzione arriva, il test diventa rosso finche' non
+    si toglie la dichiarazione di resa."""
     assert occorrenze("get_sources", escludi=("data_store.py", "routes_admin.py")), (
         "data/sources.json e il gestore fonti dell'interfaccia non hanno alcun effetto: "
         "src/shinra/skills/news_search.py usa un dizionario RSS_FEEDS scritto nel codice"
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="preferred_news_categories e' salvato per ogni utente e mai letto — issue v0.3.0 #26",
-)
 def test_le_categorie_di_notizie_preferite_sono_usate() -> None:
     # Escludiamo i moduli che il campo lo conservano soltanto: l'anagrafica e
     # lo strato di persistenza. Conservare non e' usare, e un test che si
@@ -186,4 +180,67 @@ def test_le_dipendenze_sono_dichiarate_in_un_posto_solo() -> None:
     assert dichiarate == ["-e ."], (
         "requirements.txt elenca dipendenze per conto suo: "
         f"{dichiarate}. Devono stare solo in pyproject.toml"
+    )
+
+
+# ------------------------------- il controllo che impedisce il ripetersi
+#
+# I test qui sopra elencano difetti trovati uno per uno. Questo cerca la
+# categoria: un'opzione esposta che nessuna riga legge. Sono le peggiori,
+# perche' non producono un errore ma silenzio, e chi le usa da' la colpa a
+# se stesso.
+
+
+def _campi_di_configurazione() -> list[str]:
+    """Ogni foglia di `AppConfig`, con il suo percorso: `security.auth_enabled`."""
+    from pydantic import BaseModel
+
+    from shinra.config.settings import AppConfig
+
+    def scendi(modello, prefisso=""):
+        for nome, campo in modello.model_fields.items():
+            tipo = campo.annotation
+            if isinstance(tipo, type) and issubclass(tipo, BaseModel):
+                yield from scendi(tipo, f"{prefisso}{nome}.")
+            else:
+                yield prefisso + nome
+
+    return sorted(scendi(AppConfig))
+
+
+def test_ogni_opzione_di_configurazione_ha_un_consumatore():
+    """Un'opzione che nessuno legge e' una promessa che il programma non mantiene.
+
+    Si cerca il percorso completo — `security.auth_enabled`, non
+    `auth_enabled` — perche' cercare solo il nome della foglia lascerebbe
+    passare qualunque campo chiamato `enabled`, e sarebbe un controllo che
+    si dichiara soddisfatto per omonimia.
+
+    Quando ha girato per la prima volta ne ha trovate due che nessun elenco
+    scritto a mano aveva notato: `assistant.language`, mai letta da nessuna
+    riga, e `security.protect_dashboard`, che aveva perfino una casella nelle
+    impostazioni mentre la rotta rispondeva `True` fisso. Quella prometteva
+    di poter *disattivare* la protezione della dashboard, cioe' di riaprire
+    un difetto di sicurezza gia' chiuso. Entrambe sono state tolte: il
+    linguaggio tornera' con la internazionalizzazione (issue #36), che e' il
+    lavoro che lo rendera' vero.
+
+    Se aggiungi un'opzione e questo test diventa rosso, la scelta e' fra
+    collegarla e non aggiungerla. Non fra collegarla e allungare un elenco di
+    eccezioni.
+    """
+    sorgenti = [
+        p
+        for p in (RADICE / "src" / "shinra").rglob("*.py")
+        if "__pycache__" not in p.parts and p.name != "settings.py"
+    ]
+    testo = "\n".join(p.read_text(encoding="utf-8") for p in sorgenti)
+
+    campi = _campi_di_configurazione()
+    assert campi, "nessun campo trovato: il test non guarda piu' niente"
+
+    orfani = [c for c in campi if c not in testo]
+
+    assert orfani == [], (
+        "queste opzioni sono esposte nella configurazione e nessuna riga di " f"codice le legge: {orfani}"
     )
