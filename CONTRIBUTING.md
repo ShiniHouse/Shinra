@@ -106,9 +106,38 @@ Una modifica incompatibile si segnala con `!` dopo l'ambito e una nota
 - [ ] `CHANGELOG.md` aggiornato sotto `[Non rilasciato]`
 - [ ] Se la struttura cambia, `docs/ARCHITECTURE.md` e' aggiornato
 - [ ] Se una scelta non e' ovvia, esiste un ADR in `docs/adr/`
+- [ ] La descrizione della PR chiude la issue con `Closes #NN`, dove `NN` e'
+      il numero scritto nell'intestazione della scheda di backlog (vedi sotto)
 
 Una PR fa **una cosa sola**. Una PR che corregge un difetto e riorganizza tre
 moduli va divisa in due.
+
+### Chiudere la issue
+
+La chiusura va nella **descrizione della PR**, non nel messaggio di commit:
+
+```
+Closes #46
+```
+
+Due errori gia' commessi, entrambi con lo stesso rimedio.
+
+Scrivere `Chiude #46` in italiano non chiude niente: GitHub riconosce solo le
+sue parole (`Closes`, `Fixes`, `Resolves`). Le issue restano aperte, la
+milestone resta indietro, e si scopre settimane dopo guardando una
+percentuale.
+
+Il numero va preso dall'**intestazione della scheda** (`issue: 46`), mai dal
+nome del file. I due hanno smesso di coincidere quando sono state aggiunte
+schede dopo la prima importazione, e due commit che dicevano `Closes #19` e
+`Closes #20` intendendo i file hanno chiuso come completate due issue della
+`v0.3.0` che nessuno aveva iniziato. Adesso il numero e' nell'intestazione,
+`import_backlog.py` ce lo scrive da solo e `tests/unit/test_backlog.py`
+fallisce se torna a divergere — ma il numero si legge da li'.
+
+Per la reazione opposta: scrivere `Riferimento: issue #46` non chiude niente
+neanche lui. E' utile in un commit, che non deve chiudere; nella descrizione
+della PR serve la parola vera.
 
 ---
 
