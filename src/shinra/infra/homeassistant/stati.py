@@ -26,6 +26,12 @@ from typing import Any, Iterable, Optional
 # molti eventi al minuto che non interessano a nessuno.
 DOMINI_CONTROLLABILI = frozenset({"light", "switch", "climate", "cover", "media_player"})
 
+# Cio' che vale la pena raccontare sul bus degli eventi. Non coincide con i
+# comandabili: `person` non si comanda e sapere chi c'e' in casa e'
+# l'informazione piu' utile che passi di qui (issue #22). Coincidevano
+# finche' l'unico consumatore era la dashboard.
+DOMINI_OSSERVATI = DOMINI_CONTROLLABILI | {"person"}
+
 # Quanti dispositivi entrano nel riassunto dato al modello. Non e' un limite
 # tecnico ma di attenzione: un elenco lunghissimo peggiora le risposte invece
 # di migliorarle.

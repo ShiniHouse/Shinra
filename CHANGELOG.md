@@ -14,6 +14,29 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Aggiunto
+- **La casa sa se c'e' qualcuno.** `person` era fra i domini visibili e
+  nessuna riga lo guardava: l'informazione piu' utile della domotica era
+  anche l'unica che non si vedeva. Adesso c'e' un servizio che aggrega le
+  persone in uno stato di casa e pubblica sul bus i quattro momenti che
+  contano — qualcuno rientra, qualcuno esce, la prima persona torna, l'ultima
+  se ne va — e una pastiglia nella barra dice quanti sono in casa.
+- **Un buco del GPS non svuota la casa.** Il telefono perde il segnale in
+  garage o in ascensore, Home Assistant lo racconta come «uscito» e ci
+  ripensa un minuto dopo. Un'uscita si crede solo dopo un'attesa
+  (`presenza.ritardo_uscita_secondi`, due minuti per difetto); un rientro si
+  crede subito, perche' chi torna vuole la luce accesa adesso e un falso
+  rientro non spegne niente a nessuno.
+- Chi ha uno stato ignoto non conta ne' come presente ne' come assente: non
+  sapere dov'e' una persona non e' saperla fuori.
+- `GET /api/presenza` dice chi c'e', chi no, e chi e' in attesa di conferma —
+  vedere l'attesa spiega perche' la casa non ha ancora reagito.
+
+### Modificato
+- I domini **osservati** sul bus degli eventi non sono piu' gli stessi di
+  quelli **comandabili**: `person` non si comanda, e finche' passava solo
+  cio' che si comanda la presenza non sarebbe mai arrivata a nessuno.
+
 ### Corretto
 - **Spegnere una fonte di notizie adesso la spegne.** La scheda «Fonti &
   Notizie» mostrava le testate con i loro interruttori, e il codice leggeva

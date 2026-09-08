@@ -23,7 +23,17 @@ from shinra.config.settings import (
     settings,
     verifica_configurazione,
 )
-from shinra.domain.eventi import HA_STATO_CAMBIATO, PROMEMORIA_SCADUTO, TIMER_SCADUTO, Evento, bus
+from shinra.domain.eventi import (
+    CASA_ABITATA,
+    CASA_VUOTA,
+    HA_STATO_CAMBIATO,
+    PERSONA_RIENTRATA,
+    PERSONA_USCITA,
+    PROMEMORIA_SCADUTO,
+    TIMER_SCADUTO,
+    Evento,
+    bus,
+)
 from shinra.infra.data_store import assicura_dati_iniziali
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.llm.ollama import OllamaClient
@@ -31,6 +41,7 @@ from shinra.infra.scheduler.motore import scheduler
 from shinra.services import eventi_casa, permessi, registro
 from shinra.services.agent import agent
 from shinra.services.consegna import descrivi, registra_canali
+from shinra.services.presenza import presenza
 from shinra.services.timer_engine import timer_engine
 from shinra.services.user_manager import user_manager
 
@@ -179,6 +190,10 @@ async def lifespan(_: FastAPI):
     # l'avvio: se Home Assistant non risponde, il servizio deve partire lo
     # stesso e funzionare in modo ridotto — e' una casa, non un datacenter.
     await eventi_casa.avvia()
+
+    # Chi c'e' in casa. Dopo la connessione agli eventi, perche' la prima
+    # fotografia la legge dalla cache che quella riempie.
+    await presenza.avvia()
     registra_canali()
     ripresi = timer_engine.ripristina_job()
     rimossi = timer_engine.pulisci_scaduti()
@@ -207,6 +222,7 @@ async def lifespan(_: FastAPI):
 
     # Spegnimento: i job restano nell'archivio per la prossima accensione.
     scheduler.ferma()
+    await presenza.ferma()
     await eventi_casa.ferma()
     await client_home_assistant().chiudi()
 
@@ -434,7 +450,20 @@ async def eventi_websocket(websocket: WebSocket):
     def accoda(evento: Evento) -> None:
         coda.put_nowait(descrivi(evento))
 
-    annulla = [bus.sottoscrivi(t, accoda) for t in (TIMER_SCADUTO, PROMEMORIA_SCADUTO, HA_STATO_CAMBIATO)]
+    annulla = [
+        bus.sottoscrivi(t, accoda)
+        for t in (
+            TIMER_SCADUTO,
+            PROMEMORIA_SCADUTO,
+            HA_STATO_CAMBIATO,
+            # Chi entra e chi esce: senza questi la scritta «chi c'e' in
+            # casa» resterebbe ferma al caricamento della pagina.
+            PERSONA_RIENTRATA,
+            PERSONA_USCITA,
+            CASA_ABITATA,
+            CASA_VUOTA,
+        )
+    ]
     try:
         while True:
             await websocket.send_json(await coda.get())

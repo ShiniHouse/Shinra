@@ -28,7 +28,7 @@ import logging
 from typing import Any, Callable, Optional
 
 from shinra.domain.eventi import HA_STATO_CAMBIATO, Evento, bus
-from shinra.infra.homeassistant.stati import DOMINI_CONTROLLABILI, CacheStati, cache_stati, dominio_di
+from shinra.infra.homeassistant.stati import DOMINI_OSSERVATI, CacheStati, cache_stati, dominio_di
 
 logger = logging.getLogger("Shinra.HomeAssistant.Eventi")
 
@@ -60,7 +60,7 @@ class Protocollo:
         token: str,
         cache: Optional[CacheStati] = None,
         su_cambiamento: Optional[Callable[[str, dict[str, Any]], None]] = None,
-        domini: frozenset[str] = DOMINI_CONTROLLABILI,
+        domini: frozenset[str] = DOMINI_OSSERVATI,
     ) -> None:
         self._token = token
         self.cache = cache if cache is not None else cache_stati

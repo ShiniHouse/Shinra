@@ -625,6 +625,20 @@ async def azioni_registrate():
     return sorted({v["azione"] for v in voci})
 
 
+# --- PRESENZA ---
+@router.get("/presenza")
+async def stato_presenza():
+    """Chi c'e' in casa adesso.
+
+    `in_attesa` sono le persone che Home Assistant da' per uscite e a cui non
+    crediamo ancora: e' il ritardo contro i buchi del GPS, e vederlo aiuta a
+    capire perche' la casa non ha ancora reagito.
+    """
+    from shinra.services.presenza import presenza
+
+    return presenza.dettaglio()
+
+
 # --- RUOLI E PERMESSI ---
 @router.get("/permessi")
 async def elenco_permessi():
