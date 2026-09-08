@@ -264,7 +264,13 @@ info "Nessuna modifica locale."
 
 # --------------------------------------------------------- 2. quale versione
 passo "Recupero degli aggiornamenti"
-esegui git_utente fetch --quiet --tags --prune origin
+# Questo `fetch` non passa da `esegui`, e non e' una dimenticanza: non tocca
+# la copia di lavoro ne' il ramo, aggiorna solo i riferimenti remoti.
+# Simularlo rendeva `--dry-run` inutile esattamente quando serve — senza i
+# riferimenti nuovi lo script confrontava HEAD con se stesso e annunciava
+# «gia' aggiornato» mentre c'erano tre versioni da installare. Una prova che
+# risponde sempre «niente da fare» non e' una prova.
+git_utente fetch --quiet --tags --prune origin
 
 if [[ -z "$RIFERIMENTO" ]]; then
     RIFERIMENTO="$(git_utente tag --list 'v*' --sort=-version:refname | head -1)"
