@@ -66,6 +66,21 @@ installabile e utilizzabile.
   chi deve solo digitare il PIN.
 
 ### Corretto
+- **`deploy.sh --dry-run` rispondeva sempre «gia' aggiornato».** Il `fetch`
+  passava da `esegui`, la funzione che durante una simulazione stampa invece
+  di eseguire. Ma un fetch non tocca la copia di lavoro: aggiorna solo i
+  riferimenti remoti. Saltandolo, lo script confrontava HEAD con se stesso e
+  annunciava che non c'era niente da fare mentre sul server mancavano tre
+  versioni. Una prova che risponde sempre allo stesso modo non e' una prova,
+  ed e' peggio di non averla: fa sembrare informata una decisione presa alla
+  cieca.
+- `tests/unit/test_deploy.py`: lo script che aggiorna il server non era
+  guardato da niente, ed e' gia' costato due aggiornamenti interrotti a
+  meta'. Adesso si controlla che sia bash valido — un errore di sintassi si
+  scoprirebbe a servizio gia' fermo, perche' bash legge gli script mentre li
+  esegue — che nessuna lettura di git passi da `esegui`, e che la
+  simulazione esca prima del controllo di salute, che sa riportare da solo
+  il server alla versione precedente.
 - **I riferimenti alle issue nel codice puntavano nel posto sbagliato.** Le
   schede del backlog diventano issue su GitHub, e il numero lo assegna
   GitHub: finora l'unico riferimento era il numero nel nome del file, che
