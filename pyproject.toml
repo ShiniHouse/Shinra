@@ -4,10 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shinra"
-# Versione in sviluppo verso la 0.2.0. Diventa "0.2.0" al momento del tag:
-# finche' e' `.dev`, la pagina mostra che si sta correndo su codice non
-# ancora rilasciato — che e' cio' che sta succedendo davvero.
-version = "0.2.0.dev0"
+version = "0.2.0"
 description = "Hub domotico con IA locale, controllo Home Assistant e interfaccia vocale"
 readme = "README.md"
 requires-python = ">=3.10"
