@@ -622,6 +622,14 @@
                     <span>HA</span>
                 </div>
 
+                <!-- Chi c'e' in casa (issue #22). `person` era fra i domini
+                     visibili e nessuno lo guardava: e' l'informazione piu'
+                     utile della domotica ed era l'unica che non si vedeva. -->
+                <div id="presenza-pill" style="display:none" class="items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 border border-slate-700/80 text-slate-300" title="Chi c'e' in casa">
+                    <span id="presenza-punto" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                    <span id="presenza-testo">Casa</span>
+                </div>
+
                 <!-- Blocca la sessione. `checkAuthStatus` cercava questo pulsante
                      da sempre e non lo trovava: la funzione c'era, il modo di
                      chiamarla no, e l'unico blocco possibile era quello
@@ -1703,6 +1711,7 @@
 
                     // Ricarica i dati protetti
                     checkSystemHealth();
+                    caricaPresenza();
                     loadKnowledge();
                     loadSettings();
                     loadTimers();
@@ -3690,6 +3699,50 @@
                 loadReminders();
             } else if (evento.tipo === 'ha.stato_cambiato') {
                 aggiornaStatoCasa(evento.dati);
+            } else if (evento.tipo.startsWith('persona.') || evento.tipo.startsWith('casa.')) {
+                caricaPresenza();
+            }
+        }
+
+        // ==================== CHI C'E' IN CASA ====================
+        // Riferimento: issue #22. La pastiglia mostra anche chi Home Assistant
+        // da' per uscito e a cui non stiamo ancora credendo: e' il ritardo
+        // contro i buchi del GPS, e vederlo spiega perche' la casa non ha
+        // ancora reagito.
+
+        async function caricaPresenza() {
+            const pill = document.getElementById('presenza-pill');
+            if (!pill) return;
+            try {
+                const res = await fetch('/api/presenza', { headers: getAuthHeaders() });
+                if (!res.ok) return;
+                const p = await res.json();
+
+                if (!p.conosciuta) {
+                    // Nessuna persona configurata in Home Assistant: dire
+                    // «casa vuota» sarebbe una deduzione dal nulla.
+                    pill.style.display = 'none';
+                    return;
+                }
+                pill.style.display = 'flex';
+
+                const punto = document.getElementById('presenza-punto');
+                const testo = document.getElementById('presenza-testo');
+                const quanti = (p.presenti || []).length;
+                const attesa = (p.in_attesa || []).length;
+
+                if (punto) punto.className = `w-2 h-2 rounded-full ${p.abitata ? 'bg-emerald-400' : 'bg-slate-500'}`;
+                if (testo) {
+                    testo.textContent = quanti === 0 ? 'Casa vuota'
+                        : quanti === 1 ? '1 in casa'
+                        : `${quanti} in casa`;
+                }
+                pill.title = [
+                    (p.presenti || []).map(e => e.split('.').pop()).join(', ') || 'nessuno in casa',
+                    attesa ? `in attesa di conferma: ${(p.in_attesa || []).map(e => e.split('.').pop()).join(', ')}` : ''
+                ].filter(Boolean).join(' — ');
+            } catch (e) {
+                console.warn('Presenza non disponibile:', e);
             }
         }
 
@@ -5325,6 +5378,9 @@
             collegaEventi();
             checkSystemHealth();
             setInterval(checkSystemHealth, 8000);
+            // La presenza non va interrogata a intervalli: arriva sul
+            // WebSocket quando cambia. Questa e' solo la fotografia iniziale.
+            caricaPresenza();
         });
     </script>
 </body>

@@ -83,6 +83,23 @@ class RegistroConfig(BaseModel):
     retention_days: int = 90
 
 
+class PresenzaConfig(BaseModel):
+    """Chi c'e' in casa, e quanto aspettare prima di crederci.
+
+    `ritardo_uscita_secondi` esiste per un motivo pratico: il GPS di un
+    telefono perde il segnale in garage, in ascensore, dietro un muro
+    spesso. Home Assistant lo racconta come «uscito», e senza attesa la casa
+    spegnerebbe tutto addosso a chi e' appena sceso in cantina.
+
+    Il ritardo vale **solo per le uscite**. Un rientro si crede subito: chi
+    torna a casa vuole la luce accesa adesso, e un falso rientro non spegne
+    niente a nessuno.
+    """
+
+    enabled: bool = True
+    ritardo_uscita_secondi: int = 120
+
+
 class AppConfig(BaseModel):
     server: ServerConfig = Field(default_factory=ServerConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
@@ -91,6 +108,7 @@ class AppConfig(BaseModel):
     assistant: AssistantConfig = Field(default_factory=AssistantConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     registro: RegistroConfig = Field(default_factory=RegistroConfig)
+    presenza: PresenzaConfig = Field(default_factory=PresenzaConfig)
 
 
 # --------------------------------------------------------------------------

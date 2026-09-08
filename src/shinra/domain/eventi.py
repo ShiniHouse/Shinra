@@ -43,6 +43,21 @@ PROMEMORIA_SCADUTO = "promemoria.scaduto"
 # mano nostra: anche l'interruttore a muro passa di qui. E' il fatto su cui
 # si appoggeranno le regole della v0.4.0 (issue #19).
 HA_STATO_CAMBIATO = "ha.stato_cambiato"
+# Chi entra e chi esce, e i due momenti che contano per la casa intera: la
+# prima persona che rientra e l'ultima che se ne va (issue #22). I nomi
+# vivono in `domain/presenza.py`, che e' anche cio' che li decide.
+from shinra.domain.presenza import (  # noqa: E402
+    CASA_ABITATA as CASA_ABITATA,
+)
+from shinra.domain.presenza import (  # noqa: E402
+    CASA_VUOTA as CASA_VUOTA,
+)
+from shinra.domain.presenza import (  # noqa: E402
+    PERSONA_RIENTRATA as PERSONA_RIENTRATA,
+)
+from shinra.domain.presenza import (  # noqa: E402
+    PERSONA_USCITA as PERSONA_USCITA,
+)
 
 
 class BusEventi:
