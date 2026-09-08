@@ -14,6 +14,19 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Corretto
+- **`deploy.sh` senza argomenti poteva riportare il server indietro nel
+  tempo, senza dirlo.** Installa l'ultimo tag — voluto: un server di casa
+  non deve seguire il ramo di sviluppo. Ma mentre si lavora verso una
+  versione nuova il tag piu' recente e' quello *precedente*, e su un server
+  gia' aggiornato a `main` la stessa regola diventa una macchina del tempo.
+  E' successo davvero: un comando lanciato per aggiornare ha riportato la
+  casa alla `v0.1.0`. Adesso lo script confronta i due commit e si ferma,
+  spiegando come prendere l'ultimo codice o come tornare indietro apposta
+  con `--indietro`. Il codice torna indietro, i dati no: le migrazioni non
+  si annullano, e il database resta con lo schema nuovo sotto
+  un'applicazione che si aspetta quello vecchio.
+
 ### Aggiunto
 - **La casa dice cosa succede, invece di rispondere quando le si chiede.**
   Connessione WebSocket a Home Assistant: gli stati arrivano nel momento in

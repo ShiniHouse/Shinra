@@ -63,6 +63,19 @@ sono cambiate**; applica le migrazioni; riavvia; e per trenta secondi verifica
 che il servizio risponda davvero. Se non risponde, mostra il log, **torna da
 solo alla versione precedente** e riavvia.
 
+> **Senza argomenti installa l'ultimo tag, e questo puo' portare indietro.**
+> Mentre si lavora verso una versione nuova, il tag piu' recente e' quello
+> della versione *precedente*: se il server gira gia' su `main`, un
+> `deploy.sh` senza argomenti chiederebbe di installare qualcosa di piu'
+> vecchio. Adesso lo script se ne accorge e si ferma, spiegando che serve
+> `main` per prendere l'ultimo codice o `--indietro` per tornare davvero
+> indietro. Prima non se ne accorgeva, e il server e' finito alla `v0.1.0`
+> con un comando lanciato per aggiornarlo.
+>
+> Il codice torna indietro, i dati no: le migrazioni non si annullano, e il
+> database resta con lo schema nuovo sotto un'applicazione che si aspetta
+> quello vecchio.
+
 > ### Sul server non si esegue mai `git pull` a mano
 >
 > Non e' una preferenza di stile: `git pull` scavalca tutto cio' che questa
@@ -90,7 +103,8 @@ sudo scripts/deploy.sh                # ultima release taggata (consigliato)
 sudo scripts/deploy.sh v0.1.0         # una versione precisa
 sudo scripts/deploy.sh main           # ultimo commit di main, per provare
 sudo scripts/deploy.sh --dry-run      # mostra cosa farebbe, senza farlo
-sudo scripts/deploy.sh --rollback     # torna alla versione precedente
+sudo scripts/deploy.sh --rollback     # annulla l'ultimo aggiornamento
+sudo scripts/deploy.sh --indietro v0.1.0  # installa apposta una versione vecchia
 sudo scripts/deploy.sh --proteggi-stato   # una volta sola, vedi sotto
 ```
 

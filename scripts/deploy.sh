@@ -17,7 +17,11 @@
 #   sudo /opt/Shinra/scripts/deploy.sh                 # ultimo tag di release
 #   sudo /opt/Shinra/scripts/deploy.sh v0.1.0          # una versione precisa
 #   sudo /opt/Shinra/scripts/deploy.sh main            # ultimo commit di main
-#   sudo /opt/Shinra/scripts/deploy.sh --rollback      # torna indietro
+#   sudo /opt/Shinra/scripts/deploy.sh --rollback      # annulla l'ultimo aggiornamento
+#   sudo /opt/Shinra/scripts/deploy.sh --indietro v0.1.0  # installa apposta una
+#          versione precedente. Senza questo, lo script si rifiuta di tornare
+#          indietro nel tempo: e' successo di riportare il server alla v0.1.0
+#          con un comando lanciato per aggiornarlo.
 #   sudo /opt/Shinra/scripts/deploy.sh --proteggi-stato  # una volta sola,
 #          mette al riparo config/ e data/ da qualunque aggiornamento futuro
 #   sudo /opt/Shinra/scripts/deploy.sh --dry-run v0.2.0
@@ -34,8 +38,16 @@ TENTATIVI_HEALTH=15
 
 DRY_RUN=0
 ROLLBACK=0
+# Consente esplicitamente di installare una versione precedente. Serve a
+# distinguere «voglio tornare alla v0.1.0» da «aggiorna», che senza questo
+# erano lo stesso comando.
+INDIETRO=0
 PROTEGGI=0
 RIFERIMENTO=""
+# Cio' che l'utente ha chiesto per nome, distinto da cio' che lo script ha
+# scelto per lui: se la scelta e' nostra e porta indietro, il messaggio deve
+# spiegare *perche'* invece di dare la colpa a chi ha premuto invio.
+RIFERIMENTO_ESPLICITO=""
 
 rosso()  { printf '\033[0;31m%s\033[0m\n' "$*" >&2; }
 verde()  { printf '\033[0;32m%s\033[0m\n' "$*"; }
@@ -94,10 +106,11 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --dry-run)  DRY_RUN=1 ;;
         --rollback) ROLLBACK=1 ;;
+        --indietro) INDIETRO=1 ;;
         --proteggi-stato|--proteggi-dati) PROTEGGI=1 ;;
         -h|--help)  sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         -*)         rosso "Opzione sconosciuta: $1"; exit 2 ;;
-        *)          RIFERIMENTO="$1" ;;
+        *)          RIFERIMENTO="$1"; RIFERIMENTO_ESPLICITO="$1" ;;
     esac
     shift
 done
@@ -307,6 +320,38 @@ if [[ "$ATTUALE" == "$NUOVO" ]]; then
         info "Oppure attendi il prossimo tag: e' cio' che questo script installa da solo."
     fi
     exit 0
+fi
+
+# Un aggiornamento che riporta indietro nel tempo non e' un aggiornamento.
+#
+# Senza argomenti lo script installa l'ultimo *tag*, ed e' voluto: un server
+# di casa non deve seguire il ramo di sviluppo. Ma se il tag piu' recente e'
+# piu' vecchio di cio' che gira — perche' si sta lavorando su `main` e il tag
+# della versione in corso non e' ancora stato creato — la stessa regola
+# diventa una macchina del tempo, e la casa torna a una versione di settimane
+# prima senza che nessuno l'abbia chiesto. E' successo davvero: il server e'
+# stato riportato alla v0.1.0 da un comando lanciato per aggiornarlo.
+#
+# Il codice torna indietro, i dati no: le migrazioni non si annullano, e il
+# database resta con lo schema nuovo sotto un'applicazione che si aspetta
+# quello vecchio.
+if git_utente merge-base --is-ancestor "$NUOVO" "$ATTUALE" 2>/dev/null; then
+    echo
+    rosso "Questo non e' un aggiornamento: e' un ritorno a una versione precedente."
+    info "In esecuzione: $(git_utente log --oneline -1 "$ATTUALE")"
+    info "Richiesta:     $(git_utente log --oneline -1 "$NUOVO")"
+    echo
+    if [[ -z "$RIFERIMENTO_ESPLICITO" ]]; then
+        giallo "Nessuna versione indicata, quindi ho scelto l'ultimo tag: $RIFERIMENTO."
+        info "Il tag della versione in esecuzione non esiste ancora."
+        info "Per prendere l'ultimo codice:      sudo $0 main"
+    fi
+    info "Per tornare indietro davvero:      sudo $0 --indietro $RIFERIMENTO"
+    info "Per annullare l'ultimo aggiornamento: sudo $0 --rollback"
+    if [[ $INDIETRO -eq 0 ]]; then
+        exit 1
+    fi
+    giallo "Procedo all'indietro come richiesto."
 fi
 
 info "Da:  $(git_utente log --oneline -1 "$ATTUALE")"
