@@ -45,7 +45,6 @@ alexa:
 
 assistant:
   name: "Kyra"
-  language: "it"
   default_city: "Roma"
 
 security:
@@ -54,7 +53,6 @@ security:
   # l'amministratore e scritto nel log una volta sola.
   # Metterlo a false apre la casa a chiunque sia sulla rete.
   auth_enabled: true
-  protect_dashboard: true
   # Indirizzi dei reverse proxy di cui fidarsi per leggere X-Forwarded-For.
   # Da compilare SOLO se Shinra sta dietro nginx o simili, con l'indirizzo da
   # cui il proxy si presenta — di solito 127.0.0.1. Vuoto significa: non

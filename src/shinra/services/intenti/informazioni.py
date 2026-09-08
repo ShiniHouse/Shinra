@@ -107,11 +107,22 @@ class Notizie(Intento):
         )
 
     async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
-        argomenti = {"category": "generale"}
+        # Le categorie preferite del profilo che ha parlato. Erano salvate
+        # nell'anagrafica fin dalla prima versione e non le leggeva nessuno:
+        # la rassegna era identica per tutti, e sceglierle nell'interfaccia
+        # non cambiava niente (issue #26).
+        preferite = list(getattr(richiesta.profilo, "preferred_news_categories", None) or [])
+        argomenti: dict = {"categorie": preferite} if preferite else {"category": "generale"}
+
         esito = await execute_tool("get_latest_news", argomenti)
         richiesta.annota("get_latest_news", argomenti, esito)
 
         if not esito.get("success"):
+            # «Nessuna fonte attiva» e' una risposta, non un guasto: chi ha
+            # spento tutte le fonti deve sentirselo dire, non ricevere il
+            # silenzio del modello che prova a cavarsela.
+            if esito.get("message"):
+                return Risposta(esito["message"])
             return None
 
         titoli = [n.get("titolo", "") for n in esito.get("notizie", [])[:2] if n.get("titolo")]

@@ -51,7 +51,6 @@ class AlexaConfig(BaseModel):
 
 class AssistantConfig(BaseModel):
     name: str = "Kyra"
-    language: str = "it"
     default_city: str = "Roma"
 
 
@@ -65,7 +64,6 @@ class SecurityConfig(BaseModel):
     # Nessun valore predefinito: un segreto uguale per tutte le installazioni
     # non e' un segreto. Viene generato al primo avvio e scritto in .env.
     session_secret: Optional[str] = ""
-    protect_dashboard: bool = True
     # Indirizzi dei reverse proxy di cui fidarsi per leggere X-Forwarded-For.
     # Vuoto significa: non fidarsi di nessuno, e usare l'indirizzo osservato.
     # Un'intestazione X-Forwarded-For arriva dal client e chiunque puo'
