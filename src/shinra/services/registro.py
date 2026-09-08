@@ -29,10 +29,7 @@ import json
 import logging
 import logging.handlers
 import time
-import uuid
 from contextlib import contextmanager
-from contextvars import ContextVar
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterator, Optional
@@ -66,45 +63,20 @@ ESITO_ERRORE = "errore"
 ESITO_NEGATO = "negato"
 
 
-@dataclass
-class ContestoRichiesta:
-    correlazione: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
-    attore: Optional[str] = None
-    canale: str = ""
-
-
-_contesto: ContextVar[Optional[ContestoRichiesta]] = ContextVar("contesto_richiesta", default=None)
-
-
-def contesto() -> ContestoRichiesta:
-    """Il contesto della richiesta in corso, creandone uno se manca.
-
-    Manca, per esempio, in uno script eseguito a mano: le sue azioni vanno
-    comunque registrate, con una correlazione tutta loro.
-    """
-    corrente = _contesto.get()
-    if corrente is None:
-        corrente = ContestoRichiesta()
-        _contesto.set(corrente)
-    return corrente
-
-
-def apri_contesto(attore: Optional[str] = None, canale: str = "") -> ContestoRichiesta:
-    nuovo = ContestoRichiesta(attore=attore, canale=canale)
-    _contesto.set(nuovo)
-    return nuovo
-
-
-def imposta_attore(attore: Optional[str]) -> None:
-    """L'identita' spesso si scopre a meta' strada.
-
-    Alexa consegna l'identificativo dentro gli attributi di sessione, e
-    l'agente risolve il profilo solo dopo aver ricevuto il testo: il
-    contesto nasce anonimo e viene completato quando si sa chi ha parlato.
-    """
-    if attore:
-        contesto().attore = attore
-
+# Il contesto della richiesta e' un valore, non un servizio: vive in
+# `domain/contesto.py` da quando il tool delle serrature ha avuto bisogno di
+# sapere da quale canale arriva la richiesta. Qui resta ri-esportato, perche'
+# il registro e' il suo consumatore principale e mezzo progetto scrive
+# `registro.contesto()`.
+# La forma `X as X` dice a ruff che sono ri-esportazioni volute e non import
+# inutilizzati: senza, `--fix` le toglie e mezzo progetto smette di trovare
+# `registro.apri_contesto`. E' successo scrivendo questa riga.
+from shinra.domain.contesto import ContestoRichiesta as ContestoRichiesta  # noqa: E402
+from shinra.domain.contesto import apri_contesto as apri_contesto  # noqa: E402
+from shinra.domain.contesto import canale_corrente as canale_corrente  # noqa: E402
+from shinra.domain.contesto import contesto as contesto  # noqa: E402
+from shinra.domain.contesto import contesto_se_c_e as contesto_se_c_e  # noqa: E402
+from shinra.domain.contesto import imposta_attore as imposta_attore  # noqa: E402
 
 # --------------------------------------------------------------- segreti
 
@@ -273,7 +245,7 @@ class FormatoJson(logging.Formatter):
     """Una riga di log = un oggetto JSON, con la correlazione della richiesta."""
 
     def format(self, record: logging.LogRecord) -> str:
-        ctx = _contesto.get()
+        ctx = contesto_se_c_e()
         voce = {
             "momento": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
             "livello": record.levelname,
