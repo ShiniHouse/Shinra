@@ -94,3 +94,42 @@ def test_la_pagina_di_accesso_non_la_mostra():
 @pytest.mark.parametrize("campo", ["versione", "descrizione", "commit", "ramo", "tag"])
 def test_il_dettaglio_ha_tutti_i_campi(campo):
     assert campo in versione.dettaglio()
+
+
+def test_metadati_sorpassati_non_ingannano_il_numero(monkeypatch):
+    """Il difetto che ha fatto dire «0.1.0» a un server aggiornato da un minuto.
+
+    `importlib.metadata` cerca lungo `sys.path`, e il servizio parte dalla
+    cartella del progetto — che viene prima di site-packages. Un
+    `shinra.egg-info` lasciato li' da un'installazione di mesi prima, quando
+    il codice non stava ancora sotto `src/`, veniva trovato per primo.
+
+    Il badge mostrava il commit giusto accanto alla versione sbagliata: la
+    piu' insidiosa delle mezze verita', perche' sembra informazione.
+    """
+    from shinra import versione
+
+    def metadati_bugiardi(_nome: str) -> str:
+        return "0.1.0"
+
+    monkeypatch.setattr("importlib.metadata.version", metadati_bugiardi)
+    versione.numero.cache_clear()
+    try:
+        letto = versione.numero()
+    finally:
+        versione.numero.cache_clear()
+
+    atteso = re.search(
+        r'^version\s*=\s*"([^"]+)"', (RADICE / "pyproject.toml").read_text(encoding="utf-8"), re.M
+    ).group(1)
+    assert letto == atteso != "0.1.0"
+
+
+def test_numero_e_commit_vengono_dalla_stessa_cartella():
+    """Due numeri da fonti diverse prima o poi si contraddicono, ed e'
+    esattamente cio' che e' successo: il commit dal repository, il numero da
+    metadati di un'altra installazione."""
+    from shinra import percorsi, versione
+
+    assert (percorsi.RADICE / "pyproject.toml").exists()
+    assert versione._dal_progetto() == versione.numero()

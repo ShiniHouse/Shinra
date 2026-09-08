@@ -15,6 +15,17 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Corretto
+- **Il badge della versione diceva `0.1.0` su un server aggiornato da un
+  minuto**, con accanto il commit giusto: la piu' insidiosa delle mezze
+  verita', perche' sembra informazione. Il numero veniva da
+  `importlib.metadata`, che cerca lungo `sys.path` — e il servizio parte
+  dalla cartella del progetto, che viene prima di site-packages. Li' era
+  rimasto un `shinra.egg-info` di un'installazione precedente allo
+  spostamento sotto `src/`, e veniva trovato per primo. Adesso il numero si
+  legge da `pyproject.toml` quando il file e' accanto al codice: la stessa
+  cartella da cui viene il commit mostrato di fianco, cosi' i due non
+  possono contraddirsi. `deploy.sh` rimuove anche i metadati sorpassati
+  rimasti nella radice — quelli veri stanno in `src/`.
 - **`deploy.sh` senza argomenti poteva riportare il server indietro nel
   tempo, senza dirlo.** Installa l'ultimo tag — voluto: un server di casa
   non deve seguire il ramo di sviluppo. Ma mentre si lavora verso una
