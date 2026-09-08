@@ -14,6 +14,12 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+Niente ancora.
+
+---
+
+## [0.2.0] - 2026-09-08 — Fondamenta
+
 ### Aggiunto
 - **I ruoli e i dispositivi fidati si gestiscono dalla dashboard**, nella
   scheda «Gestione Utenti». Le rotte esistevano dalla `0.2.0` e i permessi
