@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Any, Optional
 
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
@@ -26,11 +25,12 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
+from core import percorsi
 from core.eventi import PROMEMORIA_SCADUTO, TIMER_SCADUTO, Evento, bus
 
 logger = logging.getLogger("Shinra.Scheduler")
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATA_DIR = percorsi.DATI
 ARCHIVIO_JOB = DATA_DIR / "scheduler.db"
 
 # Quanto tardi un job puo' ancora essere eseguito se il servizio era fermo

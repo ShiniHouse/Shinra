@@ -20,11 +20,12 @@ from __future__ import annotations
 import logging
 import subprocess
 from functools import lru_cache
-from pathlib import Path
+
+from core import percorsi
 
 logger = logging.getLogger("Shinra.Versione")
 
-RADICE = Path(__file__).resolve().parent.parent
+RADICE = percorsi.RADICE
 
 
 @lru_cache(maxsize=1)

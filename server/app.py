@@ -3,7 +3,6 @@ import json
 import logging
 import secrets
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, status
@@ -18,7 +17,7 @@ from config.settings import (
     settings,
     verifica_configurazione,
 )
-from core import permessi, registro, versione
+from core import percorsi, permessi, registro, versione
 from core.agent import agent
 from core.consegna import descrivi, registra_canali
 from core.data_store import assicura_dati_iniziali
@@ -37,9 +36,9 @@ from server.routes_auth import router as auth_router
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("Shinra")
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-TEMPLATES_DIR = BASE_DIR / "web" / "templates"
-STATIC_DIR = BASE_DIR / "web" / "static"
+BASE_DIR = percorsi.RADICE
+TEMPLATES_DIR = percorsi.MODELLI_HTML
+STATIC_DIR = percorsi.STATICI
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 

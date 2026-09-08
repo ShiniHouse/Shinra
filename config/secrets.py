@@ -23,11 +23,12 @@ import logging
 import os
 import secrets as _secrets
 import stat
-from pathlib import Path
+
+from core import percorsi
 
 logger = logging.getLogger("Shinra.Secrets")
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = percorsi.RADICE
 ENV_PATH = BASE_DIR / ".env"
 
 # Percorso nella configurazione -> nome della variabile d'ambiente.

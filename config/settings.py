@@ -7,17 +7,17 @@ nell'ambiente o in `.env`, che non e' versionato (vedi `config/secrets.py`).
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import Any, List, Optional
 
 import yaml
 from pydantic import BaseModel, Field
 
 from config import secrets as segreti
+from core import percorsi
 
 logger = logging.getLogger("Shinra.Settings")
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = percorsi.RADICE
 CONFIG_PATH = BASE_DIR / "config" / "config.yaml"
 CONFIG_EXAMPLE_PATH = BASE_DIR / "config" / "config.example.yaml"
 

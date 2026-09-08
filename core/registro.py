@@ -37,9 +37,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterator, Optional
 
+from core import percorsi
+
 logger = logging.getLogger("Shinra.Registro")
 
-CARTELLA_LOG = Path(__file__).resolve().parent.parent / "data" / "log"
+CARTELLA_LOG = percorsi.LOG
 FILE_LOG = CARTELLA_LOG / "shinra.jsonl"
 
 # Nomi di campo il cui contenuto non va mai scritto da nessuna parte. Il

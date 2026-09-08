@@ -20,9 +20,11 @@ from typing import Iterator, Optional
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
+from core import percorsi
+
 logger = logging.getLogger("Shinra.Archivio")
 
-DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+DATA_DIR = percorsi.DATI
 ARCHIVIO = DATA_DIR / "shinra.db"
 
 _motore: Optional[Engine] = None

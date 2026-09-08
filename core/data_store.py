@@ -17,17 +17,17 @@ from __future__ import annotations
 import logging
 import shutil
 import uuid
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
+from core import percorsi
 from core.archivio import depositi
 
 logger = logging.getLogger(__name__)
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-EXAMPLES_DIR = DATA_DIR / "examples"
+DATA_DIR = percorsi.DATI
+EXAMPLES_DIR = percorsi.ESEMPI
 
 
 def assicura_dati_iniziali() -> list[str]:

@@ -16,9 +16,11 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from core import percorsi
+
 logger = logging.getLogger("Shinra.Archivio")
 
-DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+DATA_DIR = percorsi.DATI
 
 # nome del file JSON -> nome della tabella
 SORGENTI: dict[str, str] = {
@@ -57,9 +59,8 @@ def applica_migrazioni() -> None:
     from alembic import command
     from alembic.config import Config
 
-    radice = Path(__file__).resolve().parent.parent.parent
-    cfg = Config(str(radice / "alembic.ini"))
-    cfg.set_main_option("script_location", str(radice / "migrazioni"))
+    cfg = Config(str(percorsi.RADICE / "alembic.ini"))
+    cfg.set_main_option("script_location", str(percorsi.MIGRAZIONI))
     command.upgrade(cfg, "head")
 
 
