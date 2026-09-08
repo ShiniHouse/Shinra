@@ -61,6 +61,10 @@ data/*.db
 # I file di appoggio della modalita' WAL: vivono e muoiono col database.
 data/*.db-wal
 data/*.db-shm
+# E il giornale di rollback: SQLite ci ricade quando il filesystem non
+# regge il WAL — una cartella sincronizzata, una condivisione di rete — e
+# quel file comparso dal nulla finirebbe dritto in un commit.
+data/*.db-journal
 # Log applicativo strutturato, con rotazione (issue #15).
 data/log/
 data/*.sqlite3

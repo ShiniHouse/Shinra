@@ -15,6 +15,37 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **I ruoli e i dispositivi fidati si gestiscono dalla dashboard**, nella
+  scheda «Gestione Utenti». Le rotte esistevano dalla `0.2.0` e i permessi
+  erano gia' applicati — la casa era protetta — ma per cambiare un ruolo
+  bisognava chiamare l'API a mano. Adesso i permessi di ogni ruolo sono
+  caselle da spuntare, i ruoli propri («Collaboratrice domestica», «Nonno»,
+  «Ospite fine settimana») si creano dalla pagina, e i predefiniti si
+  modificano ma non si cancellano.
+- **Il ruolo di un profilo adesso si sceglie.** Veniva dedotto al
+  salvataggio da avatar e fascia d'eta', e la fascia «ragazzo» finiva nel
+  ramo degli adulti: un tredicenne riceveva il ruolo `adult`, cioe'
+  serrature e allarme. Nel modulo del profilo il ruolo e' un campo suo, e la
+  fascia d'eta' torna a fare l'unica cosa che ha sempre fatto — cambiare il
+  tono delle risposte. Erano due cose diverse presentate come una sola.
+- **Elenco dei dispositivi fidati** con nome, proprietario, ultimo accesso e
+  indirizzo; revoca singola e «revoca tutti» per il telefono perso, che
+  risparmia il dispositivo da cui la si chiede. Ogni riga dice se e' quella
+  da cui si sta guardando: senza, l'elenco e' una fila di nomi identici e
+  revocare il proprio e' l'errore piu' facile da fare.
+- Il pulsante **«Blocca»** nella barra in alto. `checkAuthStatus` lo cercava
+  a ogni caricamento della pagina fin dalla `0.1.0`, ma nessuno l'aveva mai
+  messo nel markup: la funzione c'era, il modo di chiamarla no, e l'unico
+  blocco possibile era quello automatico per inattivita'. Su un tablet di
+  casa con un PIN per persona, potersi togliere di mezzo e' il minimo.
+- `/api/auth/status` dice anche **quali permessi ha chi sta guardando**, cosi'
+  la pagina puo' nascondere cio' che non porta da nessuna parte. Non e' una
+  protezione — a rifiutare e' sempre il server, rotta per rotta — ma un
+  pannello che risponde sempre 403 fa sembrare rotta l'applicazione.
+- Test sulla dashboard, che finora non ne aveva nessuno: la sintassi degli
+  script inline (`node --check`), ogni identificativo cercato da
+  `getElementById`, e ogni indirizzo chiamato con `fetch` confrontato con le
+  rotte che l'applicazione espone davvero.
 - **La versione si legge dalla dashboard**, accanto al nome. Un server di
   casa si aggiorna ogni tanto e si riavvia da solo: a distanza di settimane
   non c'e' modo di ricordare se ha preso l'ultimo aggiornamento o si e'
@@ -35,6 +66,17 @@ installabile e utilizzabile.
   chi deve solo digitare il PIN.
 
 ### Corretto
+- Le date dei dispositivi fidati dichiarano il fuso. Uscivano nude
+  (`2026-09-08T20:15:00`) e il browser le leggeva come ora locale: d'estate,
+  due ore di scarto sull'«ultimo accesso» di ogni telefono.
+- Salvare un profilo o cancellarlo mostra il motivo del rifiuto invece di
+  fallire in silenzio. Declassare l'ultimo amministratore e' l'errore che
+  chiude fuori di casa: il server lo rifiuta e spiega perche', ma la pagina
+  buttava via la risposta e il salvataggio sembrava riuscito.
+- `data/*.db-journal` finisce fra i file ignorati. SQLite ci ricade quando
+  il filesystem non regge il WAL — una cartella sincronizzata, una
+  condivisione di rete — e quel file comparso dal nulla sarebbe finito
+  dritto in un commit.
 - **L'aggiornamento si fermava al primo tentativo, dopo il backup.** La
   pulizia dei backup vecchi usava `ls` su un modello che al primo
   aggiornamento non trova niente — l'istantanea del database non esiste

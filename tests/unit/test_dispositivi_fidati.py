@@ -56,6 +56,15 @@ def _entra(client: TestClient, utente: str = "alessio", pin: str = PIN, ricorda:
     )
 
 
+def _sposta_ultimo_uso(identificativo: str, quando: datetime) -> None:
+    """Fa invecchiare una riga senza aspettare dieci giorni."""
+    from core.archivio.modelli import DispositivoFidato
+    from core.archivio.motore import sessione
+
+    with sessione() as s:
+        s.get(DispositivoFidato, identificativo).ultimo_uso = quando
+
+
 # ------------------------------------------------------- il PIN non si ripete
 
 
@@ -248,3 +257,66 @@ def test_ognuno_vede_i_propri_dispositivi(casa_chiusa):
         suoi = client.get("/api/dispositivi").json()
 
     assert [d["nome"] for d in suoi] == ["Di Thomas"]
+
+
+# ------------------------------------------------- «questo sei tu» nell'elenco
+
+
+def test_l_elenco_segnala_il_dispositivo_da_cui_si_guarda(casa_chiusa):
+    """Senza, l'elenco e' una fila di nomi identici e si revoca il proprio."""
+    dispositivi.ricorda("alessio", nome="Il tablet in cucina", firma=sicurezza.firma_credenziale)
+
+    with TestClient(app) as client:
+        _entra(client, ricorda=True)
+        elenco = client.get("/api/dispositivi").json()
+
+    per_nome = {d["nome"]: d["questo"] for d in elenco}
+    assert per_nome == {"iPhone di prova": True, "Il tablet in cucina": False}
+
+
+def test_senza_cookie_di_dispositivo_nessuna_riga_e_questo(casa_chiusa):
+    dispositivi.ricorda("alessio", nome="Un telefono", firma=sicurezza.firma_credenziale)
+
+    with TestClient(app) as client:
+        _entra(client, ricorda=False)
+        elenco = client.get("/api/dispositivi").json()
+
+    assert elenco and not any(d["questo"] for d in elenco)
+
+
+def test_riconoscere_per_l_elenco_non_rinnova_la_scadenza(casa_chiusa):
+    """`identificativo_di` non e' `riconosci`.
+
+    Guardare la pagina dei dispositivi non e' usarli: se bastasse aprirla per
+    rinnovare la scadenza, un telefono dimenticato in un cassetto resterebbe
+    fidato per sempre finche' qualcun altro guarda l'elenco.
+    """
+    credenziale = dispositivi.ricorda("alessio", nome="Un telefono", firma=sicurezza.firma_credenziale)
+    vecchia_data = datetime.now(timezone.utc) - timedelta(days=10)
+    _sposta_ultimo_uso(dispositivi.elenco()[0]["id"], vecchia_data)
+    prima = dispositivi.elenco()[0]["ultimo_uso"]
+
+    assert dispositivi.identificativo_di(credenziale) is not None
+
+    assert dispositivi.elenco()[0]["ultimo_uso"] == prima
+
+
+def test_una_credenziale_inventata_non_corrisponde_a_nessuna_riga(casa_chiusa):
+    dispositivi.ricorda("alessio", nome="Un telefono", firma=sicurezza.firma_credenziale)
+
+    assert dispositivi.identificativo_di("non-e-mia") is None
+    assert dispositivi.identificativo_di(None) is None
+
+
+def test_le_date_dell_elenco_dichiarano_il_fuso(casa_chiusa):
+    """Senza fuso, il browser legge l'istante come ora locale: d'estate
+    l'«ultimo accesso» di ogni telefono risulterebbe due ore avanti."""
+    dispositivi.ricorda("alessio", nome="Un telefono", firma=sicurezza.firma_credenziale)
+    riga = dispositivi.elenco()[0]
+
+    for campo in ("creato_il", "ultimo_uso"):
+        istante = datetime.fromisoformat(riga[campo])
+        assert istante.tzinfo is not None, f"{campo} non dichiara il fuso"
+        assert istante.utcoffset() == timedelta(0), f"{campo} non e' in UTC"
+        # E resta l'istante giusto, non uno spostato di due ore.
+        assert abs((datetime.now(timezone.utc) - istante).total_seconds()) < 60

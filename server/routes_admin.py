@@ -693,15 +693,27 @@ async def cancella_ruolo(id_ruolo: str):
 
 # --- DISPOSITIVI FIDATI ---
 @router.get("/dispositivi")
-async def elenco_dispositivi(chiamante: Optional[UserProfile] = Depends(richiedi_autenticazione)):
+async def elenco_dispositivi(
+    request: Request, chiamante: Optional[UserProfile] = Depends(richiedi_autenticazione)
+):
     """I dispositivi ricordati.
 
     Chi amministra li vede tutti; chiunque altro vede i propri. Sapere quali
     telefoni entrano in casa e' informazione di casa, non pubblica.
+
+    Ogni riga dice anche se e' quella da cui si sta guardando: senza, l'elenco
+    e' una fila di nomi identici e revocare il proprio e' l'errore piu'
+    facile da fare.
     """
-    if chiamante is None or chiamante.role == "admin":
-        return dispositivi.elenco()
-    return dispositivi.elenco(chiamante.id)
+    righe = (
+        dispositivi.elenco()
+        if (chiamante is None or chiamante.role == "admin")
+        else dispositivi.elenco(chiamante.id)
+    )
+    corrente = dispositivi.identificativo_di(request.cookies.get(dispositivi.NOME_COOKIE))
+    for riga in righe:
+        riga["questo"] = riga["id"] == corrente
+    return righe
 
 
 @router.delete("/dispositivi/{id_dispositivo}")

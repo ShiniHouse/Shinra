@@ -54,6 +54,17 @@ def _senza_fuso(momento: datetime) -> datetime:
     return momento.replace(tzinfo=None) if momento.tzinfo else momento
 
 
+def _in_utc(momento: datetime) -> str:
+    """L'istante con il fuso dichiarato, per chi lo legge fuori da qui.
+
+    Sono istanti UTC, ma SQLite li restituisce nudi: un `isoformat()` diretto
+    produce «2026-09-08T20:15:00», e il browser lo legge come ora *locale* —
+    d'estate sono due ore di scarto sull'«ultimo accesso» di ogni telefono.
+    Un dato senza fuso non e' un dato: qui il fuso si dichiara.
+    """
+    return (momento if momento.tzinfo else momento.replace(tzinfo=timezone.utc)).isoformat()
+
+
 def ricorda(user_id: str, nome: str = "", indirizzo: str = "", firma=None) -> str:
     """Registra un dispositivo e restituisce la credenziale, una volta sola.
 
@@ -132,12 +143,36 @@ def elenco(user_id: Optional[str] = None) -> list[dict[str, Any]]:
                 "id": d.id,
                 "nome": d.nome,
                 "user_id": d.user_id,
-                "creato_il": d.creato_il.isoformat(),
-                "ultimo_uso": d.ultimo_uso.isoformat(),
+                "creato_il": _in_utc(d.creato_il),
+                "ultimo_uso": _in_utc(d.ultimo_uso),
                 "ultimo_indirizzo": d.ultimo_indirizzo,
             }
             for d in s.scalars(query).all()
         ]
+
+
+def identificativo_di(credenziale: Optional[str]) -> Optional[str]:
+    """Quale riga corrisponde a questa credenziale, senza rinnovare nulla.
+
+    Serve all'elenco per marcare «sei tu»: revocare per sbaglio il
+    dispositivo da cui si sta guardando la pagina significa doversi
+    riautenticare, ed e' esattamente l'errore che un elenco di righe tutte
+    uguali invita a fare. A differenza di `riconosci` non tocca
+    `ultimo_uso`: guardare l'elenco non e' usare il dispositivo.
+    """
+    if not credenziale:
+        return None
+
+    from sqlalchemy import select
+
+    from core.archivio.modelli import DispositivoFidato
+    from core.archivio.motore import sessione
+
+    with sessione() as s:
+        riga = s.scalars(
+            select(DispositivoFidato).where(DispositivoFidato.impronta == _impronta(credenziale))
+        ).first()
+        return riga.id if riga else None
 
 
 def revoca(identificativo: str) -> bool:
