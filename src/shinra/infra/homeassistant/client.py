@@ -118,25 +118,30 @@ class HomeAssistantClient:
             logger.error(f"Eccezione recupero stati HA: {e}")
             return []
 
+    async def stati_correnti(self) -> List[Dict[str, Any]]:
+        """Gli stati della casa, dalla memoria se possibile.
+
+        Prima ogni lettura costava una chiamata di rete, e il ritardo si
+        sentiva a ogni frase detta all'assistente. Con la connessione agli
+        eventi (issue #19) gli stati arrivano da soli quando cambiano: la
+        rete si interroga solo quando la cache e' vuota — Home Assistant
+        spento, connessione appena caduta, o i primi istanti dopo l'avvio.
+
+        Passa da qui chiunque voglia sapere com'e' messa la casa. Due strade
+        diverse per la stessa domanda divergerebbero, e la differenza si
+        noterebbe solo quando la connessione cade.
+        """
+        from shinra.infra.homeassistant.stati import cache_stati
+
+        if cache_stati.popolata:
+            return cache_stati.tutti()
+        return await self.get_states()
+
     async def get_relevant_entities_summary(self) -> str:
-        """Restituisce un riassunto sintetico e veloce delle entità controllabili principali."""
-        states = await self.get_states()
-        if not states:
-            return ""
+        """Il riassunto della casa che finisce nel contesto del modello."""
+        from shinra.infra.homeassistant.stati import riassumi
 
-        controllable_domains = {"light", "switch", "climate", "cover", "media_player"}
-        summary_lines = []
-
-        for entity in states:
-            entity_id = entity.get("entity_id", "")
-            domain = entity_id.split(".")[0]
-            if domain in controllable_domains:
-                friendly_name = entity.get("attributes", {}).get("friendly_name", entity_id)
-                state = entity.get("state", "unknown")
-                if state not in ("unavailable", "unknown"):
-                    summary_lines.append(f"{friendly_name} ({entity_id}): {state}")
-
-        return "; ".join(summary_lines[:15])
+        return riassumi(await self.stati_correnti())
 
     async def call_service(
         self, domain: str, service: str, service_data: Optional[Dict[str, Any]] = None

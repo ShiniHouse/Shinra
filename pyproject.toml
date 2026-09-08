@@ -27,6 +27,11 @@ classifiers = [
 dependencies = [
   "fastapi>=0.110.0",
   "uvicorn[standard]>=0.28.0",
+  # Il client WebSocket verso Home Assistant (issue #19). Arriva gia' con
+  # uvicorn[standard], ma una dipendenza che si usa si dichiara: altrimenti
+  # basta che uvicorn cambi i suoi extra e la casa smette di sapere cosa
+  # succede, senza che nessuno abbia toccato niente.
+  "websockets>=12.0",
   "httpx>=0.27.0",
   "pydantic>=2.6.0",
   "pydantic-settings>=2.2.0",

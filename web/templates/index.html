@@ -3214,11 +3214,37 @@
                             <button onclick="deleteAlias('${a.id}')" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                         </div>
                         <div class="text-[11px] text-slate-400 font-mono truncate">→ ${a.entity_id}</div>
-                        ${a.room ? `<div class="text-[10px] text-slate-500">📍 ${a.room}</div>` : ''}
+                        <div class="flex items-center gap-2">
+                            <span id="stato-${_chiaveStato(a.entity_id)}" class="text-[10px] font-semibold text-slate-500">${_testoStato(a.entity_id)}</span>
+                            ${a.room ? `<span class="text-[10px] text-slate-500">📍 ${a.room}</span>` : ''}
+                        </div>
                     </div>
                 `).join('');
                 safeCreateIcons();
+                caricaStatiIniziali();
             } catch(e) { console.error('loadAliases:', e); }
+        }
+
+        // Gli stati di partenza. Senza, le schede restano vuote finche' in casa
+        // non cambia qualcosa: gli eventi raccontano le differenze, non la
+        // situazione. Lato server questa chiamata legge dalla cache quando la
+        // connessione agli eventi e' viva, quindi non tocca la rete.
+        async function caricaStatiIniziali() {
+            try {
+                const res = await fetch('/api/ha/entities', { headers: getAuthHeaders() });
+                if (!res.ok) return;
+                const dati = await res.json();
+                if (dati.error) return;
+                Object.values(dati.groups || {}).forEach(gruppo => {
+                    gruppo.forEach(e => aggiornaStatoCasa({
+                        entity_id: e.entity_id,
+                        stato: e.state,
+                        nome: e.friendly_name,
+                    }));
+                });
+            } catch (e) {
+                console.warn('Stati iniziali non disponibili:', e);
+            }
         }
 
         // Variabile globale per tenere tutte le entità HA caricate
@@ -3666,7 +3692,51 @@
                 playChimeAlert();
                 speakText(evento.frase || 'Hai un promemoria.');
                 loadReminders();
+            } else if (evento.tipo === 'ha.stato_cambiato') {
+                aggiornaStatoCasa(evento.dati);
             }
+        }
+
+        // ==================== STATO DELLA CASA IN TEMPO REALE ====================
+        // Fino alla 0.2.0 lo stato dei dispositivi arrivava solo quando lo si
+        // chiedeva. Adesso Home Assistant lo manda quando cambia — anche
+        // quando a premere e' l'interruttore a muro, che e' il caso che una
+        // pagina che interroga a intervalli non vedrebbe mai in tempo.
+        // Riferimento: issue #19.
+
+        let _statiCasa = {};
+
+        function _chiaveStato(entityId) {
+            // Gli identificativi contengono un punto: negli attributi `id` va
+            // bene, ma romperebbe un selettore CSS. Qui non si usano
+            // selettori, e getElementById non ha il problema — la chiave resta
+            // comunque pulita, cosi' non diventa un problema domani.
+            return (entityId || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+        }
+
+        function _testoStato(entityId) {
+            const s = _statiCasa[entityId];
+            return s ? s.stato : '';
+        }
+
+        function aggiornaStatoCasa(dati) {
+            if (!dati || !dati.entity_id) return;
+            _statiCasa[dati.entity_id] = dati;
+
+            const el = document.getElementById(`stato-${_chiaveStato(dati.entity_id)}`);
+            if (!el) return;
+
+            el.textContent = dati.stato || '';
+            const acceso = ['on', 'open', 'playing', 'home', 'unlocked'].includes((dati.stato || '').toLowerCase());
+            el.className = `text-[10px] font-semibold ${acceso ? 'text-emerald-400' : 'text-slate-500'}`;
+
+            // Un lampo breve: senza, un cambiamento che arriva mentre si
+            // guarda altrove passa inosservato e sembra che non sia successo
+            // niente.
+            el.animate(
+                [{ opacity: 0.35 }, { opacity: 1 }],
+                { duration: 400, easing: 'ease-out' }
+            );
         }
 
         // ==================== MODULAR ROUTINE BUILDER ====================

@@ -16,16 +16,21 @@ porta si apre dopo le 23, accendi l'ingresso» e' impossibile senza eventi.
 
 ## Cosa fare
 
-- [ ] Client WebSocket verso `/api/websocket` con autenticazione a token
-- [ ] Sottoscrizione a `state_changed` e mantenimento di una cache locale degli stati
-- [ ] Riconnessione automatica con attesa progressiva; fallback su REST mentre la connessione e' assente
-- [ ] Bus eventi interno a cui i servizi si sottoscrivono
-- [ ] `get_relevant_entities_summary` legge dalla cache invece di interrogare la rete
-- [ ] Stato dei dispositivi spinto all'interfaccia via WebSocket, al posto del polling
+- [x] Client WebSocket verso `/api/websocket` con autenticazione a token
+- [x] Sottoscrizione a `state_changed` e mantenimento di una cache locale degli stati
+- [x] Riconnessione automatica con attesa progressiva; fallback su REST mentre la connessione e' assente
+- [x] Bus eventi interno a cui i servizi si sottoscrivono — esisteva gia' dalla
+      v0.2.0 per timer e promemoria (`domain/eventi.py`): qui si e' aggiunto il
+      tipo `ha.stato_cambiato` e chi lo pubblica
+- [x] `get_relevant_entities_summary` legge dalla cache invece di interrogare la rete.
+      Passa dalla stessa funzione anche `/api/ha/entities`: due strade diverse
+      per la stessa domanda divergerebbero, e la differenza si noterebbe solo
+      quando la connessione cade
+- [x] Stato dei dispositivi spinto all'interfaccia via WebSocket, al posto del polling
 
 ## Criteri di accettazione
 
-- [ ] L'accensione di una luce da Home Assistant appare nell'interfaccia entro un secondo, senza ricaricare
-- [ ] La caduta della connessione non blocca il sistema e la riconnessione e' automatica
-- [ ] Un evento di apertura porta e' osservabile e sottoscrivibile
-- [ ] Il contesto per il modello si costruisce senza chiamate di rete
+- [x] L'accensione di una luce da Home Assistant appare nell'interfaccia entro un secondo, senza ricaricare
+- [x] La caduta della connessione non blocca il sistema e la riconnessione e' automatica
+- [x] Un evento di apertura porta e' osservabile e sottoscrivibile
+- [x] Il contesto per il modello si costruisce senza chiamate di rete
