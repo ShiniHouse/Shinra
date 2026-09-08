@@ -19,6 +19,7 @@ from shinra.skills.ha_tools import (
 )
 from shinra.skills.news_search import get_latest_news, search_web
 from shinra.skills.reminders import add_reminder, list_reminders
+from shinra.skills.sicurezza_casa import comanda_allarme, stato_aperture
 from shinra.skills.weather import get_weather
 from shinra.skills.wikipedia_tool import search_wikipedia
 
@@ -43,6 +44,9 @@ TOOL_HANDLERS: Dict[str, Callable] = {
     "comanda_media": comanda_media,
     "comanda_aspirapolvere": comanda_aspirapolvere,
     "comanda_ventilatore": comanda_ventilatore,
+    # L'allarme e le aperture (issue #23).
+    "comanda_allarme": comanda_allarme,
+    "stato_aperture": stato_aperture,
 }
 
 # Schemi compatibili con Ollama / OpenAI Tools
@@ -333,6 +337,53 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                     "oscillazione": {"type": "boolean", "description": "Se far oscillare o no."},
                 },
                 "required": ["entity_id", "azione"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "stato_aperture",
+            "description": (
+                "Dice quali porte, finestre e tapparelle risultano aperte. "
+                "Usalo per domande come «sono chiuse tutte le finestre?» o «e' "
+                "rimasto aperto qualcosa?»."
+            ),
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "comanda_allarme",
+            "description": (
+                "Inserisce o disinserisce l'allarme di casa, o ne riferisce lo "
+                "stato. Se l'inserimento viene rifiutato perche' qualcosa e' "
+                "aperto, riporta alla persona che cosa e' aperto e chiedi se "
+                "vuole inserirlo lo stesso: solo allora richiama con forza=true."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "azione": {
+                        "type": "string",
+                        "enum": ["arma_casa", "arma_fuori", "disarma", "stato"],
+                        "description": "arma_casa lascia liberi i sensori interni; arma_fuori li attiva tutti.",
+                    },
+                    "entity_id": {
+                        "type": "string",
+                        "description": "La centrale, se in casa ce n'e' piu' di una.",
+                    },
+                    "codice": {
+                        "type": "string",
+                        "description": "Il codice della centrale, se ne richiede uno.",
+                    },
+                    "forza": {
+                        "type": "boolean",
+                        "description": "Inserisci anche con qualcosa di aperto, solo dopo che la persona lo ha confermato.",
+                    },
+                },
+                "required": ["azione"],
             },
         },
     },

@@ -43,6 +43,9 @@ PROMEMORIA_SCADUTO = "promemoria.scaduto"
 # mano nostra: anche l'interruttore a muro passa di qui. E' il fatto su cui
 # si appoggeranno le regole della v0.4.0 (issue #19).
 HA_STATO_CAMBIATO = "ha.stato_cambiato"
+# L'allarme e' scattato (issue #23). La notifica verso il telefono arrivera'
+# con la issue #29: l'evento c'e' gia' e la aspetta.
+CASA_INTRUSIONE = "casa.intrusione"
 # Chi entra e chi esce, e i due momenti che contano per la casa intera: la
 # prima persona che rientra e l'ultima che se ne va (issue #22). I nomi
 # vivono in `domain/presenza.py`, che e' anche cio' che li decide.

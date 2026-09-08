@@ -15,6 +15,26 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **L'allarme si comanda, e non si inserisce su una casa aperta.** Era il
+  dominio per cui una famiglia installa la domotica, e l'unico completamente
+  scoperto. Chiedendo di inserirlo con una finestra aperta l'assistente
+  rifiuta e dice quale: un allarme inserito su una casa aperta suona da solo
+  dopo dieci minuti, e chi lo ha inserito impara che l'allarme e'
+  inaffidabile e smette di usarlo. Si puo' inserire lo stesso, ma dicendolo.
+- **«Sono chiuse tutte le finestre?»** risponde con l'elenco vero. Home
+  Assistant non ha un dominio «aperture»: porte e finestre sono
+  `binary_sensor` con una `device_class`, le tapparelle sono `cover`, e `on`
+  per un sensore di movimento non significa affatto aperto. Senza sensori
+  configurati lo dice, invece di rassicurare a vuoto.
+- Un sensore che non risponde non conta ne' come aperto ne' come chiuso:
+  metterlo fra gli aperti impedirebbe di inserire l'allarme per un guasto.
+- Quando l'allarme scatta, `casa.intrusione` finisce sul bus con dentro chi
+  c'era in casa in quel momento — la prima domanda che si fa chi riceve
+  l'avviso, e una risposta che dopo cinque minuti non e' piu' recuperabile.
+  La notifica verso il telefono e' la issue #29 e non esiste ancora:
+  l'evento la aspetta.
+
+### Aggiunto
 - **La casa sa se c'e' qualcuno.** `person` era fra i domini visibili e
   nessuna riga lo guardava: l'informazione piu' utile della domotica era
   anche l'unica che non si vedeva. Adesso c'e' un servizio che aggrega le
