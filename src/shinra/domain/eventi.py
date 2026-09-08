@@ -39,6 +39,10 @@ class Evento:
 # sottoscrizione produca un ascoltatore che non verra' mai chiamato.
 TIMER_SCADUTO = "timer.scaduto"
 PROMEMORIA_SCADUTO = "promemoria.scaduto"
+# Una luce, una presa, una tapparella che cambiano stato in casa — non per
+# mano nostra: anche l'interruttore a muro passa di qui. E' il fatto su cui
+# si appoggeranno le regole della v0.4.0 (issue #19).
+HA_STATO_CAMBIATO = "ha.stato_cambiato"
 
 
 class BusEventi:

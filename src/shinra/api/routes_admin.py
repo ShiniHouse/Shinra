@@ -247,8 +247,13 @@ DOMAIN_LABELS = {
 
 @router.get("/ha/entities")
 async def get_ha_entities(domain: Optional[str] = None):
-    """Restituisce tutte le entità HA raggruppate per dominio."""
-    states = await ha_client.get_states()
+    """Restituisce tutte le entità HA raggruppate per dominio.
+
+    Legge dalla cache degli stati quando la connessione agli eventi e' viva
+    (issue #19): «Scopri dispositivi» diventa immediato invece di aspettare
+    la rete.
+    """
+    states = await ha_client.stati_correnti()
     if not states:
         conn = await ha_client.check_connection()
         return {"error": True, "status": conn.get("status"), "message": conn.get("message"), "groups": {}}

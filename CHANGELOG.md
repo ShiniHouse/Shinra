@@ -14,7 +14,30 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
-Niente ancora.
+### Aggiunto
+- **La casa dice cosa succede, invece di rispondere quando le si chiede.**
+  Connessione WebSocket a Home Assistant: gli stati arrivano nel momento in
+  cui cambiano, anche quando a premere e' l'interruttore a muro — il caso che
+  una pagina che interroga a intervalli non vedrebbe mai in tempo. Era il
+  vincolo che bloccava l'intera fase `0.4.0`: una regola come «se la porta si
+  apre dopo le 23, accendi l'ingresso» non e' scrivibile senza sapere
+  **quando** le cose accadono.
+- Gli stati stanno in memoria. Il riassunto della casa dato al modello
+  costava una chiamata di rete a ogni frase detta all'assistente, e quel
+  ritardo si sentiva; adesso la rete si interroga solo quando la cache e'
+  vuota. Anche «Scopri dispositivi» diventa immediato.
+- La mappa dispositivi mostra lo stato di ogni alias e lo aggiorna da sola.
+- Riconnessione con attesa che raddoppia fino a un minuto. Un token rifiutato
+  invece ferma i tentativi: riprovare con lo stesso token non porta da
+  nessuna parte, e insistere per ore riempirebbe il log senza avvicinare la
+  soluzione.
+
+### Modificato
+- `services/eventi_casa.py` decide *se* ascoltare, `infra` sa solo *come*.
+  La separazione l'ha imposta il test sulle regole di dipendenza fra livelli,
+  che ha bocciato la prima versione: `api/app.py` chiamava direttamente
+  l'infrastruttura. Il cricchetto ha fatto il suo mestiere al primo giro
+  utile.
 
 ---
 
