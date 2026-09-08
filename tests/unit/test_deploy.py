@@ -127,3 +127,36 @@ def test_la_simulazione_esce_prima_della_verifica_di_salute():
         f"la simulazione esce alla riga {uscita + 1}, dopo il controllo di salute "
         f"(riga {salute + 1}): un --dry-run potrebbe far partire un ripristino vero"
     )
+
+
+def test_lo_script_si_rifiuta_di_tornare_indietro():
+    """Un aggiornamento che riporta indietro nel tempo non e' un aggiornamento.
+
+    Senza argomenti lo script installa l'ultimo *tag*, ed e' voluto: un
+    server di casa non deve seguire il ramo di sviluppo. Ma quando il tag
+    piu' recente e' piu' vecchio di cio' che gira — si lavora su `main` e il
+    tag della versione in corso non esiste ancora — la stessa regola diventa
+    una macchina del tempo. E' successo: `deploy.sh` senza argomenti ha
+    riportato il server alla v0.1.0, e il codice e' tornato indietro mentre
+    il database restava con lo schema nuovo.
+
+    Il controllo e' `merge-base --is-ancestor`: se il commit richiesto e' un
+    antenato di quello in esecuzione, si sta andando all'indietro.
+    """
+    testo = SCRIPT.read_text(encoding="utf-8")
+
+    assert (
+        "merge-base --is-ancestor" in testo
+    ), "manca il controllo che distingue un aggiornamento da un ritorno indietro"
+    assert "--indietro" in testo, "manca il modo di chiedere apposta una versione precedente"
+
+    # E il controllo deve stare prima che si tocchi qualcosa: il backup, il
+    # checkout e la reinstallazione vengono tutti dopo.
+    righe = testo.splitlines()
+    controllo = next(i for i, r in enumerate(righe) if "merge-base --is-ancestor" in r)
+    backup = next(i for i, r in enumerate(righe) if r.startswith('passo "Backup'))
+
+    assert controllo < backup, (
+        "il controllo sul ritorno indietro arriva dopo il backup: a quel punto "
+        "il server e' gia' stato toccato"
+    )
