@@ -458,6 +458,27 @@ for vecchia in core server integrations; do
     fi
 done
 
+# I metadati fantasma del pacchetto.
+#
+# Prima della issue #16 il codice stava nella radice, e `pip install -e .`
+# scriveva `shinra.egg-info` li'. Adesso il pacchetto sta sotto `src/`, e i
+# metadati veri sono in `src/shinra.egg-info`: quello vecchio resta dov'e',
+# perche' non e' tracciato da git e nessuno lo cancella.
+#
+# Non e' innocuo. Il servizio parte da questa cartella, quindi `/opt/Shinra`
+# e' il primo elemento di `sys.path`, prima di site-packages:
+# `importlib.metadata.version("shinra")` trova per primo il vecchio e legge
+# il numero di versione che aveva allora. La dashboard mostrava «0.1.0»
+# accanto al commit giusto — cioe' il badge nato per dire la verita' sulla
+# versione in esecuzione diceva la piu' sbagliata delle mezze verita'.
+#
+# Solo quelli nella radice: `src/shinra.egg-info` e' quello buono.
+while IFS= read -r fantasma; do
+    [[ -n "$fantasma" ]] || continue
+    info "Rimuovo i metadati sorpassati $(basename "$fantasma")."
+    esegui rm -rf "$fantasma"
+done < <(find "${APP_DIR:?}" -maxdepth 1 -name '*.egg-info' -type d 2>/dev/null)
+
 # ------------------------------------------------------- 5. dipendenze
 passo "Dipendenze"
 if git_utente diff --quiet "$ATTUALE" "$NUOVO" -- pyproject.toml requirements.txt; then

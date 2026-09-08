@@ -28,23 +28,49 @@ logger = logging.getLogger("Shinra.Versione")
 RADICE = percorsi.RADICE
 
 
+def _dal_progetto() -> str:
+    """Il numero scritto in `pyproject.toml`, se il file e' li' accanto."""
+    try:
+        for riga in (RADICE / "pyproject.toml").read_text(encoding="utf-8").splitlines():
+            if riga.strip().startswith("version"):
+                return riga.split("=", 1)[1].strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return ""
+
+
 @lru_cache(maxsize=1)
 def numero() -> str:
-    """Il numero di versione dichiarato nel progetto."""
+    """Il numero di versione del codice in esecuzione.
+
+    Prima si guardava `importlib.metadata`, e sembrava la scelta ovvia: e'
+    il numero del pacchetto *installato*. Poi la dashboard ha mostrato
+    «0.1.0» accanto al commit giusto, su un server aggiornato da un minuto.
+
+    `importlib.metadata` cerca lungo `sys.path`, e il servizio parte dalla
+    cartella del progetto: quella cartella viene prima di site-packages.
+    Trovava un `shinra.egg-info` lasciato li' da un'installazione di mesi
+    prima — prima che il codice si spostasse sotto `src/` — e leggeva quel
+    numero. Il badge nato per dire la verita' sulla versione in esecuzione
+    raccontava la piu' sbagliata delle mezze verita': commit nuovo, versione
+    vecchia.
+
+    Quindi l'ordine si inverte. Se accanto al codice c'e' un
+    `pyproject.toml`, quello **e'** il codice in esecuzione, e il commit
+    mostrato di fianco viene dalla stessa cartella: due numeri dalla stessa
+    fonte non possono contraddirsi. I metadati restano per l'unico caso in
+    cui servono davvero — un pacchetto installato sul serio, dove
+    `pyproject.toml` non c'e'.
+    """
+    dal_file = _dal_progetto()
+    if dal_file:
+        return dal_file
+
     try:
         from importlib.metadata import version
 
         return version("shinra")
     except Exception:
-        # Pacchetto non installato — succede eseguendo dai sorgenti. Si legge
-        # il file, senza dipendere da una libreria per un valore che e' una
-        # riga di testo.
-        try:
-            for riga in (RADICE / "pyproject.toml").read_text(encoding="utf-8").splitlines():
-                if riga.strip().startswith("version"):
-                    return riga.split("=", 1)[1].strip().strip('"').strip("'")
-        except OSError:
-            pass
         return "sconosciuta"
 
 
