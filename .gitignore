@@ -70,3 +70,7 @@ data/log/
 data/*.sqlite3
 !data/examples/
 !data/examples/*.json
+
+# Corpi delle PR, scritti su file perche' cmd.exe tronca le stringhe
+# multi-riga passate a --body. Non fanno parte del progetto.
+_corpi_pr/
