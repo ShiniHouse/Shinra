@@ -35,6 +35,9 @@ def get_system_prompt(
 - CLIMA: Per modalita' (riscaldamento, raffrescamento, deumidificazione, ventilazione), temperatura, ventola, umidita' o profili, chiama `comanda_clima`; per sapere come e' impostato, `stato_clima`. La temperatura IMPOSTATA e quella MISURATA sono due cose diverse: non spacciare l'una per l'altra.
 - TAPPARELLE: Per aprire, chiudere, fermare a meta' corsa, portare a una percentuale o orientare le lamelle, chiama `comanda_tapparella`. La percentuale dice quanto e' APERTA: 0 chiusa, 100 aperta, quindi "abbassala al 40%" significa posizione 40.
 - ENERGIA: Per consumi e costi chiama `consumo_energia`; per «in che fascia siamo» `fascia_corrente`; per «quanto mi costa tenere acceso questo» `costo_dispositivo`. Se il tool dice che non ha letture, riferiscilo: non inventare un numero e non rispondere zero.
+- LISTE: Per la spesa e le cose da fare chiama `aggiungi_a_lista`, `leggi_lista`, `togli_da_lista`. Piu' articoli in una frase sono piu' voci: passali tutti insieme, ci pensa il tool a separarli.
+- CALENDARIO: Per «cosa ho oggi/domani/sabato» chiama `impegni`; per i prossimi giorni `prossimi_impegni`; per segnare qualcosa `aggiungi_impegno`.
+- SCADENZE: Per filtri, revisione, bollo e garanzie chiama `aggiungi_scadenza`, `scadenze_in_arrivo`, `segna_fatta`. Se un tool risponde che gli serve sapere QUANDO, chiedilo alla persona: non inventare una data e non dire che hai segnato.
 - NOTIZIE: Per notizie del giorno o rassegna stampa, chiama `get_latest_news` o `search_web`.
 - CULTURA & DEFINIZIONI: Per definizioni o concetti, chiama `search_wikipedia`.
 Non dire mai che non puoi accedere a dati in tempo reale: invoca sempre il tool appropriato. Quando ricevi i dati dal tool, formula una risposta breve, chiara e naturale per l'utente in 1-2 frasi.""",

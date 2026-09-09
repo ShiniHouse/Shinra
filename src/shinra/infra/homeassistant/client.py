@@ -169,6 +169,61 @@ class HomeAssistantClient:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    async def leggi(self, percorso: str, parametri: Optional[Dict[str, Any]] = None) -> Any:
+        """Una lettura qualunque dall'API di Home Assistant.
+
+        Serve al calendario, che non e' un'entita' come le altre: gli eventi
+        non stanno negli attributi di `calendar.casa`, si chiedono a
+        `/api/calendars/calendar.casa?start=...&end=...`. Restituisce `None`
+        quando non si puo' leggere, invece di sollevare: una casa senza
+        calendario deve continuare a funzionare.
+        """
+        if not self.token or self.token.startswith("INSERISCI_QUI"):
+            return None
+        try:
+            client = self._connessione(8.0)
+            res = await client.get(
+                f"{self.base_url}/api/{percorso.lstrip('/')}", headers=self.headers, params=parametri
+            )
+            if res.status_code == 200:
+                return res.json()
+            logger.warning("Lettura %s: HTTP %s", percorso, res.status_code)
+            return None
+        except Exception as e:
+            logger.warning("Lettura %s fallita: %s", percorso, e)
+            return None
+
+    async def chiama_con_risposta(
+        self, domain: str, service: str, service_data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Un servizio che restituisce dati, non solo un esito.
+
+        Le liste `todo` si leggono cosi': `todo.get_items` con
+        `?return_response`. Non e' un dettaglio di Home Assistant che si puo'
+        aggirare — le voci di una lista non stanno negli attributi
+        dell'entita', e senza questa chiamata non si possono leggere affatto.
+        """
+        from shinra.services.permessi import esigi_per_dominio
+
+        esigi_per_dominio(domain)
+
+        if not self.token or self.token.startswith("INSERISCI_QUI"):
+            return {"success": False, "error": "Token Home Assistant non configurato."}
+        try:
+            client = self._connessione(8.0)
+            res = await client.post(
+                f"{self.base_url}/api/services/{domain}/{service}",
+                headers=self.headers,
+                params={"return_response": ""},
+                json=service_data or {},
+            )
+            if res.status_code == 200:
+                corpo = res.json()
+                return {"success": True, "risposta": corpo.get("service_response") or {}}
+            return {"success": False, "error": f"HTTP {res.status_code}: {res.text}"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
     async def speak_on_alexa(self, message: str, alexa_entity_id: Optional[str] = None) -> Dict[str, Any]:
         """Invia un messaggio vocale TTS su un dispositivo Echo tramite alexa_media_player."""
         target_entity = alexa_entity_id or "media_player.alexa"

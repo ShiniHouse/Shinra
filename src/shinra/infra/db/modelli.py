@@ -230,3 +230,84 @@ class LetturaEnergia(Base):
     # rileggere tutta la tabella per fare una sottrazione.
     consumo: Mapped[float] = mapped_column(Float, default=0.0)
     fascia: Mapped[str] = mapped_column(String(4), default="", index=True)
+
+
+class Lista(Base):
+    """Una lista di casa, per chi non ha le `todo` di Home Assistant.
+
+    Esiste solo come alternativa: quando in Home Assistant c'e' una lista
+    `todo` che corrisponde, si scrive li' e questa tabella resta vuota. Una
+    copia sincronizzata sarebbe due verita' che divergono al primo conflitto,
+    e una lista della spesa sbagliata e' peggio di nessuna lista, perche' ci
+    si va al supermercato.
+
+    Riferimento: issue #25.
+    """
+
+    __tablename__ = "liste"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    nome: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    creata_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
+
+
+class VoceLista(Base):
+    """Una riga di una lista."""
+
+    __tablename__ = "voci_lista"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    lista_id: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    testo: Mapped[str] = mapped_column(String(240), nullable=False)
+    fatta: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Chi l'ha aggiunta. Senza vincolo verso `users`, come nel registro: un
+    # ospite che detta la spesa all'Echo non e' nell'anagrafica, e la sua
+    # riga non deve sparire per questo.
+    autore: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    aggiunta_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
+
+
+class EventoCalendario(Base):
+    """Un impegno segnato in casa, per chi non ha calendari in Home Assistant.
+
+    Come per le liste: e' l'alternativa, non una copia. Dove c'e'
+    `calendar.qualcosa`, gli eventi si leggono di li'.
+    """
+
+    __tablename__ = "eventi_calendario"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    titolo: Mapped[str] = mapped_column(String(240), nullable=False)
+    inizio: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
+    fine: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    tutto_il_giorno: Mapped[bool] = mapped_column(Boolean, default=False)
+    luogo: Mapped[str] = mapped_column(String(160), default="")
+    autore: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
+
+class ScadenzaManutenzione(Base):
+    """Filtri della caldaia, revisione, bollo, garanzie.
+
+    `documento` e' un riferimento, non un file: dove sta la garanzia, il
+    numero della fattura, un percorso. Conservare gli allegati vorrebbe dire
+    caricamento, spazio disco e backup — una funzione sua, non una riga di
+    questa tabella, e prometterla qui con un campo di testo sarebbe peggio
+    che non averla.
+
+    Riferimento: issue #25.
+    """
+
+    __tablename__ = "scadenze"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    titolo: Mapped[str] = mapped_column(String(240), nullable=False)
+    prossima: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
+    # Zero significa «non torna»: una garanzia scade una volta sola.
+    ogni: Mapped[int] = mapped_column(Integer, default=0)
+    unita: Mapped[str] = mapped_column(String(16), default="mesi")
+    preavviso: Mapped[int] = mapped_column(Integer, default=7)
+    documento: Mapped[str] = mapped_column(String(500), default="")
+    ultima_fatta: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # Il promemoria gia' creato per questa scadenza, per non crearne uno
+    # nuovo a ogni giro del controllo quotidiano.
+    promemoria_id: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
