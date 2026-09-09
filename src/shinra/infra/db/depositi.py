@@ -16,12 +16,23 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional, Sequence, Type
 
 from sqlalchemy import delete, select
 
-from shinra.infra.db.modelli import Alias, Base, Fatto, Fonte, Modalita, Promemoria, Ruolo, Timer, Utente
+from shinra.infra.db.modelli import (
+    Alias,
+    Base,
+    Fatto,
+    Fonte,
+    LetturaEnergia,
+    Modalita,
+    Promemoria,
+    Ruolo,
+    Timer,
+    Utente,
+)
 from shinra.infra.db.motore import sessione
 
 logger = logging.getLogger("Shinra.Archivio")
@@ -243,6 +254,60 @@ class DepositoPromemoria(Deposito):
             return True
 
 
+class DepositoLettureEnergia:
+    """Lo storico dei contatori. Non eredita da `Deposito` perche' non ha un
+    identificativo testuale: qui si interroga per intervallo di tempo, non
+    per chiave, e le operazioni comuni non servirebbero a niente."""
+
+    campi = ("id", "momento", "entity_id", "valore", "consumo", "fascia")
+
+    def registra(
+        self, entity_id: str, valore: float, consumo: float, fascia: str, momento: Optional[datetime] = None
+    ) -> dict[str, Any]:
+        with sessione() as s:
+            riga = LetturaEnergia(
+                entity_id=entity_id,
+                valore=valore,
+                consumo=consumo,
+                fascia=fascia,
+                momento=momento or datetime.now(timezone.utc),
+            )
+            s.add(riga)
+            s.flush()
+            return _come_dizionario(riga, self.campi)
+
+    def ultima(self, entity_id: str) -> Optional[dict[str, Any]]:
+        with sessione() as s:
+            query = (
+                select(LetturaEnergia)
+                .where(LetturaEnergia.entity_id == entity_id)
+                .order_by(LetturaEnergia.momento.desc())
+                .limit(1)
+            )
+            riga = s.scalars(query).first()
+            return _come_dizionario(riga, self.campi) if riga else None
+
+    def fra(self, da: datetime, a: datetime, entity_id: Optional[str] = None) -> list[dict[str, Any]]:
+        with sessione() as s:
+            query = select(LetturaEnergia).where(LetturaEnergia.momento >= da, LetturaEnergia.momento < a)
+            if entity_id:
+                query = query.where(LetturaEnergia.entity_id == entity_id)
+            query = query.order_by(LetturaEnergia.momento)
+            return [_come_dizionario(r, self.campi) for r in s.scalars(query).all()]
+
+    def entita_note(self) -> list[str]:
+        with sessione() as s:
+            return sorted({str(v) for v in s.scalars(select(LetturaEnergia.entity_id)).all()})
+
+    def pulisci(self, prima_di: datetime) -> int:
+        """Lo storico non cresce per sempre: chi guarda i consumi guarda al
+        massimo l'anno, e una casa che scrive ogni ora fa quasi novemila
+        righe l'anno per sensore."""
+        with sessione() as s:
+            esito = s.execute(delete(LetturaEnergia).where(LetturaEnergia.momento < prima_di))
+            return int(getattr(esito, "rowcount", 0) or 0)
+
+
 utenti = DepositoUtenti()
 ruoli = DepositoRuoli()
 fatti = DepositoFatti()
@@ -251,6 +316,7 @@ modalita = DepositoModalita()
 fonti = DepositoFonti()
 timer = DepositoTimer()
 promemoria = DepositoPromemoria()
+letture_energia = DepositoLettureEnergia()
 
 DEPOSITI: dict[str, Deposito] = {
     "users": utenti,

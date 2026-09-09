@@ -83,6 +83,34 @@ class RegistroConfig(BaseModel):
     retention_days: int = 90
 
 
+class EnergiaConfig(BaseModel):
+    """La tariffa di casa, e quanto storico tenere.
+
+    `tipo` puo' essere `monoraria`, `bioraria` o `trioraria`. Cambia solo
+    quanti prezzi si leggono: la bioraria mette F2 e F3 sotto il prezzo
+    `fuori_punta`, come fanno i contratti italiani, la trioraria li separa.
+
+    I prezzi sono in euro al kilowattora, **tutto compreso**: quel che si
+    vuole sapere e' quanto costa in bolletta, non quanto vale l'energia alla
+    borsa elettrica. Chi non li configura riceve stime, e ogni risposta lo
+    dice invece di far passare un ordine di grandezza per un conto.
+    """
+
+    enabled: bool = True
+    tipo: str = "monoraria"
+    prezzo_kwh: float = 0.0
+    prezzo_punta: float = 0.0
+    prezzo_fuori_punta: float = 0.0
+    prezzo_f2: float = 0.0
+    prezzo_f3: float = 0.0
+    # Ogni quanto leggere i contatori. Un'ora e' la granularita' delle fasce:
+    # piu' spesso non aggiunge precisione al conto e riempie il database.
+    intervallo_minuti: int = 60
+    # Quanto storico tenere. Chi guarda i consumi guarda al massimo l'anno, e
+    # una casa che scrive ogni ora fa quasi novemila righe l'anno per sensore.
+    retention_giorni: int = 400
+
+
 class PresenzaConfig(BaseModel):
     """Chi c'e' in casa, e quanto aspettare prima di crederci.
 
@@ -109,6 +137,7 @@ class AppConfig(BaseModel):
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     registro: RegistroConfig = Field(default_factory=RegistroConfig)
     presenza: PresenzaConfig = Field(default_factory=PresenzaConfig)
+    energia: EnergiaConfig = Field(default_factory=EnergiaConfig)
 
 
 # --------------------------------------------------------------------------

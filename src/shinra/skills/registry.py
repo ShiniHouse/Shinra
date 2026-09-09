@@ -11,6 +11,7 @@ from shinra.skills.domini_casa import (
     comanda_serratura,
     comanda_ventilatore,
 )
+from shinra.skills.energia import consumo_energia, costo_dispositivo, fascia_corrente
 from shinra.skills.ha_tools import (
     activate_mode,
     activate_scene_or_routine,
@@ -57,6 +58,10 @@ TOOL_HANDLERS: Dict[str, Callable] = {
     "stato_clima": stato_clima,
     "comanda_tapparella": comanda_tapparella,
     "stato_tapparella": stato_tapparella,
+    # Consumi, costi e fasce orarie italiane (issue #24).
+    "consumo_energia": consumo_energia,
+    "costo_dispositivo": costo_dispositivo,
+    "fascia_corrente": fascia_corrente,
 }
 
 # Schemi compatibili con Ollama / OpenAI Tools
@@ -521,6 +526,58 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                 "Dice quanto e' aperta una tapparella, in percentuale quando il "
                 "motore lo sa dire. Una tapparella al 5 per cento e una spalancata "
                 "sono tutte e due «aperte» per Home Assistant."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {"entity_id": {"type": "string"}},
+                "required": ["entity_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "fascia_corrente",
+            "description": (
+                "Dice in che fascia oraria dell'energia elettrica siamo adesso "
+                "(F1 ore di punta, F2 intermedie, F3 fuori punta) e quando cambia. "
+                "Domeniche e festivi sono F3 tutto il giorno."
+            ),
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "consumo_energia",
+            "description": (
+                "Quanti kilowattora sono stati consumati e quanto sono costati, "
+                "divisi per fascia. Se non ci sono letture lo dice, invece di "
+                "rispondere zero."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "periodo": {
+                        "type": "string",
+                        "enum": ["oggi", "ieri", "settimana", "mese"],
+                    },
+                    "entity_id": {
+                        "type": "string",
+                        "description": "Un contatore specifico. Omesso, sono tutti insieme.",
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "costo_dispositivo",
+            "description": (
+                "Quanto costa tenere acceso un dispositivo, all'ora e al giorno, "
+                "alla tariffa della fascia in cui siamo adesso. Serve un sensore "
+                "che misuri la potenza."
             ),
             "parameters": {
                 "type": "object",
