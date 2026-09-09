@@ -110,3 +110,17 @@ def nome_di(entity_id: str, stati: Iterable[dict[str, Any]]) -> str:
         if s.get("entity_id") == entity_id:
             return str((s.get("attributes") or {}).get("friendly_name") or entity_id)
     return entity_id
+
+
+def attributi_di(entity_id: str, stati: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    """Gli attributi dichiarati da Home Assistant per un'entita'.
+
+    Servono a chi deve chiedere al dispositivo cosa sa fare prima di
+    chiederglielo: le modalita' di un termostato, la maschera di capacita' di
+    una tapparella. Un dizionario vuoto vuol dire «non lo so», e chi lo
+    riceve deve provarci lo stesso invece di rifiutare.
+    """
+    for s in stati:
+        if s.get("entity_id") == entity_id:
+            return dict(s.get("attributes") or {})
+    return {}

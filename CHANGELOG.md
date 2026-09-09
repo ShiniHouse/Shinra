@@ -15,6 +15,27 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **Il clima si comanda per intero.** Prima si sapeva dire solo una
+  temperatura: adesso anche la modalita' (riscaldamento, raffrescamento,
+  automatico, deumidificazione, ventilazione), la velocita' della ventola,
+  l'umidita' obiettivo e i profili predefiniti. «Metti il condizionatore in
+  deumidificazione» era una frase che non aveva modo di arrivare a Home
+  Assistant.
+- **Le tapparelle si fermano dove si vuole.** Posizione percentuale,
+  orientamento delle lamelle, arresto a meta' corsa. Cento e' aperta, zero e'
+  chiusa, come sulla dashboard: «abbassala al 40 per cento» vuol dire
+  posizione 40.
+- **Si chiede al dispositivo cosa sa fare prima di chiederglielo.** Un
+  termostato che non deumidifica, a cui si manda quel comando, non risponde
+  «non so farlo»: non fa niente, e chi ha chiesto sente «fatto». Adesso il
+  rifiuto arriva prima della chiamata, e dice cosa quel dispositivo sa fare
+  davvero. Vale anche per le tapparelle che si aprono e si chiudono e basta.
+- «A che temperatura e' impostato il termostato?» risponde con la temperatura
+  **obiettivo**, che non e' quella misurata nella stanza: confonderle era il
+  modo piu' facile per rispondere con sicurezza una cosa sbagliata.
+- Una temperatura fuori dalla portata del termostato viene accorciata invece
+  che rifiutata, ma **lo dice**: chi ha chiesto trenta gradi e sente «fatto»
+  crede di averne trenta.
 - **La casa finge di essere abitata quando si e' via.** Una luce che si
   accende alle 20:00 e si spegne alle 23:00 tutte le sere non dice «c'e'
   qualcuno», dice «c'e' un timer»: chi guarda una casa per tre sere di fila
