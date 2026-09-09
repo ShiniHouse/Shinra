@@ -20,7 +20,7 @@ from shinra.skills.ha_tools import (
     get_indoor_temperature,
 )
 from shinra.skills.news_search import get_latest_news, search_web
-from shinra.skills.reminders import add_reminder, list_reminders
+from shinra.skills.reminders import add_reminder, delete_reminder, list_reminders
 from shinra.skills.sicurezza_casa import comanda_allarme, stato_aperture
 from shinra.skills.simulazione import comanda_simulazione
 from shinra.skills.tapparelle import comanda_tapparella, stato_tapparella
@@ -42,6 +42,7 @@ TOOL_HANDLERS: Dict[str, Callable] = {
     "search_wikipedia": search_wikipedia,
     "add_reminder": add_reminder,
     "list_reminders": list_reminders,
+    "delete_reminder": delete_reminder,
     # I quattro domini che l'interfaccia mostrava e nessuno sapeva
     # comandare (issue #20).
     "comanda_serratura": comanda_serratura,
@@ -228,14 +229,23 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "add_reminder",
-            "description": "Salva un promemoria o una nota per l'utente.",
+            "description": (
+                "Imposta un promemoria che suona all'ora indicata. Serve sempre un "
+                "quando: se la persona non lo ha detto, il tool risponde chiedendolo "
+                "e NON crea niente — in quel caso chiedi tu l'orario, non dire che "
+                "hai salvato."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "text": {"type": "string", "description": "Contenuto del promemoria."},
                     "time_info": {
                         "type": "string",
-                        "description": "Quando ricordare (es. 'domani mattina', 'alle 18:00', 'stasera').",
+                        "description": (
+                            "Quando ricordare: 'domani mattina', 'alle 18:00', 'stasera', "
+                            "'sabato', 'fra due ore', 'il 15'. Obbligatorio nei fatti: "
+                            "senza, il promemoria non viene creato."
+                        ),
                     },
                 },
                 "required": ["text"],
@@ -583,6 +593,18 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                 "type": "object",
                 "properties": {"entity_id": {"type": "string"}},
                 "required": ["entity_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "delete_reminder",
+            "description": "Cancella un promemoria, e con lui la sveglia che lo avrebbe fatto suonare.",
+            "parameters": {
+                "type": "object",
+                "properties": {"reminder_id": {"type": "string"}},
+                "required": ["reminder_id"],
             },
         },
     },
