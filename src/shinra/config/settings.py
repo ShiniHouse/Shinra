@@ -31,6 +31,15 @@ class ServerConfig(BaseModel):
 class LLMConfig(BaseModel):
     ollama_url: str = "http://localhost:11434"
     model: str = "gemma2:9b"
+    # Il modello con cui si calcolano gli embedding della conoscenza di casa
+    # (issue #32). Gira su Ollama, quindi in casa: un servizio nel cloud
+    # sarebbe migliore e vorrebbe dire mandare a qualcun altro il nome del
+    # gatto e dove si nasconde la chiave di scorta.
+    #
+    # Cambiarlo invalida i vettori gia' calcolati, che vengono rifatti da
+    # soli al primo avvio: vettori di modelli diversi vivono in spazi
+    # diversi, e confrontarli produce numeri che sembrano punteggi.
+    modello_embedding: str = "nomic-embed-text"
     temperature: float = 0.4
     timeout_seconds: int = 60
     max_tokens: int = 150

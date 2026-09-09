@@ -15,6 +15,30 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **La conoscenza di casa si recupera invece di essere riversata.** Prima ogni
+  fatto abilitato finiva nel prompt di ogni richiesta: con la conoscenza che
+  cresce, prima si paga in latenza, poi si satura la finestra e i fatti piu'
+  vecchi vengono troncati **in silenzio** — la casa dimentica senza dirlo.
+  Adesso con cinquecento fatti il contesto resta della stessa dimensione.
+- **Sotto i venticinque fatti si manda tutto, come prima.** Il problema esiste
+  a duecento fatti, non a venti, e un recupero imperfetto dove non serviva
+  farebbe perdere risposte che prima funzionavano. E' anche il motivo per cui
+  la latenza non peggiora.
+- **La ricerca e' ibrida.** Gli embedding avvicinano «la password del wifi» a
+  «la chiave della rete» — ed e' cio' che serve — ma appiattiscono «4471» e
+  «4417» sullo stesso punto, perche' semanticamente sono entrambi «un
+  numero». Nomi propri e cifre li recupera il confronto testuale, dove i
+  numeri pesano doppio.
+- **Gli embedding si calcolano su Ollama, quindi in casa.** Un servizio nel
+  cloud sarebbe piu' veloce e vorrebbe dire mandare a qualcun altro il nome
+  del gatto e dove si nasconde la chiave di scorta.
+- Se Ollama e' spento o il modello non e' installato, il recupero resta
+  testuale: la casa risponde peggio, non smette di sapere. E lo dice, invece
+  di lasciar credere che la ricerca semantica funzioni male.
+- L'indice si aggiorna da solo quando un fatto viene modificato, e non lascia
+  in giro i vettori dei fatti cancellati.
+- Si puo' chiedere **quali fatti hanno contribuito** a una risposta, con i
+  punteggi semantico e testuale separati.
 - **La casa smette di aspettare la domanda.** «Se la porta si apre dopo le 23,
   accendi l'ingresso» funziona senza intervento. I trigger sono su evento,
   stato, orario, presenza, alba e tramonto; le condizioni si compongono, e la

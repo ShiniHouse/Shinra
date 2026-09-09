@@ -8,6 +8,7 @@ from shinra.config.settings import settings
 from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.llm.ollama import OllamaClient
+from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.intenti import Richiesta, instrada
 from shinra.services.memory import ConversationMemory, gestore_memorie
 from shinra.services.user_manager import UserProfile, user_manager
@@ -102,7 +103,10 @@ class ShinraAgent:
             home_context_summary=ha_summary,
             default_city=settings.assistant.default_city,
             user_profile=profile,
-            custom_knowledge=data_store.get_enabled_knowledge_summary(),
+            # Il recupero al posto dell'iniezione totale (issue #32). Sotto
+            # i venticinque fatti manda tutto come prima: il problema esiste
+            # a duecento fatti, non a venti.
+            custom_knowledge=await servizio_conoscenza.per_la_domanda(richiesta.testo),
             device_aliases=data_store.get_aliases_summary(),
             modes_summary=data_store.get_modes_summary(),
         )
