@@ -24,6 +24,7 @@ from sqlalchemy import delete, select
 from shinra.infra.db.modelli import (
     Alias,
     Base,
+    EmbeddingFatto,
     EventoCalendario,
     Fatto,
     Fonte,
@@ -475,6 +476,56 @@ class DepositoRegole(Deposito):
             return [_come_dizionario(r, self.campi) for r in s.scalars(query).all()]
 
 
+class DepositoEmbedding:
+    """I vettori dei fatti. Non eredita da `Deposito` perche' la chiave e' il
+    fatto, non un identificativo suo."""
+
+    campi = ("fatto_id", "vettore", "modello", "impronta", "calcolato_il")
+
+    def tutti(self) -> dict[str, dict[str, Any]]:
+        with sessione() as s:
+            righe = s.scalars(select(EmbeddingFatto)).all()
+            return {str(r.fatto_id): _come_dizionario(r, self.campi) for r in righe}
+
+    def salva(self, fatto_id: str, vettore: list[float], modello: str, impronta: str) -> None:
+        with sessione() as s:
+            riga = s.get(EmbeddingFatto, fatto_id)
+            if riga is None:
+                riga = EmbeddingFatto(fatto_id=fatto_id)
+                s.add(riga)
+            riga.vettore = list(vettore)
+            riga.modello = modello
+            riga.impronta = impronta
+            riga.calcolato_il = datetime.now(timezone.utc)
+
+    def cancella(self, fatto_id: str) -> bool:
+        with sessione() as s:
+            riga = s.get(EmbeddingFatto, fatto_id)
+            if riga is None:
+                return False
+            s.delete(riga)
+            return True
+
+    def dimentica_orfani(self, identificativi_vivi: set[str]) -> int:
+        """Toglie i vettori dei fatti cancellati.
+
+        Senza, un fatto cancellato dall'interfaccia lascerebbe il suo vettore
+        nell'archivio per sempre — e a ogni recupero si confronterebbe con
+        qualcosa che la casa non sa piu'."""
+        with sessione() as s:
+            righe = s.scalars(select(EmbeddingFatto)).all()
+            tolti = 0
+            for riga in righe:
+                if str(riga.fatto_id) not in identificativi_vivi:
+                    s.delete(riga)
+                    tolti += 1
+            return tolti
+
+    def conta(self) -> int:
+        with sessione() as s:
+            return len(s.scalars(select(EmbeddingFatto.fatto_id)).all())
+
+
 utenti = DepositoUtenti()
 ruoli = DepositoRuoli()
 fatti = DepositoFatti()
@@ -491,6 +542,7 @@ scadenze = DepositoScadenze()
 sottoscrizioni_push = DepositoSottoscrizioni()
 preferenze_notifiche = DepositoPreferenzeNotifiche()
 regole = DepositoRegole()
+embedding = DepositoEmbedding()
 
 DEPOSITI: dict[str, Deposito] = {
     "users": utenti,

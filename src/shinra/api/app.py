@@ -15,6 +15,7 @@ from shinra import percorsi, versione
 from shinra.api import sicurezza
 from shinra.api.routes_admin import router as admin_router
 from shinra.api.routes_auth import router as auth_router
+from shinra.api.routes_conoscenza import router as conoscenza_router
 from shinra.api.routes_notifiche import router as notifiche_router
 from shinra.api.routes_regole import router as regole_router
 from shinra.channels.alexa.skill_handler import handle_alexa_request
@@ -45,6 +46,7 @@ from shinra.infra.scheduler.motore import scheduler
 from shinra.services import eventi_casa, permessi, registro
 from shinra.services.agent import agent
 from shinra.services.allarme import allarme
+from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.consegna import descrivi, registra_canali
 from shinra.services.energia import servizio_energia
 from shinra.services.manutenzione import servizio_manutenzione
@@ -56,6 +58,11 @@ from shinra.services.timer_engine import timer_engine
 from shinra.services.user_manager import user_manager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+# I lavori di avvio che girano in sottofondo. Tenerne un riferimento e'
+# necessario: `asyncio` non lo fa, e un task non referenziato puo'
+# sparire a meta'.
+_in_sottofondo: set = set()
+
 logger = logging.getLogger("Shinra")
 
 BASE_DIR = percorsi.RADICE
@@ -234,6 +241,16 @@ async def lifespan(_: FastAPI):
     # e raccontarlo richiede un canale (issue #27).
     motore_regole.avvia()
 
+    # L'indice della conoscenza, in sottofondo: senza embedding il recupero
+    # resta testuale, quindi non blocca l'avvio (issue #32).
+    #
+    # Il riferimento si tiene: un task senza qualcuno che lo guardi puo'
+    # essere raccolto dal garbage collector a meta' del lavoro, e l'indice
+    # resterebbe fatto per meta' senza che niente lo dica.
+    indicizzazione = asyncio.create_task(servizio_conoscenza.aggiorna_indice())
+    _in_sottofondo.add(indicizzazione)
+    indicizzazione.add_done_callback(_in_sottofondo.discard)
+
     registra_canali()
     ripresi = timer_engine.ripristina_job()
     rimossi = timer_engine.pulisci_scaduti()
@@ -332,6 +349,7 @@ app.include_router(auth_router)  # pubblico: e' l'accesso stesso
 app.include_router(admin_router)  # protetto per difetto
 app.include_router(notifiche_router)  # protetto per difetto
 app.include_router(regole_router)  # protetto per difetto
+app.include_router(conoscenza_router)  # protetto per difetto
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 

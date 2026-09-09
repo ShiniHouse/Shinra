@@ -390,3 +390,28 @@ class Regola(Base):
     # sarebbe dovuta scattare.
     ultimo_scatto: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     ultimo_esito: Mapped[str] = mapped_column(String(200), default="")
+
+
+class EmbeddingFatto(Base):
+    """Il vettore di un fatto, con l'impronta del testo da cui e' nato.
+
+    L'impronta e' la parte che fa lavorare il ricalcolo da solo: se il testo
+    del fatto cambia, l'impronta salvata non corrisponde piu' e il vettore
+    viene rifatto — senza che nessuno debba ricordarsi di chiamare qualcosa
+    quando modifica un fatto. Un vettore vecchio non da' errore: da' risposte
+    sbagliate, che e' peggio.
+
+    Anche il nome del modello e' salvato: cambiare modello di embedding
+    cambia lo spazio vettoriale, e confrontare vettori di due modelli diversi
+    produce numeri che sembrano punteggi e non lo sono.
+
+    Riferimento: issue #32.
+    """
+
+    __tablename__ = "embedding_fatti"
+
+    fatto_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    vettore: Mapped[list[Any]] = mapped_column(JSON, default=list)
+    modello: Mapped[str] = mapped_column(String(120), default="")
+    impronta: Mapped[str] = mapped_column(String(64), default="", index=True)
+    calcolato_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
