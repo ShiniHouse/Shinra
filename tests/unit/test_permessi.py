@@ -269,6 +269,20 @@ def test_ogni_rotta_che_cambia_qualcosa_dichiara_un_permesso():
         # proprieta' e' dentro le rotte, e ha i suoi test.
         ("DELETE", "/api/dispositivi/{id_dispositivo}"),
         ("POST", "/api/dispositivi/revoca-tutti"),
+        # Le notifiche seguono la stessa regola dei dispositivi fidati, e per
+        # lo stesso motivo: sono **personali**. Registrare il proprio
+        # telefono e scegliere cosa sentire non e' un'azione amministrativa,
+        # e un permesso statico direbbe la cosa sbagliata — o lo si da' a
+        # tutti, e non protegge niente, o lo si nega, e la casa non avvisa
+        # nessuno tranne gli amministratori.
+        #
+        # La protezione e' che ogni rotta lavora sull'utente della sessione:
+        # `dimentica` rifiuta un endpoint che non e' tuo, e i test lo
+        # verificano.
+        ("POST", "/api/notifiche/sottoscrivi"),
+        ("POST", "/api/notifiche/dimentica"),
+        ("POST", "/api/notifiche/preferenze"),
+        ("POST", "/api/notifiche/prova"),
     }
 
     mancanti = []

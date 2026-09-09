@@ -30,9 +30,11 @@ from shinra.infra.db.modelli import (
     LetturaEnergia,
     Lista,
     Modalita,
+    PreferenzaNotifica,
     Promemoria,
     Ruolo,
     ScadenzaManutenzione,
+    SottoscrizionePush,
     Timer,
     Utente,
     VoceLista,
@@ -390,6 +392,66 @@ class DepositoScadenze(Deposito):
         return fuori
 
 
+class DepositoSottoscrizioni(Deposito):
+    modello = SottoscrizionePush
+    campi = (
+        "id",
+        "user_id",
+        "endpoint",
+        "p256dh",
+        "auth",
+        "nome",
+        "creata_il",
+        "ultimo_invio",
+        "fallimenti",
+    )
+    ordine = "creata_il"
+
+    def per_utente(self, utente: str) -> list[dict[str, Any]]:
+        with sessione() as s:
+            query = select(SottoscrizionePush).where(SottoscrizionePush.user_id == utente)
+            return [_come_dizionario(r, self.campi) for r in s.scalars(query).all()]
+
+    def per_endpoint(self, endpoint: str) -> Optional[dict[str, Any]]:
+        with sessione() as s:
+            query = select(SottoscrizionePush).where(SottoscrizionePush.endpoint == endpoint)
+            riga = s.scalars(query).first()
+            return _come_dizionario(riga, self.campi) if riga else None
+
+    def cancella_per_endpoint(self, endpoint: str) -> bool:
+        with sessione() as s:
+            query = select(SottoscrizionePush).where(SottoscrizionePush.endpoint == endpoint)
+            riga = s.scalars(query).first()
+            if riga is None:
+                return False
+            s.delete(riga)
+            return True
+
+
+class DepositoPreferenzeNotifiche(Deposito):
+    modello = PreferenzaNotifica
+    campi = ("id", "user_id", "chiave", "valore")
+
+    def per_utente(self, utente: str) -> list[dict[str, Any]]:
+        with sessione() as s:
+            query = select(PreferenzaNotifica).where(PreferenzaNotifica.user_id == utente)
+            return [_come_dizionario(r, self.campi) for r in s.scalars(query).all()]
+
+    def imposta(self, utente: str, chiave: str, valore: bool) -> dict[str, Any]:
+        with sessione() as s:
+            query = select(PreferenzaNotifica).where(
+                PreferenzaNotifica.user_id == utente, PreferenzaNotifica.chiave == chiave
+            )
+            riga = s.scalars(query).first()
+            if riga is not None:
+                riga.valore = valore
+                s.flush()
+                return _come_dizionario(riga, self.campi)
+        return self.aggiungi(
+            {"id": f"pref_{uuid.uuid4().hex[:8]}", "user_id": utente, "chiave": chiave, "valore": valore}
+        )
+
+
 utenti = DepositoUtenti()
 ruoli = DepositoRuoli()
 fatti = DepositoFatti()
@@ -403,6 +465,8 @@ liste = DepositoListe()
 voci_lista = DepositoVociLista()
 eventi_calendario = DepositoEventi()
 scadenze = DepositoScadenze()
+sottoscrizioni_push = DepositoSottoscrizioni()
+preferenze_notifiche = DepositoPreferenzeNotifiche()
 
 DEPOSITI: dict[str, Deposito] = {
     "users": utenti,

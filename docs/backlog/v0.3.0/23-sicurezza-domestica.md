@@ -26,8 +26,9 @@ perche' e' quello per cui una famiglia installa la domotica.
       push verso il telefono sono la issue #29 (v0.4.0) e non esistono
       ancora: fingere il contrario sarebbe la peggiore delle promesse, su
       questo dominio. `casa.intrusione` viene pubblicato sul bus con dentro
-      chi c'era in casa al momento, e arriva alla dashboard aperta; quando
-      #29 arrivera' bastera' sottoscriverlo
+      chi c'era in casa al momento. **Nessuno lo ascolta**, nemmeno il
+      WebSocket della dashboard: questa scheda diceva il contrario, ed era
+      sbagliato. Lo aggancia la #29
 - [x] Simulazione di presenza in vacanza. Il piano di ogni sera e' calcolato
       da `domain/simulazione.py` — puro, riproducibile da un seme, e con il
       confronto esplicito con la sera prima. La capacita' sta in
