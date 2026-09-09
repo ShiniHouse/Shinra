@@ -32,6 +32,7 @@ from shinra.infra.db.modelli import (
     Modalita,
     PreferenzaNotifica,
     Promemoria,
+    Regola,
     Ruolo,
     ScadenzaManutenzione,
     SottoscrizionePush,
@@ -452,6 +453,28 @@ class DepositoPreferenzeNotifiche(Deposito):
         )
 
 
+class DepositoRegole(Deposito):
+    modello = Regola
+    campi = (
+        "id",
+        "nome",
+        "attiva",
+        "trigger",
+        "condizioni",
+        "azioni",
+        "creata_il",
+        "autore",
+        "ultimo_scatto",
+        "ultimo_esito",
+    )
+    ordine = "nome"
+
+    def attive(self) -> list[dict[str, Any]]:
+        with sessione() as s:
+            query = select(Regola).where(Regola.attiva.is_(True)).order_by(Regola.nome)
+            return [_come_dizionario(r, self.campi) for r in s.scalars(query).all()]
+
+
 utenti = DepositoUtenti()
 ruoli = DepositoRuoli()
 fatti = DepositoFatti()
@@ -467,6 +490,7 @@ eventi_calendario = DepositoEventi()
 scadenze = DepositoScadenze()
 sottoscrizioni_push = DepositoSottoscrizioni()
 preferenze_notifiche = DepositoPreferenzeNotifiche()
+regole = DepositoRegole()
 
 DEPOSITI: dict[str, Deposito] = {
     "users": utenti,
