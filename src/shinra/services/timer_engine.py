@@ -2,11 +2,11 @@ import logging
 import re
 import time
 import uuid
-from datetime import datetime, timedelta
 from typing import Any, ClassVar, Dict, List, Optional
 
 from pydantic import BaseModel
 
+from shinra.domain import quando as quando_dominio
 from shinra.infra.db import depositi
 
 logger = logging.getLogger("Shinra.TimerEngine")
@@ -108,28 +108,23 @@ class TimerEngine:
         depositi.promemoria.sostituisci_tutto(items)
 
     def add_reminder(self, text: str, remind_at_iso: str, user_id: str = "alessio") -> Dict[str, Any]:
-        r_id = f"rem_{uuid.uuid4().hex[:6]}"
-        item = depositi.promemoria.aggiungi(
-            {
-                "id": r_id,
-                "text": text,
-                "remind_at": remind_at_iso,
-                "user_id": user_id,
-                "completed": False,
-                "created_at": datetime.now().isoformat(),
-            }
-        )
+        """Crea un promemoria. La primitiva sta in `skills/reminders.py`.
 
-        from shinra.infra.scheduler.motore import scheduler
+        Ce n'erano due copie — una qui, una nel tool che il modello chiama —
+        e solo questa funzionava (issue #92). Adesso ce n'e' una sola, e sta
+        fra le capacita': scrivere una riga e programmare una sveglia sono
+        archivio e scheduler, che stanno sotto. Qui resta l'orchestrazione:
+        il ripristino dei job dopo un riavvio, che una capacita' non puo'
+        conoscere.
+        """
+        from shinra.skills import reminders
 
-        scheduler.programma_promemoria(r_id, item["text"], remind_at_iso, user_id)
-        return item
+        return reminders.crea(text, remind_at_iso, user_id)
 
     def delete_reminder(self, reminder_id: str) -> bool:
-        from shinra.infra.scheduler.motore import scheduler
+        from shinra.skills import reminders
 
-        scheduler.annulla_promemoria(reminder_id)
-        return depositi.promemoria.cancella(reminder_id)
+        return reminders.cancella(reminder_id)
 
     def segna_promemoria_completato(self, reminder_id: str) -> bool:
         return depositi.promemoria.segna_completato(reminder_id)
@@ -242,42 +237,30 @@ class TimerEngine:
                 "unit": unit,
             }
 
-        # 2. Parsing Promemoria temporizzato: "ricordami di comprare il pane alle 17:30" / "ricordami di prendere le medicine tra 20 minuti"
-        remind_delta_match = re.search(
-            rf"\bricordami\s+di\s+(.+?)\s+tra\s+({numeri}|\d+)\s*(minuti|minuto|ore|ora)\b", t_lower
+        # 2. Promemoria. Il «quando» lo legge `domain/quando.py`, che capisce
+        #    anche «domani mattina», «sabato», «fra due giorni» e l'ordine
+        #    delle parole rovesciato («ricordami domani di chiamare»).
+        #
+        #    Prima qui c'erano due espressioni regolari, «alle HH» e «tra N
+        #    minuti», e basta. Tutto il resto cadeva al modello, che chiamava
+        #    un tool che scriveva in una lista in memoria e rispondeva
+        #    «salvato» — issue #92. Le formule che questo ramo non cattura
+        #    finiscono ancora al modello, ma adesso il tool le tratta bene, e
+        #    se non capisce l'ora chiede invece di fingere.
+        chiesto = re.search(
+            r"\b(?:ricordami|ricordati|ricordarmi|segnati|promemoria)\b\s*(?:che\s+)?(?:devo\s+)?(?:di\s+)?(.+)",
+            t_lower,
         )
-        if remind_delta_match:
-            action = remind_delta_match.group(1).strip()
-            amount = self._quantita(remind_delta_match.group(2)) or 0
-            unit = remind_delta_match.group(3)
-            delta = timedelta(minutes=amount) if "minut" in unit else timedelta(hours=amount)
-            target_time = datetime.now() + delta
-            return {
-                "type": "reminder",
-                "text": action.capitalize(),
-                "remind_at": target_time.strftime("%Y-%m-%dT%H:%M:%S"),
-                "formatted_time": target_time.strftime("alle ore %H:%M"),
-            }
-
-        # I minuti sono facoltativi: «alle 18» vale quanto «alle 18:00». Chi
-        # parla dice l'ora tonda molto piu' spesso di quella con i minuti.
-        remind_time_match = re.search(
-            r"\bricordami\s+di\s+(.+?)\s+alle\s+(\d{1,2})(?:[:.](\d{2}))?\b", t_lower
-        )
-        if remind_time_match:
-            action = remind_time_match.group(1).strip()
-            hours = int(remind_time_match.group(2))
-            minutes = int(remind_time_match.group(3) or 0)
-            now = datetime.now()
-            target_time = now.replace(hour=hours, minute=minutes, second=0, microsecond=0)
-            if target_time < now:
-                target_time += timedelta(days=1)
-            return {
-                "type": "reminder",
-                "text": action.capitalize(),
-                "remind_at": target_time.strftime("%Y-%m-%dT%H:%M:%S"),
-                "formatted_time": target_time.strftime("alle ore %H:%M"),
-            }
+        if chiesto:
+            resto = chiesto.group(1).strip()
+            azione, momento = quando_dominio.separa(resto)
+            if momento is not None and azione:
+                return {
+                    "type": "reminder",
+                    "text": azione.capitalize(),
+                    "remind_at": momento.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "formatted_time": quando_dominio.descrivi(momento),
+                }
 
         return None
 

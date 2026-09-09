@@ -14,6 +14,24 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Corretto
+- **I promemoria impostati a voce non venivano salvati.** Il tool che il
+  modello chiama scriveva in una lista in memoria: non toccava il database,
+  non programmava nessuna sveglia, e rispondeva «Promemoria salvato». Al
+  riavvio del servizio sparivano, e non suonavano mai. Adesso il promemoria
+  viene scritto e programmato davvero, ed e' lo stesso percorso per tutte le
+  strade — chat, Alexa, dashboard.
+- **La casa capisce molti piu' modi di dire quando.** Prima riconosceva solo
+  «alle 18» e «tra dieci minuti»: adesso anche «domani mattina», «sabato»,
+  «stasera», «fra due giorni», «il 15», «lunedi prossimo», e l'ordine delle
+  parole rovesciato. Su dieci frasi normali prese a campione, otto prima
+  finivano nel vuoto.
+- **Quando non capisce quando, chiede.** Un promemoria senza orario non viene
+  piu' accettato in silenzio: l'assistente domanda a che ora, invece di dire
+  «salvato». Chi non sa a che ora mettere la sveglia non la mette a caso.
+- «Che promemoria ho?» legge il database invece di una lista in memoria:
+  prima rispondeva «nessun promemoria» a chi ne aveva sette.
+
 ### Aggiunto
 - **La casa conosce le fasce orarie italiane.** F1, F2 e F3 secondo il
   calendario vero: sabato senza ore di punta, domenica fuori punta dalle 0
