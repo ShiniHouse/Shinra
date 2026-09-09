@@ -43,9 +43,15 @@ PROMEMORIA_SCADUTO = "promemoria.scaduto"
 # mano nostra: anche l'interruttore a muro passa di qui. E' il fatto su cui
 # si appoggeranno le regole della v0.4.0 (issue #19).
 HA_STATO_CAMBIATO = "ha.stato_cambiato"
-# L'allarme e' scattato (issue #23). La notifica verso il telefono arrivera'
-# con la issue #29: l'evento c'e' gia' e la aspetta.
+# L'allarme e' scattato (issue #23). Per due versioni questo evento e' stato
+# pubblicato e non ascoltato da nessuno — nemmeno dal WebSocket della
+# dashboard, benche' le note della v0.3.0 dicessero il contrario. Dalla #29
+# lo ascolta `services/notifiche.py`.
 CASA_INTRUSIONE = "casa.intrusione"
+# Un avviso gia' formato — titolo, testo, priorita' — pronto da mostrare.
+# E' il canale «dashboard aperta» del servizio notifiche (issue #29): gli
+# altri canali sono il telefono e la voce, e passano altrove.
+AVVISO = "notifica.avviso"
 # Chi entra e chi esce, e i due momenti che contano per la casa intera: la
 # prima persona che rientra e l'ultima che se ne va (issue #22). I nomi
 # vivono in `domain/presenza.py`, che e' anche cio' che li decide.

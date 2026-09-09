@@ -52,6 +52,12 @@ dependencies = [
   "alembic>=1.13",
   "feedparser>=6.0.11",
   "edge-tts>=6.1.12",
+  # Notifiche push verso i browser (issue #29). Implementa l'RFC 8291: la
+  # cifratura della busta push e' esattamente il genere di codice in cui un
+  # errore sottile non si vede — la notifica non arriva, oppure arriva
+  # leggibile a chi non deve — e riscriverla per non aggiungere una
+  # dipendenza sarebbe un pessimo scambio.
+  "pywebpush>=2.0",
 ]
 
 [project.optional-dependencies]

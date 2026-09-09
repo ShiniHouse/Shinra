@@ -14,7 +14,30 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
-_Niente ancora._
+### Aggiunto
+- **Le notifiche arrivano sul telefono anche con l'applicazione chiusa.** Il
+  service worker gestiva installazione e cache e non aveva alcun handler per
+  l'evento `push`: promemoria, allarmi e avvisi restavano muti. Adesso c'e' un
+  canale vero, con le chiavi VAPID generate al primo avvio.
+- **Le priorita' decidono chi puo' essere zittito.** Un'intrusione suona anche
+  a silenzioso attivo; un avviso energetico no. Se il silenzioso potesse
+  spegnere un allarme, sarebbe un modo per spegnere l'allarme
+  dimenticandosene.
+- Si puo' silenziare una categoria senza silenziarle tutte. La sicurezza no, e
+  il rifiuto arriva dall'API: mostrare un interruttore che poi non si rispetta
+  e' peggio che non mostrarlo.
+- Un'intrusione **non** viene annunciata ad alta voce: avviserebbe chi e' in
+  casa — eventualmente il ladro — e non chi e' fuori. Va al telefono.
+- Toccare una notifica apre il punto giusto dell'applicazione, riusando la
+  finestra gia' aperta invece di aprirne una seconda.
+
+### Corretto
+- **`casa.intrusione` non arrivava da nessuna parte.** L'allarme lo pubblicava
+  sul bus dalla `v0.3.0` e non lo ascoltava nessuno: non il WebSocket della
+  dashboard, non i canali di consegna, niente nell'interfaccia. Le note della
+  `v0.3.0` dicevano che almeno a una dashboard aperta arrivava, e non era
+  vero; la riga e' stata corretta.
+- Non si puo' piu' togliere il telefono di un altro conoscendone l'endpoint.
 
 ---
 

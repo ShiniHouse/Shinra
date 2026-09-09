@@ -15,6 +15,7 @@ from shinra import percorsi, versione
 from shinra.api import sicurezza
 from shinra.api.routes_admin import router as admin_router
 from shinra.api.routes_auth import router as auth_router
+from shinra.api.routes_notifiche import router as notifiche_router
 from shinra.channels.alexa.skill_handler import handle_alexa_request
 from shinra.channels.alexa.verifica_firma import FirmaNonValida, verifica_richiesta
 from shinra.config.settings import (
@@ -24,7 +25,9 @@ from shinra.config.settings import (
     verifica_configurazione,
 )
 from shinra.domain.eventi import (
+    AVVISO,
     CASA_ABITATA,
+    CASA_INTRUSIONE,
     CASA_VUOTA,
     HA_STATO_CAMBIATO,
     PERSONA_RIENTRATA,
@@ -44,6 +47,7 @@ from shinra.services.allarme import allarme
 from shinra.services.consegna import descrivi, registra_canali
 from shinra.services.energia import servizio_energia
 from shinra.services.manutenzione import servizio_manutenzione
+from shinra.services.notifiche import servizio_notifiche
 from shinra.services.presenza import presenza
 from shinra.services.simulazione import servizio_simulazione
 from shinra.services.timer_engine import timer_engine
@@ -218,6 +222,11 @@ async def lifespan(_: FastAPI):
     # dimenticato (issue #25).
     servizio_manutenzione.avvia()
 
+    # Il canale verso il telefono. Fino alla #29 `casa.intrusione` veniva
+    # pubblicato e non lo ascoltava nessuno: un allarme che scatta mentre
+    # nessuno guarda non ha avvisato nessuno.
+    servizio_notifiche.avvia()
+
     registra_canali()
     ripresi = timer_engine.ripristina_job()
     rimossi = timer_engine.pulisci_scaduti()
@@ -246,6 +255,7 @@ async def lifespan(_: FastAPI):
 
     # Spegnimento: i job restano nell'archivio per la prossima accensione.
     scheduler.ferma()
+    servizio_notifiche.ferma()
     servizio_manutenzione.ferma()
     servizio_energia.ferma()
     servizio_simulazione.ferma()
@@ -312,6 +322,7 @@ async def errore_non_gestito(request: Request, exc: Exception):
 
 app.include_router(auth_router)  # pubblico: e' l'accesso stesso
 app.include_router(admin_router)  # protetto per difetto
+app.include_router(notifiche_router)  # protetto per difetto
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
@@ -490,6 +501,11 @@ async def eventi_websocket(websocket: WebSocket):
             PERSONA_USCITA,
             CASA_ABITATA,
             CASA_VUOTA,
+            # Gli avvisi gia' formati dal servizio notifiche, e l'allarme.
+            # `casa.intrusione` non era in questo elenco: veniva pubblicato e
+            # non arrivava nemmeno a una dashboard aperta (issue #29).
+            AVVISO,
+            CASA_INTRUSIONE,
         )
     ]
     try:

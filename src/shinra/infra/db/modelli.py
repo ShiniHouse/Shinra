@@ -311,3 +311,52 @@ class ScadenzaManutenzione(Base):
     # Il promemoria gia' creato per questa scadenza, per non crearne uno
     # nuovo a ogni giro del controllo quotidiano.
     promemoria_id: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+
+
+class SottoscrizionePush(Base):
+    """Un telefono che ha detto «avvisami», con le chiavi per raggiungerlo.
+
+    L'`endpoint` e' un indirizzo scelto dal browser presso il suo servizio
+    push (Google, Mozilla, Apple): e' l'identificativo naturale della
+    sottoscrizione, e due sottoscrizioni con lo stesso endpoint sono lo
+    stesso telefono che si e' ri-registrato.
+
+    Le chiavi `p256dh` e `auth` servono a cifrare il contenuto **prima** che
+    esca da qui: il servizio push instrada la busta e non puo' leggerla. E'
+    il motivo per cui un promemoria puo' passare da Google senza che Google
+    sappia cosa dice.
+
+    Riferimento: issue #29.
+    """
+
+    __tablename__ = "sottoscrizioni_push"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    endpoint: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
+    p256dh: Mapped[str] = mapped_column(String(200), nullable=False)
+    auth: Mapped[str] = mapped_column(String(100), nullable=False)
+    nome: Mapped[str] = mapped_column(String(120), default="Dispositivo")
+    creata_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
+    ultimo_invio: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # Quanti invii di fila sono falliti. Una sottoscrizione revocata dal
+    # browser risponde 404 o 410 e va tolta subito; un errore di rete e'
+    # un'altra cosa e non deve far perdere il telefono di nessuno.
+    fallimenti: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class PreferenzaNotifica(Base):
+    """Cosa una persona vuole ricevere, e dove.
+
+    Una riga per preferenza invece di una colonna per categoria: le
+    categorie cambiano a ogni funzione nuova, e una tabella che cambia forma
+    a ogni funzione nuova e' una migrazione a ogni funzione nuova.
+    """
+
+    __tablename__ = "preferenze_notifiche"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    # `silenzioso`, `canale.push`, `categoria.energia`...
+    chiave: Mapped[str] = mapped_column(String(64), nullable=False)
+    valore: Mapped[bool] = mapped_column(Boolean, default=True)
