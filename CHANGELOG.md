@@ -14,7 +14,36 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Aggiunto
+- **Liste della spesa e delle cose da fare.** «Aggiungi il latte alla lista
+  della spesa» funziona da chat e da Alexa, e «latte, pane e uova» sono tre
+  voci, non una. Una cosa gia' in lista non si aggiunge due volte: al
+  supermercato due righe uguali si comprano due volte.
+- **Se in Home Assistant c'e' una lista `todo`, si scrive li'.** Non se ne
+  tiene una copia: due liste che si sincronizzano divergono al primo
+  conflitto, e una lista della spesa sbagliata e' peggio di nessuna lista.
+  Le liste di casa esistono per chi non ha `todo` configurato.
+- **«Cosa ho oggi»** elenca gli impegni veri, presi da tutti i calendari
+  messi insieme — quelli di Home Assistant e quelli segnati in casa. Gli
+  eventi di giornata intera restano tali: letti come un orario risulterebbero
+  gia' passati per tutte le ore in cui accadono. Una vacanza cominciata la
+  settimana scorsa e' un impegno anche oggi.
+- Gli impegni si **leggono** da tutti i calendari ma si **scrivono** solo su
+  quello di casa: i calendari di Home Assistant sono di Google o di iCloud, e
+  una casa che scrive nell'agenda di lavoro di qualcuno fa un danno che non
+  sa di fare.
+- **Le scadenze di casa** — filtri della caldaia, revisione, bollo, garanzie
+  — con ricorrenza e preavviso per riga. Quando si avvicinano, la casa crea
+  da sola un promemoria che suona: una scadenza in un elenco che nessuno apre
+  e' una scadenza dimenticata.
+- Una scadenza segnata come fatta ricomincia **da oggi**, non dalla data
+  prevista: altrimenti ogni ritardo si accumula, e un cambio filtri fatto con
+  due mesi di ritardo tiene il calendario indietro per sempre.
+
 ### Corretto
+- «Cena» e' insieme un pasto e un'ora: «dopo cena» e' un orario, «cena con
+  Marco» e' il titolo di un impegno. Prima erano la stessa cosa, e «segna
+  cena con Marco» diventava l'impegno «con Marco» alle venti.
 - **I promemoria impostati a voce non venivano salvati.** Il tool che il
   modello chiama scriveva in una lista in memoria: non toccava il database,
   non programmava nessuna sveglia, e rispondeva «Promemoria salvato». Al

@@ -312,3 +312,35 @@ def test_nessuna_lista_in_memoria_nel_modulo():
         "questi contenitori mutabili stanno a livello di modulo e possono "
         f"raccogliere promemoria che non arrivano da nessuna parte: {contenitori}"
     )
+
+
+# ============================================ i pasti che sono anche ore
+
+
+@pytest.mark.parametrize(
+    "frase,e_un_ora",
+    [
+        ("cena con Marco", False),
+        ("pranzo con i colleghi", False),
+        ("dopo cena", True),
+        ("a cena", True),
+        ("a pranzo", True),
+        ("prima di cena", True),
+        ("chiamare Marco dopo cena", True),
+    ],
+)
+def test_cena_e_un_pasto_o_un_ora_secondo_la_preposizione(frase, e_un_ora):
+    """«Dopo cena» e' un'ora, «cena con Marco» e' il titolo di un impegno.
+
+    Senza questa distinzione «segna cena con Marco» diventava l'impegno «con
+    Marco» alle venti: il titolo mangiato dall'orario. L'ha trovato un test
+    del calendario, non una rilettura.
+    """
+    assert (tempo.quando(frase, ADESSO) is not None) is e_un_ora
+
+
+def test_il_titolo_non_viene_mangiato_dall_orario():
+    testo, momento = tempo.separa("cena con Marco")
+
+    assert testo == "cena con marco"
+    assert momento is None

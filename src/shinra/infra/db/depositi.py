@@ -24,14 +24,18 @@ from sqlalchemy import delete, select
 from shinra.infra.db.modelli import (
     Alias,
     Base,
+    EventoCalendario,
     Fatto,
     Fonte,
     LetturaEnergia,
+    Lista,
     Modalita,
     Promemoria,
     Ruolo,
+    ScadenzaManutenzione,
     Timer,
     Utente,
+    VoceLista,
 )
 from shinra.infra.db.motore import sessione
 
@@ -308,6 +312,84 @@ class DepositoLettureEnergia:
             return int(getattr(esito, "rowcount", 0) or 0)
 
 
+class DepositoListe(Deposito):
+    modello = Lista
+    campi = ("id", "nome", "creata_il")
+    ordine = "nome"
+
+    def per_nome(self, nome: str) -> Optional[dict[str, Any]]:
+        with sessione() as s:
+            riga = s.scalars(select(Lista).where(Lista.nome == nome)).first()
+            return _come_dizionario(riga, self.campi) if riga else None
+
+
+class DepositoVociLista(Deposito):
+    modello = VoceLista
+    campi = ("id", "lista_id", "testo", "fatta", "autore", "aggiunta_il")
+    ordine = "aggiunta_il"
+
+    def della_lista(self, lista_id: str) -> list[dict[str, Any]]:
+        with sessione() as s:
+            query = select(VoceLista).where(VoceLista.lista_id == lista_id).order_by(VoceLista.aggiunta_il)
+            return [_come_dizionario(r, self.campi) for r in s.scalars(query).all()]
+
+    def svuota(self, lista_id: str, solo_fatte: bool = True) -> int:
+        with sessione() as s:
+            query = delete(VoceLista).where(VoceLista.lista_id == lista_id)
+            if solo_fatte:
+                query = query.where(VoceLista.fatta.is_(True))
+            esito = s.execute(query)
+            return int(getattr(esito, "rowcount", 0) or 0)
+
+
+class DepositoEventi(Deposito):
+    modello = EventoCalendario
+    campi = ("id", "titolo", "inizio", "fine", "tutto_il_giorno", "luogo", "autore")
+    ordine = "inizio"
+
+    def fra(self, da: datetime, a: datetime) -> list[dict[str, Any]]:
+        with sessione() as s:
+            query = (
+                select(EventoCalendario)
+                .where(EventoCalendario.inizio < a)
+                .where((EventoCalendario.fine.is_(None)) | (EventoCalendario.fine >= da))
+                .order_by(EventoCalendario.inizio)
+            )
+            return [_come_dizionario(r, self.campi) for r in s.scalars(query).all()]
+
+
+class DepositoScadenze(Deposito):
+    modello = ScadenzaManutenzione
+    campi = (
+        "id",
+        "titolo",
+        "prossima",
+        "ogni",
+        "unita",
+        "preavviso",
+        "documento",
+        "ultima_fatta",
+        "promemoria_id",
+    )
+    ordine = "prossima"
+
+    def entro(self, giorno: datetime) -> list[dict[str, Any]]:
+        """Quelle da segnalare: scadute o dentro al preavviso.
+
+        Il preavviso e' per riga — un bollo si annuncia con piu' anticipo di
+        un filtro — quindi il confronto si fa qui e non nella query.
+        """
+        fuori = []
+        for riga in self.elenco():
+            prossima = riga.get("prossima")
+            if not isinstance(prossima, datetime):
+                continue
+            mancanti = (prossima.date() - giorno.date()).days
+            if mancanti < 0 or mancanti <= int(riga.get("preavviso") or 0):
+                fuori.append(riga)
+        return fuori
+
+
 utenti = DepositoUtenti()
 ruoli = DepositoRuoli()
 fatti = DepositoFatti()
@@ -317,6 +399,10 @@ fonti = DepositoFonti()
 timer = DepositoTimer()
 promemoria = DepositoPromemoria()
 letture_energia = DepositoLettureEnergia()
+liste = DepositoListe()
+voci_lista = DepositoVociLista()
+eventi_calendario = DepositoEventi()
+scadenze = DepositoScadenze()
 
 DEPOSITI: dict[str, Deposito] = {
     "users": utenti,

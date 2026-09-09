@@ -38,6 +38,13 @@ NOTTE = time(22, 0)
 # Quando si dice solo un giorno, senza momento.
 ORA_PREDEFINITA = MATTINA
 
+# «Cena» e «pranzo» sono insieme un pasto e un'ora, e la differenza la fa
+# la preposizione: «dopo cena» e' un'ora, «cena con Marco» e' il titolo di un
+# impegno. Senza questa distinzione «segna cena con Marco» diventava
+# l'impegno «con Marco» alle venti — il titolo mangiato dall'orario.
+AMBIGUI = frozenset({"pranzo", "cena"})
+PRIMA_DEGLI_AMBIGUI = r"(?:a|per|dopo|verso|prima\s+di|entro)"
+
 MOMENTI: dict[str, time] = {
     "mattina": MATTINA,
     "mattino": MATTINA,
@@ -127,6 +134,11 @@ def _con_ora(giorno: datetime, orario: time) -> datetime:
 
 def _momento_detto(testo: str) -> Optional[time]:
     for parola, orario in MOMENTI.items():
+        if parola in AMBIGUI:
+            # Serve la preposizione: «dopo cena» si', «cena con Marco» no.
+            if re.search(rf"\b{PRIMA_DEGLI_AMBIGUI}\s+{parola}\b", testo):
+                return orario
+            continue
         if re.search(rf"\b{parola}\b", testo):
             return orario
     return None
@@ -288,7 +300,8 @@ _ESPRESSIONI = [
     r"\b(?:il|per il|entro il)\s+\d{1,2}(?:\s+(?:" + "|".join(MESI) + r")|[/-]\d{1,2})?\b",
     r"\b(?:" + "|".join(GIORNI_SETTIMANA) + r")(?:\s+prossimo)?\b",
     r"\b(?:dopodomani|domani|oggi)\b",
-    r"\b(?:" + "|".join(MOMENTI) + r")\b",
+    r"\b" + PRIMA_DEGLI_AMBIGUI + r"\s+(?:" + "|".join(sorted(AMBIGUI)) + r")\b",
+    r"\b(?:" + "|".join(m for m in MOMENTI if m not in AMBIGUI) + r")\b",
     r"\bquesta\s+(?:mattina|sera|notte)\b",
     r"\bnel\s+pomeriggio\b",
     r"\bin\s+(?:mattinata|serata)\b",

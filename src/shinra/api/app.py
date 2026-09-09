@@ -43,6 +43,7 @@ from shinra.services.agent import agent
 from shinra.services.allarme import allarme
 from shinra.services.consegna import descrivi, registra_canali
 from shinra.services.energia import servizio_energia
+from shinra.services.manutenzione import servizio_manutenzione
 from shinra.services.presenza import presenza
 from shinra.services.simulazione import servizio_simulazione
 from shinra.services.timer_engine import timer_engine
@@ -212,6 +213,11 @@ async def lifespan(_: FastAPI):
     # scorsa» non ha risposta possibile (issue #24).
     servizio_energia.avvia()
 
+    # Le scadenze di casa diventano promemoria che suonano. Senza questo
+    # sarebbero un elenco che aspetta di essere aperto, cioe' un elenco
+    # dimenticato (issue #25).
+    servizio_manutenzione.avvia()
+
     registra_canali()
     ripresi = timer_engine.ripristina_job()
     rimossi = timer_engine.pulisci_scaduti()
@@ -240,6 +246,7 @@ async def lifespan(_: FastAPI):
 
     # Spegnimento: i job restano nell'archivio per la prossima accensione.
     scheduler.ferma()
+    servizio_manutenzione.ferma()
     servizio_energia.ferma()
     servizio_simulazione.ferma()
     allarme.ferma()
