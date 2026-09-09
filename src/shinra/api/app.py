@@ -16,6 +16,7 @@ from shinra.api import sicurezza
 from shinra.api.routes_admin import router as admin_router
 from shinra.api.routes_auth import router as auth_router
 from shinra.api.routes_notifiche import router as notifiche_router
+from shinra.api.routes_regole import router as regole_router
 from shinra.channels.alexa.skill_handler import handle_alexa_request
 from shinra.channels.alexa.verifica_firma import FirmaNonValida, verifica_richiesta
 from shinra.config.settings import (
@@ -49,6 +50,7 @@ from shinra.services.energia import servizio_energia
 from shinra.services.manutenzione import servizio_manutenzione
 from shinra.services.notifiche import servizio_notifiche
 from shinra.services.presenza import presenza
+from shinra.services.regole import motore_regole
 from shinra.services.simulazione import servizio_simulazione
 from shinra.services.timer_engine import timer_engine
 from shinra.services.user_manager import user_manager
@@ -227,6 +229,11 @@ async def lifespan(_: FastAPI):
     # nessuno guarda non ha avvisato nessuno.
     servizio_notifiche.avvia()
 
+    # Le regole: la casa smette di aspettare la domanda. Dopo le
+    # notifiche, perche' un ciclo fra regole va fermato **e** raccontato,
+    # e raccontarlo richiede un canale (issue #27).
+    motore_regole.avvia()
+
     registra_canali()
     ripresi = timer_engine.ripristina_job()
     rimossi = timer_engine.pulisci_scaduti()
@@ -255,6 +262,7 @@ async def lifespan(_: FastAPI):
 
     # Spegnimento: i job restano nell'archivio per la prossima accensione.
     scheduler.ferma()
+    motore_regole.ferma()
     servizio_notifiche.ferma()
     servizio_manutenzione.ferma()
     servizio_energia.ferma()
@@ -323,6 +331,7 @@ async def errore_non_gestito(request: Request, exc: Exception):
 app.include_router(auth_router)  # pubblico: e' l'accesso stesso
 app.include_router(admin_router)  # protetto per difetto
 app.include_router(notifiche_router)  # protetto per difetto
+app.include_router(regole_router)  # protetto per difetto
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 

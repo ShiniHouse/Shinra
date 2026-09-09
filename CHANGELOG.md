@@ -15,6 +15,24 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **La casa smette di aspettare la domanda.** «Se la porta si apre dopo le 23,
+  accendi l'ingresso» funziona senza intervento. I trigger sono su evento,
+  stato, orario, presenza, alba e tramonto; le condizioni si compongono, e la
+  fascia oraria scavalca la mezzanotte — «dalle 23 alle 6» e' la finestra piu'
+  usata in una casa, ed e' quella che un confronto ingenuo sbaglia sempre.
+- **Un trigger su soglia scatta quando si attraversa, non mentre si sta
+  sotto.** «Avvisami se scende sotto i 15» detto a una casa a 12 gradi non
+  suona a ogni lettura del sensore: la differenza e' un avviso al giorno
+  contro trecento, e trecento avvisi al giorno diventano zero avvisi letti.
+- **Ogni scatto e' registrato, e anche ogni rifiuto, con il motivo.** E'
+  l'unica risposta possibile alla domanda «perche' si e' accesa la luce?», e
+  l'unico modo per distinguere una regola che non deve scattare da una rotta.
+- **Due regole che si innescano a vicenda vengono fermate e raccontate**, con
+  i nomi in ordine su un avviso vero: senza quelli, «una regola ha creato un
+  ciclo» manda a rileggerle tutte.
+- Un'azione di regola puo' attivare una modalita' esistente, chiamare un
+  servizio, o mandare un avviso — quest'ultimo possibile solo dopo le
+  notifiche.
 - **Le notifiche arrivano sul telefono anche con l'applicazione chiusa.** Il
   service worker gestiva installazione e cache e non aveva alcun handler per
   l'evento `push`: promemoria, allarmi e avvisi restavano muti. Adesso c'e' un

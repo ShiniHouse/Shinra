@@ -360,3 +360,33 @@ class PreferenzaNotifica(Base):
     # `silenzioso`, `canale.push`, `categoria.energia`...
     chiave: Mapped[str] = mapped_column(String(64), nullable=False)
     valore: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Regola(Base):
+    """Un'automazione: quando succede questo, se vale quest'altro, fai questo.
+
+    Trigger, condizioni e azioni stanno in JSON e non in colonne, ed e' una
+    scelta: le forme che possono assumere cambiano a ogni tipo di trigger
+    nuovo, e una tabella che cambia forma a ogni tipo nuovo e' una migrazione
+    a ogni tipo nuovo. Il prezzo e' che il database non li valida — li valida
+    `domain/regole.py`, che e' anche l'unico posto dove ha senso farlo.
+
+    Riferimento: issue #27.
+    """
+
+    __tablename__ = "regole"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    nome: Mapped[str] = mapped_column(String(160), nullable=False)
+    attiva: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    trigger: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    condizioni: Mapped[list[Any]] = mapped_column(JSON, default=list)
+    azioni: Mapped[list[Any]] = mapped_column(JSON, default=list)
+    creata_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
+    autore: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    # Quando e come e' andata l'ultima volta. Ridondante rispetto al registro
+    # e tenuto lo stesso: e' la prima cosa che si guarda quando una regola
+    # «non funziona», e cercarla nel registro richiede di sapere gia' quando
+    # sarebbe dovuta scattare.
+    ultimo_scatto: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    ultimo_esito: Mapped[str] = mapped_column(String(200), default="")
