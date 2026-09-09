@@ -14,6 +14,12 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+_Niente ancora._
+
+---
+
+## [0.3.0] - 2026-09-09 — Copertura
+
 ### Aggiunto
 - **Liste della spesa e delle cose da fare.** «Aggiungi il latte alla lista
   della spesa» funziona da chat e da Alexa, e «latte, pane e uova» sono tre
