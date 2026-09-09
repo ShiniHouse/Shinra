@@ -8,7 +8,7 @@ name = "shinra"
 # quel momento `main` non e' piu' la release, e il badge nella dashboard deve
 # dirlo. Un `0.2.0` su codice che la 0.2.0 non contiene e' precisamente la
 # bugia che quel badge esiste per impedire.
-version = "0.3.0"
+version = "0.4.0.dev0"
 description = "Hub domotico con IA locale, controllo Home Assistant e interfaccia vocale"
 readme = "README.md"
 requires-python = ">=3.10"
