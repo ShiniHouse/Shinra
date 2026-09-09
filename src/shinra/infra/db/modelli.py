@@ -198,3 +198,35 @@ class VoceRegistro(Base):
     # scollegati avvenuti nello stesso secondo.
     durata_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     correlazione: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, index=True)
+
+
+class LetturaEnergia(Base):
+    """Un contatore di energia a un istante, come lo segnava Home Assistant.
+
+    Si conserva la **lettura grezza**, non il consumo gia' calcolato. E' una
+    scelta e vale la pena dire perche': il consumo di un'ora e' una
+    differenza fra due letture, e le differenze si possono ricalcolare mentre
+    le letture perdute non tornano. Se domani si scopre che i salti dei
+    contatori vanno trattati diversamente — e succedera', perche' ogni
+    integrazione ne ha di suoi — con le letture in archivio si rifa' il
+    conto su tutto lo storico; con i consumi si e' cristallizzato l'errore.
+
+    La fascia invece **si scrive**, anche se sarebbe ricalcolabile dal
+    momento: ARERA puo' cambiare gli orari, e una bolletta di due anni fa
+    deve restare divisa come lo era allora, non come lo sarebbe oggi.
+
+    Riferimento: issue #24.
+    """
+
+    __tablename__ = "letture_energia"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    momento: Mapped[datetime] = mapped_column(DateTime, default=adesso, index=True)
+    entity_id: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    # Il valore del contatore, in kilowattora, cosi' come lo segnava.
+    valore: Mapped[float] = mapped_column(Float, nullable=False)
+    # Quanto e' stato consumato dalla lettura precedente. Ridondante rispetto
+    # alle letture, e tenuto lo stesso: serve a interrogare lo storico senza
+    # rileggere tutta la tabella per fare una sottrazione.
+    consumo: Mapped[float] = mapped_column(Float, default=0.0)
+    fascia: Mapped[str] = mapped_column(String(4), default="", index=True)

@@ -15,6 +15,28 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **La casa conosce le fasce orarie italiane.** F1, F2 e F3 secondo il
+  calendario vero: sabato senza ore di punta, domenica fuori punta dalle 0
+  alle 24, e gli undici festivi nazionali fuori punta per l'intera giornata —
+  Pasquetta compresa, che e' l'unico mobile e viene calcolata. «In che fascia
+  siamo?» risponde anche quando cambia.
+- **Consumi e costi.** Quanti kilowattora oggi, ieri, negli ultimi sette o
+  trenta giorni, divisi per fascia e convertiti in euro. La tariffa si
+  configura monoraria, bioraria o trioraria; la bioraria mette F2 e F3 sotto
+  lo stesso prezzo, come i contratti italiani.
+- **«Quanto mi costa tenere acceso questo»** risponde all'ora e al giorno,
+  alla tariffa della fascia in cui siamo adesso.
+- **Senza sensori di energia lo dice, invece di inventare un numero.** «Zero
+  kilowattora» e «non lo so» sono risposte diverse, e la prima detta al posto
+  della seconda e' il modo piu' rapido per far perdere fiducia a un conto in
+  bolletta. Lo stesso vale per la tariffa: senza prezzi configurati la
+  risposta arriva comunque, ma dichiarata come stima.
+- I contatori vengono letti un'ora alla volta e archiviati. Si conservano le
+  letture grezze e non i consumi gia' calcolati: le differenze si
+  ricalcolano, le letture perdute no.
+- Un contatore che si azzera — dispositivo riavviato, sensore ricreato — non
+  produce un consumo negativo, e un sensore irraggiungibile viene saltato
+  invece di essere scritto come zero.
 - **Il clima si comanda per intero.** Prima si sapeva dire solo una
   temperatura: adesso anche la modalita' (riscaldamento, raffrescamento,
   automatico, deumidificazione, ventilazione), la velocita' della ventola,

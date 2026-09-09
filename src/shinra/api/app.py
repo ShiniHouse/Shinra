@@ -42,6 +42,7 @@ from shinra.services import eventi_casa, permessi, registro
 from shinra.services.agent import agent
 from shinra.services.allarme import allarme
 from shinra.services.consegna import descrivi, registra_canali
+from shinra.services.energia import servizio_energia
 from shinra.services.presenza import presenza
 from shinra.services.simulazione import servizio_simulazione
 from shinra.services.timer_engine import timer_engine
@@ -206,6 +207,11 @@ async def lifespan(_: FastAPI):
     # addosso a chi ci vive.
     servizio_simulazione.avvia()
 
+    # I contatori: Home Assistant tiene lo stato di adesso, non quello di
+    # ieri. Se nessuno annota le letture, «quanto ho consumato la settimana
+    # scorsa» non ha risposta possibile (issue #24).
+    servizio_energia.avvia()
+
     registra_canali()
     ripresi = timer_engine.ripristina_job()
     rimossi = timer_engine.pulisci_scaduti()
@@ -234,6 +240,7 @@ async def lifespan(_: FastAPI):
 
     # Spegnimento: i job restano nell'archivio per la prossima accensione.
     scheduler.ferma()
+    servizio_energia.ferma()
     servizio_simulazione.ferma()
     allarme.ferma()
     await presenza.ferma()
