@@ -57,6 +57,43 @@
         }
     </script>
     <style>
+        /* ==================== EDITOR A NODI: I PIN DEI CAVI ====================
+           Non c'erano. `port-pin` non era definita da nessuna parte e non e'
+           una classe di Tailwind: i pin erano `div` senza dimensione, quindi
+           invisibili e non cliccabili — nell'editor non si e' mai potuto
+           tirare un cavo da un nodo all'altro.
+
+           Non se n'era accorto nessuno perche' un difetto piu' a monte lo
+           nascondeva: `nodes` ed `edges` non avevano una colonna nella
+           tabella delle routine, quindi il disegno spariva comunque al
+           salvataggio. Riferimento: issue #28. */
+        .port-pin {
+            position: absolute;
+            width: 14px; height: 14px;
+            border-radius: 9999px;
+            background: #1e293b;
+            border: 2px solid #64748b;
+            cursor: crosshair;
+            z-index: 30;
+            transition: transform .12s, border-color .12s, background .12s;
+        }
+        .port-pin:hover { transform: scale(1.35); border-color: #818cf8; background: #312e81; }
+        .port-pin-in  { left: -8px;  top: 14px; }
+        .port-pin-out { right: -8px; top: 14px; }
+        /* Le due uscite di una condizione. Il colore e' l'unica cosa che dice
+           quale ramo si sta collegando mentre lo si trascina, e sbagliare
+           ramo si scopre altrimenti solo eseguendo. */
+        .port-pin-vero  { top: 8px;  border-color: #10b981; background: #064e3b; }
+        .port-pin-falso { top: 34px; border-color: #f43f5e; background: #4c0519; }
+        .port-pin-vero:hover  { border-color: #34d399; background: #065f46; }
+        .port-pin-falso:hover { border-color: #fb7185; background: #881337; }
+
+        /* Un nodo che il server ha segnalato al salvataggio. */
+        .nodo-in-errore {
+            border-color: #f43f5e !important;
+            box-shadow: 0 0 0 2px rgba(244, 63, 94, .35), 0 12px 30px -12px rgba(244, 63, 94, .8);
+        }
+
         /* ==================== 3 ATMOSPHERIC DESIGN PALETTES ==================== */
         /* 1. Aurora (Default - Apple Intelligence & Linear) */
         :root, html[data-palette="aurora"].dark, html:not([data-palette]).dark {
@@ -4190,6 +4227,12 @@
                             <button type="button" onclick="addCanvasNode('tts')" class="px-2.5 py-1.5 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 hover:text-white rounded-lg text-xs font-semibold border border-emerald-500/40 transition flex items-center gap-1">
                                 + 🗣️ Voce Shinra
                             </button>
+                            <button type="button" onclick="addCanvasNode('condizione')" class="px-2.5 py-1.5 bg-violet-600/30 hover:bg-violet-600 text-violet-200 hover:text-white rounded-lg text-xs font-semibold border border-violet-500/40 transition flex items-center gap-1">
+                                + 🔀 Condizione
+                            </button>
+                            <button type="button" onclick="addCanvasNode('notifica')" class="px-2.5 py-1.5 bg-sky-600/30 hover:bg-sky-600 text-sky-200 hover:text-white rounded-lg text-xs font-semibold border border-sky-500/40 transition flex items-center gap-1">
+                                + 🔔 Notifica
+                            </button>
                         </div>
 
                         <!-- Action Toolbar -->
@@ -4351,10 +4394,70 @@
                             <textarea rows="2" oninput="updateNodeData('${node.id}', 'message', this.value)" placeholder="es. Luci regolate, buona visione!" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500">${node.data.message || ''}</textarea>
                         </div>
                     `;
+                } else if (node.type === 'condizione') {
+                    headerBg = 'from-violet-600 to-fuchsia-600';
+                    icon = 'git-branch';
+                    typeLabel = '🔀 Condizione';
+                    const c = node.data.condizione || {};
+                    bodyHtml = `
+                        <div class="space-y-2 text-xs">
+                            <select onchange="setTipoCondizione('${node.id}', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200">
+                                <option value="presenza" ${c.tipo === 'presenza' ? 'selected' : ''}>C'è qualcuno in casa</option>
+                                <option value="stato_entita" ${c.tipo === 'stato_entita' ? 'selected' : ''}>Un dispositivo è in uno stato</option>
+                                <option value="fra_le_ore" ${c.tipo === 'fra_le_ore' ? 'selected' : ''}>Siamo in una fascia oraria</option>
+                                <option value="giorni" ${c.tipo === 'giorni' ? 'selected' : ''}>È uno di certi giorni</option>
+                            </select>
+                            ${c.tipo === 'stato_entita' ? `
+                                <input type="text" value="${c.entity_id || ''}" oninput="setDatoCondizione('${node.id}', 'entity_id', this.value)" placeholder="es. light.salotto" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                                <input type="text" value="${c.stato || ''}" oninput="setDatoCondizione('${node.id}', 'stato', this.value)" placeholder="stato atteso, es. on" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                            ` : ''}
+                            ${c.tipo === 'fra_le_ore' ? `
+                                <div class="flex items-center gap-1.5">
+                                    <input type="time" value="${c.dalle || '20:00'}" onchange="setDatoCondizione('${node.id}', 'dalle', this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-100">
+                                    <span class="text-slate-500 text-[10px]">e</span>
+                                    <input type="time" value="${c.alle || '23:00'}" onchange="setDatoCondizione('${node.id}', 'alle', this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-100">
+                                </div>
+                            ` : ''}
+                            ${c.tipo === 'giorni' ? `
+                                <div class="flex gap-0.5">
+                                    ${['L','M','M','G','V','S','D'].map((g, i) => `
+                                        <button type="button" onclick="alternaGiorno('${node.id}', ${i})" class="flex-1 py-1 rounded text-[10px] font-bold ${(c.giorni || []).includes(i) ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400'}">${g}</button>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            ${c.tipo === 'presenza' ? `
+                                <label class="flex items-center gap-2 text-[11px] text-slate-300">
+                                    <input type="checkbox" ${c.abitata !== false ? 'checked' : ''} onchange="setDatoCondizione('${node.id}', 'abitata', this.checked)">
+                                    Vero quando in casa c'è qualcuno
+                                </label>
+                            ` : ''}
+                            <p class="text-[10px] text-slate-500 leading-snug">
+                                Collega <span class="text-emerald-400 font-semibold">entrambe</span> le uscite:
+                                il pallino verde è il ramo sì, quello rosso il ramo no.
+                            </p>
+                        </div>
+                    `;
+                } else if (node.type === 'notifica') {
+                    headerBg = 'from-sky-600 to-cyan-600';
+                    icon = 'bell';
+                    typeLabel = '🔔 Notifica';
+                    bodyHtml = `
+                        <div class="space-y-2 text-xs">
+                            <input type="text" value="${node.data.titolo || ''}" oninput="updateNodeData('${node.id}', 'titolo', this.value)" placeholder="Titolo" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                            <textarea rows="2" oninput="updateNodeData('${node.id}', 'testo', this.value)" placeholder="es. la lavatrice ha finito" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">${node.data.testo || ''}</textarea>
+                            <p class="text-[10px] text-slate-500 leading-snug">
+                                Arriva sul telefono, anche a chi non è in casa — a differenza
+                                dell'annuncio vocale, che lo sente solo chi è nella stanza.
+                            </p>
+                        </div>
+                    `;
                 }
 
                 const hasInputPin = node.type !== 'trigger';
-                const hasOutputPin = true;
+                // Una condizione ha due uscite. Un'uscita sola non sarebbe una
+                // condizione: sarebbe un filtro che a volte ferma tutto, e chi
+                // lo disegna si aspetta due strade (issue #28).
+                const isCondizione = node.type === 'condizione';
 
                 return `
                     <div id="c-node-${node.id}" class="flow-node absolute w-60 rounded-xl bg-slate-950/90 border border-slate-700 shadow-xl backdrop-blur" style="left: ${node.x}px; top: ${node.y}px;">
@@ -4362,7 +4465,10 @@
                         ${hasInputPin ? `<div onmouseup="onPinMouseUp('${node.id}', event)" class="port-pin port-pin-in" title="Collega qui il cavo in ingresso"></div>` : ''}
 
                         <!-- Output Pin (Right) -->
-                        ${hasOutputPin ? `<div onmousedown="onPinMouseDown('${node.id}', event)" class="port-pin port-pin-out" title="Trascina cavo verso un altro nodo"></div>` : ''}
+                        ${isCondizione ? `
+                        <div onmousedown="onPinMouseDown('${node.id}', event, 'vero')" class="port-pin port-pin-out port-pin-vero" title="Ramo SÌ: la condizione è soddisfatta"></div>
+                        <div onmousedown="onPinMouseDown('${node.id}', event, 'falso')" class="port-pin port-pin-out port-pin-falso" title="Ramo NO: la condizione non è soddisfatta"></div>
+                        ` : `<div onmousedown="onPinMouseDown('${node.id}', event)" class="port-pin port-pin-out" title="Trascina cavo verso un altro nodo"></div>`}
 
                         <!-- Node Header -->
                         <div class="flow-node-header flex items-center justify-between px-3 py-2 bg-gradient-to-r ${headerBg} rounded-t-xl cursor-move text-white font-bold text-xs" onmousedown="startDragNode('${node.id}', event)">
@@ -4416,26 +4522,75 @@
             };
         }
 
-        function onPinMouseDown(sourceNodeId, e) {
+        function onPinMouseDown(sourceNodeId, e, ramo = null) {
             e.stopPropagation();
             _canvasState.connectingSourceId = sourceNodeId;
+            // Da quale uscita parte il cavo. Solo le condizioni ne hanno due,
+            // e l'etichetta sta sull'**arco**: e' l'arco a sapere da quale
+            // uscita parte, ed e' l'unica informazione che serve al motore
+            // per percorrerne uno solo (issue #28).
+            _canvasState.connectingRamo = ramo;
         }
 
         function onPinMouseUp(targetNodeId, e) {
             e.stopPropagation();
             if (_canvasState.connectingSourceId && _canvasState.connectingSourceId !== targetNodeId) {
-                // Aggiunge la connessione se non già esistente
-                const exists = _canvasState.edges.some(e => e.from === _canvasState.connectingSourceId && e.to === targetNodeId);
+                // Aggiunge la connessione se non già esistente. Due archi con
+                // lo stesso arrivo ma rami diversi sono connessioni diverse:
+                // e' come si disegna «se sì fai questo, se no fai lo stesso
+                // ma dopo qualcos'altro».
+                const ramo = _canvasState.connectingRamo || null;
+                const exists = _canvasState.edges.some(x =>
+                    x.from === _canvasState.connectingSourceId && x.to === targetNodeId && (x.ramo || null) === ramo
+                );
                 if (!exists) {
-                    _canvasState.edges.push({
-                        from: _canvasState.connectingSourceId,
-                        to: targetNodeId
-                    });
+                    const nuovo = { from: _canvasState.connectingSourceId, to: targetNodeId };
+                    if (ramo) nuovo.ramo = ramo;
+                    _canvasState.edges.push(nuovo);
                 }
                 _canvasState.connectingSourceId = null;
-                renderCanvasWires();
-                updateCanvasStats();
+                _canvasState.connectingRamo = null;
+                renderCanvasElements();
             }
+        }
+
+        // ---- Condizioni (issue #28) ----
+        //
+        // Il vocabolario e' quello del motore di regole: le stesse condizioni
+        // scritte allo stesso modo, cosi' che non si comportino diversamente
+        // a seconda di dove le hai scritte.
+
+        function setTipoCondizione(nodeId, tipo) {
+            const node = _canvasState.nodes.find(n => n.id === nodeId);
+            if (!node) return;
+            // Si riparte da zero al cambio di tipo: i campi di una condizione
+            // non valgono per un'altra, e lasciarli in giro produce una
+            // condizione che porta con sé dati che nessuno legge.
+            const predefiniti = {
+                presenza: { tipo: 'presenza', abitata: true },
+                stato_entita: { tipo: 'stato_entita', entity_id: '', stato: '' },
+                fra_le_ore: { tipo: 'fra_le_ore', dalle: '20:00', alle: '23:00' },
+                giorni: { tipo: 'giorni', giorni: [] }
+            };
+            node.data.condizione = predefiniti[tipo] || { tipo: tipo };
+            renderCanvasElements();
+        }
+
+        function setDatoCondizione(nodeId, campo, valore) {
+            const node = _canvasState.nodes.find(n => n.id === nodeId);
+            if (!node) return;
+            node.data.condizione = node.data.condizione || {};
+            node.data.condizione[campo] = valore;
+        }
+
+        function alternaGiorno(nodeId, giorno) {
+            const node = _canvasState.nodes.find(n => n.id === nodeId);
+            if (!node) return;
+            const c = node.data.condizione = node.data.condizione || { tipo: 'giorni' };
+            const scelti = new Set(c.giorni || []);
+            scelti.has(giorno) ? scelti.delete(giorno) : scelti.add(giorno);
+            c.giorni = [...scelti].sort();
+            renderCanvasElements();
         }
 
         function addCanvasNode(type) {
@@ -4453,6 +4608,11 @@
                     message: ''
                 }
             };
+            // Una condizione nasce con qualcosa dentro: un nodo vuoto e' vero
+            // per definizione, e chi lo trascina si accorge del ramo sbagliato
+            // solo eseguendo.
+            if (type === 'condizione') newNode.data.condizione = { tipo: 'presenza', abitata: true };
+            if (type === 'notifica') { newNode.data.titolo = ''; newNode.data.testo = ''; }
             _canvasState.nodes.push(newNode);
             renderCanvasElements();
         }
@@ -4626,9 +4786,30 @@
             if (res.ok) {
                 closeModal();
                 loadModes();
+            } else if (res.status === 400) {
+                // Il server dice cosa non va **e quali nodi**: illuminarli è
+                // l'unica forma in cui l'errore serve a qualcosa. «Il grafo
+                // non è valido» manda a guardarne trenta, e chi ne ha
+                // disegnati trenta non lo fa (issue #28).
+                const dettaglio = (await res.json().catch(() => ({}))).detail || {};
+                const problemi = dettaglio.problemi || [];
+                illuminaNodiInErrore(problemi);
+                alert(
+                    'Non salvo questa routine:\n\n' +
+                    problemi.map(p => '• ' + p.messaggio).join('\n\n') ||
+                    (dettaglio.messaggio || 'Il grafo non è valido.')
+                );
             } else {
                 alert('Errore nel salvataggio della routine.');
             }
+        }
+
+        function illuminaNodiInErrore(problemi) {
+            document.querySelectorAll('.flow-node').forEach(el => el.classList.remove('nodo-in-errore'));
+            (problemi || []).forEach(p => (p.nodi || []).forEach(id => {
+                const el = document.getElementById(`c-node-${id}`);
+                if (el) el.classList.add('nodo-in-errore');
+            }));
         }
 
         async function deleteMode(id) {

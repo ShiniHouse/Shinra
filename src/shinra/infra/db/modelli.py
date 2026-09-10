@@ -106,6 +106,19 @@ class Modalita(Base):
     description: Mapped[Optional[str]] = mapped_column(Text, default="")
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     actions: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    # Il disegno dell'editor a nodi.
+    #
+    # Non c'erano. L'editor a grafo — che il README chiama il pezzo migliore
+    # del progetto — mandava `nodes` e `edges` al salvataggio, e il deposito
+    # li scartava perche' non erano fra le sue colonne: nessun errore, nessun
+    # avviso, il disegno spariva. Di conseguenza l'esecutore non ha mai visto
+    # un grafo, e le sue novanta righe di visita erano codice irraggiungibile.
+    #
+    # Restano due colonne JSON e non due tabelle: un grafo si legge e si
+    # scrive sempre intero, e non c'e' nessuna domanda che si faccia su un
+    # nodo senza la routine attorno. Riferimento: issue #28.
+    nodes: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    edges: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
 
 
 class Fonte(Base):

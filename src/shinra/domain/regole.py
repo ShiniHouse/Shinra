@@ -205,6 +205,54 @@ def scatta_su_evento(regola: Regola, evento_tipo: str, dati: Mapping[str, Any]) 
 # -------------------------------------------------------- le condizioni
 
 
+def motivo_condizione(
+    condizione: Mapping[str, Any],
+    adesso: datetime,
+    stati: Optional[Mapping[str, str]] = None,
+    casa_abitata: Optional[bool] = None,
+) -> Optional[str]:
+    """Perche' **questa** condizione non e' soddisfatta, o `None` se lo e'.
+
+    Sta da sola e non dentro il ciclo di `perche_no` perche' i nodi condizione
+    dell'editor a grafo (issue #28) fanno la stessa domanda su una condizione
+    per volta. Due implementazioni dello stesso vocabolario divergerebbero, e
+    la divergenza si vedrebbe come «la stessa condizione si comporta in modo
+    diverso a seconda di dove l'hai scritta».
+    """
+    tipo = str(condizione.get("tipo") or "")
+
+    if tipo == FRA_LE_ORE:
+        dalle = _ora(condizione.get("dalle"), time(0, 0))
+        alle = _ora(condizione.get("alle"), time(23, 59))
+        if not _fra_le_ore(adesso.time(), dalle, alle):
+            return f"siamo fuori dalla fascia {dalle.strftime('%H:%M')}-{alle.strftime('%H:%M')}"
+
+    elif tipo == GIORNI:
+        giorni = [int(g) for g in (condizione.get("giorni") or []) if str(g).isdigit()]
+        if giorni and adesso.weekday() not in giorni:
+            return "oggi non e' uno dei giorni previsti"
+
+    elif tipo == PRESENZA:
+        vuole = bool(condizione.get("abitata", True))
+        if casa_abitata is None:
+            # Non sapere chi c'e' non e' sapere che non c'e' nessuno: una
+            # regola che dipende dalla presenza non deve scattare al buio.
+            return "non so se in casa c'e' qualcuno"
+        if casa_abitata is not vuole:
+            return "in casa c'e' qualcuno" if casa_abitata else "in casa non c'e' nessuno"
+
+    elif tipo == STATO_ENTITA:
+        entita = str(condizione.get("entity_id") or "")
+        atteso = str(condizione.get("stato") or "")
+        corrente = (stati or {}).get(entita)
+        if corrente is None:
+            return f"non conosco lo stato di {entita}"
+        if str(corrente) != atteso:
+            return f"{entita} e' {corrente} invece di {atteso}"
+
+    return None
+
+
 def perche_no(
     regola: Regola,
     adesso: datetime,
@@ -218,36 +266,9 @@ def perche_no(
     solo indovinare.
     """
     for condizione in regola.condizioni or ():
-        tipo = str(condizione.get("tipo") or "")
-
-        if tipo == FRA_LE_ORE:
-            dalle = _ora(condizione.get("dalle"), time(0, 0))
-            alle = _ora(condizione.get("alle"), time(23, 59))
-            if not _fra_le_ore(adesso.time(), dalle, alle):
-                return f"siamo fuori dalla fascia {dalle.strftime('%H:%M')}-{alle.strftime('%H:%M')}"
-
-        elif tipo == GIORNI:
-            giorni = [int(g) for g in (condizione.get("giorni") or []) if str(g).isdigit()]
-            if giorni and adesso.weekday() not in giorni:
-                return "oggi non e' uno dei giorni previsti"
-
-        elif tipo == PRESENZA:
-            vuole = bool(condizione.get("abitata", True))
-            if casa_abitata is None:
-                # Non sapere chi c'e' non e' sapere che non c'e' nessuno: una
-                # regola che dipende dalla presenza non deve scattare al buio.
-                return "non so se in casa c'e' qualcuno"
-            if casa_abitata is not vuole:
-                return "in casa c'e' qualcuno" if casa_abitata else "in casa non c'e' nessuno"
-
-        elif tipo == STATO_ENTITA:
-            entita = str(condizione.get("entity_id") or "")
-            atteso = str(condizione.get("stato") or "")
-            corrente = (stati or {}).get(entita)
-            if corrente is None:
-                return f"non conosco lo stato di {entita}"
-            if str(corrente) != atteso:
-                return f"{entita} e' {corrente} invece di {atteso}"
+        motivo = motivo_condizione(condizione, adesso, stati, casa_abitata)
+        if motivo:
+            return motivo
 
     return None
 

@@ -203,6 +203,54 @@ def test_il_microfono_non_torna_alla_web_speech_api_di_nascosto():
     assert "toggleTrascrizioneLocale" in corpo, "la strada che tiene l'audio in casa non viene mai imboccata"
 
 
+def test_i_pin_dei_cavi_hanno_una_dimensione():
+    """Il difetto per cui nell'editor non si e' mai potuto tirare un cavo.
+
+    `port-pin` non era definita da nessuna parte e non e' una classe di
+    Tailwind: i pin erano `div` senza dimensione — invisibili e non
+    cliccabili. Non se n'era accorto nessuno perche' un difetto piu' a monte
+    lo nascondeva: il disegno spariva comunque al salvataggio, perche' la
+    tabella delle routine non aveva le colonne per tenerlo.
+
+    Riferimento: issue #28.
+    """
+    testo = _testo(PAGINA)
+
+    assert ".port-pin {" in testo, "i pin dei cavi non hanno nessuno stile: sarebbero invisibili"
+    for regola in (".port-pin-in", ".port-pin-out", ".port-pin-vero", ".port-pin-falso"):
+        assert regola in testo, f"manca la posizione di {regola}"
+
+
+def test_una_condizione_ha_due_uscite_distinte():
+    """Un'uscita sola non e' una condizione: e' un filtro che a volte ferma
+    tutto, e chi lo disegna si aspetta due strade."""
+    testo = _testo(PAGINA)
+
+    assert "onPinMouseDown('${node.id}', event, 'vero')" in testo
+    assert "onPinMouseDown('${node.id}', event, 'falso')" in testo
+    assert "nuovo.ramo = ramo" in testo, "il ramo non viene scritto sull'arco"
+
+
+def test_il_salvataggio_mostra_cosa_non_va_e_dove():
+    """«Il grafo non e' valido» manda a guardarne trenta, e chi ne ha
+    disegnati trenta non lo fa: salva lo stesso, o rinuncia."""
+    testo = _testo(PAGINA)
+
+    # La **chiamata**, col punto e virgola, non il nome della funzione.
+    # Questa guardia e' stata riscritta due volte per lo stesso motivo: prima
+    # cercava `illuminaNodiInErrore` ovunque nel file e la trovava nella
+    # definizione; poi lo cercava nel ramo giusto e lo trovava lo stesso,
+    # perche' la definizione sta subito dopo e ricadeva dentro la fetta.
+    # Restava verde con la chiamata tolta.
+    apertura = testo.index("} else if (res.status === 400) {")
+    ramo = testo[apertura : testo.index("function illuminaNodiInErrore")]
+
+    assert "illuminaNodiInErrore(problemi);" in ramo, "i nodi in errore non vengono indicati"
+    assert "dettaglio.problemi" in ramo, "i problemi del server non vengono letti"
+    assert "function illuminaNodiInErrore" in testo, "la funzione non esiste"
+    assert "nodo-in-errore" in testo
+
+
 def test_il_microfono_si_spegne_davvero_dopo_la_registrazione():
     """La spia di registrazione del browser che resta accesa e' il modo
     peggiore di far credere a qualcuno che lo stai ascoltando sempre."""

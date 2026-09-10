@@ -14,6 +14,37 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Corretto
+- **L'editor a nodi non salvava il disegno. Mai.** Le colonne `nodes` ed
+  `edges` non esistevano nella tabella delle routine: l'editor le mandava, il
+  deposito copiava solo i campi che conosceva, e il grafo spariva senza un
+  errore né un avviso. Di conseguenza l'esecutore non ha mai visto un grafo in
+  produzione — le sue novanta righe di visita erano codice irraggiungibile.
+- **Nell'editor non si potevano collegare i nodi.** La classe dei pin dei cavi
+  non aveva nessuno stile e non è una classe di Tailwind: erano `div` a
+  dimensione zero, invisibili e non cliccabili. Non se n'era accorto nessuno
+  perché il difetto qui sopra veniva prima — anche riuscendo a tirare un cavo,
+  il disegno non sarebbe sopravvissuto al salvataggio.
+
+### Aggiunto
+- **Nodo condizione, con due uscite.** Il flusso di una routine non è più
+  costretto a essere lineare: si può scrivere «se in casa c'è qualcuno accendi
+  l'ingresso, altrimenti spegni tutto». Si percorre **un ramo solo** — una
+  visita che li percorre entrambi non è una condizione, è una decorazione.
+- Le condizioni sono quelle del motore di regole, scritte allo stesso modo:
+  presenza, stato di un dispositivo, fascia oraria, giorni della settimana.
+  Un vocabolario solo, così non si comportano diversamente a seconda di dove
+  le hai scritte.
+- **Nodo notifica**, distinto dall'annuncio vocale: un annuncio lo sente chi è
+  nella stanza, una notifica raggiunge il telefono anche di chi non c'è.
+- **Un grafo che non sta in piedi non si salva**, e l'errore dice cosa non va
+  *e quali nodi*: nodi scollegati, cicli, condizioni con una sola uscita,
+  collegamenti verso il vuoto, tipi che l'esecutore non sa eseguire. I nodi
+  segnalati si illuminano nell'editor.
+- Eseguire una routine restituisce ora anche **quale ramo ha preso ogni
+  condizione e perché**: serve a rispondere a «perché non ha acceso la luce»
+  senza rieseguirla.
+
 ### Sicurezza
 - **Quello che dici al microfono non va più a Google.** Il riconoscimento
   vocale della dashboard usava la Web Speech API del browser, che invia

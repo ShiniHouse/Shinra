@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import feedparser
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
 
 from shinra.api import dispositivi
@@ -16,6 +16,7 @@ from shinra.api.sicurezza import (
     richiedi_permesso,
 )
 from shinra.config.settings import AppConfig, reload_settings, save_config, settings
+from shinra.domain import grafo
 from shinra.infra.data_store import data_store
 from shinra.infra.db import depositi
 from shinra.infra.homeassistant.client import client_home_assistant
@@ -316,8 +317,42 @@ async def list_modes():
     return data_store.get_modes()
 
 
+@router.post("/modes/valida")
+async def valida_modalita(mode: Dict[str, Any]):
+    """Cosa non va in questo grafo, senza salvarlo.
+
+    L'editor la chiama mentre si disegna: sapere di aver lasciato un nodo
+    scollegato **mentre** lo si sta facendo e' un'altra cosa dal saperlo al
+    salvataggio, quando il disegno e' finito e correggerlo costa di piu'.
+    """
+    problemi = grafo.valida(mode.get("nodes") or [], mode.get("edges") or [])
+    return {
+        "valido": not problemi,
+        "problemi": [{"tipo": p.tipo, "messaggio": p.messaggio, "nodi": list(p.nodi)} for p in problemi],
+    }
+
+
 @router.post("/modes", dependencies=[Depends(richiedi_permesso(permessi.MODIFICA_MODALITA))])
 async def save_mode(mode: Dict[str, Any]):
+    """Salva una routine, se il suo grafo sta in piedi.
+
+    Un grafo con un ciclo o con un nodo scollegato si salva benissimo e poi
+    non fa quello che chi l'ha disegnato si aspetta — e il momento in cui se
+    ne accorge e' la sera in cui la routine doveva accendere le luci.
+    Riferimento: issue #28.
+    """
+    problemi = grafo.valida(mode.get("nodes") or [], mode.get("edges") or [])
+    if problemi:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "messaggio": grafo.descrivi_problemi(problemi),
+                "problemi": [
+                    {"tipo": p.tipo, "messaggio": p.messaggio, "nodi": list(p.nodi)} for p in problemi
+                ],
+            },
+        )
+
     salvata = data_store.salva_modalita(mode)
     return {"success": True, "mode": salvata}
 
