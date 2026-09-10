@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Dict, Mapping, Optional, Sequence
 
 from shinra.domain import grafo as grafo_dominio
 from shinra.domain import presenza as presenza_dominio
@@ -44,7 +44,7 @@ async def _percorso_del_grafo(
     return grafo_dominio.percorso(struttura, datetime.now().astimezone(), stati, abitata)
 
 
-async def _notifica_dal_nodo(dati: Dict[str, Any], nome_routine: str) -> bool:
+async def _notifica_dal_nodo(dati: Mapping[str, Any], nome_routine: str) -> bool:
     """Chiede un avviso, senza sapere chi lo mandera'.
 
     Una capacita' non puo' chiamare il servizio delle notifiche — `skills/`
