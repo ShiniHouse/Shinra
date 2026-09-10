@@ -705,6 +705,9 @@
             <button onclick="switchTab('modes')" id="tab-btn-modes" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
                 <i data-lucide="sparkles" class="w-4 h-4"></i> Modalità & Routine
             </button>
+            <button onclick="switchTab('regole')" id="tab-btn-regole" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
+                <i data-lucide="zap" class="w-4 h-4"></i> Automazioni
+            </button>
             <button onclick="switchTab('users')" id="tab-btn-users" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
                 <i data-lucide="users" class="w-4 h-4"></i> Gestione Utenti
             </button>
@@ -742,6 +745,9 @@
                 </button>
                 <button onclick="switchTabMobile('modes')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
                     <i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Routine
+                </button>
+                <button onclick="switchTabMobile('regole')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                    <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Automazioni
                 </button>
                 <button onclick="switchTabMobile('users')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
                     <i data-lucide="users" class="w-4 h-4 text-pink-400"></i> Utenti
@@ -1020,6 +1026,29 @@
             <!-- Lista Routine Modulari -->
             <div id="modes-list" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <!-- Caricato dinamicamente in formato Modular Flow -->
+            </div>
+        </div>
+
+        <!-- ==================== TAB: AUTOMAZIONI (le regole della #27) ====================
+             Il motore delle regole esisteva da due versioni e non aveva nessuna
+             schermata: l'API c'era, la dashboard no. Chi disegnava un innesco
+             automatico in una routine non aveva modo di vedere la regola che ne
+             nasceva, ne' di sapere perche' non fosse scattata. Riferimento: #27. -->
+        <div id="tab-regole" class="tab-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="zap" class="w-5 h-5 text-amber-400"></i> Cosa fa la casa da sola
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Ogni automazione dice quando scatta, quando scatterà la prossima volta e com'è andata l'ultima.</p>
+                </div>
+                <button onclick="loadRegole()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Aggiorna
+                </button>
+            </div>
+
+            <div id="regole-lista" class="space-y-3">
+                <!-- Caricato dinamicamente -->
             </div>
         </div>
 
@@ -1913,6 +1942,7 @@
             'sources':   'block',
             'aliases':   'block',
             'modes':     'block',
+            'regole':    'block',
             'users':     'block',
             'settings':  'block',
         };
@@ -1970,6 +2000,7 @@
             if (tabId === 'sources') loadSources();
             if (tabId === 'aliases') loadAliases();
             if (tabId === 'modes') loadModes();
+            if (tabId === 'regole') loadRegole();
             if (tabId === 'users') loadUsers();
             if (tabId === 'settings') loadSettings();
         }
@@ -4935,6 +4966,128 @@
             if (!confirm('Eliminare questa routine?')) return;
             await fetch(`/api/modes/${id}`, { method: 'DELETE' });
             loadModes();
+        }
+
+        // ==================== AUTOMAZIONI (le regole della #27) ====================
+        //
+        // Il motore delle regole esisteva da due versioni senza nessuna
+        // schermata. Non era un dettaglio estetico: una casa che agisce da
+        // sola e non sa dire perché è una casa che si spegne, e finché le
+        // regole non si vedevano l'unico modo di chiedere «perché non è
+        // successo niente?» era leggere i log del server.
+
+        async function loadRegole() {
+            const contenitore = document.getElementById('regole-lista');
+            if (!contenitore) return;
+            try {
+                const res = await fetch('/api/regole');
+                const dati = await res.json();
+                renderRegole(dati.regole || []);
+            } catch (e) {
+                contenitore.innerHTML = '<p class="text-xs text-rose-400 p-4">Non riesco a leggere le automazioni: il server non ha risposto.</p>';
+            }
+        }
+
+        function quandoScatta(regola) {
+            // Tre stati diversi che una schermata ingenua confonde in uno.
+            // «Nessun prossimo scatto» su una regola su evento è normale;
+            // sulla stessa riga di una regola all'alba è il difetto che ha
+            // tenuto ferme le regole del sole per due versioni.
+            if (!regola.attiva) return { testo: 'messa a tacere', colore: 'text-slate-500' };
+            if (regola.prossimo) {
+                const quando = new Date(regola.prossimo);
+                return {
+                    testo: 'prossima volta ' + quando.toLocaleString('it-IT', { weekday: 'short', hour: '2-digit', minute: '2-digit' }),
+                    colore: 'text-emerald-400'
+                };
+            }
+            if (regola.aspetta_un_evento) return { testo: 'aspetta che succeda qualcosa', colore: 'text-sky-400' };
+            return { testo: 'non programmata: non scatterà', colore: 'text-rose-400' };
+        }
+
+        function renderRegole(regole) {
+            const contenitore = document.getElementById('regole-lista');
+            if (!contenitore) return;
+
+            if (!regole.length) {
+                contenitore.innerHTML = `
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-8 text-center">
+                        <i data-lucide="zap-off" class="w-8 h-8 text-slate-600 mx-auto mb-3"></i>
+                        <p class="text-sm text-slate-300 font-semibold">La casa non fa ancora niente da sola.</p>
+                        <p class="text-xs text-slate-500 mt-2 max-w-md mx-auto">
+                            Le automazioni nascono dagli inneschi delle routine: apri una routine
+                            in <span class="text-slate-300">Modalità &amp; Routine</span>, metti un
+                            innesco «a un orario» o «al tramonto» sul primo nodo, e salva.
+                        </p>
+                    </div>`;
+                safeCreateIcons();
+                return;
+            }
+
+            contenitore.innerHTML = regole.map(r => {
+                const stato = quandoScatta(r);
+                const dalGrafo = String(r.origine || '').startsWith('grafo:');
+                const ultimo = r.ultimo_scatto ? new Date(r.ultimo_scatto).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : null;
+                return `
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 ${r.attiva ? '' : 'opacity-60'}">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-semibold text-slate-100 text-sm truncate">${r.nome || 'Automazione'}</span>
+                                ${dalGrafo ? '<span class="px-1.5 py-0.5 rounded bg-violet-600/20 text-violet-300 text-[10px] font-semibold border border-violet-500/30">dal disegno di una routine</span>' : ''}
+                            </div>
+                            <p class="text-xs text-slate-400 mt-0.5 truncate">${r.descrizione || ''}</p>
+                            <div class="flex items-center gap-3 mt-1.5 flex-wrap text-[11px]">
+                                <span class="${stato.colore} font-semibold">${stato.testo}</span>
+                                ${ultimo ? `<span class="text-slate-500">ultima volta ${ultimo}${r.ultimo_esito ? ': ' + r.ultimo_esito : ''}</span>` : ''}
+                                ${!ultimo && r.ultimo_esito ? `<span class="text-amber-400">${r.ultimo_esito}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" onclick="provaRegola('${r.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold" title="Esegue adesso, saltando l'innesco ma non le condizioni">
+                                Prova
+                            </button>
+                            <button type="button" onclick="alternaRegola('${r.id}', ${!r.attiva})" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold ${r.attiva ? 'bg-amber-600/20 text-amber-300 hover:bg-amber-600/30' : 'bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30'}">
+                                ${r.attiva ? 'Zittisci' : 'Riattiva'}
+                            </button>
+                            ${dalGrafo
+                                ? '<span class="text-[10px] text-slate-600 max-w-[7rem] leading-tight">Per toglierla, togli l\'innesco dalla routine</span>'
+                                : `<button type="button" onclick="cancellaRegola('${r.id}')" class="p-1.5 text-slate-500 hover:text-rose-400" title="Elimina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`}
+                        </div>
+                    </div>`;
+            }).join('');
+            safeCreateIcons();
+        }
+
+        async function alternaRegola(id, attiva) {
+            await fetch(`/api/regole/${id}`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ attiva })
+            });
+            loadRegole();
+        }
+
+        async function provaRegola(id) {
+            // «Prova» esegue saltando l'innesco **ma non le condizioni**: è
+            // voluto, e serve a rispondere a «perché non scatta?». Una prova
+            // che ignorasse anche le condizioni risponderebbe sempre di sì e
+            // non direbbe niente.
+            const res = await fetch(`/api/regole/${id}/prova`, { method: 'POST' });
+            const esito = await res.json().catch(() => ({}));
+            if (esito.eseguita) {
+                alert('Fatta adesso.');
+            } else if (esito.motivo) {
+                alert('Non è stata eseguita, e il motivo è questo:\n\n' + esito.motivo);
+            } else {
+                alert('Non è stata eseguita.');
+            }
+            loadRegole();
+        }
+
+        async function cancellaRegola(id) {
+            if (!confirm('Eliminare questa automazione?')) return;
+            await fetch(`/api/regole/${id}`, { method: 'DELETE' });
+            loadRegole();
         }
 
         // ==================== USERS CRUD & AVATARS ====================

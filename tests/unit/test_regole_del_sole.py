@@ -187,6 +187,26 @@ def test_una_regola_che_non_si_puo_programmare_lo_dice(scheduler_finto):
     assert "non so a che ora sorge" in depositi.regole.per_id(identificativo)["ultimo_esito"]
 
 
+def test_l_ora_consegnata_allo_scheduler_porta_il_fuso(scheduler_finto):
+    """Lo scheduler confronta cio' che riceve con un `datetime.now(utc)`, e
+    Python rifiuta di paragonare un istante con fuso a uno senza.
+
+    Con un `datetime.now()` nudo, **ogni** regola a orario faceva sollevare un
+    TypeError: creare una regola, o salvare una routine con un innesco a
+    orario, rispondeva 500. Lo scheduler adesso normalizza cio' che gli
+    arriva, quindi il difetto non si vedrebbe piu' da fuori — ma consegnargli
+    un'ora ambigua resta sbagliato, e questa e' l'unica cosa che se ne
+    accorge.
+    """
+    _regola("Sette", "orario", ora="07:00")
+
+    scheduler_finto.clear()
+    motore_regole.riprogramma_tutte()
+
+    _, quando = scheduler_finto[0]
+    assert quando.tzinfo is not None, "l'ora consegnata allo scheduler e' ambigua"
+
+
 def test_una_regola_su_evento_non_si_lamenta_del_sole(scheduler_finto):
     """Il messaggio riguarda solo chi dipende dal sole.
 

@@ -101,13 +101,25 @@ di questa scheda fossero verdi: i test provavano che il nodo genera la regola
 giusta, e la regola giusta non arrivava allo scheduler. Riparato subito dopo,
 sul ramo `fix/regole-alba-tramonto`.
 
-## Cosa resta
+## Cosa e' venuto fuori dopo
 
-Le regole del motore della #27 **non hanno una schermata**: l'API c'e', la
-dashboard no. Chi disegna un innesco automatico non ha modo di vedere le
-regole che ne nascono, ne' di zittirne una senza tornare nell'editor. Non e'
-lavoro di questa scheda — e' una schermata mancante della #27 — ed e' scritto
-qui perche' e' venuto fuori lavorandoci.
+Le regole del motore della #27 **non avevano una schermata**: l'API c'era, la
+dashboard no. Chi disegnava un innesco automatico non aveva modo di vedere le
+regole che ne nascevano, ne' di zittirne una senza tornare nell'editor. Non
+era lavoro di questa scheda ma di una schermata mancante della #27, ed e'
+stata fatta subito dopo perche' senza di essa niente di quanto sopra si
+poteva vedere.
+
+Costruendola sono venuti fuori altri due difetti dello stesso strato, e sono
+descritti qui perche' e' qui che si e' guardato:
+
+- le regole all'alba e al tramonto non erano mai state programmate;
+- creare una regola a orario — o salvare una routine con quell'innesco —
+  rispondeva **500**, perche' l'ora veniva calcolata senza fuso e lo
+  scheduler la confronta con un istante in UTC.
+
+Tre difetti nello stesso strato, tutti trovati misurando: e' il motivo per
+cui il lavoro sulla #28 e' finito con una schermata che non era in programma.
 
 ## Da verificare in casa
 

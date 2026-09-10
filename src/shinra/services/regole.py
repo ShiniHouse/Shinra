@@ -295,7 +295,7 @@ class MotoreRegole:
 
     # ------------------------------------------------ le regole a orario
 
-    def _sole(self) -> sole_dominio.Sole:
+    def sole_corrente(self) -> sole_dominio.Sole:
         """A che ora sorge e tramonta, secondo la casa.
 
         Senza questo, `prossimo_scatto` riceveva `None` per alba e tramonto e
@@ -330,10 +330,17 @@ class MotoreRegole:
         for riga in depositi.regole.elenco():
             scheduler.annulla(f"{PREFISSO_JOB}{riga['id']}")
 
-        sole = self._sole()
+        sole = self.sole_corrente()
         programmate = 0
         cieche = []
-        adesso = datetime.now()
+        # Con il fuso, non senza. Lo scheduler confronta l'orario che riceve
+        # con un `datetime.now(timezone.utc)`, e Python rifiuta di paragonare
+        # un istante con fuso a uno senza: `datetime.now()` faceva sollevare
+        # un TypeError a **ogni** regola a orario, cioe' rompeva la creazione
+        # di una regola e il salvataggio di una routine con un innesco.
+        # Non si vedeva nei test perche' li' lo scheduler e' spento e la
+        # funzione esce prima del confronto.
+        adesso = datetime.now().astimezone()
         for regola in self.regole_attive():
             quando = dominio.prossimo_scatto(regola, adesso, tramonto=sole.tramonto, alba=sole.alba)
             if quando is None:

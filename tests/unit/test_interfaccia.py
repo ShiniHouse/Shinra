@@ -326,3 +326,109 @@ def test_cambiare_tipo_di_innesco_riparte_da_zero():
     corpo = testo[testo.index("function setTipoInnesco") : testo.index("function setDatoInnesco")]
 
     assert "node.data.trigger = predefiniti[tipo]" in corpo, "i campi del tipo precedente restano li'"
+
+
+# ------------------------------------------- la schermata delle automazioni
+
+
+def test_le_automazioni_hanno_una_schermata():
+    """Il motore delle regole e' esistito per due versioni senza nessuna
+    schermata: l'API c'era, la dashboard no.
+
+    Non era un dettaglio estetico. Una casa che agisce da sola e non sa dire
+    perche' e' una casa che si spegne, e finche' le regole non si vedevano
+    l'unico modo di chiedere «perche' non e' successo niente?» era leggere i
+    log del server.
+
+    Riferimento: issue #27.
+    """
+    testo = _testo(PAGINA)
+
+    assert 'id="tab-regole"' in testo, "la scheda non esiste"
+    assert "switchTab('regole')" in testo, "non ci si arriva dalla navigazione"
+    assert "switchTabMobile('regole')" in testo, "dal telefono non ci si arriva"
+    assert "if (tabId === 'regole') loadRegole();" in testo, "aprendola non carica niente"
+    assert "'regole':    'block'," in testo, "la scheda non comparirebbe mai"
+
+
+def test_una_regola_dice_quando_scattera_la_prossima_volta():
+    """E' la domanda con cui si arriva a questa schermata, sempre: «e allora
+    perche' non e' successo niente?»."""
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("function quandoScatta") : testo.index("function renderRegole")]
+
+    # Il **ramo**, non il nome della variabile. Cercare `regola.prossimo` e
+    # basta lasciava passare un `if (false)` con la lettura ancora li' dentro:
+    # e' la stessa guardia debole gia' vista con `illuminaNodiInErrore`.
+    assert "if (regola.prossimo) {" in corpo, "il prossimo scatto non viene mai mostrato"
+    assert "non scatterà" in corpo, "una regola che non scattera' mai non lo dice"
+
+
+def test_aspettare_un_evento_non_si_confonde_con_non_scattare_mai():
+    """Tre stati che una schermata ingenua fa diventare uno.
+
+    Una regola su evento senza prossimo scatto sta benissimo: aspetta. Una
+    regola all'alba senza prossimo scatto e' il difetto che le ha tenute ferme
+    per due versioni. Mostrarle uguali vorrebbe dire nascondere di nuovo
+    quello che questa schermata esiste per far vedere.
+    """
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("function quandoScatta") : testo.index("function renderRegole")]
+
+    assert "regola.aspetta_un_evento" in corpo, "le due si leggerebbero uguali"
+
+
+def test_una_regola_si_puo_zittire_senza_cancellarla():
+    testo = _testo(PAGINA)
+
+    assert "alternaRegola('${r.id}', ${!r.attiva})" in testo, "non si puo' zittire una regola"
+    assert "'/api/regole/${id}'" in testo.replace("`", "'"), "lo stato non torna al server"
+
+
+def test_di_una_regola_generata_non_si_offre_la_cancellazione():
+    """Cancellarla non servirebbe a niente: risalvando la routine tornerebbe
+    identica. Offrire un pulsante che non ottiene quello che promette e'
+    peggio che non offrirlo."""
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("function renderRegole") : testo.index("async function alternaRegola")]
+
+    assert (
+        "const dalGrafo = String(r.origine || '').startsWith('grafo:')" in corpo
+    ), "non si distingue una regola generata da una scritta a mano"
+    # Il ternario dei pulsanti, non quello dell'etichetta: e' quello scritto
+    # su piu' righe. Il ramo vero comincia per `?`, il falso per `:`.
+    scelta = corpo[corpo.index("${dalGrafo\n") :]
+    righe = scelta[: scelta.index("</div>")].splitlines()
+    ramo_generata = next(r for r in righe if r.strip().startswith("?"))
+    ramo_a_mano = next(r for r in righe if r.strip().startswith(":"))
+
+    assert "cancellaRegola" not in ramo_generata, "si offre di cancellare una regola che tornerebbe"
+    assert "cancellaRegola" in ramo_a_mano, "una regola scritta a mano non si puo' piu' cancellare"
+    assert "togli l\\'innesco" in ramo_generata, "non si dice come toglierla davvero"
+
+
+def test_la_prova_di_una_regola_dice_perche_non_e_scattata():
+    """«Prova» esegue saltando l'innesco **ma non le condizioni**: serve
+    proprio a rispondere a «perche' non scatta?», e una prova che ignorasse
+    anche le condizioni risponderebbe sempre di si'."""
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("async function provaRegola") : testo.index("async function cancellaRegola")]
+
+    # Anche qui il ramo, non il nome: `} else if (false) {` lasciava
+    # `esito.motivo` scritto nella riga sotto, e la guardia restava verde.
+    assert "} else if (esito.motivo) {" in corpo, "il motivo del rifiuto non viene mai mostrato"
+    assert "/prova" in corpo
+
+
+def test_senza_automazioni_la_schermata_dice_come_farne_una():
+    """Un elenco vuoto e basta lascia chi guarda esattamente dov'era."""
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("function renderRegole") : testo.index("async function alternaRegola")]
+
+    assert "if (!regole.length)" in corpo, "nessuno stato vuoto"
+    assert "innesco" in corpo, "lo stato vuoto non dice da dove nascono le automazioni"
