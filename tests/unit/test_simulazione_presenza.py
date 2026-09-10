@@ -205,11 +205,12 @@ def test_il_tramonto_arriva_da_home_assistant():
 
 
 def test_senza_sun_sun_si_ripiega_su_un_ora_plausibile():
-    from shinra.skills.simulazione import TRAMONTO_DI_RIPIEGO, ControlloSimulazione
+    from shinra.domain.sole import ORA_DI_RIPIEGO
+    from shinra.skills.simulazione import ControlloSimulazione
 
     ripiego = ControlloSimulazione._tramonto([])
 
-    assert ripiego.hour == TRAMONTO_DI_RIPIEGO
+    assert ripiego.hour == ORA_DI_RIPIEGO
 
 
 def test_le_luci_spente_o_irraggiungibili(monkeypatch):

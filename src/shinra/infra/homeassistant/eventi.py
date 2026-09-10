@@ -27,7 +27,7 @@ import json
 import logging
 from typing import Any, Callable, Optional
 
-from shinra.domain.eventi import HA_STATO_CAMBIATO, Evento, bus
+from shinra.domain.eventi import HA_STATI_PRONTI, HA_STATO_CAMBIATO, Evento, bus
 from shinra.infra.homeassistant.stati import DOMINI_OSSERVATI, CacheStati, cache_stati, dominio_di
 
 logger = logging.getLogger("Shinra.HomeAssistant.Eventi")
@@ -186,6 +186,24 @@ class ConnessioneEventi:
     def attiva(self) -> bool:
         return self._acceso
 
+    async def prendi_istantanea(self, cliente: Any) -> int:
+        """La fotografia iniziale della casa, e l'annuncio che c'e'.
+
+        L'annuncio serve a chi **programma** qualcosa in base a cio' che la
+        casa sa. All'avvio la cache e' vuota, quindi una regola all'alba non
+        ha modo di sapere a che ora sorge il sole e non viene messa nello
+        scheduler: senza questo evento resterebbe non programmata fino al
+        primo tramonto utile, cioe' fino a dodici ore dopo.
+
+        Sta in un metodo suo e non dentro l'anello di ascolto per poterla
+        provare: la riga che pubblica l'evento era l'unica cosa non coperta di
+        tutta la correzione.
+        """
+        quanti = self.cache.sostituisci(await cliente.get_states())
+        logger.info("Stati iniziali in memoria: %d entita'.", quanti)
+        bus.pubblica_senza_attendere(Evento(tipo=HA_STATI_PRONTI, dati={"quanti": quanti}))
+        return quanti
+
     async def avvia(self) -> bool:
         """Parte in sottofondo. Non blocca l'avvio del servizio.
 
@@ -262,8 +280,7 @@ class ConnessioneEventi:
                 # la cache conoscerebbe soltanto cio' che e' cambiato dopo.
                 if protocollo.sottoscritto and not self.connessa:
                     self.connessa = True
-                    quanti = self.cache.sostituisci(await cliente.get_states())
-                    logger.info("Stati iniziali in memoria: %d entita'.", quanti)
+                    await self.prendi_istantanea(cliente)
 
 
 connessione_eventi = ConnessioneEventi()

@@ -92,6 +92,15 @@ allo stesso codice che esegue la routine.
 salta e prosegue, quindi il disegno mostra qualcosa che non innesca niente.
 Ora e' un problema di validazione.
 
+**Le regole all'alba e al tramonto non erano mai state programmate** — un
+livello sotto questa scheda, dentro il motore della #27. `riprogramma_tutte`
+non passava a `prossimo_scatto` l'ora del sole, il dominio rispondeva `None`,
+e la regola veniva saltata in silenzio. Il criterio «una routine con trigger
+all'alba scatta all'alba» sarebbe stato falso in casa nonostante tutti i test
+di questa scheda fossero verdi: i test provavano che il nodo genera la regola
+giusta, e la regola giusta non arrivava allo scheduler. Riparato subito dopo,
+sul ramo `fix/regole-alba-tramonto`.
+
 ## Cosa resta
 
 Le regole del motore della #27 **non hanno una schermata**: l'API c'e', la

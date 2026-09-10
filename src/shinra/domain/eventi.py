@@ -43,6 +43,11 @@ PROMEMORIA_SCADUTO = "promemoria.scaduto"
 # mano nostra: anche l'interruttore a muro passa di qui. E' il fatto su cui
 # si appoggeranno le regole della v0.4.0 (issue #19).
 HA_STATO_CAMBIATO = "ha.stato_cambiato"
+# L'istantanea iniziale della casa e' arrivata: da questo momento la cache
+# degli stati sa rispondere. Serve a chi deve **programmare** qualcosa in base
+# a cio' che la casa sa — le regole all'alba, che senza `sun.sun` non possono
+# essere messe nello scheduler e all'avvio lo trovavano vuoto.
+HA_STATI_PRONTI = "ha.stati_pronti"
 # L'allarme e' scattato (issue #23). Per due versioni questo evento e' stato
 # pubblicato e non ascoltato da nessuno — nemmeno dal WebSocket della
 # dashboard, benche' le note della v0.3.0 dicessero il contrario. Dalla #29

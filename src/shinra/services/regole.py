@@ -31,9 +31,11 @@ from typing import Any, Mapping, Optional, Sequence
 
 from shinra.domain import grafo as grafo_dominio
 from shinra.domain import regole as dominio
+from shinra.domain import sole as sole_dominio
 from shinra.domain.eventi import (
     CASA_ABITATA,
     CASA_VUOTA,
+    HA_STATI_PRONTI,
     HA_STATO_CAMBIATO,
     PERSONA_RIENTRATA,
     PERSONA_USCITA,
@@ -99,6 +101,10 @@ class MotoreRegole:
             return False
         for tipo in EVENTI_ASCOLTATI:
             self._annulla.append(bus.sottoscrivi(tipo, self._su_evento))
+        # All'avvio la cache degli stati e' vuota: `sun.sun` non c'e' ancora,
+        # e una regola all'alba non puo' essere programmata. Quando la casa
+        # si presenta, si rifa' il conto.
+        self._annulla.append(bus.sottoscrivi(HA_STATI_PRONTI, self._su_stati_pronti))
         self.riprogramma_tutte()
         self.attivo = True
         logger.info("Motore regole in ascolto.")
@@ -112,7 +118,18 @@ class MotoreRegole:
 
     # -------------------------------------------------- gli inneschi
 
+    async def _su_stati_pronti(self, evento: Evento) -> None:
+        """La casa si e' presentata: adesso `sun.sun` si puo' leggere."""
+        self.riprogramma_tutte()
+
     async def _su_evento(self, evento: Evento) -> None:
+        # `sun.sun` cambia stato esattamente all'alba e al tramonto, che sono
+        # i due momenti in cui `next_rising` e `next_setting` scivolano al
+        # giorno dopo. Senza questo, una regola del sole scatterebbe una volta
+        # e poi resterebbe ferma fino al riavvio.
+        if str((evento.dati or {}).get("entity_id") or "") == sole_dominio.ENTITA:
+            self.riprogramma_tutte()
+
         for regola in self.regole_attive():
             if dominio.scatta_su_evento(regola, evento.tipo, evento.dati or {}):
                 await self.esegui(regola, motivo=f"evento {evento.tipo}")
@@ -278,6 +295,22 @@ class MotoreRegole:
 
     # ------------------------------------------------ le regole a orario
 
+    def _sole(self) -> sole_dominio.Sole:
+        """A che ora sorge e tramonta, secondo la casa.
+
+        Senza questo, `prossimo_scatto` riceveva `None` per alba e tramonto e
+        rispondeva `None`, e il ciclo qui sotto saltava la regola in silenzio:
+        **nessuna regola all'alba o al tramonto e' mai stata programmata**.
+        Non se n'era accorto nessuno perche' una regola che non scatta e una
+        regola che non c'e' si somigliano troppo.
+        """
+        try:
+            from shinra.infra.homeassistant.stati import cache_stati
+
+            return sole_dominio.leggi(cache_stati.stato(sole_dominio.ENTITA))
+        except Exception:  # una casa irraggiungibile non e' un errore di regole
+            return sole_dominio.Sole()
+
     def riprogramma_tutte(self) -> int:
         """Rimette nello scheduler i job delle regole a orario.
 
@@ -285,6 +318,11 @@ class MotoreRegole:
         regola cancellata continuerebbe a scattare, ed e' il difetto piu'
         difficile da diagnosticare — qualcosa si accende e non c'e' nessuna
         regola che lo spieghi.
+
+        Una regola che non si riesce a programmare **lo scrive nel suo ultimo
+        esito**. Non e' contabilita': e' l'unica differenza fra «questa regola
+        non e' ancora scattata» e «questa regola non scattera' mai», e senza
+        di essa le due si leggono uguali.
         """
         from shinra.infra.db import depositi
         from shinra.infra.scheduler.motore import scheduler
@@ -292,11 +330,15 @@ class MotoreRegole:
         for riga in depositi.regole.elenco():
             scheduler.annulla(f"{PREFISSO_JOB}{riga['id']}")
 
+        sole = self._sole()
         programmate = 0
+        cieche = []
         adesso = datetime.now()
         for regola in self.regole_attive():
-            quando = dominio.prossimo_scatto(regola, adesso)
+            quando = dominio.prossimo_scatto(regola, adesso, tramonto=sole.tramonto, alba=sole.alba)
             if quando is None:
+                if str((regola.trigger or {}).get("tipo") or "") in (dominio.ALBA, dominio.TRAMONTO):
+                    cieche.append(regola)
                 continue
             if scheduler.programma_azione(
                 f"{PREFISSO_JOB}{regola.identificativo}",
@@ -305,6 +347,18 @@ class MotoreRegole:
                 quando,
             ):
                 programmate += 1
+
+        for regola in cieche:
+            depositi.regole.aggiorna(
+                regola.identificativo,
+                {"ultimo_esito": "non programmata: non so a che ora sorge e tramonta il sole"},
+            )
+        if cieche:
+            logger.warning(
+                "%d regole del sole non programmate: manca «%s» da Home Assistant.",
+                len(cieche),
+                sole_dominio.ENTITA,
+            )
 
         if programmate:
             logger.info("Regole a orario programmate: %d.", programmate)

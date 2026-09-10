@@ -25,6 +25,7 @@ from typing import Any, Optional, Sequence
 
 from shinra.domain import presenza as presenza_dominio
 from shinra.domain import simulazione as dominio
+from shinra.domain import sole as sole_dominio
 
 logger = logging.getLogger("Shinra.Simulazione")
 
@@ -36,8 +37,8 @@ JOB_RIPIANIFICA = "simulazione_ripianifica"
 ORA_DI_RIPIANIFICARE = 15
 
 # Se Home Assistant non espone `sun.sun`, si usa un tramonto plausibile per
-# l'Italia. Meglio un'ora ragionevole che nessuna simulazione.
-TRAMONTO_DI_RIPIEGO = 19
+# l'Italia: meglio un'ora ragionevole che nessuna simulazione. L'ora sta in
+# `domain/sole.py`, insieme alla lettura vera.
 
 
 class ControlloSimulazione:
@@ -150,16 +151,17 @@ class ControlloSimulazione:
 
     @staticmethod
     def _tramonto(stati: Sequence[dict[str, Any]]) -> datetime:
-        for stato in stati:
-            if stato.get("entity_id") == "sun.sun":
-                grezzo = (stato.get("attributes") or {}).get("next_setting")
-                if grezzo:
-                    try:
-                        return datetime.fromisoformat(str(grezzo).replace("Z", "+00:00")).astimezone()
-                    except ValueError:
-                        pass
-        adesso = datetime.now().astimezone()
-        return adesso.replace(hour=TRAMONTO_DI_RIPIEGO, minute=30, second=0, microsecond=0)
+        """A che ora tramonta, e se non si sa un'ora plausibile.
+
+        La lettura di `sun.sun` sta in `domain/sole.py` e non piu' qui: la
+        facevano in due — questo modulo e il motore delle regole — e due
+        letture dello stesso attributo divergono. Il ripiego invece resta una
+        scelta di **questa** funzione: qui sbagliare di mezz'ora accende una
+        luce un po' presto, mentre per una regola vorrebbe dire una casa che
+        fa le cose al momento sbagliato senza che niente lo spieghi.
+        """
+        tramonto = sole_dominio.dagli_stati(stati).tramonto
+        return tramonto or sole_dominio.tramonto_plausibile(datetime.now().astimezone())
 
     # ---------------------------------------------------------- lo scheduler
 
