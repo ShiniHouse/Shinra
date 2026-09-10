@@ -245,10 +245,31 @@ async def costo_dispositivo(entity_id: str) -> Dict[str, Any]:
 
 
 def _intervallo(periodo: str) -> tuple[datetime, datetime, str]:
-    """Da «oggi», «ieri», «settimana», «mese» a due istanti."""
+    """Da «oggi», «ieri», «settimana», «mese» a due istanti.
+
+    **Ogni finestra si chiude su una mezzanotte, non su «adesso».** Prima
+    l'estremo superiore era l'istante della domanda, e `letture_energia.fra`
+    confronta con il minore stretto: una lettura registrata nello stesso tick
+    di orologio della domanda aveva `momento == a` e spariva, in silenzio.
+    Non era un caso di scuola — lo scheduler campiona i contatori e poi
+    qualcuno chiede «quanto ho consumato oggi»: se le due cose capitano
+    vicine, l'ultima lettura non entrava nel conto e il numero usciva piu'
+    basso del vero senza che niente lo segnalasse.
+
+    Si vedeva a intermittenza solo dove l'orologio e' grosso — su Windows la
+    granularita' e' di circa quindici millisecondi, su Linux di un
+    microsecondo — quindi la suite era verde in CI e rossa a caso altrove.
+    «Ieri» non ne soffriva perche' usava gia' due mezzanotte: adesso lo fanno
+    tutti. Riferimento: issue #101.
+    """
     adesso = datetime.now(timezone.utc)
     locale = adesso.astimezone(fasce.FUSO)
     mezzanotte = locale.replace(hour=0, minute=0, second=0, microsecond=0)
+    # La mezzanotte che viene, non fra ventiquattr'ore: l'aritmetica su un
+    # datetime con fuso sposta l'ora di parete e `zoneinfo` ricalcola lo
+    # scarto da UTC alla conversione, quindi il cambio dell'ora non sposta il
+    # confine della giornata.
+    domani = mezzanotte + timedelta(days=1)
 
     scelta = (periodo or "oggi").strip().lower()
 
@@ -259,15 +280,19 @@ def _intervallo(periodo: str) -> tuple[datetime, datetime, str]:
             "ieri",
         )
     if scelta in ("settimana", "questa settimana", "ultimi 7 giorni"):
-        return (mezzanotte - timedelta(days=7)).astimezone(timezone.utc), adesso, "negli ultimi sette giorni"
+        return (
+            (mezzanotte - timedelta(days=7)).astimezone(timezone.utc),
+            domani.astimezone(timezone.utc),
+            "negli ultimi sette giorni",
+        )
     if scelta in ("mese", "questo mese", "ultimi 30 giorni"):
         return (
             (mezzanotte - timedelta(days=30)).astimezone(timezone.utc),
-            adesso,
+            domani.astimezone(timezone.utc),
             "negli ultimi trenta giorni",
         )
 
-    return mezzanotte.astimezone(timezone.utc), adesso, "oggi"
+    return mezzanotte.astimezone(timezone.utc), domani.astimezone(timezone.utc), "oggi"
 
 
 def _senza_storico(entity_id: Optional[str]) -> Dict[str, Any]:
