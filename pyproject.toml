@@ -58,6 +58,12 @@ dependencies = [
   # leggibile a chi non deve — e riscriverla per non aggiungere una
   # dipendenza sarebbe un pessimo scambio.
   "pywebpush>=2.0",
+  # Passkey (issue #48). WebAuthn e' verifica di firme, parsing CBOR e
+  # attestazioni: e' il genere di codice dove un errore non si vede — la
+  # firma viene accettata comunque — e riscriverlo per non aggiungere una
+  # dipendenza sarebbe un pessimo scambio. Il codice che la usa la tratta
+  # comunque come facoltativa: se manca, si entra con il PIN.
+  "webauthn>=3.0",
 ]
 
 [project.optional-dependencies]

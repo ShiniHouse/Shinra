@@ -54,6 +54,9 @@ ROTTE_PUBBLICHE: dict[str, str] = {
     "/api/auth/login": "l'accesso stesso",
     "/api/auth/logout": "chiudere una sessione non richiede di averne una valida",
     "/api/auth/profili": "elenco dei profili per la schermata di accesso, senza dati sensibili",
+    "/api/auth/passkey/stato": "dice se le passkey si possono usare qui — serve prima di entrare",
+    "/api/auth/passkey/accesso/inizio": "la sfida per entrare con una passkey: e' l'accesso stesso",
+    "/api/auth/passkey/accesso/fine": "la firma che apre la sessione; non c'e' sessione da esigere",
     "/api/alexa": "protetta dalla firma Amazon, non dalla sessione — issue #4",
     "/ws/eventi": "WebSocket: verifica la sessione da se', prima di accettare la connessione",
 }
@@ -260,6 +263,19 @@ def azzera_stato() -> None:
 # --------------------------------------------------------------------------
 
 
+def proxy_fidato(request: Request) -> bool:
+    """Se questa richiesta arriva da un proxy dichiarato fidato.
+
+    Sta qui e non dentro `_chiave_client` perche' la stessa domanda serve
+    altrove: le passkey devono sapere se il browser parlava `https` anche
+    quando il server vede `http`, e la risposta e' nella stessa intestazione
+    scritta dallo stesso proxy. Una regola sola, in un posto solo — due copie
+    divergono, e la copia sbagliata e' quella che nessuno rilegge.
+    """
+    osservato = request.client.host if request.client else "sconosciuto"
+    return osservato in (settings.security.trusted_proxies or [])
+
+
 def _chiave_client(request: Request) -> str:
     """Identifica il client per la limitazione dei tentativi.
 
@@ -273,8 +289,7 @@ def _chiave_client(request: Request) -> str:
     """
     osservato = request.client.host if request.client else "sconosciuto"
 
-    fidati = settings.security.trusted_proxies or []
-    if osservato not in fidati:
+    if not proxy_fidato(request):
         return osservato
 
     inoltrato = request.headers.get("x-forwarded-for", "")

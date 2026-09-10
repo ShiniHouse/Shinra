@@ -250,6 +250,21 @@ def test_ogni_rotta_che_cambia_qualcosa_dichiara_un_permesso():
         ("POST", "/api/alexa"),
         ("POST", "/api/auth/login"),
         ("POST", "/api/auth/logout"),
+        # Le passkey seguono la regola dei dispositivi fidati: sono
+        # **personali**. Registrare la propria e revocarla non e' un'azione
+        # amministrativa, e un permesso statico direbbe la cosa sbagliata — o
+        # lo si da' a tutti, e non protegge niente, o lo si nega, e solo gli
+        # amministratori potrebbero smettere di digitare il PIN.
+        #
+        # La protezione e' che ogni rotta lavora sul profilo della sessione:
+        # `revoca` rifiuta una passkey che non e' tua, e ha il suo test. Le
+        # due rotte d'accesso non hanno una sessione da cui partire: sono
+        # l'accesso, e sono elencate in ROTTE_PUBBLICHE con la loro ragione.
+        ("POST", "/api/auth/passkey/registrazione/inizio"),
+        ("POST", "/api/auth/passkey/registrazione/fine"),
+        ("POST", "/api/auth/passkey/accesso/inizio"),
+        ("POST", "/api/auth/passkey/accesso/fine"),
+        ("DELETE", "/api/auth/passkey/{identificativo:path}"),
         ("POST", "/api/users/identify"),  # dice solo chi sei, non cambia niente
         ("POST", "/api/timers"),
         ("DELETE", "/api/timers/{timer_id}"),

@@ -173,3 +173,77 @@ codice dell'allarme — che Home Assistant verifica — resta la protezione vera
 E finche' i profili vocali non sono configurati in casa, **tutte** le voci
 sono sconosciute: la configurazione va fatta dall'app Alexa, Shinra non puo'
 farla al posto di nessuno.
+
+## Aggiornamento — le passkey, e il loro prezzo
+
+*Aggiunto il 2026-09-10 con la issue #48.*
+
+Fra le alternative, qui sopra, «Passkey (WebAuthn) come meccanismo primario»
+era stata **rimandata**, non scartata. E' arrivata: si registra una passkey dal
+proprio profilo, si entra con impronta o volto senza digitare niente e senza
+dire prima chi si e'.
+
+**Il PIN resta.** Non e' una gentilezza verso chi e' indietro: e' che le
+passkey **non funzionano dappertutto**, e in una casa il posto dove non
+funzionano e' quello normale.
+
+### Dove non funzionano, e perche' e' il caso normale
+
+WebAuthn esiste solo in un contesto sicuro, e l'`rp_id` — il dominio a cui
+l'autenticatore lega la chiave — dev'essere un nome di dominio.
+`http://192.168.1.50:8000`, cioe' il modo in cui la maggioranza delle
+installazioni domestiche raggiunge la propria dashboard, non ha ne' l'uno ne'
+l'altro. Non c'e' niente da configurare per rimediare: serve un nome e un
+certificato.
+
+Da qui la scelta di interfaccia: il pulsante **non compare** dove non si puo',
+e al suo posto c'e' la ragione e il rimedio. Un pulsante che fallisce con un
+errore del browser e' peggio di un pulsante assente, perche' chi lo preme
+conclude che il server e' rotto.
+
+### Le decisioni che restano scritte qui
+
+**Il dominio si ricava dalla richiesta, per difetto.** In una casa nessuno
+configurera' mai un `rp_id`, e una funzione che va configurata per funzionare
+e' una funzione che non si usa. Non e' un buco: e' l'autenticatore a legare la
+credenziale a un dominio e a rifiutarsi di firmare per un altro, quindi un
+sito ostile non ottiene una firma valida comunque — il controllo dell'origine
+lato server e' il secondo strato, non il primo. Resta configurabile
+(`security.passkey_rp_id`) ed e' consigliato a chi raggiunge la casa a piu'
+nomi, perche' una passkey registrata sull'uno non funziona sull'altro.
+
+**Credenziali individuabili, verifica dell'utente richiesta.** La prima fa si'
+che il browser sappia quale passkey proporre senza che si dica prima chi si e';
+la seconda che l'autenticatore chieda comunque volto, impronta o codice del
+dispositivo. Insieme sono cio' che realizza «si accede senza digitare nulla»;
+separatamente, nessuna delle due basta.
+
+**Il contatore che non avanza ferma l'accesso.** Se una credenziale dichiara
+meno firme di quante ne aveva gia' dichiarate, quella chiave esiste in due
+copie, e una chiave che sta in due posti non e' piu' una prova di chi sei. Con
+un'eccezione che vale piu' della regola: zero contro zero non e' una
+regressione, perche' le passkey sincronizzate fra i dispositivi di una persona
+non tengono affatto il contatore. Preteso li', il controllo non troverebbe
+cloni — escluderebbe gli utenti normali.
+
+**La sfida vale una volta sola e ha una chiave sua.** Non una casella per
+tutti: due persone che entrano nello stesso momento si scavalcherebbero, e
+aprire una seconda scheda invaliderebbe la prima.
+
+### Conseguenze
+
+**Positive.** Non c'e' piu' niente da guardare mentre qualcuno lo digita, e il
+telefono di un familiare non apre il profilo di un altro. Una passkey e'
+legata a un dominio, quindi un sito che imiti la dashboard non ottiene niente.
+
+**Negative.** Una dipendenza in piu' (`webauthn`), trattata come facoltativa:
+se manca, si entra con il PIN. E due modi di entrare invece di uno, che e' due
+superfici invece di una — mitigato dal fatto che il PIN esisteva gia' ed e'
+protetto dalla stessa limitazione dei tentativi, applicata anche alla rotta
+delle passkey.
+
+**Cio' che resta aperto.** Le passkey non si estendono al canale vocale: li'
+l'identita' viene dai profili vocali, ed e' un'altra cosa e piu' debole. E chi
+perde l'unico dispositivo con una passkey non sincronizzata rientra con il
+PIN: e' l'altro motivo, oltre a chi non le vuole, per cui il PIN non e' stato
+sostituito.

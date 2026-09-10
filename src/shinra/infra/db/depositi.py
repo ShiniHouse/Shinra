@@ -31,6 +31,7 @@ from shinra.infra.db.modelli import (
     LetturaEnergia,
     Lista,
     Modalita,
+    Passkey,
     PreferenzaNotifica,
     Promemoria,
     Regola,
@@ -527,6 +528,38 @@ class DepositoEmbedding:
             return len(s.scalars(select(EmbeddingFatto.fatto_id)).all())
 
 
+class DepositoPasskey(Deposito):
+    """Le credenziali WebAuthn. La chiave privata non passa mai di qui."""
+
+    modello = Passkey
+    campi = (
+        "id",
+        "user_id",
+        "nome",
+        "chiave_pubblica",
+        "contatore",
+        "rp_id",
+        "tipo_dispositivo",
+        "creata_il",
+        "ultimo_uso",
+    )
+    ordine = "creata_il"
+
+    def per_utente(self, utente: str) -> list[dict[str, Any]]:
+        with sessione() as s:
+            query = select(Passkey).where(Passkey.user_id == utente).order_by(Passkey.creata_il)
+            return [_come_dizionario(r, self.campi) for r in s.scalars(query).all()]
+
+    def segna_uso(self, identificativo: str, contatore: int) -> None:
+        """Aggiorna il contatore delle firme e la data dell'ultimo accesso."""
+        with sessione() as s:
+            riga = s.get(Passkey, identificativo)
+            if riga is None:
+                return
+            riga.contatore = contatore
+            riga.ultimo_uso = datetime.now(timezone.utc)
+
+
 class DepositoVociSentite:
     """Le voci sentite dagli Echo. La chiave e' l'identificativo di Amazon.
 
@@ -629,6 +662,7 @@ preferenze_notifiche = DepositoPreferenzeNotifiche()
 regole = DepositoRegole()
 embedding = DepositoEmbedding()
 voci_sentite = DepositoVociSentite()
+passkey = DepositoPasskey()
 
 DEPOSITI: dict[str, Deposito] = {
     "users": utenti,
