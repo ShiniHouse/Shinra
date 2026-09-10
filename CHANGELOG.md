@@ -31,6 +31,18 @@ installabile e utilizzabile.
   l'errore dice cosa manca.
 - Un nodo innesco con un cavo in ingresso non innescava niente: l'esecutore lo
   saltava e proseguiva senza dire nulla. Ora è segnalato.
+- **Nessuna regola all'alba o al tramonto è mai scattata.** Da quando esiste il
+  motore di regole, chi programmava i lavori non gli passava mai l'ora del
+  sorgere e del tramontare; il dominio, che giustamente non se le inventa,
+  rispondeva «non so quando», e la regola veniva saltata **in silenzio**. Non
+  se n'era accorto nessuno perché una regola che non scatta e una regola che
+  non c'è si somigliano troppo. L'ora del sole si legge ora da Home Assistant
+  (`sun.sun`), e una regola che non si riesce a programmare lo scrive nel suo
+  ultimo esito invece di sparire.
+- La lettura dell'ora del tramonto era scritta in due posti — la simulazione di
+  presenza e (ora) le regole. Adesso è una sola: due letture dello stesso
+  attributo divergono, e la divergenza si vede come «la simulazione crede che
+  tramonti a un'ora e le regole a un'altra».
 
 ### Aggiunto
 - **Nodo condizione, con due uscite.** Il flusso di una routine non è più

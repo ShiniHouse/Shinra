@@ -30,7 +30,12 @@ DOMINI_CONTROLLABILI = frozenset({"light", "switch", "climate", "cover", "media_
 # comandabili: `person` non si comanda e sapere chi c'e' in casa e'
 # l'informazione piu' utile che passi di qui (issue #22). Coincidevano
 # finche' l'unico consumatore era la dashboard.
-DOMINI_OSSERVATI = DOMINI_CONTROLLABILI | {"person", "alarm_control_panel"}
+#
+# `sun` c'e' perche' `sun.sun` cambia stato esattamente all'alba e al
+# tramonto, e sono i due momenti in cui il motore delle regole deve rifare i
+# conti: `next_rising` e `next_setting` scivolano al giorno dopo. Senza,
+# una regola del sole scattava una volta e restava ferma fino al riavvio.
+DOMINI_OSSERVATI = DOMINI_CONTROLLABILI | {"person", "alarm_control_panel", "sun"}
 
 # Quanti dispositivi entrano nel riassunto dato al modello. Non e' un limite
 # tecnico ma di attenzione: un elenco lunghissimo peggiora le risposte invece
