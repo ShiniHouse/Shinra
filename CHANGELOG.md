@@ -43,6 +43,12 @@ installabile e utilizzabile.
   presenza e (ora) le regole. Adesso è una sola: due letture dello stesso
   attributo divergono, e la divergenza si vede come «la simulazione crede che
   tramonti a un'ora e le regole a un'altra».
+- **Creare un'automazione a un orario rispondeva 500.** L'ora veniva calcolata
+  senza fuso orario e lo scheduler la confronta con un istante in UTC: Python
+  si rifiuta di paragonare i due, e l'eccezione usciva fino all'API. Colpiva
+  ogni regola a orario e ogni routine con quell'innesco. Lo scheduler legge
+  ora un'ora senza fuso come ora locale invece di esplodere: un'eccezione da
+  lì esce dentro un anello in sottofondo e porta giù molto più di un job.
 
 ### Aggiunto
 - **Nodo condizione, con due uscite.** Il flusso di una routine non è più
@@ -69,6 +75,21 @@ installabile e utilizzabile.
   contendono lo stesso lavoro, e il secondo si scopre quando la luce si accende
   due volte. Togliere l'innesco e risalvare toglie anche la regola; cancellare
   la routine la cancella; disattivarla a mano la lascia disattivata.
+- **Le automazioni hanno una schermata.** Il motore di regole è esistito per
+  due versioni senza: l'API c'era, la dashboard no, e l'unico modo di chiedere
+  «perché non è successo niente?» era leggere i log del server. La scheda
+  *Automazioni* dice, per ognuna, quando scatterà la prossima volta, com'è
+  andata l'ultima e da dove viene; permette di zittirla senza cancellarla e di
+  provarla subito — e la prova dice **perché** non è stata eseguita, quando non
+  lo è stata.
+- Tre situazioni che si somigliano e non sono la stessa cosa, ora distinte a
+  colpo d'occhio: una regola che scatterà a un'ora precisa, una che aspetta
+  che succeda qualcosa (e sta benissimo), e una che **non scatterà mai**. È la
+  distinzione che mancava, ed è il motivo per cui le regole del sole sono
+  rimaste ferme per due versioni senza che si vedesse.
+- Di un'automazione nata dal disegno di una routine non si offre più la
+  cancellazione: risalvando la routine tornerebbe identica. La schermata dice
+  invece dove toglierla davvero.
 - **La simulazione dell'editor adesso dice la verità.** Illumina solo i nodi
   che verrebbero eseguiti davvero, accende il solo ramo che la condizione
   prenderebbe *adesso*, e scrive sotto la condizione **perché**. Prima era una

@@ -206,6 +206,14 @@ class ServizioScheduler:
             logger.warning("Scheduler non attivo: %s non programmato.", identificativo)
             return False
 
+        # Un istante senza fuso si legge come ora locale, che e' l'unica
+        # interpretazione sensata e quella che Python stesso usa. Prima
+        # arrivava dritto al confronto qui sotto e sollevava un TypeError:
+        # un'eccezione da qui esce dentro chi programma — di solito un anello
+        # in sottofondo — e porta giu' molto piu' di un job.
+        if quando.tzinfo is None:
+            quando = quando.astimezone()
+
         adesso = datetime.now(timezone.utc)
         if quando <= adesso - timedelta(seconds=tolleranza):
             logger.info("%s e' gia' scaduto oltre la tolleranza: non programmato.", identificativo)

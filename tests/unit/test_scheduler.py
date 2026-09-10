@@ -165,6 +165,38 @@ def test_le_due_tolleranze_sono_diverse_e_ordinate():
     assert TOLLERANZA_TIMER < TOLLERANZA_PROMEMORIA
 
 
+# ------------------------------------------------------- un'ora senza fuso
+
+
+def _non_fa_niente() -> None:
+    """L'archivio dei job e' persistente e serializza il riferimento alla
+    funzione: una lambda non si puo' salvare."""
+
+
+async def test_un_orario_senza_fuso_si_programma_lo_stesso(servizio):
+    """Un istante senza fuso arrivava dritto al confronto con un `now` in UTC
+    e sollevava `TypeError: can't compare offset-naive and offset-aware`.
+
+    Non e' un caso di scuola: e' come `services/regole` calcolava l'ora di
+    **ogni** regola a orario, quindi creare una regola a orario — o salvare
+    una routine con quell'innesco — rispondeva 500. Un'eccezione sollevata
+    qui esce dentro chi programma, che di solito e' un anello in sottofondo,
+    e porta giu' molto piu' di un job.
+    """
+    senza_fuso = datetime.now().replace(microsecond=0) + timedelta(hours=2)
+    assert senza_fuso.tzinfo is None
+
+    assert servizio.programma_azione("azione_naive", _non_fa_niente, [], senza_fuso) is True
+
+
+async def test_un_orario_senza_fuso_gia_passato_resta_rifiutato(servizio):
+    """La lettura come ora locale non deve diventare un modo per far passare
+    quello che la tolleranza rifiuta."""
+    vecchio = datetime.now().replace(microsecond=0) - timedelta(hours=2)
+
+    assert servizio.programma_azione("azione_vecchia", _non_fa_niente, [], vecchio) is False
+
+
 # --------------------------------------------------------------- persistenza
 
 

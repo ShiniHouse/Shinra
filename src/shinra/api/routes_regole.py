@@ -15,6 +15,7 @@ Riferimento: issue #27.
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -94,24 +95,43 @@ def _valida(regola: RegolaIn) -> None:
 
 @router.get("")
 async def elenco() -> Dict[str, Any]:
-    voci = motore_regole.elenco()
-    return {
-        "regole": [
-            {
-                **v,
-                "descrizione": dominio.descrivi(
-                    dominio.Regola(
-                        str(v["id"]),
-                        str(v.get("nome") or ""),
-                        dict(v.get("trigger") or {}),
-                        list(v.get("condizioni") or []),
-                        list(v.get("azioni") or []),
-                    )
-                ),
-            }
-            for v in voci
-        ]
-    }
+    """Le regole, con **quando scatteranno la prossima volta**.
+
+    Il prossimo scatto non e' un abbellimento: e' la differenza fra una
+    schermata che elenca regole e una che risponde alla domanda con cui ci si
+    arriva, che e' sempre «e allora perche' non e' successo niente?». Una
+    regola attiva e senza prossimo scatto e' esattamente il difetto che le
+    regole del sole avevano da due versioni.
+    """
+    sole = motore_regole.sole_corrente()
+    adesso = datetime.now()
+
+    def _descritta(voce: Dict[str, Any]) -> Dict[str, Any]:
+        regola = dominio.Regola(
+            str(voce["id"]),
+            str(voce.get("nome") or ""),
+            dict(voce.get("trigger") or {}),
+            list(voce.get("condizioni") or []),
+            list(voce.get("azioni") or []),
+            bool(voce.get("attiva", True)),
+        )
+        prossimo = (
+            dominio.prossimo_scatto(regola, adesso, tramonto=sole.tramonto, alba=sole.alba)
+            if regola.attiva
+            else None
+        )
+        return {
+            **voce,
+            "descrizione": dominio.descrivi(regola),
+            "prossimo": prossimo.isoformat() if prossimo else None,
+            # Una regola su evento non ha un «prossimo» e sta benissimo:
+            # aspetta che qualcosa succeda. Distinguerla da una che non
+            # scattera' mai e' tutto il punto di questa schermata.
+            "aspetta_un_evento": str((regola.trigger or {}).get("tipo") or "")
+            in (dominio.EVENTO, dominio.STATO),
+        }
+
+    return {"regole": [_descritta(v) for v in motore_regole.elenco()]}
 
 
 @router.post("", dependencies=[Depends(richiedi_permesso(permessi.MODIFICA_MODALITA))])
