@@ -258,3 +258,71 @@ def test_il_microfono_si_spegne_davvero_dopo_la_registrazione():
 
     corpo = testo[testo.index("registratore.onstop") :][:1200]
     assert "getTracks().forEach(t => t.stop())" in corpo, "il flusso del microfono non viene chiuso"
+
+
+def test_la_simulazione_la_chiede_al_server():
+    """Prima la simulazione era una visita in ampiezza scritta nella pagina, e
+    percorreva **tutti** gli archi: mostrava una condizione che accende
+    entrambi i rami, cioe' l'unica cosa che una condizione non fa.
+
+    Una simulazione che mostra un percorso diverso da quello vero e' peggio di
+    nessuna simulazione, perche' ci si crede. Questa guardia impedisce che la
+    visita rientri dalla finestra.
+
+    Riferimento: issue #28.
+    """
+    testo = _testo(PAGINA)
+
+    apertura = testo.index("async function simulateCanvasFlow()")
+    corpo = testo[apertura : testo.index("function spegniLaSimulazione")]
+
+    assert "'/api/modes/simula'" in corpo, "la simulazione non chiede niente al server"
+    assert "esito.visitati" in corpo, "la pagina non usa i nodi che il server dice di aver percorso"
+    assert "queue" not in corpo, "e' tornata una visita del grafo dentro la pagina"
+
+
+def test_la_simulazione_accende_un_ramo_solo():
+    """Il ramo non percorso deve restare spento: due rami accesi dicono che
+    succedono due cose che si escludono a vicenda."""
+    testo = _testo(PAGINA)
+
+    apertura = testo.index("async function simulateCanvasFlow()")
+    corpo = testo[apertura : testo.index("function spegniLaSimulazione")]
+
+    assert "e.ramo === scelta.ramo" in corpo, "i cavi si accendono senza guardare il ramo scelto"
+    assert "visitati.includes(e.to)" in corpo, "si accende anche un cavo verso un nodo mai raggiunto"
+
+
+def test_la_simulazione_dice_perche_ha_scelto_quel_ramo():
+    """Il ramo preso senza il perche' e' indistinguibile da un ramo preso a
+    caso."""
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("function mostraLeDecisioni") :][:1400]
+
+    assert "(d.motivo ||" in corpo, "il motivo della decisione non viene scritto sotto il nodo"
+    # L'etichetta e' `truncate`: un motivo lungo si legge solo fermandoci
+    # sopra il mouse. Senza il titolo, di una condizione fallita si legge
+    # «ramo no: la condizione non e' sod...» e non si sa quale.
+    assert "etichetta.title = d.motivo" in corpo, "il motivo lungo non si puo' leggere per intero"
+    assert "decisione-del-nodo" in testo
+
+
+def test_l_innesco_di_una_routine_si_puo_scegliere():
+    """I nodi trigger temporali della scheda #28. Senza il selettore, il nodo
+    resta quello che era: un innesco vocale e basta."""
+    testo = _testo(PAGINA)
+
+    assert "setTipoInnesco('${node.id}', this.value)" in testo, "non si puo' cambiare tipo di innesco"
+    for tipo in ("orario", "alba", "tramonto", "stato", "evento"):
+        assert f'value="{tipo}"' in testo, f"manca l'innesco «{tipo}» fra le scelte"
+
+
+def test_cambiare_tipo_di_innesco_riparte_da_zero():
+    """I campi di un innesco a orario non valgono per uno su soglia: lasciarli
+    in giro produce una regola che porta dietro dati che nessuno legge."""
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("function setTipoInnesco") : testo.index("function setDatoInnesco")]
+
+    assert "node.data.trigger = predefiniti[tipo]" in corpo, "i campi del tipo precedente restano li'"

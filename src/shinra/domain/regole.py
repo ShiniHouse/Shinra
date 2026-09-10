@@ -337,27 +337,35 @@ def prossimo_scatto(
     return None
 
 
-def descrivi(regola: Regola) -> str:
-    """La regola detta a parole, per il registro e per l'interfaccia."""
-    trigger = regola.trigger or {}
+def descrivi_trigger(trigger: Mapping[str, Any]) -> str:
+    """**Quando** scatta, a parole.
+
+    Sta da sola perche' la stessa frase serve a due posti che non si
+    conoscono: il nome di una regola generata da un nodo trigger dell'editor
+    (issue #28) e la descrizione di una regola scritta a mano. Scriverla due
+    volte vorrebbe dire che la stessa regola si chiama in due modi diversi a
+    seconda di dove la si guarda.
+    """
     tipo = str(trigger.get("tipo") or "")
 
     if tipo == ORARIO:
-        quando = _ora(trigger.get("ora"), time(7, 0)).strftime("%H:%M")
-        quando_detto = f"ogni giorno alle {quando}"
-    elif tipo == ALBA:
-        quando_detto = "all'alba"
-    elif tipo == TRAMONTO:
-        quando_detto = "al tramonto"
-    elif tipo == STATO:
+        return f"ogni giorno alle {_ora(trigger.get('ora'), time(7, 0)).strftime('%H:%M')}"
+    if tipo == ALBA:
+        return "all'alba"
+    if tipo == TRAMONTO:
+        return "al tramonto"
+    if tipo == STATO:
         confronto = str(trigger.get("confronto") or "")
         verso = "scende sotto" if "sotto" in confronto else "sale sopra"
         if confronto == DIVENTA:
             verso = "diventa"
-        quando_detto = f"quando {trigger.get('entity_id')} {verso} {trigger.get('valore')}"
-    else:
-        quando_detto = f"su {trigger.get('evento') or 'un evento'}"
+        return f"quando {trigger.get('entity_id')} {verso} {trigger.get('valore')}"
+    return f"su {trigger.get('evento') or 'un evento'}"
 
+
+def descrivi(regola: Regola) -> str:
+    """La regola detta a parole, per il registro e per l'interfaccia."""
+    quando_detto = descrivi_trigger(regola.trigger or {})
     quante = len(regola.azioni or ())
     return f"{regola.nome}: {quando_detto}, {quante} azion{'e' if quante == 1 else 'i'}"
 

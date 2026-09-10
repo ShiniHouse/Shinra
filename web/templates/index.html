@@ -4338,12 +4338,59 @@
                 if (node.type === 'trigger') {
                     headerBg = 'from-amber-600 to-orange-600';
                     icon = 'zap';
-                    typeLabel = '⚡ Innesco Vocale';
+                    const t = node.data.trigger || { tipo: 'voce' };
+                    const etichette = {
+                        voce: '⚡ Innesco Vocale', orario: '🕒 A un orario', alba: '🌅 All\'alba',
+                        tramonto: '🌇 Al tramonto', stato: '📈 Su un valore', evento: '📡 Su un evento'
+                    };
+                    typeLabel = etichette[t.tipo] || etichette.voce;
                     const ph = (node.data.phrases || []).join(', ');
                     bodyHtml = `
-                        <div class="space-y-1.5 text-xs">
-                            <label class="text-[10px] text-slate-400 font-semibold block">Frasi di Attivazione:</label>
-                            <input type="text" value="${ph}" oninput="updateNodeData('${node.id}', 'phrases', this.value.split(',').map(s=>s.trim()))" placeholder="es. attiva cinema, cinema" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500">
+                        <div class="space-y-2 text-xs">
+                            <select onchange="setTipoInnesco('${node.id}', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200">
+                                <option value="voce" ${t.tipo === 'voce' ? 'selected' : ''}>Quando lo chiedo a voce</option>
+                                <option value="orario" ${t.tipo === 'orario' ? 'selected' : ''}>A un orario</option>
+                                <option value="alba" ${t.tipo === 'alba' ? 'selected' : ''}>All'alba</option>
+                                <option value="tramonto" ${t.tipo === 'tramonto' ? 'selected' : ''}>Al tramonto</option>
+                                <option value="stato" ${t.tipo === 'stato' ? 'selected' : ''}>Quando un valore supera una soglia</option>
+                                <option value="evento" ${t.tipo === 'evento' ? 'selected' : ''}>Su un evento della casa</option>
+                            </select>
+                            ${t.tipo === 'voce' ? `
+                                <label class="text-[10px] text-slate-400 font-semibold block">Frasi di Attivazione:</label>
+                                <input type="text" value="${ph}" oninput="updateNodeData('${node.id}', 'phrases', this.value.split(',').map(s=>s.trim()))" placeholder="es. attiva cinema, cinema" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500">
+                            ` : ''}
+                            ${t.tipo === 'orario' ? `
+                                <input type="time" value="${t.ora || '07:00'}" onchange="setDatoInnesco('${node.id}', 'ora', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-100">
+                                <div class="flex gap-0.5">
+                                    ${['L','M','M','G','V','S','D'].map((g, i) => `
+                                        <button type="button" onclick="alternaGiornoInnesco('${node.id}', ${i})" class="flex-1 py-1 rounded text-[10px] font-bold ${(t.giorni || []).includes(i) ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'}">${g}</button>
+                                    `).join('')}
+                                </div>
+                                <p class="text-[10px] text-slate-500">Nessun giorno scelto vuol dire tutti i giorni.</p>
+                            ` : ''}
+                            ${(t.tipo === 'alba' || t.tipo === 'tramonto') ? `
+                                <div class="flex items-center gap-2">
+                                    <input type="number" value="${t.scarto_minuti || 0}" onchange="setDatoInnesco('${node.id}', 'scarto_minuti', parseInt(this.value)||0)" class="w-20 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 text-center">
+                                    <span class="text-[11px] text-slate-400">minuti di scarto (negativi = prima)</span>
+                                </div>
+                            ` : ''}
+                            ${t.tipo === 'stato' ? `
+                                <input type="text" value="${t.entity_id || ''}" oninput="setDatoInnesco('${node.id}', 'entity_id', this.value)" placeholder="es. sensor.temperatura_salotto" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                                <select onchange="setDatoInnesco('${node.id}', 'confronto', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200">
+                                    <option value="attraversa_sotto" ${t.confronto === 'attraversa_sotto' ? 'selected' : ''}>quando scende sotto</option>
+                                    <option value="attraversa_sopra" ${t.confronto === 'attraversa_sopra' ? 'selected' : ''}>quando sale sopra</option>
+                                    <option value="diventa" ${t.confronto === 'diventa' ? 'selected' : ''}>quando diventa</option>
+                                </select>
+                                <input type="text" value="${t.valore !== undefined ? t.valore : ''}" oninput="setDatoInnesco('${node.id}', 'valore', this.value)" placeholder="es. 15" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                                <p class="text-[10px] text-slate-500 leading-snug">Scatta nel momento in cui la soglia viene attraversata, non a ogni lettura che sta di là.</p>
+                            ` : ''}
+                            ${t.tipo === 'evento' ? `
+                                <input type="text" value="${t.evento || ''}" oninput="setDatoInnesco('${node.id}', 'evento', this.value)" placeholder="es. casa.vuota" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                                <input type="text" value="${t.entity_id || ''}" oninput="setDatoInnesco('${node.id}', 'entity_id', this.value)" placeholder="solo per questa entità (facoltativo)" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                            ` : ''}
+                            ${t.tipo !== 'voce' ? `
+                                <p class="text-[10px] text-amber-500/80 leading-snug">Al salvataggio questa routine parte da sola: diventa una regola del motore delle automazioni. Per fermarla, togli l'innesco e risalva.</p>
+                            ` : ''}
                         </div>
                     `;
                 } else if (node.type === 'ha_device' || node.type === 'ha_service') {
@@ -4576,6 +4623,41 @@
             renderCanvasElements();
         }
 
+        function setTipoInnesco(nodeId, tipo) {
+            const node = _canvasState.nodes.find(n => n.id === nodeId);
+            if (!node) return;
+            // Come per le condizioni: si riparte da zero. I campi di un
+            // innesco a orario non valgono per uno su soglia, e lasciarli in
+            // giro produce una regola che porta dietro dati che nessuno legge.
+            const predefiniti = {
+                voce: { tipo: 'voce' },
+                orario: { tipo: 'orario', ora: '07:00', giorni: [] },
+                alba: { tipo: 'alba', scarto_minuti: 0 },
+                tramonto: { tipo: 'tramonto', scarto_minuti: 0 },
+                stato: { tipo: 'stato', entity_id: '', confronto: 'attraversa_sotto', valore: '' },
+                evento: { tipo: 'evento', evento: '' }
+            };
+            node.data.trigger = predefiniti[tipo] || { tipo: tipo };
+            renderCanvasElements();
+        }
+
+        function setDatoInnesco(nodeId, campo, valore) {
+            const node = _canvasState.nodes.find(n => n.id === nodeId);
+            if (!node) return;
+            node.data.trigger = node.data.trigger || { tipo: 'voce' };
+            node.data.trigger[campo] = valore;
+        }
+
+        function alternaGiornoInnesco(nodeId, giorno) {
+            const node = _canvasState.nodes.find(n => n.id === nodeId);
+            if (!node) return;
+            const t = node.data.trigger = node.data.trigger || { tipo: 'orario' };
+            const scelti = new Set(t.giorni || []);
+            scelti.has(giorno) ? scelti.delete(giorno) : scelti.add(giorno);
+            t.giorni = [...scelti].sort();
+            renderCanvasElements();
+        }
+
         function setDatoCondizione(nodeId, campo, valore) {
             const node = _canvasState.nodes.find(n => n.id === nodeId);
             if (!node) return;
@@ -4689,60 +4771,97 @@
             `;
         }
 
+        // La simulazione la fa il server, non questa pagina.
+        //
+        // Prima c'era una visita in ampiezza scritta qui dentro, e percorreva
+        // **tutti** gli archi: mostrava un nodo condizione che accende
+        // entrambi i rami, cioe' l'unica cosa che una condizione non fa. Una
+        // simulazione che mostra un percorso diverso da quello vero e' peggio
+        // che nessuna simulazione, perche' ci si crede. Adesso la domanda la
+        // fa `/api/modes/simula` allo stesso codice che esegue la routine, e
+        // qui resta solo il disegno (issue #28).
         async function simulateCanvasFlow() {
             const btn = document.getElementById('btn-sim-canvas');
+            const testoPulsante = '▶️ Simula Flusso';
+            if (!_canvasState.nodes.length) return;
             if (btn) btn.innerHTML = '<span class="animate-spin">⏳</span> Simulazione...';
 
-            // Trova nodo di partenza trigger
-            const trig = _canvasState.nodes.find(n => n.type === 'trigger') || _canvasState.nodes[0];
-            if (!trig) return;
+            let esito;
+            try {
+                const res = await fetch('/api/modes/simula', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ nodes: _canvasState.nodes, edges: _canvasState.edges })
+                });
+                if (!res.ok) throw new Error('simulazione rifiutata');
+                esito = await res.json();
+            } catch (e) {
+                if (btn) btn.innerHTML = testoPulsante;
+                alert('Non riesco a simulare adesso: il server non ha risposto.');
+                return;
+            }
 
-            // Traversata visiva
-            const visited = new Set();
-            const queue = [trig.id];
+            spegniLaSimulazione();
 
-            while (queue.length > 0) {
-                const currId = queue.shift();
-                if (visited.has(currId)) continue;
-                visited.add(currId);
+            const decisioni = new Map((esito.decisioni || []).map(d => [d.node_id, d]));
+            const visitati = esito.visitati || [];
+            mostraLeDecisioni(esito.decisioni || []);
 
-                const node = _canvasState.nodes.find(n => n.id === currId);
-                const el = document.getElementById(`c-node-${currId}`);
-                if (el) {
-                    el.classList.add('ring-2', 'ring-violet-400', 'border-violet-400', 'scale-[1.02]');
-                }
+            for (const idNodo of visitati) {
+                const el = document.getElementById(`c-node-${idNodo}`);
+                if (el) el.classList.add('ring-2', 'ring-violet-400', 'border-violet-400', 'scale-[1.02]');
 
-                if (node.type === 'delay') {
-                    const s = node.data.seconds || 3;
-                    await new Promise(r => setTimeout(r, Math.min(s * 1000, 3000)));
-                } else if (node.type === 'tts') {
+                const nodo = _canvasState.nodes.find(n => n.id === idNodo);
+                if (nodo && nodo.type === 'delay') {
+                    await new Promise(r => setTimeout(r, Math.min((nodo.data.seconds || 3) * 1000, 3000)));
+                } else if (nodo && nodo.type === 'tts') {
                     playChimeAlert();
-                    if (node.data.message) speakText(node.data.message);
+                    if (nodo.data.message) speakText(nodo.data.message);
                     await new Promise(r => setTimeout(r, 1000));
                 } else {
                     await new Promise(r => setTimeout(r, 600));
                 }
 
-                if (el) {
-                    el.classList.remove('ring-2', 'ring-violet-400', 'border-violet-400', 'scale-[1.02]');
-                }
+                if (el) el.classList.remove('ring-2', 'ring-violet-400', 'border-violet-400', 'scale-[1.02]');
 
-                // Trova archi uscenti
-                const outEdges = _canvasState.edges.filter(e => e.from === currId);
-                for (const edge of outEdges) {
-                    const wireEl = document.getElementById(`wire-${edge.from}-${edge.to}`);
-                    if (wireEl) wireEl.classList.add('flow-wire-sim');
-                    queue.push(edge.to);
+                // Si accende solo il cavo percorso: da una condizione esce il
+                // ramo scelto e basta, ed e' tutta la differenza fra vedere
+                // cosa succede e vedere cosa potrebbe succedere.
+                const scelta = decisioni.get(idNodo);
+                const uscenti = _canvasState.edges.filter(e =>
+                    e.from === idNodo &&
+                    visitati.includes(e.to) &&
+                    (!scelta || !e.ramo || e.ramo === scelta.ramo)
+                );
+                for (const arco of uscenti) {
+                    const cavo = document.getElementById(`wire-${arco.from}-${arco.to}`);
+                    if (cavo) cavo.classList.add('flow-wire-sim');
                 }
-
                 await new Promise(r => setTimeout(r, 400));
-                for (const edge of outEdges) {
-                    const wireEl = document.getElementById(`wire-${edge.from}-${edge.to}`);
-                    if (wireEl) wireEl.classList.remove('flow-wire-sim');
-                }
             }
 
-            if (btn) btn.innerHTML = '▶️ Simula Flusso';
+            if (btn) btn.innerHTML = testoPulsante;
+        }
+
+        function spegniLaSimulazione() {
+            document.querySelectorAll('.flow-wire-sim').forEach(el => el.classList.remove('flow-wire-sim'));
+            document.querySelectorAll('.decisione-del-nodo').forEach(el => el.remove());
+        }
+
+        function mostraLeDecisioni(decisioni) {
+            // Il ramo preso senza il perche' e' indistinguibile da un ramo
+            // preso a caso: chi guarda vuole sapere che la condizione ha detto
+            // no perche' in casa non c'e' nessuno, non solo che ha detto no.
+            (decisioni || []).forEach(d => {
+                const el = document.getElementById(`c-node-${d.node_id}`);
+                if (!el) return;
+                const etichetta = document.createElement('div');
+                etichetta.className = 'decisione-del-nodo absolute -bottom-6 left-0 right-0 text-[10px] font-semibold text-center px-1 truncate '
+                    + (d.ramo === 'vero' ? 'text-emerald-400' : 'text-rose-400');
+                etichetta.title = d.motivo || '';
+                etichetta.innerText = d.ramo === 'vero' ? '→ ramo sì' : ('→ ramo no: ' + (d.motivo || 'la condizione non è soddisfatta'));
+                el.appendChild(etichetta);
+            });
         }
 
         async function saveCanvasMode() {

@@ -397,6 +397,11 @@ class Regola(Base):
     azioni: Mapped[list[Any]] = mapped_column(JSON, default=list)
     creata_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
     autore: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    # Vuota per le regole scritte a mano; `grafo:<id modalita>` per quelle
+    # generate da un nodo trigger dell'editor. Senza, risalvare una routine
+    # lascerebbe dietro la regola di prima: un lavoro programmato che nessuno
+    # rivendica e che continua a scattare quando il disegno dice altro.
+    origine: Mapped[str] = mapped_column(String(96), default="")
     # Quando e come e' andata l'ultima volta. Ridondante rispetto al registro
     # e tenuto lo stesso: e' la prima cosa che si guarda quando una regola
     # «non funziona», e cercarla nel registro richiede di sapere gia' quando

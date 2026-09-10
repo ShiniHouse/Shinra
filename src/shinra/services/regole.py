@@ -23,11 +23,13 @@ Riferimento: issue #27.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import uuid
 from datetime import datetime
 from typing import Any, Mapping, Optional, Sequence
 
+from shinra.domain import grafo as grafo_dominio
 from shinra.domain import regole as dominio
 from shinra.domain.eventi import (
     CASA_ABITATA,
@@ -43,6 +45,9 @@ logger = logging.getLogger("Shinra.Regole")
 
 PREFISSO_JOB = "regola_"
 
+# Da dove viene una regola. Vuoto per quelle scritte a mano.
+ORIGINE_GRAFO = "grafo:"
+
 # Gli eventi del bus su cui una regola puo' essere innescata. Non tutti:
 # `notifica.avviso` e' cio' che una regola produce, e ascoltarlo sarebbe il
 # modo piu' breve per costruire un ciclo senza volerlo.
@@ -53,6 +58,22 @@ EVENTI_ASCOLTATI = (
     PERSONA_RIENTRATA,
     PERSONA_USCITA,
 )
+
+
+def _identificativo_generato(modalita_id: str, nodo_id: str) -> str:
+    """L'identificativo della regola nata da **questo** nodo di questa routine.
+
+    Deterministico di proposito: risalvare il disegno deve riscrivere la
+    stessa regola, non aggiungerne una seconda identica. Un identificativo
+    casuale renderebbe ogni salvataggio un duplicato, e in una settimana la
+    stessa routine avrebbe dieci regole che fanno tutte la stessa cosa.
+
+    E' un'impronta e non i due nomi concatenati perche' la colonna e' lunga
+    trentadue caratteri e un identificativo di nodo puo' essere lungo quanto
+    vuole: troncare due nomi vuol dire farli collidere.
+    """
+    impronta = hashlib.sha256(f"{modalita_id}\n{nodo_id}".encode()).hexdigest()
+    return f"reg_g{impronta[:16]}"
 
 
 def _dalla_riga(riga: Mapping[str, Any]) -> dominio.Regola:
@@ -288,6 +309,94 @@ class MotoreRegole:
         if programmate:
             logger.info("Regole a orario programmate: %d.", programmate)
         return programmate
+
+    # --------------------------------------------- le regole di un grafo
+
+    def sincronizza_dal_grafo(self, modalita: Mapping[str, Any]) -> dict[str, Any]:
+        """I nodi trigger di una routine diventano regole di questo motore.
+
+        La scelta e' stata presa nella scheda #28 e vale la pena rileggerla
+        qui: un grafo con un innesco all'alba **non** si porta dietro un
+        secondo scheduler. Due motori che programmano la stessa casa si
+        contendono lo stesso lavoro, e il secondo si scopre solo quando la
+        luce si accende due volte.
+
+        La sincronizzazione e' completa, non incrementale: si guarda cosa il
+        disegno chiede adesso e si cancella tutto il resto. Aggiungere e
+        basta lascerebbe dietro la regola di un nodo cancellato — qualcosa
+        che si accende senza che niente lo spieghi, il difetto piu' difficile
+        da diagnosticare in una casa che agisce da sola.
+
+        Cosa **non** si tocca: se qualcuno ha disattivato la regola generata,
+        resta disattivata. Risalvare il disegno per correggere un orario non
+        deve riaccendere un'automazione che era stata messa a tacere.
+        """
+        from shinra.infra.db import depositi
+        from shinra.infra.scheduler.motore import scheduler
+
+        identificativo = str(modalita.get("id") or "")
+        if not identificativo:
+            return {"scritte": [], "rimosse": []}
+
+        origine = f"{ORIGINE_GRAFO}{identificativo}"
+        nome_routine = str(modalita.get("name") or identificativo)
+
+        volute = {
+            _identificativo_generato(identificativo, nodo_id): trigger
+            for nodo_id, trigger in grafo_dominio.triggers_automatici(modalita.get("nodes") or [])
+        }
+        di_prima = {str(r["id"]): r for r in depositi.regole.per_origine(origine)}
+
+        rimosse = []
+        for id_regola in sorted(set(di_prima) - set(volute)):
+            scheduler.annulla(f"{PREFISSO_JOB}{id_regola}")
+            depositi.regole.cancella(id_regola)
+            rimosse.append(id_regola)
+
+        scritte = []
+        for id_regola, trigger in volute.items():
+            precedente = di_prima.get(id_regola)
+            depositi.regole.salva(
+                {
+                    "id": id_regola,
+                    "nome": f"{nome_routine}, {dominio.descrivi_trigger(trigger)}"[:160],
+                    "attiva": bool(precedente.get("attiva", True)) if precedente else True,
+                    "trigger": dict(trigger),
+                    "condizioni": [],
+                    "azioni": [{"tipo": dominio.AZIONE_MODALITA, "modalita": nome_routine}],
+                    "origine": origine,
+                    "ultimo_esito": str((precedente or {}).get("ultimo_esito") or ""),
+                }
+            )
+            scritte.append(id_regola)
+
+        if scritte or rimosse:
+            logger.info(
+                "Routine «%s»: %d regole dal grafo, %d rimosse.", nome_routine, len(scritte), len(rimosse)
+            )
+            self.riprogramma_tutte()
+
+        return {"scritte": scritte, "rimosse": rimosse}
+
+    def dimentica_il_grafo(self, modalita_id: str) -> list[str]:
+        """Cancellata la routine, spariscono le regole che la facevano partire.
+
+        Senza questo, cancellare una routine lascerebbe una regola che ogni
+        mattina prova ad attivare una modalita' che non esiste piu': fallisce
+        in silenzio, e l'unico segno e' una riga di registro che nessuno
+        cerca perche' nessuno sa che c'e' qualcosa da cercare.
+        """
+        from shinra.infra.db import depositi
+        from shinra.infra.scheduler.motore import scheduler
+
+        rimosse = []
+        for riga in depositi.regole.per_origine(f"{ORIGINE_GRAFO}{modalita_id}"):
+            scheduler.annulla(f"{PREFISSO_JOB}{riga['id']}")
+            depositi.regole.cancella(str(riga["id"]))
+            rimosse.append(str(riga["id"]))
+        if rimosse:
+            self.riprogramma_tutte()
+        return rimosse
 
     # ------------------------------------------------------- modifiche
 

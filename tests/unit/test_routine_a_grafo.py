@@ -353,3 +353,156 @@ def test_si_puo_chiedere_cosa_non_va_senza_salvare(cliente_autenticato):
     assert corpo["valido"] is False
     assert corpo["problemi"][0]["nodi"] == ["se"]
     assert len(depositi.modalita.elenco()) == prima, "validare non deve salvare"
+
+
+# ------------------------------------------------ inneschi e simulazione
+
+
+def test_salvare_una_routine_con_un_innesco_la_fa_partire_da_sola(cliente_autenticato):
+    """Il criterio della scheda: «una routine con trigger all'alba scatta
+    all'alba». Qui si prova il collegamento — che il salvataggio generi la
+    regola — perche' che la regola scatti lo provano i test della #27.
+    """
+    from shinra.services.regole import ORIGINE_GRAFO
+
+    depositi.regole.sostituisci_tutto([])
+
+    risposta = cliente_autenticato.post(
+        "/api/modes",
+        json={
+            "id": "alba1",
+            "name": "Buongiorno",
+            "nodes": [
+                _n("t", dominio.TRIGGER, trigger={"tipo": "alba"}),
+                _n("luce", dominio.DISPOSITIVO, entity_id="light.x"),
+            ],
+            "edges": [_a("t", "luce")],
+        },
+    )
+
+    assert risposta.status_code == 200
+    generate = depositi.regole.per_origine(f"{ORIGINE_GRAFO}alba1")
+    assert len(generate) == 1
+    assert generate[0]["azioni"][0]["modalita"] == "Buongiorno"
+
+
+def test_cancellare_la_routine_cancella_il_suo_innesco(cliente_autenticato):
+    """Senza questo, ogni mattina una regola prova ad attivare una modalita'
+    che non esiste piu': fallisce in silenzio, e l'unico segno e' una riga di
+    registro che nessuno cerca."""
+    from shinra.services.regole import ORIGINE_GRAFO
+
+    depositi.regole.sostituisci_tutto([])
+    cliente_autenticato.post(
+        "/api/modes",
+        json={
+            "id": "alba2",
+            "name": "Da cancellare",
+            "nodes": [_n("t", dominio.TRIGGER, trigger={"tipo": "alba"})],
+            "edges": [],
+        },
+    )
+
+    cliente_autenticato.delete("/api/modes/alba2")
+
+    assert depositi.regole.per_origine(f"{ORIGINE_GRAFO}alba2") == []
+
+
+def test_un_innesco_incompleto_non_si_salva(cliente_autenticato):
+    """Senza il controllo, la routine scatterebbe alle sette del mattino — il
+    ripiego di `domain/regole` — e nessuno saprebbe perche'."""
+    risposta = cliente_autenticato.post(
+        "/api/modes",
+        json={
+            "id": "muta",
+            "name": "muta",
+            "nodes": [_n("t", dominio.TRIGGER, trigger={"tipo": "orario"}), _n("l", dominio.DISPOSITIVO)],
+            "edges": [_a("t", "l")],
+        },
+    )
+
+    assert risposta.status_code == 400
+    assert any(p["tipo"] == dominio.TRIGGER_MUTO for p in risposta.json()["detail"]["problemi"])
+
+
+def test_la_simulazione_dice_quale_ramo_e_perche(cliente_autenticato, casa):
+    """Il criterio che restava della scheda.
+
+    La simulazione la fa il server con lo stesso codice che esegue la
+    routine: prima era una visita scritta nella pagina che percorreva
+    **tutti** gli archi, e mostrava una condizione che accende entrambi i
+    rami — l'unica cosa che una condizione non fa.
+    """
+    risposta = cliente_autenticato.post(
+        "/api/modes/simula",
+        json={
+            "nodes": [
+                _n("t", dominio.TRIGGER),
+                _n(
+                    "se",
+                    dominio.CONDIZIONE,
+                    condizione={"tipo": "stato_entita", "entity_id": "light.salotto", "stato": "off"},
+                ),
+                _n("si", dominio.ANNUNCIO, message="acceso"),
+                _n("no", dominio.ANNUNCIO, message="spento"),
+            ],
+            "edges": [_a("t", "se"), _a("se", "si", dominio.VERO), _a("se", "no", dominio.FALSO)],
+        },
+    )
+
+    assert risposta.status_code == 200
+    corpo = risposta.json()
+    assert [p["node_id"] for p in corpo["passi"]] == ["no"], "il ramo giusto e' il falso: la luce e' accesa"
+    assert corpo["decisioni"][0]["ramo"] == dominio.FALSO
+    assert "light.salotto" in corpo["decisioni"][0]["motivo"]
+
+
+def test_la_simulazione_illumina_solo_i_nodi_percorsi(cliente_autenticato, casa):
+    """`visitati` e' cio' che l'editor accende. Se ci finisse anche il ramo
+    non percorso, il disegno direbbe che succedono due cose che si escludono."""
+    risposta = cliente_autenticato.post(
+        "/api/modes/simula",
+        json={
+            "nodes": [
+                _n("t", dominio.TRIGGER),
+                _n(
+                    "se",
+                    dominio.CONDIZIONE,
+                    condizione={"tipo": "stato_entita", "entity_id": "light.salotto", "stato": "on"},
+                ),
+                _n("si", dominio.ANNUNCIO),
+                _n("no", dominio.ANNUNCIO),
+            ],
+            "edges": [_a("t", "se"), _a("se", "si", dominio.VERO), _a("se", "no", dominio.FALSO)],
+        },
+    )
+
+    visitati = risposta.json()["visitati"]
+
+    assert visitati == ["t", "se", "si"]
+    assert "no" not in visitati
+
+
+def test_la_simulazione_non_esegue_niente(cliente_autenticato, casa):
+    """«Simulare» e' la promessa che non succede niente in casa. Se chiamasse
+    un servizio, sarebbe un pulsante di esecuzione con un'etichetta che mente."""
+    cliente_autenticato.post(
+        "/api/modes/simula",
+        json={
+            "nodes": [_n("t", dominio.TRIGGER), _n("luce", dominio.DISPOSITIVO, entity_id="light.x")],
+            "edges": [_a("t", "luce")],
+        },
+    )
+
+    assert casa == [], f"la simulazione ha chiamato Home Assistant: {casa}"
+
+
+def test_la_simulazione_non_salva_niente(cliente_autenticato, casa):
+    prima = len(depositi.modalita.elenco())
+
+    cliente_autenticato.post(
+        "/api/modes/simula",
+        json={"id": "mai", "name": "mai", "nodes": [_n("t", dominio.TRIGGER)], "edges": []},
+    )
+
+    assert len(depositi.modalita.elenco()) == prima
