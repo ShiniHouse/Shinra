@@ -26,6 +26,7 @@ from shinra.domain.eventi import (
     AVVISO,
     CASA_INTRUSIONE,
     PROMEMORIA_SCADUTO,
+    RICHIESTA_AVVISO,
     TIMER_SCADUTO,
     Evento,
     bus,
@@ -43,6 +44,22 @@ def _avviso_da(evento: Evento) -> Optional[dominio.Avviso]:
     nemmeno di cio' che conta.
     """
     dati = evento.dati or {}
+
+    if evento.tipo == RICHIESTA_AVVISO:
+        # Qualcuno ha chiesto esplicitamente un avviso: qui non si decide se
+        # merita, si decide che forma ha. La decisione «merita?» l'ha gia'
+        # presa chi ha disegnato il nodo notifica nella propria routine.
+        testo = str(dati.get("testo") or "").strip()
+        if not testo:
+            return None
+        return dominio.Avviso(
+            categoria=str(dati.get("categoria") or dominio.PROMEMORIA),
+            titolo=str(dati.get("titolo") or "Shinra"),
+            testo=testo,
+            priorita=str(dati.get("priorita") or dominio.IMPORTANTE),
+            destinazione=str(dati.get("destinazione") or "/"),
+            dati=dict(dati.get("dati") or {}),
+        )
 
     if evento.tipo == CASA_INTRUSIONE:
         chi = dati.get("persone_in_casa") or []
@@ -90,7 +107,7 @@ class ServizioNotifiche:
     def avvia(self) -> bool:
         if self._annulla:
             return False
-        for tipo in (CASA_INTRUSIONE, PROMEMORIA_SCADUTO, TIMER_SCADUTO):
+        for tipo in (CASA_INTRUSIONE, PROMEMORIA_SCADUTO, TIMER_SCADUTO, RICHIESTA_AVVISO):
             self._annulla.append(bus.sottoscrivi(tipo, self._su_evento))
         logger.info("Servizio notifiche in ascolto.")
         return True

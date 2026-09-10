@@ -52,6 +52,15 @@ CASA_INTRUSIONE = "casa.intrusione"
 # E' il canale «dashboard aperta» del servizio notifiche (issue #29): gli
 # altri canali sono il telefono e la voce, e passano altrove.
 AVVISO = "notifica.avviso"
+
+# Qualcuno **chiede** un avviso: e' l'ingresso, dove `AVVISO` e' l'uscita.
+#
+# Esiste perche' una capacita' non puo' chiamare il servizio delle notifiche:
+# `skills/` sta sotto `services/` e importarlo sarebbe una freccia
+# all'indietro. Il nodo notifica dell'editor a grafo (issue #28) pubblica
+# questo, e chi sa mandare le notifiche lo raccoglie — senza che le due parti
+# si conoscano.
+RICHIESTA_AVVISO = "avviso.richiesto"
 # Chi entra e chi esce, e i due momenti che contano per la casa intera: la
 # prima persona che rientra e l'ultima che se ne va (issue #22). I nomi
 # vivono in `domain/presenza.py`, che e' anche cio' che li decide.

@@ -195,7 +195,20 @@ class DepositoAlias(Deposito):
 
 class DepositoModalita(Deposito):
     modello = Modalita
-    campi = ("id", "name", "icon", "trigger_phrases", "description", "enabled", "actions")
+    campi = (
+        "id",
+        "name",
+        "icon",
+        "trigger_phrases",
+        "description",
+        "enabled",
+        "actions",
+        # `nodes` ed `edges` mancavano, e mancare qui vuol dire sparire:
+        # `aggiungi` copia solo i campi elencati, quindi il disegno
+        # dell'editor a grafo veniva scartato in silenzio. Riferimento: #28.
+        "nodes",
+        "edges",
+    )
     ordine = "name"
 
 

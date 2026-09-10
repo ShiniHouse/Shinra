@@ -1,11 +1,75 @@
 import asyncio
 import logging
-from typing import Any, Dict, Optional
+from datetime import datetime
+from typing import Any, Dict, Optional, Sequence
 
+from shinra.domain import grafo as grafo_dominio
+from shinra.domain import presenza as presenza_dominio
+from shinra.domain.eventi import RICHIESTA_AVVISO, Evento, bus
 from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
 
 logger = logging.getLogger(__name__)
+
+
+async def _percorso_del_grafo(
+    nodi: Sequence[Dict[str, Any]], archi: Sequence[Dict[str, Any]]
+) -> tuple[list[grafo_dominio.Passo], list[tuple[str, str, str]]]:
+    """Cosa eseguire, secondo il dominio, con la casa com'e' adesso.
+
+    Gli stati si leggono **una volta sola** e valgono per tutte le condizioni
+    del grafo: se una routine ha tre condizioni sulla stessa lampadina, e la
+    lampadina cambia a meta' esecuzione, i tre rami devono venire dalla stessa
+    fotografia. Altrimenti la stessa routine, sullo stesso grafo, fa cose
+    diverse a seconda di quanto era lenta.
+    """
+    struttura = grafo_dominio.Grafo(nodi, archi)
+
+    # La lettura serve solo se c'e' qualcosa da decidere: una routine lineare
+    # non deve pagare un giro a Home Assistant per niente.
+    servono_stati = any(struttura.tipo_di(i) == grafo_dominio.CONDIZIONE for i in struttura.mappa)
+    stati: Dict[str, str] = {}
+    abitata: Optional[bool] = None
+
+    if servono_stati:
+        try:
+            correnti = list(await client_home_assistant().stati_correnti())
+        except Exception as errore:  # una casa irraggiungibile non e' un errore di grafo
+            logger.warning("Condizioni valutate senza stati: %s", errore)
+            correnti = []
+        stati = {str(s.get("entity_id")): str(s.get("state")) for s in correnti if s.get("entity_id")}
+        presenti = presenza_dominio.leggi(presenza_dominio.persone_dagli_stati(correnti))
+        abitata = presenti.abitata if presenti.conosciuta else None
+
+    return grafo_dominio.percorso(struttura, datetime.now().astimezone(), stati, abitata)
+
+
+async def _notifica_dal_nodo(dati: Dict[str, Any], nome_routine: str) -> bool:
+    """Chiede un avviso, senza sapere chi lo mandera'.
+
+    Una capacita' non puo' chiamare il servizio delle notifiche — `skills/`
+    sta sotto `services/` — quindi pubblica sul bus e chi sa mandarle lo
+    raccoglie. Non e' un giro largo per rispettare una regola: e' il motivo
+    per cui la regola esiste, perche' domani un secondo canale puo' iscriversi
+    allo stesso evento senza che questa riga cambi.
+    """
+    testo = str(dati.get("testo") or dati.get("message") or "").strip()
+    if not testo:
+        return False
+
+    await bus.pubblica(
+        Evento(
+            tipo=RICHIESTA_AVVISO,
+            dati={
+                "titolo": str(dati.get("titolo") or dati.get("title") or nome_routine),
+                "testo": testo,
+                "categoria": dati.get("categoria"),
+                "priorita": dati.get("priorita"),
+                "destinazione": dati.get("destinazione") or "/#modalita",
+            },
+        )
+    )
+    return True
 
 
 async def control_device(
@@ -138,45 +202,24 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
     nodes = target_mode.get("nodes", [])
     edges = target_mode.get("edges", [])
 
+    decisioni: list[Dict[str, Any]] = []
+
     if nodes and edges:
-        # Costruisce la mappa dei nodi e l'adiacenza
-        node_map = {n["id"]: n for n in nodes if "id" in n}
-        adj: Dict[str, list] = {}
-        in_degree = {n["id"]: 0 for n in nodes if "id" in n}
-        for e in edges:
-            u, v = e.get("from"), e.get("to")
-            if u and v and u in node_map and v in node_map:
-                adj.setdefault(u, []).append(v)
-                in_degree[v] = in_degree.get(v, 0) + 1
+        # Il percorso lo decide `domain/grafo.py`; qui si esegue e basta.
+        #
+        # Prima c'erano novanta righe di visita in ampiezza scritte dentro
+        # questa funzione, mescolate alle chiamate a Home Assistant. Non era
+        # solo brutto: percorreva **tutti** gli archi, e un nodo condizione
+        # con due uscite avrebbe eseguito entrambi i rami — cioe' non sarebbe
+        # stato una condizione. Riferimento: issue #28.
+        passi, scelte = await _percorso_del_grafo(nodes, edges)
+        decisioni = [{"node_id": nodo, "ramo": ramo, "motivo": motivo} for nodo, ramo, motivo in scelte]
 
-        # Trova il punto di partenza (nodo trigger o con in_degree == 0)
-        start_nodes = [
-            n_id for n_id, deg in in_degree.items() if deg == 0 and node_map[n_id].get("type") == "trigger"
-        ]
-        if not start_nodes:
-            start_nodes = [n_id for n_id, deg in in_degree.items() if deg == 0]
-        if not start_nodes and nodes:
-            start_nodes = [nodes[0]["id"]]
-
-        # Coda di esecuzione BFS ordinata
-        queue = list(start_nodes)
-        visited = set()
-
-        while queue:
-            curr_id = queue.pop(0)
-            if curr_id in visited:
-                continue
-            visited.add(curr_id)
-
-            curr_node = node_map.get(curr_id)
-            if not curr_node:
-                continue
-
-            n_type = curr_node.get("type")
-            n_data = curr_node.get("data", {})
+        for passo in passi:
+            n_type, n_data, curr_id = passo.tipo, passo.dati, passo.id
 
             # 1. Nodo Dispositivo Home Assistant
-            if n_type in ["ha_device", "ha_service"]:
+            if n_type in (grafo_dominio.DISPOSITIVO, grafo_dominio.SERVIZIO):
                 entity_id = n_data.get("entity_id")
                 act_cmd = n_data.get("action", "turn_on")
                 if entity_id:
@@ -200,7 +243,7 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
                     )
 
             # 2. Nodo Ritardo Temporizzato (Delay)
-            elif n_type == "delay":
+            elif n_type == grafo_dominio.RITARDO:
                 delay_sec = float(n_data.get("seconds") or n_data.get("delay_seconds") or 1)
                 logger.info(f"[Shinra Flow] Pausa temporizzata di {delay_sec}s sul nodo {curr_id}...")
                 await asyncio.sleep(delay_sec)
@@ -209,7 +252,7 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
                 )
 
             # 3. Nodo Sintesi Vocale (TTS)
-            elif n_type == "tts":
+            elif n_type == grafo_dominio.ANNUNCIO:
                 msg = n_data.get("message", "")
                 if msg:
                     tts_messages.append(msg)
@@ -217,10 +260,20 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
                         {"type": "tts", "node_id": curr_id, "message": msg, "status": True}
                     )
 
-            # Accoda i nodi successivi collegati
-            for neighbor in adj.get(curr_id, []):
-                if neighbor not in visited:
-                    queue.append(neighbor)
+            # 4. Nodo Notifica (issue #28). Distinto dall'annuncio: un
+            #    annuncio lo sente chi e' nella stanza, una notifica raggiunge
+            #    il telefono anche di chi non c'e'. Sono due cose diverse, e
+            #    prima si poteva scrivere solo la prima.
+            elif n_type == grafo_dominio.NOTIFICA:
+                inviata = await _notifica_dal_nodo(n_data, mode_name)
+                executed_actions.append(
+                    {
+                        "type": "notifica",
+                        "node_id": curr_id,
+                        "titolo": n_data.get("titolo") or n_data.get("title") or "",
+                        "status": inviata,
+                    }
+                )
 
     else:
         # Fallback per routine con array lineare di actions
@@ -270,6 +323,10 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
         "success": True,
         "modalita": target_mode.get("name"),
         "azioni_eseguite": executed_actions,
+        # Quali rami hanno preso le condizioni, e perche'. Serve a rispondere
+        # a «perche' la routine non ha acceso la luce» senza rieseguirla, e a
+        # illuminare il ramo giusto nel simulatore dell'editor.
+        "decisioni": decisioni,
         "messaggio": final_msg,
     }
 

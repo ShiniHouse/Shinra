@@ -270,6 +270,9 @@ def test_ogni_rotta_che_cambia_qualcosa_dichiara_un_permesso():
         # Un permesso qui sarebbe un permesso su «parlare», e chi non lo
         # avesse scriverebbe la stessa frase con la tastiera.
         ("POST", "/api/voce/trascrivi"),
+        # Validare un grafo non lo salva e non esegue niente: dice solo cosa
+        # non torna. Chiederlo mentre si disegna deve costare quanto guardare.
+        ("POST", "/api/modes/valida"),
         ("POST", "/api/users/identify"),  # dice solo chi sei, non cambia niente
         ("POST", "/api/timers"),
         ("DELETE", "/api/timers/{timer_id}"),
