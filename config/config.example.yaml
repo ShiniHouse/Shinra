@@ -42,6 +42,15 @@ alexa:
   # Senza, l'endpoint /api/alexa non puo' verificare da quale skill
   # arrivano i comandi.
   invocation_name: "kyra"
+  # Con quali permessi agisce chi parla senza essere riconosciuto (issue #48).
+  # E' un nome di ruolo di casa: se ne hai creato uno piu' stretto — un
+  # «Ospite fine settimana» che non puo' nemmeno accendere le luci — mettilo
+  # qui. Un ruolo che non esiste non da' nessun permesso.
+  #
+  # Una voce e' riconosciuta solo se in casa sono configurati i profili
+  # vocali di Alexa (app Alexa → Impostazioni → Il tuo profilo → Voce) e la
+  # voce e' stata associata a un profilo da Impostazioni → Voci Riconosciute.
+  ruolo_voce_sconosciuta: "guest"
 
 assistant:
   name: "Kyra"

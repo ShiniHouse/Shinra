@@ -225,7 +225,17 @@ class UserManager:
             raise UltimoAmministratore(
                 "Non posso cancellare l'ultimo amministratore: nomina prima qualcun altro."
             )
-        return depositi.utenti.cancella(user_id)
+        cancellato = depositi.utenti.cancella(user_id)
+        if cancellato:
+            # Le voci associate a questa persona tornano sconosciute (issue
+            # #48). Se restassero puntate a un identificativo che non esiste
+            # piu', l'elenco delle impostazioni mostrerebbe un'associazione
+            # valida verso il nulla — e chi la legge crede che quella voce
+            # sia ancora coperta da un profilo.
+            quante = depositi.voci_sentite.dissocia_profilo(user_id)
+            if quante:
+                logger.info("Profilo '%s' cancellato: %d voci tornate sconosciute.", user_id, quante)
+        return cancellato
 
 
 user_manager = UserManager()

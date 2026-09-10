@@ -183,24 +183,42 @@ async def test_chiudere_annulla_una_conferma_in_sospeso(casa, da_web):
     assert ("lock", "unlock", {"entity_id": "lock.porta_ingresso"}) not in chiamate
 
 
-async def test_dalla_voce_non_si_apre(casa):
-    """L'ADR 0004: il canale vocale non distingue chi parla.
+async def test_da_una_voce_sconosciuta_non_si_apre(casa):
+    """Il divieto che resta, stretto attorno al caso che lo giustifica.
 
-    Chiunque si rivolga a un Echo agisce con l'identita' della sessione
-    aperta — un ospite, o qualcuno che parla da fuori una finestra, userebbe
-    i permessi del padrone di casa. Fino ai profili vocali della v0.4.0, da
-    li' si puo' solo chiudere.
+    Fino alla issue #48 valeva per *tutti*, perche' il canale non sapeva mai
+    chi parlasse: negare a chiunque era l'unica risposta onesta. Adesso la
+    domanda e' rispondibile, e il divieto vale per chi non si sa chi sia.
     """
     from shinra.services import registro
 
     chiamate, _ = casa
-    registro.apri_contesto(attore="alessio", canale="alexa")
+    contesto = registro.apri_contesto(attore=None, canale="alexa")
+    contesto.identita_ignota = True
 
     esito = await domini_casa.comanda_serratura("lock.porta_ingresso", "sblocca")
 
     assert esito["success"] is False
     assert chiamate == []
-    assert "voce" in esito["error"].lower()
+    assert "non so chi sta parlando" in esito["error"].lower()
+
+
+async def test_una_voce_riconosciuta_apre_ma_solo_dopo_conferma(casa):
+    """Il permesso e la conferma, non piu' il divieto in blocco."""
+    from shinra.services import registro
+
+    chiamate, _ = casa
+    registro.apri_contesto(attore="alessio", canale="alexa")
+
+    primo = await domini_casa.comanda_serratura("lock.porta_ingresso", "sblocca")
+    assert primo["success"] is False
+    assert primo["conferma_richiesta"] is True
+    assert chiamate == []
+
+    secondo = await domini_casa.comanda_serratura("lock.porta_ingresso", "sblocca")
+
+    assert secondo["success"] is True
+    assert chiamate == [("lock", "unlock", {"entity_id": "lock.porta_ingresso"})]
 
 
 async def test_dalla_voce_si_chiude_eccome(casa):

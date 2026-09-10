@@ -23,6 +23,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
+from shinra.domain import voce
+
 logger = logging.getLogger("Shinra.Permessi")
 
 # --------------------------------------------------------------------------
@@ -174,20 +176,72 @@ def esigi(profilo: Any, permesso: str) -> None:
     raise PermessoNegato(permesso)
 
 
+def profilo_voce_ignota() -> Any:
+    """Il profilo con cui agisce chi non si sa chi sia.
+
+    Non e' un profilo di casa e non compare fra gli utenti: e' un'identita'
+    fittizia il cui unico scopo e' avere un **ruolo**, perche' i permessi
+    stanno sui ruoli e `ha_permesso(None, ...)` concede tutto. Il ruolo si
+    configura (`alexa.ruolo_voce_sconosciuta`): chi si e' costruito un
+    «Ospite fine settimana» piu' stretto puo' usarlo qui.
+
+    Se quel ruolo non esiste, `permessi_del_ruolo` non da' niente. E' la
+    direzione giusta in cui sbagliare.
+    """
+    from shinra.config.settings import settings
+    from shinra.services.user_manager import UserProfile
+
+    ruolo = getattr(settings.alexa, "ruolo_voce_sconosciuta", "") or voce.RUOLO_DI_RICADUTA
+    return UserProfile(
+        id="voce-sconosciuta",
+        name="Voce non riconosciuta",
+        role=ruolo,
+        avatar_type="guest",
+    )
+
+
 def profilo_corrente() -> Any:
     """Chi sta agendo adesso, secondo il contesto della richiesta.
 
-    Restituisce `None` quando non c'e' nessuna identita' in gioco: una
-    richiesta senza sessione con l'autenticazione spenta, oppure un'azione
-    che parte dal sistema — lo scheduler che annuncia un promemoria
-    sull'Echo. Il sistema non ha un ruolo, e non ha senso negargli i
-    permessi che gli ha dato l'utente quando ha creato il promemoria.
+    Tre esiti, non due.
+
+    **Un profilo**, quando si sa chi e': la sessione web, o una voce
+    riconosciuta e associata.
+
+    **`None`**, quando non c'e' nessuna identita' in gioco: una richiesta
+    senza sessione con l'autenticazione spenta, oppure un'azione che parte
+    dal sistema — lo scheduler che annuncia un promemoria sull'Echo. Il
+    sistema non ha un ruolo, e non ha senso negargli i permessi che gli ha
+    dato l'utente quando ha creato il promemoria. Concede tutto.
+
+    **Il profilo della voce ignota**, quando qualcuno sta agendo e non si sa
+    chi. Prima della issue #48 questo caso ricadeva sul precedente, e le due
+    cose sono opposte: «nessuno sta chiedendo niente» e «qualcuno che non
+    conosco sta chiedendo di aprire la porta» non possono avere la stessa
+    risposta.
+
+    Anche un attore che non corrisponde a nessun profilo finisce qui:
+    succede se una persona viene cancellata mentre qualcosa la nomina
+    ancora. Prima diventava `None`, cioe' cancellare un profilo restituiva
+    tutti i permessi a chi lo usava.
     """
     from shinra.services import registro
     from shinra.services.user_manager import user_manager
 
-    attore = registro.contesto().attore
-    return user_manager.get_user_by_id(attore) if attore else None
+    contesto = registro.contesto()
+    attore = contesto.attore
+
+    if attore:
+        profilo = user_manager.get_user_by_id(attore)
+        if profilo is not None:
+            return profilo
+        logger.warning("Attore '%s' senza profilo: permessi ridotti al minimo.", attore)
+        return profilo_voce_ignota()
+
+    if contesto.identita_ignota:
+        return profilo_voce_ignota()
+
+    return None
 
 
 def esigi_per_dominio(dominio: str) -> None:

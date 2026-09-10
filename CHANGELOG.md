@@ -14,6 +14,45 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Sicurezza
+- **Il canale vocale ora verifica i permessi. Prima non li verificava mai.**
+  L'ADR 0004 dichiarava un buco — «chiunque parli a un Echo agisce con
+  l'identita' della sessione» — e misurandolo si e' rivelato piu' largo: il
+  canale Alexa non impostava **mai** l'attore della richiesta, quindi
+  `profilo_corrente()` restituiva `None`, e `None` significa «nessuna
+  identita' in gioco», cioe' tutto concesso. A trattenere qualcosa restavano
+  due divieti scritti a mano — niente serrature da Alexa, una conferma in piu'
+  per l'allarme — e nient'altro.
+- **Chi parla si riconosce dai profili vocali di Alexa**, non da cio' che
+  dice. L'identificativo che Amazon manda (`context.System.person.personId`)
+  si associa una volta sola a un profilo di casa, dalle impostazioni.
+- **Una voce non riconosciuta comanda come un ospite**, non come nessuno:
+  niente serrature, niente allarme, nemmeno ripetendo la conferma. Il ruolo di
+  ricaduta si configura (`alexa.ruolo_voce_sconosciuta`), e un ruolo che non
+  esiste non da' permessi.
+- **L'apertura della skill non saluta piu' per nome l'amministratore.**
+  Diceva a un ospite come si chiama il padrone di casa, e faceva credere a chi
+  ascoltava di essere stato riconosciuto.
+- **Una voce sconosciuta non riceve piu' la memoria di conversazione
+  dell'amministratore.** Senza un profilo, l'agente ripiegava sul primo
+  dell'elenco.
+- Anche un attore che non corrisponde a nessun profilo — succede cancellando
+  una persona mentre qualcosa la nomina ancora — vale come identita' ignota.
+  Prima diventava `None`, cioe' cancellare un profilo restituiva tutti i
+  permessi a chi lo usava.
+
+### Modificato
+- **Serrature e allarme si comandano da voce, a tre condizioni**: che si sappia
+  chi parla, che quella persona abbia `sicurezza.comanda`, e che confermi
+  ripetendo la richiesta. Il divieto in blocco non sparisce, si stringe
+  attorno al caso che lo giustificava — non so chi sei.
+
+### Rimosso
+- **Il cambio di profilo parlato.** «sono Sonia» impostava la sessione su
+  Sonia senza nessuna prova; «sono stanco» creava al volo un profilo per un
+  signor Stanco. Un'identita' che si ottiene dicendola non e' un'identita'.
+  Al suo posto c'e' una spiegazione di come farsi riconoscere davvero.
+
 ### Aggiunto
 - **La conoscenza di casa si recupera invece di essere riversata.** Prima ogni
   fatto abilitato finiva nel prompt di ogni richiesta: con la conoscenza che

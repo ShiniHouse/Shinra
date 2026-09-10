@@ -18,6 +18,7 @@ from shinra.api.routes_auth import router as auth_router
 from shinra.api.routes_conoscenza import router as conoscenza_router
 from shinra.api.routes_notifiche import router as notifiche_router
 from shinra.api.routes_regole import router as regole_router
+from shinra.api.routes_voci import router as voci_router
 from shinra.channels.alexa.skill_handler import handle_alexa_request
 from shinra.channels.alexa.verifica_firma import FirmaNonValida, verifica_richiesta
 from shinra.config.settings import (
@@ -350,6 +351,7 @@ app.include_router(admin_router)  # protetto per difetto
 app.include_router(notifiche_router)  # protetto per difetto
 app.include_router(regole_router)  # protetto per difetto
 app.include_router(conoscenza_router)  # protetto per difetto
+app.include_router(voci_router)  # protetto per difetto
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 

@@ -40,6 +40,7 @@ from shinra.infra.db.modelli import (
     Timer,
     Utente,
     VoceLista,
+    VoceSentita,
 )
 from shinra.infra.db.motore import sessione
 
@@ -526,6 +527,90 @@ class DepositoEmbedding:
             return len(s.scalars(select(EmbeddingFatto.fatto_id)).all())
 
 
+class DepositoVociSentite:
+    """Le voci sentite dagli Echo. La chiave e' l'identificativo di Amazon.
+
+    Non eredita da `Deposito` perche' la chiave non si chiama `id` e perche'
+    l'operazione che conta qui non e' «salva»: e' «segna che questa voce ha
+    parlato adesso», che deve creare la riga la prima volta e non toccare
+    l'associazione le volte successive.
+    """
+
+    campi = ("person_id", "user_id", "nota", "prima_volta", "ultima_volta", "quante_volte")
+
+    def elenco(self) -> list[dict[str, Any]]:
+        with sessione() as s:
+            query = select(VoceSentita).order_by(VoceSentita.ultima_volta.desc())
+            return [_come_dizionario(r, self.campi) for r in s.scalars(query).all()]
+
+    def associazioni(self) -> dict[str, Optional[str]]:
+        """La mappa che serve a `domain.voce.risolvi`: voce -> profilo.
+
+        Contiene anche le voci non associate, con valore vuoto: e' cio' che
+        distingue «voce mai sentita» da «voce sentita e non ancora
+        attribuita», e sono due cose diverse da dire a chi parla.
+        """
+        with sessione() as s:
+            righe = s.scalars(select(VoceSentita)).all()
+            return {str(r.person_id): (r.user_id or None) for r in righe}
+
+    def per_id(self, person_id: str) -> Optional[dict[str, Any]]:
+        with sessione() as s:
+            riga = s.get(VoceSentita, person_id)
+            return _come_dizionario(riga, self.campi) if riga else None
+
+    def segna_passaggio(self, person_id: str) -> dict[str, Any]:
+        """Registra che questa voce ha appena parlato. Non associa niente."""
+        adesso = datetime.now(timezone.utc)
+        with sessione() as s:
+            riga = s.get(VoceSentita, person_id)
+            if riga is None:
+                riga = VoceSentita(person_id=person_id, prima_volta=adesso, quante_volte=0)
+                s.add(riga)
+            riga.ultima_volta = adesso
+            riga.quante_volte = int(riga.quante_volte or 0) + 1
+            s.flush()
+            return _come_dizionario(riga, self.campi)
+
+    def associa(self, person_id: str, user_id: Optional[str], nota: str = "") -> Optional[dict[str, Any]]:
+        """Dice di chi e' questa voce. `None` la riporta a sconosciuta."""
+        with sessione() as s:
+            riga = s.get(VoceSentita, person_id)
+            if riga is None:
+                return None
+            riga.user_id = user_id or None
+            if nota:
+                riga.nota = nota
+            s.flush()
+            return _come_dizionario(riga, self.campi)
+
+    def dimentica(self, person_id: str) -> bool:
+        with sessione() as s:
+            riga = s.get(VoceSentita, person_id)
+            if riga is None:
+                return False
+            s.delete(riga)
+            return True
+
+    def dissocia_profilo(self, user_id: str) -> int:
+        """Toglie l'associazione a tutte le voci di un profilo cancellato.
+
+        Senza, cancellare una persona lascerebbe la sua voce puntata a un
+        identificativo che non esiste piu'. `domain.voce.risolvi` lo regge
+        comunque — controlla che il profilo esista — ma una riga che indica
+        il vuoto e' una riga che prima o poi qualcuno legge come valida.
+        """
+        with sessione() as s:
+            righe = s.scalars(select(VoceSentita).where(VoceSentita.user_id == user_id)).all()
+            for riga in righe:
+                riga.user_id = None
+            return len(righe)
+
+    def conta(self) -> int:
+        with sessione() as s:
+            return len(s.scalars(select(VoceSentita.person_id)).all())
+
+
 utenti = DepositoUtenti()
 ruoli = DepositoRuoli()
 fatti = DepositoFatti()
@@ -543,6 +628,7 @@ sottoscrizioni_push = DepositoSottoscrizioni()
 preferenze_notifiche = DepositoPreferenzeNotifiche()
 regole = DepositoRegole()
 embedding = DepositoEmbedding()
+voci_sentite = DepositoVociSentite()
 
 DEPOSITI: dict[str, Deposito] = {
     "users": utenti,

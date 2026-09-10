@@ -26,7 +26,7 @@ import logging
 import time
 from typing import Any, Dict, Optional
 
-from shinra.domain.contesto import CANALE_ALEXA, canale_corrente
+from shinra.domain.contesto import CANALE_ALEXA, canale_corrente, identita_e_ignota
 from shinra.skills.entita import EntitaSconosciuta, nome_di, stati_noti, stato_di, verifica
 
 logger = logging.getLogger("Shinra.DominiCasa")
@@ -103,11 +103,19 @@ async def comanda_serratura(entity_id: str, azione: str) -> Dict[str, Any]:
         return _fallito(f"Azione «{azione}» non prevista per una serratura.")
 
     canale = canale_corrente()
-    if canale == CANALE_ALEXA:
+    if canale == CANALE_ALEXA and identita_e_ignota():
+        # Il divieto era assoluto perche' il canale non sapeva mai chi
+        # parlasse: negare a tutti era l'unica risposta onesta. Con i profili
+        # vocali (issue #48) la domanda diventa rispondibile, e il divieto si
+        # stringe attorno al caso che lo giustificava — non so chi sei.
+        #
+        # Chi so chi e' passa di qui e incontra due controlli veri: il
+        # permesso `sicurezza.comanda`, imposto da `call_service` sul dominio
+        # `lock`, e la conferma esplicita qui sotto.
         return _fallito(
-            f"Da voce non apro {nome}. Il canale vocale non distingue chi parla, "
-            "quindi chiunque sia in casa userebbe i tuoi permessi. Puoi farlo "
-            "dalla dashboard."
+            f"Da voce non apro {nome}: non so chi sta parlando. Se configuri i "
+            "profili vocali di Alexa e associ la tua voce a un profilo dalle "
+            "impostazioni, potro' farlo. Intanto puoi aprirla dalla dashboard."
         )
 
     adesso = time.monotonic()
