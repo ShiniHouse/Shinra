@@ -232,6 +232,70 @@ async def test_lo_storico_si_interroga_per_periodo(casa, tariffa_fissa):
     assert mese["kwh"] == 10.0
 
 
+async def test_una_lettura_dell_ultimo_istante_rientra_in_oggi(casa, tariffa_fissa, monkeypatch):
+    """Il difetto della issue #101, in forma deterministica.
+
+    L'estremo superiore di «oggi» era l'istante della domanda, e il filtro
+    usa il minore stretto: una lettura con `momento` uguale a quell'istante
+    spariva. Capitava per davvero — lo scheduler campiona i contatori e
+    qualcuno chiede «quanto ho consumato oggi» — ma si vedeva solo dove
+    l'orologio e' grosso abbastanza da restituire due volte lo stesso valore.
+
+    Qui l'orologio e' fermo per costruzione, cosi' il caso peggiore e'
+    l'unico caso: le due letture portano *lo stesso* istante che la domanda
+    leggera' come «adesso».
+    """
+    fermo = datetime.now(timezone.utc)
+
+    class OrologioFermo:
+        @staticmethod
+        def now(tz=None):
+            return fermo.astimezone(tz) if tz else fermo
+
+    monkeypatch.setattr(energia, "datetime", OrologioFermo)
+    depositi.letture_energia.registra("sensor.casa_energia", 100.0, 2.0, fasce.F1, fermo)
+    depositi.letture_energia.registra("sensor.casa_energia", 102.0, 3.0, fasce.F3, fermo)
+
+    esito = await energia.consumo_energia("oggi")
+
+    assert esito["success"] is True
+    assert esito["kwh"] == 5.0, "una lettura dell'ultimo istante non deve sparire"
+
+
+def test_ogni_periodo_si_chiude_su_una_mezzanotte():
+    """La regola che rende impossibile il difetto, non solo improbabile.
+
+    Finche' un estremo superiore e' «adesso», qualunque lettura registrata
+    nello stesso tick e' a rischio; con una mezzanotte, nessuna lo e'.
+    """
+    for periodo in ("oggi", "ieri", "settimana", "mese"):
+        _, a, _ = energia._intervallo(periodo)
+        locale = a.astimezone(fasce.FUSO)
+        assert (locale.hour, locale.minute, locale.second, locale.microsecond) == (
+            0,
+            0,
+            0,
+            0,
+        ), f"«{periodo}» si chiude alle {locale.time()}, non a mezzanotte"
+
+
+def test_oggi_comincia_e_finisce_dove_deve():
+    """Da questa mezzanotte alla prossima.
+
+    Il confronto e' fra date e non fra durate: nei due giorni all'anno in cui
+    cambia l'ora, una giornata italiana dura ventitre' o venticinque ore, e
+    un test che pretendesse esattamente ventiquattro sarebbe rosso il giorno
+    sbagliato.
+    """
+    da, a, _ = energia._intervallo("oggi")
+    inizio = da.astimezone(fasce.FUSO)
+    fine = a.astimezone(fasce.FUSO)
+    oggi = datetime.now(fasce.FUSO).date()
+
+    assert inizio.date() == oggi
+    assert fine.date() == oggi + timedelta(days=1)
+
+
 async def test_quanto_mi_costa_tenere_acceso_questo(casa, tariffa_fissa):
     """120 watt per un'ora sono 0,12 kWh."""
     esito = await energia.costo_dispositivo("sensor.frigo_potenza")
