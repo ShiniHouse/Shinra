@@ -13,6 +13,8 @@ Riferimento: issue #18.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from shinra.channels.alexa import skill_handler
@@ -57,6 +59,42 @@ async def test_l_apertura_saluta_e_tiene_aperta_la_sessione(agente_finto):
     )
 
     assert esito["response"]["shouldEndSession"] is False
+    assert "online" in esito["response"]["outputSpeech"]["text"].lower()
+
+
+async def test_l_apertura_non_saluta_per_nome_chi_non_e_riconosciuto(agente_finto):
+    """Prima qui si salutava il primo profilo dell'elenco — l'amministratore —
+    chiunque avesse aperto la skill. Diceva a un ospite come si chiama il
+    padrone di casa, e faceva credere a chi ascoltava di essere stato
+    riconosciuto. Riferimento: issue #48.
+
+    Il saluto non deve contenere **nessun** nome, non solo non contenere
+    quello dell'amministratore: la prima versione di questo test verificava
+    solo la seconda cosa, e restava verde davanti a un saluto che diceva
+    «buongiorno, Voce non riconosciuta».
+    """
+    esito = await skill_handler.handle_alexa_request(
+        {"request": {"type": "LaunchRequest"}, "session": {"attributes": {}}}
+    )
+
+    detto = esito["response"]["outputSpeech"]["text"]
+    assert "," not in detto.split(".")[0], f"il saluto nomina qualcuno: {detto!r}"
+    assert "Alessio" not in detto
+
+
+async def test_l_apertura_saluta_per_nome_chi_e_riconosciuto(agente_finto):
+    """L'altra meta': riconoscere serve a qualcosa, e si sente."""
+    depositi.voci_sentite.segna_passaggio("amzn1.person.ALESSIO")
+    depositi.voci_sentite.associa("amzn1.person.ALESSIO", "alessio")
+
+    esito = await skill_handler.handle_alexa_request(
+        {
+            "request": {"type": "LaunchRequest"},
+            "session": {"attributes": {}},
+            "context": {"System": {"person": {"personId": "amzn1.person.ALESSIO"}}},
+        }
+    )
+
     assert "Alessio" in esito["response"]["outputSpeech"]["text"]
 
 
@@ -144,29 +182,83 @@ def test_che_non_viene_scambiato_per_una_richiesta():
 # ------------------------------------------------------------- chi sta parlando
 
 
-async def test_dire_il_proprio_nome_cambia_profilo(agente_finto):
+async def test_dire_il_proprio_nome_non_cambia_piu_profilo(agente_finto):
+    """Qui c'era il contrario: «sono Sonia» e da quel momento la sessione era
+    Sonia, senza nessuna prova. Un'identita' che si ottiene dicendola non e'
+    un'identita', e rende priva di senso ogni riga scritta sui permessi del
+    canale vocale. Riferimento: issue #48."""
     esito = await skill_handler.handle_alexa_request(
         _intento("GeneralQueryIntent", {"query": {"value": "sono Sonia"}})
     )
 
-    assert esito["sessionAttributes"]["user_id"] == "sonia"
-    assert "Sonia" in esito["response"]["outputSpeech"]["text"]
+    assert esito["sessionAttributes"].get("user_id") is None
+    assert agente_finto["ricevute"] == [], "la frase non deve nemmeno arrivare all'agente"
+    assert "profili vocali" in esito["response"]["outputSpeech"]["text"]
 
 
-async def test_il_profilo_scelto_resta_per_le_richieste_successive(agente_finto, monkeypatch):
-    visti: list[str] = []
+async def test_il_rifiuto_spiega_come_farsi_riconoscere(agente_finto):
+    """Un rifiuto che non dice cosa fare si ripete: chi non capisce riprova, e
+    dopo tre volte conclude che l'impianto e' rotto."""
+    esito = await skill_handler.handle_alexa_request(
+        _intento("GeneralQueryIntent", {"query": {"value": "parla con Alessio"}})
+    )
 
-    async def finto(user_text, user_id=None, **altro):
-        visti.append(user_id)
+    detto = esito["response"]["outputSpeech"]["text"]
+    assert "impostazioni" in detto
+    assert esito["response"]["shouldEndSession"] is False, "chi ha chiesto vuole dire dell'altro"
+
+
+async def test_sono_stanco_non_e_un_cambio_di_profilo(agente_finto):
+    """«sono» davanti a un aggettivo non e' una dichiarazione di identita': se
+    lo fosse, la casa risponderebbe una spiegazione sui profili vocali a chi
+    dice di essere stanco."""
+    await skill_handler.handle_alexa_request(
+        _intento("GeneralQueryIntent", {"query": {"value": "sono stanco"}})
+    )
+
+    assert agente_finto["ricevute"] == ["sono stanco"]
+
+
+async def test_cambia_utente_in_ilaria_non_diventa_laria(agente_finto):
+    """La preposizione va tolta come parola intera. Toglierla come insieme di
+    caratteri faceva di «Ilaria» una «laria», che non e' il nome di nessuno —
+    e la frase sarebbe finita all'agente come una domanda qualunque."""
+    depositi.utenti.sostituisci_tutto(
+        [
+            {"id": "alessio", "name": "Alessio", "role": "admin"},
+            {"id": "ilaria", "name": "Ilaria", "role": "adult"},
+        ]
+    )
+
+    esito = await skill_handler.handle_alexa_request(
+        _intento("GeneralQueryIntent", {"query": {"value": "cambia utente in Ilaria"}})
+    )
+
+    assert agente_finto["ricevute"] == []
+    assert "profili vocali" in esito["response"]["outputSpeech"]["text"]
+
+
+async def test_l_agente_non_riceve_il_profilo_dell_amministratore_da_sconosciuti(agente_finto, monkeypatch):
+    """Il buco piu' silenzioso dei tre: l'agente, senza un profilo, ripiega sul
+    primo dell'elenco. Una voce sconosciuta otteneva cosi' la memoria di
+    conversazione e il tono dell'amministratore."""
+    visti: list[Any] = []
+
+    async def finto(user_text, user_id=None, user_profile=None, **altro):
+        visti.append(user_profile)
         return {"response": "Fatto."}
 
     monkeypatch.setattr(skill_handler.agent, "process_user_input", finto)
 
     await skill_handler.handle_alexa_request(
-        _intento("GeneralQueryIntent", {"query": {"value": "accendi la luce"}}, {"user_id": "sonia"})
+        _intento("GeneralQueryIntent", {"query": {"value": "accendi la luce"}}, {"user_id": "alessio"})
     )
 
-    assert visti == ["sonia"]
+    assert len(visti) == 1
+    profilo = visti[0]
+    assert profilo is not None, "senza profilo l'agente ripiega sull'amministratore"
+    assert profilo.id != "alessio"
+    assert profilo.role == "guest"
 
 
 # --------------------------------------------------------------- la risposta

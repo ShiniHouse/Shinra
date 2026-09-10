@@ -1043,6 +1043,23 @@
                     <!-- Caricato dinamicamente -->
                 </div>
             </div>
+
+            <!-- ---- Voci riconosciute (issue #48) ---- -->
+            <div id="sezione-voci" class="space-y-4">
+                <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="mic" class="w-5 h-5 text-indigo-400"></i> Voci Riconosciute
+                    </h2>
+                    <p class="text-xs text-slate-400">
+                        Chi parla agli Echo. Una voce non associata comanda come un ospite:
+                        niente serrature, niente allarme.
+                    </p>
+                </div>
+
+                <div id="voci-lista" class="space-y-2">
+                    <!-- Caricato dinamicamente -->
+                </div>
+            </div>
         </div>
 
         <!-- ==================== TAB 7: IMPOSTAZIONI ==================== -->
@@ -4555,6 +4572,9 @@
 
             await loadRuoli();
             await loadDispositivi();
+            // Dopo i profili, non prima: l'elenco delle voci disegna un menu
+            // con i nomi di casa, e `usersData` dev'essere gia' pieno.
+            await loadVoci();
         }
 
         function openAddUserModal() {
@@ -5006,6 +5026,94 @@
             const esito = await res.json();
             alert(esito.revocati === 1 ? 'Un dispositivo revocato.' : `${esito.revocati} dispositivi revocati.`);
             await loadDispositivi();
+        }
+
+        // ==================== VOCI RICONOSCIUTE (issue #48) ====================
+        //
+        // Una voce non associata non e' un dettaglio estetico: comanda con i
+        // permessi di un ospite. Questo elenco esiste perche' associarla non
+        // richieda di copiare a mano un identificativo opaco letto in un log.
+
+        async function loadVoci() {
+            const container = document.getElementById('voci-lista');
+            if (!container) return;
+
+            let elenco = [];
+            try {
+                const res = await fetch('/api/voci', { headers: getAuthHeaders() });
+                if (!res.ok) throw new Error(await _dettaglioErrore(res));
+                elenco = await res.json();
+            } catch (e) {
+                console.error('loadVoci error:', e);
+                container.innerHTML = `<div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-rose-300">Impossibile leggere le voci sentite.</div>`;
+                return;
+            }
+
+            if (!elenco.length) {
+                container.innerHTML = `<div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
+                    Nessuna voce sentita. Ne compare una qui quando qualcuno parla a un Echo e i profili vocali di Alexa sono configurati.
+                </div>`;
+                return;
+            }
+
+            const puoAssociare = posso('utenti.gestisci');
+            const opzioni = utente => usersData.map(u =>
+                `<option value="${_testoSicuro(u.id)}"${u.id === utente ? ' selected' : ''}>${_testoSicuro(u.name)}</option>`
+            ).join('');
+
+            container.innerHTML = elenco.map(v => {
+                const noto = !!v.user_id;
+                return `
+                <div class="p-3.5 rounded-2xl bg-slate-900/60 border ${noto ? 'border-slate-800' : 'border-amber-700/50'} flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                            <i data-lucide="${noto ? 'user-check' : 'user-x'}" class="w-4 h-4 ${noto ? 'text-slate-400' : 'text-amber-400'}"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="font-bold text-xs text-slate-100 truncate">
+                                ${noto ? _testoSicuro(v.nome_profilo) : 'Voce non associata'}
+                            </h4>
+                            <p class="text-[10px] text-slate-500 truncate">
+                                ${v.quante_volte} richieste · ultima ${_quando(v.ultima_volta)}${noto ? '' : ' · comanda come un ospite'}
+                            </p>
+                        </div>
+                    </div>
+                    ${puoAssociare ? `
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <select onchange="associaVoce('${encodeURIComponent(v.person_id)}', this.value)" class="px-2 py-1 rounded-xl bg-slate-800 border border-slate-700 text-[11px] text-slate-200">
+                            <option value=""${noto ? '' : ' selected'}>— nessuno —</option>
+                            ${opzioni(v.user_id)}
+                        </select>
+                        <button onclick="dimenticaVoce('${encodeURIComponent(v.person_id)}')" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold transition">
+                            Dimentica
+                        </button>
+                    </div>` : ''}
+                </div>`;
+            }).join('');
+            safeCreateIcons();
+        }
+
+        async function associaVoce(personId, userId) {
+            const res = await fetch('/api/voci/associa', {
+                method: 'POST',
+                headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ person_id: decodeURIComponent(personId), user_id: userId || null })
+            });
+            if (!res.ok) { alert(await _dettaglioErrore(res)); }
+            await loadVoci();
+        }
+
+        async function dimenticaVoce(personId) {
+            // Dimenticare non e' revocare: se quella voce parla ancora, la riga
+            // ricompare — sconosciuta, senza permessi.
+            if (!confirm('Dimenticare questa voce?\n\nSe parla di nuovo ricompare qui, senza permessi.')) return;
+
+            const res = await fetch(`/api/voci/${personId}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+            await loadVoci();
         }
 
         // ==================== SETTINGS ====================

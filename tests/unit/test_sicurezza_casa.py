@@ -241,6 +241,43 @@ async def test_da_alexa_la_seconda_richiesta_disarma(casa):
     assert chiamate[0][1] == "alarm_disarm"
 
 
+async def test_una_voce_sconosciuta_non_disinserisce_nemmeno_confermando(casa):
+    """Prima della issue #48 bastava ripetere la richiesta.
+
+    Il controllo era una conferma parlata e nient'altro: `sicurezza.comanda`
+    non scattava mai, perche' sul canale vocale l'attore non veniva impostato
+    e `ha_permesso(None, ...)` concede tutto. Una conferma parlata la ripete
+    anche chi non dovrebbe essere in casa.
+    """
+    from shinra.services import registro
+
+    chiamate, _, _ = casa
+    contesto = registro.apri_contesto(attore=None, canale="alexa")
+    contesto.identita_ignota = True
+
+    await sicurezza_casa.comanda_allarme("disarma")
+    esito = await sicurezza_casa.comanda_allarme("disarma")
+
+    assert esito["success"] is False
+    assert chiamate == [], "l'allarme non deve essersi disinserito"
+    assert "non so chi sta parlando" in esito["error"].lower()
+
+
+async def test_una_voce_sconosciuta_puo_ancora_armare(casa):
+    """Il divieto e' asimmetrico di proposito: chiudere e armare non fanno
+    danno, e negarli renderebbe la casa meno sicura, non piu'."""
+    from shinra.services import registro
+
+    chiamate, _, _ = casa
+    contesto = registro.apri_contesto(attore=None, canale="alexa")
+    contesto.identita_ignota = True
+
+    esito = await sicurezza_casa.comanda_allarme("arma_fuori")
+
+    assert esito["success"] is True
+    assert chiamate[0][1] == "alarm_arm_away"
+
+
 # ------------------------------------------------------- l'intrusione
 
 

@@ -415,3 +415,34 @@ class EmbeddingFatto(Base):
     modello: Mapped[str] = mapped_column(String(120), default="")
     impronta: Mapped[str] = mapped_column(String(64), default="", index=True)
     calcolato_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
+
+
+class VoceSentita(Base):
+    """Una voce che ha parlato a un Echo, associata o no a un profilo.
+
+    Il nome dice cio' che la tabella contiene davvero: voci *sentite*, non
+    voci riconosciute. Una riga con `user_id` vuoto e' una voce che Alexa
+    distingue ma che in casa nessuno ha ancora dichiarato di chi sia — e non
+    concede niente. Esiste perche' altrimenti associarla vorrebbe dire
+    copiare a mano un identificativo opaco preso da un log.
+
+    `person_id` e' l'identificativo che Amazon assegna a un profilo vocale:
+    opaco, stabile, e privo di significato fuori da questa casa. Non e' un
+    dato anagrafico e non contiene il nome di nessuno.
+
+    Riferimento: issue #48.
+    """
+
+    __tablename__ = "voci_sentite"
+
+    person_id: Mapped[str] = mapped_column(String(200), primary_key=True)
+    # Vuoto finche' qualcuno non dice di chi e' questa voce.
+    user_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    # Un'etichetta scritta a mano dalle impostazioni («la voce delle 8 del
+    # mattino»), per distinguere due righe sconosciute fra loro.
+    nota: Mapped[str] = mapped_column(String(200), default="")
+    prima_volta: Mapped[datetime] = mapped_column(DateTime, default=adesso)
+    ultima_volta: Mapped[datetime] = mapped_column(DateTime, default=adesso)
+    # Quante richieste sono arrivate da questa voce. Serve a scegliere quale
+    # associare per prima: quella che parla ogni giorno e' di casa.
+    quante_volte: Mapped[int] = mapped_column(Integer, default=0)

@@ -31,7 +31,7 @@ import time
 from typing import Any, Dict, Optional
 
 from shinra.domain import aperture as dominio
-from shinra.domain.contesto import CANALE_ALEXA, canale_corrente
+from shinra.domain.contesto import CANALE_ALEXA, canale_corrente, identita_e_ignota
 from shinra.skills.entita import EntitaSconosciuta, nome_di, stati_noti, stato_di, verifica
 
 logger = logging.getLogger("Shinra.SicurezzaCasa")
@@ -182,11 +182,23 @@ async def _arma(
 async def _disarma(entita: str, nome: str, codice: Optional[str]) -> Dict[str, Any]:
     canale = canale_corrente()
 
+    if canale == CANALE_ALEXA and identita_e_ignota():
+        # Prima di questo controllo, disinserire l'allarme da voce chiedeva
+        # una conferma e nient'altro: il permesso `sicurezza.comanda` non
+        # scattava mai, perche' sul canale vocale non c'era nessuna identita'
+        # su cui verificarlo. Una conferma parlata la ripete anche chi non
+        # dovrebbe esserci.
+        return _fallito(
+            f"Non disinserisco {nome}: non so chi sta parlando. Associa la tua "
+            "voce a un profilo dalle impostazioni, oppure fallo dalla dashboard."
+        )
+
     # La scheda chiede una conferma aggiuntiva da Alexa, e questa la
     # implementa. Ma il limite va scritto dove si legge il codice: una
     # conferma parlata non protegge da chi e' gia' dentro casa a parlare —
     # e' un attrito contro il fraintendimento, non contro un intruso. Contro
-    # quello c'e' il codice dell'allarme, che Home Assistant verifica.
+    # quello c'e' il codice dell'allarme, che Home Assistant verifica, e il
+    # permesso `sicurezza.comanda` di chi ha parlato.
     if canale == CANALE_ALEXA:
         adesso = time.monotonic()
         if _disarmi_in_attesa.get(entita, 0.0) < adesso:

@@ -35,6 +35,15 @@ class ContestoRichiesta:
     correlazione: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     attore: Optional[str] = None
     canale: str = ""
+    # C'e' qualcuno che agisce e non si sa chi (issue #48).
+    #
+    # Non e' la stessa cosa di `attore = None`, che vuol dire «nessuna
+    # identita' in gioco» — l'autenticazione spenta, oppure lo scheduler che
+    # annuncia un promemoria — e concede tutto. Una voce che nessun profilo
+    # riconosce e' l'opposto: e' una persona sconosciuta in casa, e finche'
+    # le due cose sono state indistinguibili il canale vocale non e' stato
+    # controllato affatto.
+    identita_ignota: bool = False
 
 
 _contesto: ContextVar[Optional[ContestoRichiesta]] = ContextVar("contesto_richiesta", default=None)
@@ -78,6 +87,37 @@ def imposta_attore(attore: Optional[str]) -> None:
     """
     if attore:
         contesto().attore = attore
+
+
+def dichiara_identita(attore: str) -> None:
+    """Il canale ha stabilito chi sta parlando. Il contrario della prossima.
+
+    Le due formano una coppia: un canale che si occupa dell'identita' chiama
+    una o l'altra, e in nessun caso lascia in piedi cio' che ha trovato.
+    """
+    ctx = contesto()
+    ctx.attore = attore
+    ctx.identita_ignota = False
+
+
+def dichiara_identita_ignota() -> None:
+    """C'e' qualcuno, non si sa chi. Da qui in poi valgono i permessi minimi.
+
+    **Azzera anche l'attore**, e non e' un dettaglio: un canale che stabilisce
+    l'identita' deve stabilirla, non ereditarla. Senza questa riga una voce
+    non riconosciuta terrebbe l'attore che il contesto aveva gia' — messo dal
+    middleware, che legge il cookie di sessione su *ogni* richiesta compresa
+    quella di Alexa — e parlerebbe con i permessi di quella persona. E' lo
+    stesso errore della issue #48 in scala ridotta: prendere per identita'
+    qualcosa che non e' stato verificato su questo canale.
+    """
+    ctx = contesto()
+    ctx.attore = None
+    ctx.identita_ignota = True
+
+
+def identita_e_ignota() -> bool:
+    return contesto().identita_ignota
 
 
 def canale_corrente() -> str:

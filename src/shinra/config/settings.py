@@ -56,6 +56,11 @@ class AlexaConfig(BaseModel):
     enabled: bool = True
     skill_id: Optional[str] = ""
     invocation_name: str = "kyra"
+    # Il ruolo che si applica quando non si sa chi ha parlato (issue #48).
+    # E' un nome di ruolo di casa, non un elenco di permessi: chi si e'
+    # costruito un ruolo «Ospite fine settimana» piu' stretto puo' metterlo
+    # qui. Un ruolo che non esiste non da' permessi — e' la ricaduta sicura.
+    ruolo_voce_sconosciuta: str = "guest"
 
 
 class AssistantConfig(BaseModel):
