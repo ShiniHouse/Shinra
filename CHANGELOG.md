@@ -14,7 +14,39 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Sicurezza
+- **Quello che dici al microfono non va più a Google.** Il riconoscimento
+  vocale della dashboard usava la Web Speech API del browser, che invia
+  l'audio ai server del suo produttore: ogni parola detta all'assistente
+  usciva di casa. Adesso la registrazione arriva al **tuo** server e la
+  trascrive Whisper.
+- **Il README diceva il contrario di quello che il codice faceva.** «Zero
+  Cloud per i Dati Privati» e «100% privata» convivevano con l'audio che
+  usciva a ogni frase. Al loro posto c'è ora una tabella che dice, riga per
+  riga, cosa resta in casa e cosa no — compreso ciò che continua a uscire: il
+  testo delle risposte lette a voce (Microsoft), meteo, notizie, e i comandi
+  detti a un Echo, che è un dispositivo Amazon e resta tale.
+- Il README annunciava «beta `0.1.0`» mentre il progetto era alla `0.4.0`, con
+  la `0.2.0` e la `0.3.0` rilasciate nel frattempo. Ora un test fa fallire la
+  suite se torna indietro.
+
 ### Aggiunto
+- **`faster-whisper` va installato a parte** (`pip install faster-whisper`).
+  Finché non c'è, il microfono della dashboard **non funziona e lo dice**, con
+  il comando da eseguire. È voluto: ripiegare in silenzio sul browser sarebbe
+  rimettere il problema dov'era, scritto apposta questa volta. Nel frattempo
+  si scrive con la tastiera.
+- Chi preferisce la velocità del browser può sceglierlo con `voce.motore:
+  browser`, e la configurazione dice cosa comporta. Una configurazione
+  scritta male non ci porta: un motore sconosciuto ripiega su quello locale,
+  non sul browser.
+- **Le frasi che Whisper inventa sul silenzio vengono scartate.** Il modello è
+  stato addestrato anche su sottotitoli e sul silenzio produce i loro titoli
+  di coda — *«Sottotitoli e revisione a cura di…»*. Passarle all'agente
+  significherebbe che un microfono aperto per sbaglio fa partire una richiesta
+  che nessuno ha fatto.
+- Il testo trascritto non finisce nel log: è ciò che una persona ha detto in
+  casa sua. Nel log resta che una trascrizione c'è stata, e quanto era lunga.
 - **Si entra con impronta o volto, senza digitare niente.** Una passkey si
   aggiunge dal proprio profilo (Impostazioni → Passkey) e da quel momento
   l'accesso non chiede piu' il PIN: il browser sa gia' quale credenziale

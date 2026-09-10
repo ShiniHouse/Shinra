@@ -64,9 +64,22 @@ dependencies = [
   # dipendenza sarebbe un pessimo scambio. Il codice che la usa la tratta
   # comunque come facoltativa: se manca, si entra con il PIN.
   "webauthn>=3.0",
+  # `python-multipart` serve a FastAPI per leggere un caricamento di file:
+  # senza, la rotta che riceve l'audio del microfono non si registra nemmeno
+  # (issue #31).
+  "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
+# Riconoscimento vocale in casa (issue #31). Non e' fra le dipendenze
+# obbligatorie per il peso: `faster-whisper` porta con se' CTranslate2 e PyAV,
+# e il modello si scarica al primo uso. Senza, il microfono della dashboard
+# non funziona e lo dice — di proposito: l'alternativa sarebbe ripiegare in
+# silenzio sulla Web Speech API, cioe' mandare la voce di casa a Google senza
+# dirlo, che e' esattamente cio' che questa versione smette di fare.
+voce = [
+  "faster-whisper>=1.0",
+]
 dev = [
   "pytest>=8.0",
   "pytest-asyncio>=0.23",
