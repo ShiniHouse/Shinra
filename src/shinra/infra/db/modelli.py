@@ -446,3 +446,43 @@ class VoceSentita(Base):
     # Quante richieste sono arrivate da questa voce. Serve a scegliere quale
     # associare per prima: quella che parla ogni giorno e' di casa.
     quante_volte: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class Passkey(Base):
+    """Una credenziale WebAuthn: il telefono o il portatile di una persona.
+
+    Qui non c'e' niente di segreto. La chiave privata resta
+    nell'autenticatore — nel Secure Enclave del telefono, nel TPM del
+    portatile, nella chiavetta — e non ne esce mai: `chiave_pubblica` e'
+    quella con cui si verificano le firme, e da sola non apre niente. E'
+    l'opposto del PIN, che qui e' cifrato proprio perche' il suo valore in
+    chiaro aprirebbe la casa.
+
+    `contatore` e' il numero di firme che l'autenticatore dichiara di aver
+    fatto. Se ne arriva uno piu' basso di quello salvato, quella credenziale
+    esiste in due copie: vedi `domain.passkey.contatore_regredito`.
+
+    `rp_id` e' salvato accanto alla credenziale perche' una passkey vale per
+    un dominio solo. Se la casa si raggiunge a due nomi diversi, le passkey
+    dell'uno non funzionano sull'altro — e saperlo permette di dirlo invece
+    di mostrare «credenziale non riconosciuta».
+
+    Riferimento: issue #48, ADR 0004.
+    """
+
+    __tablename__ = "passkey"
+
+    # L'identificativo della credenziale come lo manda l'autenticatore, in
+    # base64url: e' gia' unico e opaco, e non serve inventarne un altro.
+    id: Mapped[str] = mapped_column(String(500), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    nome: Mapped[str] = mapped_column(String(120), default="Passkey")
+    chiave_pubblica: Mapped[str] = mapped_column(Text, nullable=False)
+    contatore: Mapped[int] = mapped_column(Integer, default=0)
+    rp_id: Mapped[str] = mapped_column(String(255), default="")
+    # `single_device` o `multi_device`: una passkey sincronizzata fra i
+    # dispositivi di una persona sopravvive al telefono perso, una legata a un
+    # dispositivo solo no. Cambia cosa dire quando ne resta una sola.
+    tipo_dispositivo: Mapped[str] = mapped_column(String(32), default="")
+    creata_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
+    ultimo_uso: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

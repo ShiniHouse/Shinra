@@ -84,6 +84,17 @@ class SecurityConfig(BaseModel):
     # scriverla: fidarsene senza sapere da dove viene la richiesta permette a
     # chi attacca di aggirare la limitazione dei tentativi cambiando un valore.
     trusted_proxies: List[str] = Field(default_factory=list)
+    # Il dominio a cui l'autenticatore lega le passkey (issue #48). Vuoto
+    # significa: ricavalo dalla richiesta, che e' cio' che serve in una casa
+    # dove nessuno configurera' mai niente. Vale la pena fissarlo se la
+    # dashboard si raggiunge a piu' nomi — da fuori e da dentro — perche' una
+    # passkey registrata su un nome non funziona sull'altro, e l'errore si
+    # presenta come «la passkey non e' riconosciuta».
+    passkey_rp_id: str = ""
+    # L'origine attesa (`https://casa.example`). Vuota: ricavata dalla
+    # richiesta. Ha senso fissarla dietro a un reverse proxy che cambia lo
+    # schema, dove il server vede `http` e il browser `https`.
+    passkey_origine: str = ""
 
 
 class RegistroConfig(BaseModel):

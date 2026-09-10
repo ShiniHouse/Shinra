@@ -14,6 +14,27 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Aggiunto
+- **Si entra con impronta o volto, senza digitare niente.** Una passkey si
+  aggiunge dal proprio profilo (Impostazioni → Passkey) e da quel momento
+  l'accesso non chiede piu' il PIN: il browser sa gia' quale credenziale
+  proporre, quindi non serve nemmeno dire prima chi si e'.
+- **Il PIN resta, e non e' una gentilezza.** Le passkey **non funzionano su
+  `http://192.168.1.50:8000`**, cioe' nel modo in cui la maggioranza delle
+  case raggiunge la propria dashboard: WebAuthn vuole un contesto sicuro e un
+  nome di dominio, e un indirizzo numerico non e' ne' l'uno ne' l'altro. Dove
+  non si puo', il pulsante non compare e al suo posto c'e' la ragione e il
+  rimedio — un pulsante che fallisce con un errore del browser fa credere che
+  il server sia rotto.
+- Piu' passkey per persona, una per dispositivo, revocabili singolarmente. Chi
+  perde il telefono revoca quella e basta.
+- **Una passkey che sembra copiata non entra.** Se una credenziale dichiara
+  meno firme di quante ne aveva gia' dichiarate, quella chiave esiste in due
+  posti e non e' piu' una prova di chi sei. La riga non viene cancellata: e'
+  l'unico segnale che la persona ha che qualcosa non va.
+- La libreria `webauthn` e' trattata come facoltativa: se manca, si entra con
+  il PIN e la sezione lo dice.
+
 ### Sicurezza
 - **Il canale vocale ora verifica i permessi. Prima non li verificava mai.**
   L'ADR 0004 dichiarava un buco — «chiunque parli a un Echo agisce con

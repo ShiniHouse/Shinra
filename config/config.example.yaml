@@ -62,6 +62,19 @@ security:
   # l'amministratore e scritto nel log una volta sola.
   # Metterlo a false apre la casa a chiunque sia sulla rete.
   auth_enabled: true
+  # Passkey (issue #48). Vuoti significa: ricavali dalla richiesta, che e'
+  # cio' che serve in una casa dove nessuno configurera' mai niente.
+  #
+  # Vale la pena fissare `passkey_rp_id` se la dashboard si raggiunge a piu'
+  # nomi (da fuori e da dentro): una passkey registrata su un nome non
+  # funziona sull'altro, e l'errore si presenta come «passkey non
+  # riconosciuta». `passkey_origine` serve dietro a un reverse proxy che
+  # cambia lo schema, dove il server vede http e il browser https.
+  #
+  # Le passkey non funzionano affatto su un indirizzo numerico o senza
+  # HTTPS: in quel caso la dashboard lo dice e si continua con il PIN.
+  passkey_rp_id: ""
+  passkey_origine: ""
   # Indirizzi dei reverse proxy di cui fidarsi per leggere X-Forwarded-For.
   # Da compilare SOLO se Shinra sta dietro nginx o simili, con l'indirizzo da
   # cui il proxy si presenta — di solito 127.0.0.1. Vuoto significa: non

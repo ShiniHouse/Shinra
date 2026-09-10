@@ -10,12 +10,13 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
 from shinra.api import dispositivi, sicurezza
 from shinra.services import permessi, registro
-from shinra.services.user_manager import user_manager
+from shinra.services.passkey import AccessoRifiutato, NonSiPuo, servizio_passkey
+from shinra.services.user_manager import UserProfile, user_manager
 
 logger = logging.getLogger("Shinra.Auth")
 router = APIRouter(prefix="/api/auth", tags=["Accesso"])
@@ -160,6 +161,185 @@ async def accedi(req: RichiestaAccesso, request: Request, response: Response):
         "utente": profilo.model_dump(exclude={"pin"}),
         "dispositivo_ricordato": ricordato,
     }
+
+
+# --------------------------------------------------------------------------
+# Passkey (issue #48)
+# --------------------------------------------------------------------------
+#
+# Il PIN e' cio' che si puo' digitare, e cio' che si puo' guardare mentre
+# qualcuno lo digita. Una passkey no: la chiave privata resta nel telefono e
+# si sblocca con impronta o volto. Il PIN resta come ricaduta — chi non vuole
+# le passkey non perde niente, ed e' un criterio della scheda.
+
+
+class RegistrazionePasskey(BaseModel):
+    sfida_id: str
+    credenziale: dict
+    nome: str = ""
+
+
+class AccessoPasskey(BaseModel):
+    sfida_id: str
+    credenziale: dict
+    ricorda_dispositivo: bool = False
+    nome_dispositivo: Optional[str] = None
+
+
+def _dove(request: Request) -> tuple[str, str]:
+    """Schema e autorita' della richiesta, come li vede il browser.
+
+    Dietro a un reverse proxy il server vede `http` anche quando il browser
+    parla `https`, e una passkey firmata per `https://casa` non verrebbe
+    accettata contro un'origine `http://casa`. Si guarda
+    `X-Forwarded-Proto`, ma **solo** se il proxy e' fra quelli dichiarati
+    fidati: e' la stessa regola gia' scritta per `X-Forwarded-For`, e per lo
+    stesso motivo — quell'intestazione la scrive chi chiama.
+    """
+    schema = request.url.scheme
+    if sicurezza.proxy_fidato(request):
+        schema = (request.headers.get("x-forwarded-proto") or schema).split(",")[0].strip()
+    host = request.headers.get("host") or request.url.netloc
+    return schema, host
+
+
+@router.get("/passkey/stato")
+async def stato_passkey(request: Request):
+    """Se qui le passkey si possono usare, e altrimenti perche' no.
+
+    Pubblica come `/status`: la schermata d'accesso deve sapere se mostrare
+    il pulsante **prima** che qualcuno sia entrato. Un pulsante che fallisce
+    con un errore del browser e' peggio di un pulsante assente.
+    """
+    schema, host = _dove(request)
+    return servizio_passkey.stato(schema, host)
+
+
+@router.post("/passkey/registrazione/inizio")
+async def inizia_registrazione_passkey(
+    request: Request, profilo: Optional[UserProfile] = Depends(sicurezza.richiedi_autenticazione)
+):
+    """Una passkey si aggiunge al proprio profilo, da dentro casa."""
+    if profilo is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Accedi prima.")
+    schema, host = _dove(request)
+    try:
+        return servizio_passkey.inizia_registrazione(profilo, schema, host)
+    except NonSiPuo as errore:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(errore)) from errore
+
+
+@router.post("/passkey/registrazione/fine")
+async def concludi_registrazione_passkey(
+    dati: RegistrazionePasskey,
+    request: Request,
+    profilo: Optional[UserProfile] = Depends(sicurezza.richiedi_autenticazione),
+):
+    if profilo is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Accedi prima.")
+    schema, host = _dove(request)
+    try:
+        riga = servizio_passkey.concludi_registrazione(
+            profilo, dati.credenziale, dati.nome, dati.sfida_id, schema, host
+        )
+    except NonSiPuo as errore:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(errore)) from errore
+    except AccessoRifiutato as errore:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(errore)) from errore
+
+    registro.registra("passkey.registrata", dettagli={"nome": riga["nome"]}, canale="web")
+    return {"success": True, "passkey": {c: v for c, v in riga.items() if c != "chiave_pubblica"}}
+
+
+@router.post("/passkey/accesso/inizio")
+async def inizia_accesso_passkey(request: Request):
+    """Pubblica per mestiere: e' l'accesso.
+
+    Non chiede chi sei e non restituisce l'elenco delle credenziali di
+    nessuno — direbbe a chiunque apra la pagina chi vive in questa casa. E'
+    il browser a sapere quale passkey offrire.
+    """
+    schema, host = _dove(request)
+    try:
+        return servizio_passkey.inizia_accesso(schema, host)
+    except NonSiPuo as errore:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(errore)) from errore
+
+
+@router.post("/passkey/accesso/fine")
+async def concludi_accesso_passkey(dati: AccessoPasskey, request: Request, response: Response):
+    """Verifica la firma e apre la sessione.
+
+    La limitazione dei tentativi vale anche qui. Non perche' una firma si
+    possa indovinare — non si puo' — ma perche' l'endpoint fa lavoro
+    crittografico per chiunque lo chiami, e senza un tetto e' un modo di
+    tenere occupato il server di casa.
+    """
+    if sicurezza.tentativi_esauriti(request):
+        registro.registra("accesso.bloccato", esito=registro.ESITO_NEGATO, canale="web")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Troppi tentativi. Riprova fra cinque minuti.",
+        )
+
+    schema, host = _dove(request)
+    try:
+        profilo = servizio_passkey.concludi_accesso(dati.credenziale, dati.sfida_id, schema, host)
+    except NonSiPuo as errore:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(errore)) from errore
+    except AccessoRifiutato as errore:
+        sicurezza.registra_tentativo_fallito(request)
+        registro.registra("accesso.rifiutato", esito=registro.ESITO_NEGATO, canale="web")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(errore)) from errore
+
+    sicurezza.azzera_tentativi(request)
+    token = sicurezza.crea_sessione(profilo.id)
+    sicurezza.imposta_cookie_sessione(response, token)
+    logger.info("Accesso con passkey: %s", profilo.name)
+    registro.imposta_attore(profilo.id)
+    registro.registra("accesso.riuscito", dettagli={"nome": profilo.name, "come": "passkey"}, canale="web")
+
+    ricordato = False
+    if dati.ricorda_dispositivo:
+        credenziale = dispositivi.ricorda(
+            profilo.id,
+            nome=dati.nome_dispositivo or "Dispositivo",
+            indirizzo=request.client.host if request.client else "",
+            firma=sicurezza.firma_credenziale,
+        )
+        sicurezza.imposta_cookie_dispositivo(response, credenziale)
+        ricordato = True
+
+    return {
+        "success": True,
+        "token": token,
+        "utente": profilo.model_dump(exclude={"pin"}),
+        "dispositivo_ricordato": ricordato,
+    }
+
+
+@router.get("/passkey")
+async def elenco_passkey(profilo: Optional[UserProfile] = Depends(sicurezza.richiedi_autenticazione)):
+    """Le proprie, non quelle di casa: le passkey sono personali come i
+    dispositivi fidati, e per lo stesso motivo non portano un permesso."""
+    if profilo is None:
+        return []
+    return servizio_passkey.mie(profilo)
+
+
+@router.delete("/passkey/{identificativo:path}")
+async def revoca_passkey(
+    identificativo: str, profilo: Optional[UserProfile] = Depends(sicurezza.richiedi_autenticazione)
+):
+    if profilo is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Accedi prima.")
+    if not servizio_passkey.revoca(profilo, identificativo):
+        # Stessa risposta per «non esiste» e «non e' tua»: la seconda direbbe
+        # a chi prova che quella credenziale esiste e di chi non e'.
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Passkey non trovata.")
+
+    registro.registra("passkey.revocata", canale="web")
+    return {"success": True}
 
 
 @router.post("/logout")

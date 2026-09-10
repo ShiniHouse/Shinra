@@ -1044,6 +1044,27 @@
                 </div>
             </div>
 
+            <!-- ---- Passkey (issue #48) ---- -->
+            <div id="sezione-passkey" class="space-y-4">
+                <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="fingerprint" class="w-5 h-5 text-indigo-400"></i> Passkey
+                        </h2>
+                        <p class="text-xs text-slate-400">
+                            Entra con impronta o volto, senza digitare il PIN. <span id="passkey-nota"></span>
+                        </p>
+                    </div>
+                    <button onclick="aggiungiPasskey()" id="btn-aggiungi-passkey" style="display:none" class="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold items-center gap-1.5 transition shrink-0">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Aggiungi
+                    </button>
+                </div>
+
+                <div id="passkey-lista" class="space-y-2">
+                    <!-- Caricato dinamicamente -->
+                </div>
+            </div>
+
             <!-- ---- Voci riconosciute (issue #48) ---- -->
             <div id="sezione-voci" class="space-y-4">
                 <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
@@ -4572,6 +4593,7 @@
 
             await loadRuoli();
             await loadDispositivi();
+            await loadPasskey();
             // Dopo i profili, non prima: l'elenco delle voci disegna un menu
             // con i nomi di casa, e `usersData` dev'essere gia' pieno.
             await loadVoci();
@@ -5026,6 +5048,146 @@
             const esito = await res.json();
             alert(esito.revocati === 1 ? 'Un dispositivo revocato.' : `${esito.revocati} dispositivi revocati.`);
             await loadDispositivi();
+        }
+
+        // ==================== PASSKEY (issue #48) ====================
+        //
+        // Le proprie, non quelle di casa: una passkey e' personale come un
+        // dispositivo fidato. WebAuthn scambia byte e JSON scambia stringhe,
+        // quindi tutto passa da base64url — con i trattini al posto di piu' e
+        // barra, e senza riempimento. Sbagliare dialetto di base64 e' il modo
+        // piu' comune di far fallire una passkey senza capire perche'.
+
+        function _daBase64url(testo) {
+            const normale = testo.replace(/-/g, '+').replace(/_/g, '/');
+            const grezzo = atob(normale + '='.repeat((4 - normale.length % 4) % 4));
+            return Uint8Array.from(grezzo, c => c.charCodeAt(0));
+        }
+
+        function _aBase64url(buffer) {
+            let grezzo = '';
+            for (const b of new Uint8Array(buffer)) grezzo += String.fromCharCode(b);
+            return btoa(grezzo).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        async function loadPasskey() {
+            const container = document.getElementById('passkey-lista');
+            if (!container) return;
+
+            let stato = { disponibile: false, spiegazione: '' };
+            try {
+                const res = await fetch('/api/auth/passkey/stato', { headers: getAuthHeaders() });
+                if (res.ok) stato = await res.json();
+            } catch (e) { console.error('stato passkey:', e); }
+
+            const puo = stato.disponibile && !!window.PublicKeyCredential;
+            const bottone = document.getElementById('btn-aggiungi-passkey');
+            if (bottone) bottone.style.display = puo ? 'flex' : 'none';
+
+            const nota = document.getElementById('passkey-nota');
+            // La spiegazione del server dice *perche'* non si puo' e cosa
+            // fare: un pulsante assente senza motivo sembra una funzione
+            // rotta, non una funzione non disponibile qui.
+            if (nota) nota.textContent = puo ? '' : (stato.spiegazione || 'Non disponibili su questo dispositivo.');
+
+            let elenco = [];
+            try {
+                const res = await fetch('/api/auth/passkey', { headers: getAuthHeaders() });
+                if (res.ok) elenco = await res.json();
+            } catch (e) { console.error('loadPasskey:', e); }
+
+            if (!elenco.length) {
+                container.innerHTML = `<div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
+                    Nessuna passkey. Il PIN continua a funzionare: le passkey lo affiancano, non lo sostituiscono.
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = elenco.map(p => `
+                <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                            <i data-lucide="fingerprint" class="w-4 h-4 text-slate-400"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="font-bold text-xs text-slate-100 truncate">${_testoSicuro(p.nome)}</h4>
+                            <p class="text-[10px] text-slate-500 truncate">
+                                aggiunta ${_quando(p.creata_il)} · ultimo accesso ${_quando(p.ultimo_uso)}${p.tipo_dispositivo === 'multi_device' ? ' · sincronizzata' : ''}
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="revocaPasskey('${encodeURIComponent(p.id)}', '${_testoSicuro(p.nome).replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold shrink-0 transition">
+                        Revoca
+                    </button>
+                </div>`).join('');
+            safeCreateIcons();
+        }
+
+        function _nomeDispositivo() {
+            const ua = navigator.userAgent || '';
+            if (/iPhone/i.test(ua)) return 'iPhone';
+            if (/iPad/i.test(ua)) return 'iPad';
+            if (/Android/i.test(ua)) return /Mobile/i.test(ua) ? 'Telefono Android' : 'Tablet Android';
+            if (/Macintosh/i.test(ua)) return 'Mac';
+            if (/Windows/i.test(ua)) return 'Computer Windows';
+            if (/Linux/i.test(ua)) return 'Computer Linux';
+            return 'Dispositivo';
+        }
+
+        async function aggiungiPasskey() {
+            try {
+                const avvio = await fetch('/api/auth/passkey/registrazione/inizio', {
+                    method: 'POST', headers: getAuthHeaders()
+                });
+                if (!avvio.ok) { alert(await _dettaglioErrore(avvio)); return; }
+                const { sfida_id, opzioni } = await avvio.json();
+
+                opzioni.challenge = _daBase64url(opzioni.challenge);
+                opzioni.user.id = _daBase64url(opzioni.user.id);
+                for (const c of (opzioni.excludeCredentials || [])) c.id = _daBase64url(c.id);
+
+                const credenziale = await navigator.credentials.create({ publicKey: opzioni });
+                if (!credenziale) return;
+
+                const fine = await fetch('/api/auth/passkey/registrazione/fine', {
+                    method: 'POST',
+                    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sfida_id: sfida_id,
+                        nome: _nomeDispositivo(),
+                        credenziale: {
+                            id: credenziale.id,
+                            rawId: _aBase64url(credenziale.rawId),
+                            type: credenziale.type,
+                            response: {
+                                clientDataJSON: _aBase64url(credenziale.response.clientDataJSON),
+                                attestationObject: _aBase64url(credenziale.response.attestationObject)
+                            }
+                        }
+                    })
+                });
+                if (!fine.ok) { alert(await _dettaglioErrore(fine)); return; }
+            } catch (e) {
+                // Chi annulla il riconoscimento non ha sbagliato niente.
+                if (e && (e.name === 'NotAllowedError' || e.name === 'AbortError')) return;
+                if (e && e.name === 'InvalidStateError') {
+                    alert('Questo dispositivo ha gia\' una passkey per il tuo profilo.');
+                    return;
+                }
+                alert('Non sono riuscito ad aggiungere la passkey: ' + ((e && e.message) || e));
+                return;
+            }
+            await loadPasskey();
+        }
+
+        async function revocaPasskey(identificativo, nome) {
+            if (!confirm(`Revocare «${nome}»?\n\nQuel dispositivo tornera' a chiedere il PIN.`)) return;
+
+            const res = await fetch(`/api/auth/passkey/${identificativo}`, {
+                method: 'DELETE', headers: getAuthHeaders()
+            });
+            if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+            await loadPasskey();
         }
 
         // ==================== VOCI RICONOSCIUTE (issue #48) ====================

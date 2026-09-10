@@ -65,6 +65,14 @@
   .ricorda { display:flex; align-items:center; gap:.5rem; justify-content:center;
               font-size:.85rem; color:#94a3b8; margin:.2rem 0 .8rem; cursor:pointer; }
   .ricorda input { width:auto; margin:0; }
+  button.passkey{
+    width:100%; margin-top:16px; padding:14px; border-radius:16px; cursor:pointer;
+    background:#0b1120; border:1px solid #4f46e5; color:#c7d2fe;
+    font-size:14.5px; font-weight:700; font-family:inherit;
+  }
+  button.passkey:hover, button.passkey:focus-visible{ background:#1e1b4b; outline:none; }
+  button.passkey[disabled]{ opacity:.6; cursor:progress; }
+  p.oppure{ margin:14px 0 0; text-align:center; font-size:11.5px; color:#64748b; }
 </style>
 </head>
 <body>
@@ -82,6 +90,14 @@
       <label class="ricorda"><input type="checkbox" id="ricorda"> Ricorda questo dispositivo</label>
       <button type="submit" class="entra">Entra</button>
     </form>
+
+    <!-- Passkey (issue #48). Nascosto finche' il server non dice che qui si
+         puo': un pulsante che fallisce con un errore del browser e' peggio
+         di un pulsante assente, perche' chi lo preme crede che sia rotto. -->
+    <button type="button" id="passkey" class="passkey" style="display:none" onclick="entraConPasskey()">
+      <span aria-hidden="true">👤</span> Entra con una passkey
+    </button>
+    <p class="oppure" id="oppure" style="display:none">oppure con il PIN</p>
 
     <div class="errore" id="errore" role="alert"></div>
     <p class="nota" id="nota"></p>
@@ -191,7 +207,99 @@ async function entra(e) {
   return false;
 }
 
+// ==================== PASSKEY (issue #48) ====================
+//
+// WebAuthn scambia byte, JSON scambia stringhe: queste due funzioni sono il
+// ponte, e sono base64url — con i trattini al posto di piu' e barra, e senza
+// il riempimento finale. Sbagliare il dialetto di base64 e' il modo piu'
+// comune di far fallire una passkey senza capire perche'.
+
+function daBase64url(testo) {
+  const normale = testo.replace(/-/g, '+').replace(/_/g, '/');
+  const grezzo = atob(normale + '='.repeat((4 - normale.length % 4) % 4));
+  return Uint8Array.from(grezzo, c => c.charCodeAt(0));
+}
+
+function aBase64url(buffer) {
+  const byte = new Uint8Array(buffer);
+  let grezzo = '';
+  for (const b of byte) grezzo += String.fromCharCode(b);
+  return btoa(grezzo).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function mostraPasskeySeSiPuo() {
+  // Due condizioni, e servono entrambe: che il browser sappia farlo, e che
+  // il server sia raggiunto in un contesto dove funzionano (HTTPS, e un nome
+  // di dominio invece di un indirizzo numerico).
+  if (!window.PublicKeyCredential) return;
+  try {
+    const res = await fetch('/api/auth/passkey/stato');
+    if (!res.ok) return;
+    const stato = await res.json();
+    if (!stato.disponibile) return;
+  } catch (e) { return; }
+
+  document.getElementById('passkey').style.display = '';
+  document.getElementById('oppure').style.display = '';
+}
+
+async function entraConPasskey() {
+  const bottone = document.getElementById('passkey');
+  const errore = document.getElementById('errore');
+  errore.textContent = '';
+  bottone.disabled = true;
+
+  try {
+    const avvio = await fetch('/api/auth/passkey/accesso/inizio', { method: 'POST' });
+    if (!avvio.ok) throw new Error((await avvio.json().catch(() => ({}))).detail || 'Non disponibile.');
+    const { sfida_id, opzioni } = await avvio.json();
+
+    opzioni.challenge = daBase64url(opzioni.challenge);
+    for (const c of (opzioni.allowCredentials || [])) c.id = daBase64url(c.id);
+
+    const credenziale = await navigator.credentials.get({ publicKey: opzioni });
+    if (!credenziale) throw new Error('Nessuna passkey scelta.');
+
+    const fine = await fetch('/api/auth/passkey/accesso/fine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sfida_id: sfida_id,
+        ricorda_dispositivo: document.getElementById('ricorda').checked,
+        nome_dispositivo: nomeDispositivo(),
+        credenziale: {
+          id: credenziale.id,
+          rawId: aBase64url(credenziale.rawId),
+          type: credenziale.type,
+          response: {
+            clientDataJSON: aBase64url(credenziale.response.clientDataJSON),
+            authenticatorData: aBase64url(credenziale.response.authenticatorData),
+            signature: aBase64url(credenziale.response.signature),
+            userHandle: credenziale.response.userHandle
+              ? aBase64url(credenziale.response.userHandle) : null
+          }
+        }
+      })
+    });
+
+    if (fine.ok) { window.location.replace('/'); return; }
+    const dati = await fine.json().catch(() => ({}));
+    errore.textContent = dati.detail || "Questa passkey non e' stata accettata.";
+  } catch (e) {
+    // Chi annulla il riconoscimento del volto non ha sbagliato niente, e
+    // non va rimproverato con un messaggio di errore.
+    if (e && (e.name === 'NotAllowedError' || e.name === 'AbortError')) {
+      errore.textContent = '';
+    } else {
+      errore.textContent = (e && e.message) || 'Non sono riuscito a usare la passkey.';
+    }
+  } finally {
+    bottone.disabled = false;
+  }
+}
+
 carica();
+mostraPasskeySeSiPuo();
 </script>
 </body>
 </html>

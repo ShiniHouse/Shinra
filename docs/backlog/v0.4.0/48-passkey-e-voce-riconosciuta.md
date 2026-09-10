@@ -38,9 +38,9 @@ prova. Dettagli e conseguenze nell'[ADR 0004](../../adr/0004-identita-ruoli-e-pe
 
 ## Cosa fare
 
-- [ ] WebAuthn: registrazione e accesso con passkey, HTTPS gia' presente
-- [ ] Piu' passkey per utente, una per dispositivo, revocabili singolarmente
-- [ ] Passkey come metodo consigliato, PIN mantenuto come ricaduta
+- [x] WebAuthn: registrazione e accesso con passkey
+- [x] Piu' passkey per utente, una per dispositivo, revocabili singolarmente
+- [x] Passkey come metodo consigliato, PIN mantenuto come ricaduta
 - [x] Profili vocali Alexa: leggere l'identificativo della persona dalla
       richiesta e risolverlo nel profilo Shinra corrispondente
 - [x] Se la voce non e' riconosciuta, si applicano i permessi del profilo
@@ -53,16 +53,41 @@ prova. Dettagli e conseguenze nell'[ADR 0004](../../adr/0004-identita-ruoli-e-pe
 
 ## Criteri di accettazione
 
-- [ ] Si accede con Face ID o impronta senza digitare nulla
-- [ ] Una passkey revocata non consente piu' l'accesso
+- [x] Si accede con Face ID o impronta senza digitare nulla
+- [x] Una passkey revocata non consente piu' l'accesso
 - [x] Con i profili vocali configurati, l'assistente sa chi ha parlato e
       applica i permessi giusti
 - [x] Una voce non riconosciuta non apre serrature ne' disarma l'allarme
-- [ ] Chi non vuole le passkey continua a usare il PIN senza perdere nulla
+- [x] Chi non vuole le passkey continua a usare il PIN senza perdere nulla
+
+## Il vincolo che la scheda dava per risolto
+
+La scheda diceva «HTTPS gia' presente». Non lo e': su
+`http://192.168.1.50:8000` — il modo in cui la maggioranza delle
+installazioni domestiche raggiunge la propria dashboard — **le passkey non
+funzionano affatto**, e non c'e' niente da configurare per rimediare.
+WebAuthn vuole un contesto sicuro *e* un nome di dominio, e un indirizzo
+numerico non e' ne' l'uno ne' l'altro.
+
+Non e' un difetto da riparare: e' la specifica. Quello che si poteva fare, ed
+e' stato fatto, e' **dirlo**: dove non si puo', il pulsante non compare e al
+suo posto c'e' la ragione e il rimedio. Il PIN resta, e per questo — non solo
+per chi le passkey non le vuole.
 
 ## Da verificare in casa
 
 Il codice e' provato; l'impianto vero no, e le due cose non coincidono.
+
+### Passkey
+
+- [ ] Raggiungere la dashboard con un **nome** e in **HTTPS**: senza, la
+      sezione Passkey dice che non sono disponibili, ed e' corretto.
+- [ ] Impostazioni → Passkey → Aggiungi, e confermare con impronta o volto.
+- [ ] Uscire e rientrare con «Entra con una passkey», senza digitare il PIN.
+- [ ] Revocarla e verificare che il pulsante non la offra piu'.
+- [ ] Verificare che il PIN continui a funzionare in ogni momento.
+
+### Voce
 
 - [ ] Configurare i profili vocali dall'app Alexa (Impostazioni → Il tuo
       profilo → Voce). Shinra non puo' farlo al posto di nessuno: senza,
