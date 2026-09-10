@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 from shinra import percorsi
+from shinra.domain import stanze
 from shinra.infra.db import depositi
 
 logger = logging.getLogger(__name__)
@@ -180,17 +181,28 @@ class DataStore:
     def cancella_alias(self, identificativo: str) -> bool:
         return depositi.alias.cancella(identificativo)
 
-    def resolve_alias_or_entity(self, query_name: str) -> str:
-        """Risolve un nome detto a voce nell'entity_id esatto di Home Assistant."""
-        pulito = query_name.strip().lower()
-        if "." in pulito:
-            return pulito  # e' gia' un entity_id, tipo light.salotto
+    def cerca_dispositivo(self, query_name: str, stanza: str = "") -> stanze.Esito:
+        """Quale dispositivo, oppure perche' non si puo' dire.
 
-        for item in depositi.alias.elenco():
-            nome = (item.get("alias") or "").lower()
-            if nome == pulito or pulito in nome:
-                return item.get("entity_id", pulito)
-        return pulito
+        La scelta la fa `domain/stanze.py`; qui si legge soltanto l'archivio.
+        Chi ha bisogno di sapere che il riferimento era ambiguo chiama questa;
+        chi vuole solo tirare avanti chiama `resolve_alias_or_entity`.
+        """
+        return stanze.risolvi(query_name, stanze.da_alias(depositi.alias.elenco()), stanza)
+
+    def resolve_alias_or_entity(self, query_name: str, stanza: str = "") -> str:
+        """Risolve un nome detto a voce nell'entity_id esatto di Home Assistant.
+
+        Restituisce il riferimento cosi' com'e' quando non lo riconosce **o
+        quando e' ambiguo**: chi chiama questa funzione non ha modo di gestire
+        un'ambiguita', e a valle c'e' `skills/entita.verifica` che sa dirlo.
+        Prima l'ambiguita' non esisteva proprio: la ricerca era un
+        `riferimento in nome`, quindi «luce» corrispondeva a «luce cucina»,
+        «luce salotto» e «luce bagno», e vinceva quella che l'archivio
+        restituiva per prima. Silenziosamente.
+        """
+        esito = self.cerca_dispositivo(query_name, stanza)
+        return esito.entity_id if esito.certo else query_name.strip().lower()
 
     def get_aliases_summary(self) -> str:
         righe = [

@@ -432,3 +432,64 @@ def test_senza_automazioni_la_schermata_dice_come_farne_una():
 
     assert "if (!regole.length)" in corpo, "nessuno stato vuoto"
     assert "innesco" in corpo, "lo stato vuoto non dice da dove nascono le automazioni"
+
+
+# ------------------------------------ questo dispositivo come punto di ascolto
+
+
+def test_la_dashboard_si_dichiara_punto_di_ascolto():
+    """La dashboard aperta in cucina **e'** un satellite: ha un microfono, sta
+    in una stanza, e puo' dire quale. Non serve un Raspberry per avere
+    «accendi la luce» che accende quella giusta — serve sapere da dove arriva
+    la frase.
+
+    Riferimento: issue #33.
+    """
+    testo = _testo(PAGINA)
+
+    assert "'/api/satelliti'" in testo, "il dispositivo non si annuncia mai"
+    assert "annunciaQuestoDispositivo();" in testo, "l'annuncio non viene chiamato all'avvio"
+
+
+def test_la_stanza_viaggia_con_ogni_messaggio():
+    """Se si ferma per strada, tutto il resto e' inutile: il dominio sa
+    scegliere e nessuno gli dice da dove si parla."""
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("const res = await fetch('/api/chat'") :][:800]
+
+    assert "satellite: satelliteDiQuestoDispositivo()" in corpo, "la stanza non arriva al server"
+
+
+def test_la_stanza_si_puo_cambiare_da_dove_si_parla():
+    """Il telefono che si sposta di stanza cambia risposta: nasconderlo in un
+    pannello di impostazioni vorrebbe dire che nessuno lo aggiorna mai."""
+    testo = _testo(PAGINA)
+
+    assert 'id="scelta-stanza"' in testo, "non si puo' scegliere la stanza"
+    assert "scegliStanza(this.value)" in testo, "la scelta non viene salvata"
+    # Sta nella barra del microfono, non fra le impostazioni.
+    barra = testo[testo.index('id="chat-form"') : testo.index("<!-- Right: Activity Logs")]
+    assert 'id="scelta-stanza"' in barra, "la stanza e' finita lontano da dove si parla"
+
+
+def test_la_memoria_della_stanza_non_fa_esplodere_la_pagina():
+    """In navigazione privata `localStorage` solleva invece di rispondere. Una
+    dashboard che non si apre perche' non puo' ricordare una stanza sarebbe un
+    prezzo assurdo per una comodita'."""
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("function satelliteDiQuestoDispositivo") :][:700]
+
+    assert "try {" in corpo and "catch" in corpo, "l'accesso alla memoria del sito non e' protetto"
+
+
+def test_le_stanze_suggerite_vengono_dagli_alias():
+    """Un secondo elenco di stanze divergerebbe dal primo, e «Cucina» contro
+    «cucina » sono due stanze che non si incontreranno mai."""
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("async function riempiStanzeNote") :][:900]
+
+    assert "'/api/aliases'" in corpo, "le stanze suggerite non vengono dai dispositivi"
+    assert "a.room" in corpo

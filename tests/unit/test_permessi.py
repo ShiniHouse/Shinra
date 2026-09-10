@@ -274,6 +274,12 @@ def test_ogni_rotta_che_cambia_qualcosa_dichiara_un_permesso():
         # non torna. Chiederlo mentre si disegna deve costare quanto guardare.
         ("POST", "/api/modes/valida"),
         ("POST", "/api/users/identify"),  # dice solo chi sei, non cambia niente
+        # Dichiarare in quale stanza ci si trova non cambia la casa: cambia a
+        # quale dispositivo si riferiscono le proprie frasi. Chiedere un
+        # permesso qui vorrebbe dire un permesso su «stare in cucina», e chi
+        # non l'avesse comanderebbe le stesse luci nominandole per esteso.
+        # Il permesso serve per comandare, e si controlla dove si comanda.
+        ("POST", "/api/satelliti"),
         ("POST", "/api/timers"),
         ("DELETE", "/api/timers/{timer_id}"),
         ("POST", "/api/reminders"),

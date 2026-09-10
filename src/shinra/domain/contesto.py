@@ -44,6 +44,11 @@ class ContestoRichiesta:
     # le due cose sono state indistinguibili il canale vocale non e' stato
     # controllato affatto.
     identita_ignota: bool = False
+    # Da quale stanza arriva la richiesta, quando chi la manda lo sa (issue
+    # #33). Vuota vuol dire «non lo so», e non e' un ripiego da riempire:
+    # attribuire un comando alla stanza sbagliata accende la luce di
+    # qualcun altro, che e' peggio che chiedere quale.
+    stanza: str = ""
 
 
 _contesto: ContextVar[Optional[ContestoRichiesta]] = ContextVar("contesto_richiesta", default=None)
@@ -122,3 +127,19 @@ def identita_e_ignota() -> bool:
 
 def canale_corrente() -> str:
     return contesto().canale or ""
+
+
+def dichiara_stanza(stanza: str) -> None:
+    """Da qui parla qualcuno che si trova in questa stanza.
+
+    La chiama il canale — la dashboard che si e' dichiarata satellite, domani
+    un satellite vero — dopo aver stabilito **quale** satellite sta
+    parlando. Una stanza vuota si scrive comunque: azzerare e' il modo di
+    dire «adesso non lo so», e lasciare in piedi la stanza della richiesta
+    precedente vorrebbe dire accendere le luci di dove eravamo prima.
+    """
+    contesto().stanza = (stanza or "").strip()
+
+
+def stanza_corrente() -> str:
+    return contesto().stanza or ""
