@@ -480,6 +480,7 @@ class DepositoRegole(Deposito):
         "azioni",
         "creata_il",
         "autore",
+        "origine",
         "ultimo_scatto",
         "ultimo_esito",
     )
@@ -488,6 +489,17 @@ class DepositoRegole(Deposito):
     def attive(self) -> list[dict[str, Any]]:
         with sessione() as s:
             query = select(Regola).where(Regola.attiva.is_(True)).order_by(Regola.nome)
+            return [_come_dizionario(r, self.campi) for r in s.scalars(query).all()]
+
+    def per_origine(self, origine: str) -> list[dict[str, Any]]:
+        """Le regole nate da una stessa cosa — oggi, il grafo di una routine.
+
+        Sta qui e non in `services/` perche' la sincronizzazione deve poter
+        chiedere «cosa avevo generato l'ultima volta» senza leggersi tutte le
+        regole della casa e filtrarle a mano.
+        """
+        with sessione() as s:
+            query = select(Regola).where(Regola.origine == origine).order_by(Regola.nome)
             return [_come_dizionario(r, self.campi) for r in s.scalars(query).all()]
 
 

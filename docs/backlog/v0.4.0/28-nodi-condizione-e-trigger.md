@@ -37,34 +37,68 @@ tirare un cavo, il disegno non sarebbe sopravvissuto al salvataggio.
 ## Cosa fare
 
 - [x] Nodo condizione con due uscite (vero e falso)
-- [ ] Nodo trigger temporale: a un orario, a intervalli, all'alba, al tramonto
-- [ ] Nodo trigger su evento e su stato, collegato al motore della issue #27
+- [x] Nodo trigger temporale: a un orario, all'alba, al tramonto
+- [x] Nodo trigger su evento e su stato, collegato al motore della issue #27
 - [x] Nodo notifica, distinto dall'annuncio vocale
-- [ ] Simulazione che mostri quale ramo viene percorso — *il motore restituisce
-      gia' le decisioni prese; manca il disegno che le illumina*
+- [x] Simulazione che mostri quale ramo viene percorso
 - [x] Validazione del grafo prima del salvataggio: nodi scollegati, cicli, rami senza uscita
 - [x] **Salvare il grafo** (vedi sopra: non succedeva)
 - [x] **Rendere collegabili i nodi** (vedi sopra: i pin erano invisibili)
 
+Un trigger **a intervalli** («ogni venti minuti») non c'e' e non e' una
+dimenticanza: il motore della #27 non ha quel tipo di trigger, e aggiungerlo
+qui vorrebbe dire aggiungerlo li' — e' lavoro della #27, non di questa scheda.
+
 ## Criteri di accettazione
 
 - [x] Una routine con una condizione percorre il ramo corretto in esecuzione reale
-- [ ] Una routine con trigger all'alba scatta all'alba — *i nodi trigger
-      temporali restano da fare, e vanno appoggiati al motore della #27
-      invece di costruire un secondo scheduler*
+- [x] Una routine con trigger all'alba scatta all'alba — il nodo genera **una
+      regola del motore della #27**, che era gia' capace di programmare
+      l'alba; nessun secondo scheduler
 - [x] Un grafo non valido non puo' essere salvato, e l'errore dice cosa non va
+
+## Come funzionano i nodi trigger
+
+Un nodo trigger porta in `data.trigger` **lo stesso vocabolario** di
+`domain/regole.py`: `orario`, `alba`, `tramonto`, `stato`, `evento`, piu'
+`voce` — che e' il ripiego, ed e' cio' che ogni routine salvata finora ha.
+
+Al salvataggio, `MotoreRegole.sincronizza_dal_grafo` traduce ogni innesco
+automatico in una regola con una sola azione: attiva questa routine. La
+sincronizzazione e' **completa**, non incrementale: quello che il disegno non
+chiede piu' viene cancellato, altrimenti resterebbe dietro la regola di un
+nodo tolto — qualcosa che si accende e nessuno sa perche'. Le regole generate
+portano `origine = grafo:<id della routine>`, che e' come si ritrovano.
+
+Due cose che la sincronizzazione **non** fa: non tocca le regole scritte a
+mano, e non riaccende una regola generata che qualcuno aveva disattivato.
+
+### Difetti trovati strada facendo
+
+**Un innesco incompleto non dava nessun errore.** `domain/regole` ha un
+ripiego per ogni campo — le sette del mattino se l'ora manca — e i ripieghi
+sono giusti per chi scrive una regola a mano, sbagliati per chi ha disegnato
+un nodo e non l'ha compilato. Una routine che scatta alle sette invece che
+alle ventitre' non sembra rotta: sembra sbagliata. Ora `perche_non_scattera`
+lo dice e il grafo non si salva.
+
+**La simulazione dell'editor percorreva tutti gli archi.** Era una visita in
+ampiezza scritta dentro la pagina: lo stesso difetto dell'esecutore prima di
+questa scheda, e mostrava una condizione che accende entrambi i rami — l'unica
+cosa che una condizione non fa. Adesso la domanda la fa `/api/modes/simula`
+allo stesso codice che esegue la routine.
+
+**Un innesco con un cavo in ingresso non e' un innesco.** L'esecutore lo
+salta e prosegue, quindi il disegno mostra qualcosa che non innesca niente.
+Ora e' un problema di validazione.
 
 ## Cosa resta
 
-I nodi **trigger** — orario, alba, tramonto, evento, stato — e la
-**simulazione che illumina il ramo percorso**. Il motore restituisce gia'
-`decisioni` con il ramo preso e il perche': manca solo il disegno che le usa.
-
-Sui trigger, la scelta e' gia' presa e vale la pena scriverla: un grafo con un
-trigger temporale deve diventare **una regola della #27 che esegue la
-routine**, non un secondo scheduler. Due motori che programmano la stessa
-casa si contendono lo stesso lavoro, e il secondo si scopre solo quando la
-luce si accende due volte.
+Le regole del motore della #27 **non hanno una schermata**: l'API c'e', la
+dashboard no. Chi disegna un innesco automatico non ha modo di vedere le
+regole che ne nascono, ne' di zittirne una senza tornare nell'editor. Non e'
+lavoro di questa scheda — e' una schermata mancante della #27 — ed e' scritto
+qui perche' e' venuto fuori lavorandoci.
 
 ## Da verificare in casa
 
@@ -73,3 +107,9 @@ luce si accende due volte.
 - [ ] Salvare, chiudere, riaprire: il disegno deve essere ancora li'.
 - [ ] Aggiungere una condizione, collegare entrambe le uscite ed eseguire la
       routine con la condizione vera e poi falsa.
+- [ ] Premere «Simula Flusso» con una condizione nel mezzo: deve accendersi
+      **un ramo solo**, e sotto la condizione deve comparire il perche'.
+- [ ] Mettere un innesco al tramonto, salvare, e la sera guardare se la
+      routine parte. E' l'unica prova che conta.
+- [ ] Togliere quell'innesco, risalvare, e verificare la sera dopo che **non**
+      parte piu'.

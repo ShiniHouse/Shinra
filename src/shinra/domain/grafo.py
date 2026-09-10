@@ -60,6 +60,22 @@ FALSO = "falso"
 RAMI = (VERO, FALSO)
 
 # --------------------------------------------------------------------------
+# Cosa fa partire una routine
+# --------------------------------------------------------------------------
+#
+# Un nodo trigger senza `data.trigger` e' l'innesco vocale di sempre: si dice
+# il nome della routine e parte. E' il caso di ogni routine gia' salvata, ed
+# e' per questo che «voce» e' il ripiego e non un valore da scrivere.
+#
+# Gli altri tipi sono **quelli della issue #27**, con gli stessi nomi e gli
+# stessi campi. Non e' pigrizia: un grafo con un trigger all'alba diventa una
+# regola del motore delle regole, e se i due vocabolari divergessero la
+# traduzione sarebbe il posto dove nascondere i difetti.
+
+VOCE = "voce"
+TRIGGER_AMMESSI = (VOCE, *regole.TRIGGER)
+
+# --------------------------------------------------------------------------
 # I problemi che un grafo puo' avere
 # --------------------------------------------------------------------------
 
@@ -69,6 +85,8 @@ RAMO_SENZA_USCITA = "ramo_senza_uscita"
 SENZA_INIZIO = "senza_inizio"
 ARCO_ROTTO = "arco_rotto"
 TIPO_SCONOSCIUTO = "tipo_sconosciuto"
+TRIGGER_MUTO = "trigger_muto"
+TRIGGER_INCATENATO = "trigger_incatenato"
 
 
 @dataclass(frozen=True)
@@ -170,6 +188,73 @@ class Grafo:
 
 
 # --------------------------------------------------------------------------
+# I trigger
+# --------------------------------------------------------------------------
+
+
+def trigger_del_nodo(dati: Mapping[str, Any]) -> dict[str, Any]:
+    """Cosa fa partire questo nodo trigger, col «voce» sottinteso.
+
+    Le routine salvate finora hanno un nodo trigger senza nessun `trigger`
+    dentro, e vogliono dire tutte la stessa cosa: parte quando lo chiedo. Il
+    ripiego e' li' per loro, e vale la pena che sia esplicito invece di
+    lasciarlo capire a chi legge il dizionario vuoto.
+    """
+    grezzo = dati.get("trigger")
+    if not isinstance(grezzo, Mapping):
+        return {"tipo": VOCE}
+    return {**grezzo, "tipo": str(grezzo.get("tipo") or VOCE).strip().lower()}
+
+
+def perche_non_scattera(trigger: Mapping[str, Any]) -> Optional[str]:
+    """Cosa manca a questo trigger perche' possa scattare, o `None`.
+
+    Serve perche' un trigger incompleto **non da' errore**: `domain/regole`
+    ha un ripiego per ogni campo — le sette del mattino se l'ora manca, un
+    confronto se il confronto manca — e i ripieghi sono giusti per chi scrive
+    una regola a mano e sbagliati per chi ha disegnato un nodo e non l'ha
+    compilato. Una routine che scatta alle sette invece che alle ventitre'
+    non sembra rotta: sembra sbagliata, ed e' molto piu' difficile da capire.
+    """
+    tipo = str(trigger.get("tipo") or VOCE)
+
+    if tipo not in TRIGGER_AMMESSI:
+        return f"«{tipo}» non e' un innesco che conosco"
+
+    if tipo == regole.ORARIO and not str(trigger.get("ora") or "").strip():
+        return "manca l'ora"
+
+    if tipo == regole.EVENTO and not str(trigger.get("evento") or "").strip():
+        return "manca il nome dell'evento"
+
+    if tipo == regole.STATO:
+        if not str(trigger.get("entity_id") or "").strip():
+            return "manca l'entita' da sorvegliare"
+        if trigger.get("valore") in (None, ""):
+            return "manca il valore da confrontare"
+
+    return None
+
+
+def triggers_automatici(nodi: Sequence[Mapping[str, Any]]) -> list[tuple[str, dict[str, Any]]]:
+    """I nodi trigger che devono far partire la routine **da soli**.
+
+    L'innesco vocale non e' qui: non ha bisogno di nessuno che lo aspetti, e
+    metterlo insieme agli altri vorrebbe dire programmare qualcosa per una
+    frase che potrebbe non essere mai detta.
+    """
+    trovati: list[tuple[str, dict[str, Any]]] = []
+    for nodo in nodi or ():
+        if not nodo.get("id") or str(nodo.get("type") or "") != TRIGGER:
+            continue
+        trigger = trigger_del_nodo(nodo.get("data") or {})
+        if trigger["tipo"] == VOCE or perche_non_scattera(trigger):
+            continue
+        trovati.append((str(nodo["id"]), trigger))
+    return trovati
+
+
+# --------------------------------------------------------------------------
 # La validazione
 # --------------------------------------------------------------------------
 
@@ -261,7 +346,40 @@ def valida(nodi: Sequence[Mapping[str, Any]], archi: Sequence[Mapping[str, Any]]
             )
         )
 
-    # 6. Nessun punto di partenza: succede solo se ogni nodo ha un arco
+    # 6. Trigger che non scatteranno mai, o che scatteranno all'ora
+    #    sbagliata. Uno per nodo, perche' il motivo cambia da nodo a nodo e
+    #    «due trigger sono incompleti» non dice a nessuno cosa compilare.
+    for identificativo in grafo.mappa:
+        if grafo.tipo_di(identificativo) != TRIGGER:
+            continue
+        manca = perche_non_scattera(trigger_del_nodo(grafo.dati_di(identificativo)))
+        if manca:
+            problemi.append(
+                Problema(
+                    TRIGGER_MUTO,
+                    f"Questo innesco non puo' funzionare: {manca}.",
+                    (identificativo,),
+                )
+            )
+
+    # 7. Inneschi con un cavo in ingresso. Un innesco dice *quando* partire:
+    #    se qualcosa lo precede, non e' l'inizio di niente. L'esecutore non
+    #    lo esegue — passa oltre e prosegue — quindi il disegno mostra un
+    #    innesco che non innesca, e nessun errore lo dice.
+    incatenati = tuple(
+        i for i in grafo.mappa if grafo.tipo_di(i) == TRIGGER and grafo._entranti.get(i, 0) > 0
+    )
+    if incatenati:
+        problemi.append(
+            Problema(
+                TRIGGER_INCATENATO,
+                "Un innesco non puo' avere un cavo in ingresso: dice quando partire, "
+                "e qualcosa che lo precede lo rende una decorazione.",
+                incatenati,
+            )
+        )
+
+    # 8. Nessun punto di partenza: succede solo se ogni nodo ha un arco
     #    entrante, cioe' se il grafo e' tutto un anello.
     if not [i for i in grafo.mappa if grafo._entranti.get(i, 0) == 0]:
         problemi.append(

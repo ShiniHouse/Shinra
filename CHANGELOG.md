@@ -25,6 +25,12 @@ installabile e utilizzabile.
   dimensione zero, invisibili e non cliccabili. Non se n'era accorto nessuno
   perché il difetto qui sopra veniva prima — anche riuscendo a tirare un cavo,
   il disegno non sarebbe sopravvissuto al salvataggio.
+- **Un innesco incompleto non dava nessun errore.** Un nodo «a un orario»
+  senza l'ora sarebbe scattato alle sette del mattino — il ripiego del motore
+  di regole — e nessuno avrebbe saputo perché. Ora il grafo non si salva e
+  l'errore dice cosa manca.
+- Un nodo innesco con un cavo in ingresso non innescava niente: l'esecutore lo
+  saltava e proseguiva senza dire nulla. Ora è segnalato.
 
 ### Aggiunto
 - **Nodo condizione, con due uscite.** Il flusso di una routine non è più
@@ -44,6 +50,18 @@ installabile e utilizzabile.
 - Eseguire una routine restituisce ora anche **quale ramo ha preso ogni
   condizione e perché**: serve a rispondere a «perché non ha acceso la luce»
   senza rieseguirla.
+- **Una routine può partire da sola**: a un orario, all'alba, al tramonto,
+  quando un valore attraversa una soglia, o su un evento della casa. Il nodo
+  innesco diventa **una regola del motore delle automazioni** — non un secondo
+  scheduler accanto al primo: due motori che programmano la stessa casa si
+  contendono lo stesso lavoro, e il secondo si scopre quando la luce si accende
+  due volte. Togliere l'innesco e risalvare toglie anche la regola; cancellare
+  la routine la cancella; disattivarla a mano la lascia disattivata.
+- **La simulazione dell'editor adesso dice la verità.** Illumina solo i nodi
+  che verrebbero eseguiti davvero, accende il solo ramo che la condizione
+  prenderebbe *adesso*, e scrive sotto la condizione **perché**. Prima era una
+  visita scritta nella pagina che percorreva tutti gli archi: mostrava una
+  condizione che accende entrambi i rami.
 
 ### Sicurezza
 - **Quello che dici al microfono non va più a Google.** Il riconoscimento

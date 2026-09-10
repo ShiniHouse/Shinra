@@ -12,10 +12,15 @@ from shinra.infra.homeassistant.client import client_home_assistant
 logger = logging.getLogger(__name__)
 
 
-async def _percorso_del_grafo(
+async def percorso_del_grafo(
     nodi: Sequence[Dict[str, Any]], archi: Sequence[Dict[str, Any]]
 ) -> tuple[list[grafo_dominio.Passo], list[tuple[str, str, str]]]:
     """Cosa eseguire, secondo il dominio, con la casa com'e' adesso.
+
+    Pubblica perche' la simulazione dell'editor fa **questa** domanda e non
+    deve poter rispondere diversamente: un simulatore che legge gli stati in
+    un altro modo mostra un ramo e la routine ne percorre un altro, e a quel
+    punto la simulazione e' peggio che inutile.
 
     Gli stati si leggono **una volta sola** e valgono per tutte le condizioni
     del grafo: se una routine ha tre condizioni sulla stessa lampadina, e la
@@ -212,7 +217,7 @@ async def activate_mode(mode_name: str) -> Dict[str, Any]:
         # solo brutto: percorreva **tutti** gli archi, e un nodo condizione
         # con due uscite avrebbe eseguito entrambi i rami — cioe' non sarebbe
         # stato una condizione. Riferimento: issue #28.
-        passi, scelte = await _percorso_del_grafo(nodes, edges)
+        passi, scelte = await percorso_del_grafo(nodes, edges)
         decisioni = [{"node_id": nodo, "ramo": ramo, "motivo": motivo} for nodo, ramo, motivo in scelte]
 
         for passo in passi:
