@@ -2019,7 +2019,128 @@
             updateLivingCoreState('idle');
         }
 
+        // ---- Il microfono, dalla issue #31 ----
+        //
+        // Prima di questa versione qui c'era solo la Web Speech API, che manda
+        // l'audio ai server del produttore del browser: Google su Chrome, Apple
+        // su Safari. Ogni parola detta all'assistente usciva di casa, mentre il
+        // README prometteva «Zero Cloud per i Dati Privati».
+        //
+        // Adesso l'audio si registra e si manda al server, che lo trascrive con
+        // Whisper e non lo inoltra a nessuno. La Web Speech API resta
+        // raggiungibile mettendo `voce.motore: browser` in configurazione: e'
+        // una scelta, e la dashboard dice cosa comporta.
+
+        let statoVoce = null;
+        let registratore = null;
+
+        async function leggiStatoVoce() {
+            if (statoVoce) return statoVoce;
+            try {
+                const res = await fetch('/api/voce/stato', { headers: getAuthHeaders() });
+                if (res.ok) statoVoce = await res.json();
+            } catch (e) { console.warn('stato voce:', e); }
+            return statoVoce;
+        }
+
         async function toggleSpeechRecognition() {
+            const stato = await leggiStatoVoce();
+
+            // `in_casa` falso vuol dire che la configurazione ha scelto il
+            // browser: si usa la vecchia strada, sapendo cosa comporta.
+            if (stato && stato.in_casa) return toggleTrascrizioneLocale(stato);
+
+            return toggleWebSpeech();
+        }
+
+        async function toggleTrascrizioneLocale(stato) {
+            if (isRecording && registratore) {
+                try { registratore.stop(); } catch (e) {}
+                return;
+            }
+            if (!stato.pronto) {
+                // Meglio dirlo prima di registrare: chi preme e poi scopre che
+                // non serviva a niente ha gia' parlato.
+                alert(stato.spiegazione || 'Il riconoscimento vocale non e\' disponibile.');
+                return;
+            }
+            if (!navigator.mediaDevices || !window.MediaRecorder) {
+                alert("Questo browser non sa registrare audio. Puoi digitare il tuo messaggio.");
+                return;
+            }
+
+            let flusso;
+            try {
+                flusso = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (err) {
+                alert("Accesso al microfono non consentito. Controlla i permessi del browser.");
+                return;
+            }
+
+            const pezzi = [];
+            registratore = new MediaRecorder(flusso);
+
+            registratore.ondataavailable = e => { if (e.data && e.data.size) pezzi.push(e.data); };
+
+            registratore.onstart = () => {
+                isRecording = true;
+                const btn = document.getElementById('mic-btn');
+                if (btn) btn.classList.add('bg-rose-600', 'text-white', 'mic-active');
+                const st = document.getElementById('recording-status');
+                if (st) {
+                    st.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> 🎙️ In ascolto... parla pure!';
+                    st.classList.remove('hidden');
+                }
+                updateLivingCoreState('listening');
+            };
+
+            registratore.onstop = async () => {
+                // Il microfono si spegne davvero: senza questo, la spia di
+                // registrazione del browser resta accesa dopo che si e' finito
+                // di parlare, e non c'e' modo peggiore di far credere a
+                // qualcuno che lo stai ascoltando sempre.
+                flusso.getTracks().forEach(t => t.stop());
+                stopRecording();
+
+                const registrazione = new Blob(pezzi, { type: registratore.mimeType || 'audio/webm' });
+                if (!registrazione.size) return;
+
+                const st = document.getElementById('recording-status');
+                if (st) {
+                    st.innerHTML = '<span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Trascrivo...';
+                    st.classList.remove('hidden');
+                }
+
+                try {
+                    const modulo = new FormData();
+                    modulo.append('audio', registrazione, 'comando.webm');
+                    modulo.append('tipo', registratore.mimeType || 'audio/webm');
+
+                    const res = await fetch('/api/voce/trascrivi', {
+                        method: 'POST', headers: getAuthHeaders(), body: modulo
+                    });
+                    if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+
+                    const esito = await res.json();
+                    if (esito.vuota) {
+                        if (st) st.innerHTML = 'Non ho sentito niente.';
+                        setTimeout(() => { if (st) st.classList.add('hidden'); }, 2000);
+                        return;
+                    }
+
+                    const input = document.getElementById('user-input');
+                    if (input) { input.value = esito.testo; handleSend(); }
+                } catch (e) {
+                    alert('Non sono riuscito a trascrivere: ' + ((e && e.message) || e));
+                } finally {
+                    if (st) st.classList.add('hidden');
+                }
+            };
+
+            registratore.start();
+        }
+
+        async function toggleWebSpeech() {
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRec) {
                 alert("Il riconoscimento vocale non è supportato in questa versione del browser. Puoi digitare il tuo messaggio.");

@@ -153,6 +153,28 @@ class PresenzaConfig(BaseModel):
     ritardo_uscita_secondi: int = 120
 
 
+class VoceConfig(BaseModel):
+    """Dove finisce l'audio di chi parla al microfono della dashboard.
+
+    Fino alla issue #31 non c'era niente da configurare, perche' non c'era
+    scelta: il riconoscimento passava dalla Web Speech API del browser, che
+    manda l'audio ai server del suo produttore. Adesso la scelta esiste, e il
+    valore predefinito e' quello che tiene l'audio in casa.
+    """
+
+    # `locale` (Whisper sul server) oppure `browser` (Web Speech API).
+    # Mettere `browser` significa che ogni parola detta all'assistente esce
+    # dalla rete di casa. E' una scelta legittima — e' piu' veloce e non
+    # richiede di installare niente — ma dev'essere una scelta, non una
+    # ricaduta silenziosa.
+    motore: str = "locale"
+    # Da `tiny` a `large-v3`. Su una CPU di un piccolo server `base` e' il
+    # compromesso che regge: `small` raddoppia l'attesa, `tiny` sbaglia i nomi
+    # propri, che in una casa sono quasi tutto.
+    modello: str = "base"
+    lingua: str = "it"
+
+
 class AppConfig(BaseModel):
     server: ServerConfig = Field(default_factory=ServerConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
@@ -163,6 +185,7 @@ class AppConfig(BaseModel):
     registro: RegistroConfig = Field(default_factory=RegistroConfig)
     presenza: PresenzaConfig = Field(default_factory=PresenzaConfig)
     energia: EnergiaConfig = Field(default_factory=EnergiaConfig)
+    voce: VoceConfig = Field(default_factory=VoceConfig)
 
 
 # --------------------------------------------------------------------------

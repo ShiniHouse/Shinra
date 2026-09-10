@@ -6,18 +6,19 @@ Il nome *Shinra* nasce dall'unione concettuale con **Shinigami** (死神 — ent
 
 ---
 
-## 🚧 Stato del progetto — beta `0.1.0`
+## 🚧 Stato del progetto — beta, in lavorazione verso la `0.4.0`
 
 Shinra è in **beta** e procede per fasi verso la `1.0.0`. Ogni versione minor
 corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino
 alla `1.0.0` una minor può introdurre modifiche incompatibili.
 
-**La `0.1.0` è la prima release.** Non aggiunge funzioni: chiude quelle che non
-avevano mai funzionato e le porte che erano rimaste aperte. I sei difetti di
-sicurezza individuati dalla revisione tecnica sono risolti, e la Modalità
-Apprendimento completa l'intervista per la prima volta.
+**L'ultima release è la `0.3.0`**, che porta la casa a comandare serrature e
+allarme, a sapere chi c'è, e a occuparsi di clima, tapparelle, energia, liste,
+calendario e scadenze. La `0.4.0` è in lavorazione: proattività — notifiche
+push, un motore di regole, recupero della conoscenza, identità sul canale
+vocale e passkey al posto del PIN.
 
-Note complete: [`docs/release/v0.1.0.md`](docs/release/v0.1.0.md).
+Note complete: [`docs/release/v0.3.0.md`](docs/release/v0.3.0.md).
 
 | Documento | Cosa contiene |
 | :--- | :--- |
@@ -64,9 +65,61 @@ Note complete: [`docs/release/v0.1.0.md`](docs/release/v0.1.0.md).
 
 ---
 
+## 🔒 Cosa resta in casa, e cosa no
+
+Questo elenco esisteva prima solo come slogan — *«Zero Cloud per i Dati
+Privati»*, *«100% privata»* — e non era vero: fino alla `0.4.0` **ogni parola
+detta al microfono della dashboard veniva inviata a Google**, perché il
+riconoscimento vocale usava la Web Speech API del browser. Adesso non succede
+più, e questa tabella dice esattamente come stanno le cose invece di
+riassumerle in uno slogan.
+
+| Cosa | Dove va | Nota |
+| :--- | :--- | :--- |
+| Il modello che risponde | **Resta in casa** | Ollama, sul tuo server |
+| La conoscenza di casa e le sue ricerche | **Resta in casa** | Anche gli embedding: li calcola Ollama |
+| Comandi ai dispositivi | **Resta in casa** | Home Assistant sulla tua rete |
+| Anagrafica, PIN, passkey, registro delle azioni | **Resta in casa** | Sul disco del server |
+| **La voce che parli al microfono** | **Resta in casa** *(dalla `0.4.0`)* | Whisper sul server. Vedi sotto |
+| Il testo delle risposte lette a voce | **Esce** → Microsoft | Edge-TTS. Si può spegnere e usare le voci del browser |
+| Meteo | **Esce** → Open-Meteo | La tua città, non chi sei |
+| Notizie | **Esce** → le fonti RSS configurate | |
+| Comandi detti a un Echo | **Esce** → Amazon | È un dispositivo Amazon: l'audio lo elabora Amazon, sempre |
+| Notifiche push | **Esce** → Google/Mozilla/Apple | Il contenuto è **cifrato**: instradano una busta che non possono leggere |
+
+Niente di ciò che esce porta con sé un elenco dei tuoi dispositivi, il
+contenuto della tua conoscenza di casa o chi sei.
+
+### La voce, in dettaglio
+
+Il microfono della dashboard registra e manda l'audio al **tuo** server, che
+lo trascrive con [faster-whisper](https://github.com/SYSTRAN/faster-whisper).
+Non è installato per difetto — pesa, e il modello si scarica al primo uso —
+quindi va aggiunto:
+
+```bash
+sudo -u shinra /opt/Shinra/.venv/bin/pip install "faster-whisper>=1.0"
+sudo systemctl restart shinra
+```
+
+**Finché non lo installi il microfono della dashboard non funziona, e lo
+dice.** È voluto: l'alternativa sarebbe ripiegare in silenzio sulla Web Speech
+API, cioè rimettere il problema esattamente dov'era. Nel frattempo si scrive
+con la tastiera, e tutto il resto funziona.
+
+Chi preferisce la velocità del browser alla privacy può sceglierlo
+esplicitamente, mettendo in `config/config.yaml`:
+
+```yaml
+voce:
+  motore: browser   # l'audio esce di casa e va a Google/Apple
+```
+
+---
+
 ## ✨ Funzionalità Principali
 
-### 🧠 1. Cervello IA Locale (Zero Cloud per i Dati Privati)
+### 🧠 1. Cervello IA Locale
 * Elaborazione locale tramite **Ollama** su CPU o GPU con supporto a qualsiasi modello LLM:
   * **`qwen2.5:3b`** *(Consigliato per velocità istantanea < 1s su CPU e supporto nativo ai Tool)*.
   * **`gemma2:9b`**, **`llama3.2:3b`**, **`qwen2.5:7b`**.
@@ -100,6 +153,19 @@ Note complete: [`docs/release/v0.1.0.md`](docs/release/v0.1.0.md).
   * 👩 **`Isabella`** (Femminile dolce e conversazionale).
   * 👨 **`Giuseppe`** (Maschile formale e istituzionale).
 * Fallback automatico su **Web Speech API** del browser con controlli di Pitch (tonalità) e Rate (velocità).
+* Il testo da leggere esce verso Microsoft: è l'ultimo servizio esterno che
+  resta nel percorso vocale, e si spegne scegliendo le voci del browser.
+
+### 🎧 7. Riconoscimento Vocale in Casa
+* Il microfono della dashboard registra e manda l'audio al **tuo** server, che
+  lo trascrive con **faster-whisper**. Non esce niente.
+* Modello configurabile da `tiny` a `large-v3`: su una CPU di un piccolo
+  server `base` è il compromesso che regge — `small` raddoppia l'attesa,
+  `tiny` sbaglia i nomi propri, che in una casa sono quasi tutto.
+* Le frasi che Whisper inventa sul silenzio — *«Sottotitoli e revisione a cura
+  di…»* — vengono scartate invece di essere eseguite come comandi.
+* Va installato a parte (`pip install faster-whisper`): vedi
+  [Cosa resta in casa, e cosa no](#-cosa-resta-in-casa-e-cosa-no).
 
 ---
 
@@ -291,4 +357,7 @@ voice:
 ---
 
 ## 📄 Licenza
-Rilasciato sotto licenza MIT. Sviluppato per un'automazione domestica intelligente, elegante e 100% privata.
+Rilasciato sotto licenza MIT. Sviluppato per un'automazione domestica
+intelligente ed elegante, che tiene in casa ciò che può tenere in casa e dice
+apertamente il resto: vedi [Cosa resta in casa, e cosa
+no](#-cosa-resta-in-casa-e-cosa-no).

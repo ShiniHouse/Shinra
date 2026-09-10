@@ -26,6 +26,52 @@ def test_il_numero_viene_da_pyproject_e_da_nessun_altro_posto():
     assert versione.numero() == dichiarata
 
 
+def test_il_readme_non_annuncia_una_versione_che_non_esiste():
+    """Il README diceva «beta 0.1.0» mentre il progetto era alla `0.4.0`, e la
+    `0.2.0` e la `0.3.0` erano state rilasciate nel frattempo.
+
+    E' la porta d'ingresso del progetto: chi la legge non ha modo di sapere
+    che e' vecchia, e vale la stessa regola scritta in cima a questo file — un
+    numero sbagliato e' peggio di nessun numero. La guardia e' minima di
+    proposito: non pretende che il README racconti la storia delle release,
+    pretende che la sezione «Stato del progetto» nomini la versione a cui il
+    progetto e' arrivato.
+    """
+    testo = (RADICE / "README.md").read_text(encoding="utf-8")
+    corrente = ".".join(versione.numero().split(".")[:2])
+
+    inizio = testo.find("## 🚧 Stato del progetto")
+    assert inizio != -1, "il README non ha piu' una sezione «Stato del progetto»"
+    sezione = testo[inizio : testo.find("\n## ", inizio + 1)]
+
+    # Solo dentro quella sezione, e solo le versioni scritte per intero fra
+    # apici inversi: `1.0.0` compare altrove come meta della roadmap, ed e'
+    # giusto che ci sia. Qui la domanda e' un'altra — questa pagina sa a che
+    # punto siamo?
+    citate = set(re.findall(r"`(\d+\.\d+\.\d+)`", sezione))
+    assert citate, "la sezione «Stato del progetto» non dichiara nessuna versione"
+
+    minori = {".".join(v.split(".")[:2]) for v in citate}
+    assert corrente in minori, (
+        f"il README parla delle versioni {sorted(minori)} mentre il progetto " f"e' alla `{corrente}`"
+    )
+
+    # E deve dire qual e' l'ultima **rilasciata**, che non e' quella in
+    # lavorazione: chi legge decide da li' cosa puo' installare. Le note di
+    # rilascio sono la fonte, perche' esistono nel repository anche quando i
+    # tag non ci sono — in CI il clone e' superficiale.
+    rilasciate = sorted(
+        (p.stem.lstrip("v") for p in (RADICE / "docs" / "release").glob("v*.md")),
+        key=lambda v: tuple(int(p) for p in v.split(".")),
+    )
+    if rilasciate:
+        ultima = rilasciate[-1]
+        assert ultima in citate, (
+            f"la sezione «Stato del progetto» non nomina la `{ultima}`, che e' "
+            f"l'ultima release: dice {sorted(citate)}"
+        )
+
+
 def test_la_descrizione_dice_se_non_siamo_su_una_release():
     """Fra un tag e il successivo passano decine di commit: mostrare solo il
     numero del tag su un server aggiornato su main sarebbe falso."""

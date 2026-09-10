@@ -169,3 +169,44 @@ def test_le_sezioni_riservate_si_nascondono_a_chi_non_amministra():
 
     assert "caricaPermessiCorrenti" in testo, "la pagina non chiede quali permessi ha chi la guarda"
     assert "posso('utenti.gestisci')" in testo, "la sezione dei ruoli non e' condizionata al permesso"
+
+
+def test_il_microfono_non_torna_alla_web_speech_api_di_nascosto():
+    """Il difetto della issue #31, in forma di guardia.
+
+    Il riconoscimento vocale usava la Web Speech API, che manda l'audio ai
+    server del produttore del browser: ogni parola detta all'assistente usciva
+    di casa, mentre il README prometteva il contrario. Adesso l'audio va al
+    server, e la vecchia strada resta solo per chi la sceglie scrivendola in
+    configurazione.
+
+    La guardia serve perche' la ricaduta e' facile da riscrivere per sbaglio —
+    e' una riga — e non si vedrebbe: continuerebbe a funzionare benissimo.
+
+    I commenti si tolgono prima di guardare. La prima scrittura di questa
+    guardia cercava `in_casa` nel corpo della funzione e lo trovava nel
+    commento che spiega cosa fa: restava verde anche dopo aver spento il
+    controllo che descriveva.
+    """
+    testo = _testo(PAGINA)
+
+    apertura = testo.index("async function toggleSpeechRecognition()")
+    corpo = testo[apertura : testo.index("async function toggleTrascrizioneLocale(")]
+    corpo = re.sub(r"//[^\n]*", "", corpo)
+
+    assert (
+        "webkitSpeechRecognition" not in corpo
+    ), "il microfono usa ancora la Web Speech API prima di chiedere al server"
+    assert "/api/voce/stato" in testo, "la pagina non chiede al server quale motore usare"
+    assert "'/api/voce/trascrivi'" in testo, "l'audio non viene mandato al server"
+    assert "stato.in_casa" in corpo, "la scelta del motore non guarda se l'audio resta in casa"
+    assert "toggleTrascrizioneLocale" in corpo, "la strada che tiene l'audio in casa non viene mai imboccata"
+
+
+def test_il_microfono_si_spegne_davvero_dopo_la_registrazione():
+    """La spia di registrazione del browser che resta accesa e' il modo
+    peggiore di far credere a qualcuno che lo stai ascoltando sempre."""
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("registratore.onstop") :][:1200]
+    assert "getTracks().forEach(t => t.stop())" in corpo, "il flusso del microfono non viene chiuso"

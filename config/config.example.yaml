@@ -56,6 +56,25 @@ assistant:
   name: "Kyra"
   default_city: "Roma"
 
+voce:
+  # Dove finisce l'audio di chi parla al microfono della dashboard (issue #31).
+  #
+  #   locale   Whisper sul tuo server. Non esce niente. Richiede
+  #            `pip install faster-whisper`: senza, il microfono non funziona
+  #            e la dashboard lo dice.
+  #   browser  Web Speech API. Comoda e veloce, ma **ogni parola detta
+  #            all'assistente viene inviata a Google (o ad Apple su Safari)**.
+  #
+  # Il predefinito e' `locale` di proposito: fra i due modi di sbagliare,
+  # «non funziona» e' meglio di «funziona ma manda tutto fuori», perche' il
+  # secondo non si vede.
+  motore: "locale"
+  # Da `tiny` a `large-v3`. Su una CPU di un piccolo server `base` e' il
+  # compromesso che regge: `small` raddoppia l'attesa, `tiny` sbaglia i nomi
+  # propri, che in una casa sono quasi tutto («accendi la luce di Sonia»).
+  modello: "base"
+  lingua: "it"
+
 security:
   # Ogni familiare ha il proprio PIN, impostato dal suo profilo.
   # Al primo avvio, se nessuno ne ha uno, viene generato un PIN per
