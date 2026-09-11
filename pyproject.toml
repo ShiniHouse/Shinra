@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shinra"
-# In sviluppo verso la 0.3.0. Il numero torna `.dev` subito dopo il tag: da
+# In sviluppo verso la 0.5.0. Il numero torna `.dev` subito dopo il tag: da
 # quel momento `main` non e' piu' la release, e il badge nella dashboard deve
-# dirlo. Un `0.2.0` su codice che la 0.2.0 non contiene e' precisamente la
+# dirlo. Un `0.4.0` su codice che la 0.4.0 non contiene e' precisamente la
 # bugia che quel badge esiste per impedire.
-version = "0.4.0"
+version = "0.5.0.dev0"
 description = "Hub domotico con IA locale, controllo Home Assistant e interfaccia vocale"
 readme = "README.md"
 requires-python = ">=3.10"
