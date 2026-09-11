@@ -512,3 +512,110 @@ def test_le_stanze_suggerite_vengono_dagli_alias():
 
     assert "'/api/aliases'" in corpo, "le stanze suggerite non vengono dai dispositivi"
     assert "a.room" in corpo
+
+
+# ------------------------------------------------- caricamenti e messaggi
+
+
+def _funzione_javascript(testo: str, nome: str) -> str:
+    """La funzione scritta nella pagina, dalla firma alla sua parentesi.
+
+    Tutte le funzioni della pagina stanno a otto spazi di rientro dentro il
+    `<script>`: la prima riga fatta di otto spazi e una parentesi chiusa e'
+    la fine della funzione. Serve per darla a `node` ed eseguirla davvero,
+    invece di cercare stringhe dentro al sorgente.
+    """
+    apertura = testo.index(f"function {nome}(")
+    resto = testo[apertura:]
+    chiusura = resto.index("\n        }\n")
+    return resto[: chiusura + len("\n        }")]
+
+
+def test_una_fetch_con_un_modulo_non_si_porta_dietro_un_content_type_json():
+    """Il difetto per cui il microfono non ha mai trascritto niente.
+
+    Un corpo `FormData` porta con se' il proprio Content-Type, e dentro c'e'
+    il «boundary»: la stringa, inventata dal browser al momento dell'invio,
+    che separa i pezzi del caricamento. `getAuthHeaders()` ci scriveva sopra
+    `application/json`: il corpo restava multipart, ma l'etichetta diceva
+    altro, e il server rispondeva 422.
+
+    Nessun test poteva vederlo: la rotta era giusta, il suo test passava, e
+    in casa non succedeva niente. La guardia sta qui perche' l'errore e' una
+    riga che sembra giusta — `headers: getAuthHeaders()`, come tutte le altre
+    fetch della pagina.
+    """
+    testo = _testo(PAGINA)
+
+    moduli = set(re.findall(r"(?:const|let|var)\s+(\w+)\s*=\s*new FormData\(", testo))
+    assert moduli, "nessun FormData nella pagina: il test non guarda piu' niente"
+
+    colpevoli = []
+    for posizione in (m.start() for m in re.finditer(r"\bfetch\(", testo)):
+        chiamata = testo[posizione : posizione + 400]
+        if not any(re.search(rf"body:\s*{nome}\b", chiamata) for nome in moduli):
+            continue
+        if "getAuthHeaders(" in chiamata:
+            colpevoli.append(chiamata.splitlines()[0].strip())
+
+    assert colpevoli == [], (
+        "una fetch manda un FormData con le intestazioni di sempre, "
+        f"e fra quelle c'e' Content-Type: application/json — {colpevoli}"
+    )
+
+
+def _esegui_con_node(sorgente: str) -> subprocess.CompletedProcess:
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as file:
+        file.write(sorgente)
+        temporaneo = file.name
+    try:
+        return subprocess.run(["node", temporaneo], capture_output=True, text=True, check=False)
+    finally:
+        Path(temporaneo).unlink(missing_ok=True)
+
+
+def test_un_rifiuto_a_piu_voci_si_legge_invece_di_stampare_object_object():
+    """L'altra meta' dello stesso difetto: quello che si vedeva.
+
+    Quando e' la validazione a dire di no, FastAPI non risponde con una frase
+    ma con l'elenco dei campi che non tornano, e ogni voce e' un oggetto.
+    Darlo ad `alert()` com'era stampa «[object Object]»: nessuna indicazione
+    di cosa sia successo, ne' di dove guardare. E' quello che la casa ha
+    visto per giorni a ogni pressione del microfono.
+
+    Il test esegue davvero la funzione con `node` invece di cercare stringhe
+    nel sorgente: una guardia scritta come «la parola loc compare nel file»
+    resterebbe verde con la funzione svuotata.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    funzione = _funzione_javascript(_testo(PAGINA), "_testoDelDettaglio")
+
+    prova = funzione + """
+function esigi(condizione, messaggio) {
+    if (!condizione) { console.error(messaggio); process.exit(1); }
+}
+
+const validazione = _testoDelDettaglio(
+    [{ loc: ['body', 'audio'], msg: 'Field required', type: 'missing' }], 422);
+esigi(!validazione.includes('[object Object]'), 'la lista si stampa ancora come [object Object]');
+esigi(validazione.includes('Field required'), 'il motivo del rifiuto non si legge');
+esigi(validazione.includes('body > audio'), 'non si capisce quale campo manca');
+// Non basta che le parole ci siano: rovesciare il JSON grezzo dentro un
+// alert le contiene tutte, ed e' comunque illeggibile.
+esigi(!validazione.includes('{'), 'il rifiuto si mostra come JSON grezzo');
+
+esigi(_testoDelDettaglio('il ruolo e\\' assegnato a Thomas', 409)
+        === 'il ruolo e\\' assegnato a Thomas',
+      'una spiegazione gia\\' scritta viene alterata');
+
+const oggetto = _testoDelDettaglio({ errore: 'ignoto' }, 500);
+esigi(!oggetto.includes('[object Object]'), 'un oggetto solo si stampa come [object Object]');
+
+esigi(_testoDelDettaglio(undefined, 503) === 'Errore 503',
+      'senza dettaglio non resta nemmeno il codice');
+"""
+
+    esito = _esegui_con_node(prova)
+    assert esito.returncode == 0, esito.stderr or esito.stdout

@@ -1711,6 +1711,22 @@
             return headers;
         }
 
+        // Un corpo `FormData` porta con se' il proprio Content-Type, e dentro
+        // c'e' il «boundary»: la stringa che separa i pezzi del caricamento.
+        // Solo il browser la conosce, perche' se la inventa lui al momento
+        // dell'invio. Scriverci sopra `application/json` non cambia il corpo,
+        // cambia l'etichetta: il server legge «e' JSON», prova a leggerlo come
+        // JSON, non trova il file, e risponde 422.
+        //
+        // E' esattamente cosi' che il microfono della dashboard non ha mai
+        // trascritto niente: la rotta era giusta, il file partiva davvero, ma
+        // arrivava con l'etichetta sbagliata.
+        function intestazioniPerModulo() {
+            const intestazioni = getAuthHeaders();
+            delete intestazioni['Content-Type'];
+            return intestazioni;
+        }
+
         async function checkAuthStatus() {
             try {
                 const res = await fetch('/api/auth/status', {
@@ -2205,7 +2221,7 @@
                     modulo.append('tipo', registratore.mimeType || 'audio/webm');
 
                     const res = await fetch('/api/voce/trascrivi', {
-                        method: 'POST', headers: getAuthHeaders(), body: modulo
+                        method: 'POST', headers: intestazioniPerModulo(), body: modulo
                     });
                     if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
 
@@ -5486,10 +5502,32 @@
         async function _dettaglioErrore(res) {
             try {
                 const corpo = await res.json();
-                return corpo.detail || corpo.message || `Errore ${res.status}`;
+                return _testoDelDettaglio(corpo.detail || corpo.message, res.status);
             } catch (e) {
                 return `Errore ${res.status}`;
             }
+        }
+
+        // Non tutti i rifiuti sono una frase. Quando e' la validazione a dire
+        // di no, FastAPI risponde con l'elenco dei campi che non tornano, e
+        // ogni voce e' un oggetto: `{loc, msg}`. Passarlo ad alert() com'e'
+        // stampa «[object Object]», che non dice ne' cosa e' successo ne' dove
+        // guardare — ed e' quello che la casa ha visto per giorni ogni volta
+        // che si premeva il microfono.
+        function _testoDelDettaglio(dettaglio, stato) {
+            if (typeof dettaglio === 'string' && dettaglio) return dettaglio;
+            if (Array.isArray(dettaglio)) {
+                const righe = dettaglio.map(voce => {
+                    const dove = Array.isArray(voce && voce.loc) ? voce.loc.join(' > ') : '';
+                    const cosa = (voce && (voce.msg || voce.message)) || JSON.stringify(voce);
+                    return dove ? `${dove}: ${cosa}` : cosa;
+                }).filter(Boolean);
+                if (righe.length) return `Errore ${stato}\n\n` + righe.join('\n');
+            }
+            if (dettaglio && typeof dettaglio === 'object') {
+                return `Errore ${stato}\n\n` + JSON.stringify(dettaglio);
+            }
+            return `Errore ${stato}`;
         }
 
         function nomeDelRuolo(idRuolo) {
