@@ -59,6 +59,7 @@ from shinra.services.regole import motore_regole
 from shinra.services.satelliti import registro_satelliti
 from shinra.services.simulazione import servizio_simulazione
 from shinra.services.timer_engine import timer_engine
+from shinra.services.trascrizione import servizio_trascrizione
 from shinra.services.user_manager import user_manager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -254,6 +255,15 @@ async def lifespan(_: FastAPI):
     indicizzazione = asyncio.create_task(servizio_conoscenza.aggiorna_indice())
     _in_sottofondo.add(indicizzazione)
     indicizzazione.add_done_callback(_in_sottofondo.discard)
+
+    # Il modello di trascrizione, in sottofondo. La prima volta i pesi si
+    # scaricano e possono volerci minuti: se quel tempo lo paga la prima
+    # persona che preme il microfono, la sua richiesta resta aperta finche'
+    # qualcosa davanti al server non la taglia — Cloudflare a cento secondi,
+    # con un 524 che non spiega niente. Qui non sta aspettando nessuno
+    # (issue #31).
+    if servizio_trascrizione.prepara():
+        logger.info("Preparo il modello di trascrizione in sottofondo.")
 
     registra_canali()
     ripresi = timer_engine.ripristina_job()

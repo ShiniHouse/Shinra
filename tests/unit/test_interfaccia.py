@@ -698,3 +698,47 @@ def test_la_tela_dell_editor_segue_il_tema_della_casa():
     assert "background-image" not in tag, "la griglia e' ancora chiusa dentro l'attributo style"
     assert ".tela-flusso {" in stile, "la classe della tela non esiste"
     assert "html.light .tela-flusso" in stile, "di giorno la tela resta notturna"
+
+
+def test_non_si_registra_mentre_il_modello_si_sta_caricando():
+    """Lo stesso principio che questa schermata gia' applica al motore
+    assente, un passo piu' in la'.
+
+    Al primo avvio i pesi di Whisper si scaricano, e possono volerci minuti.
+    Registrare in quell'intervallo vuol dire parlare dentro un'attesa che
+    verra' tagliata da qualunque proxy stia davanti al server — in casa e'
+    uscito un «Errore 524», che non c'entra niente con quello che era stato
+    detto.
+    """
+    testo = _testo(PAGINA)
+
+    corpo = testo[
+        testo.index("async function toggleTrascrizioneLocale(") : testo.index(
+            "async function toggleWebSpeech("
+        )
+    ]
+    corpo = re.sub(r"//[^\n]*", "", corpo)
+
+    assert "stato.modello_caricato" in corpo, "la pagina non guarda se i pesi sono in memoria"
+    assert corpo.index("stato.modello_caricato") < corpo.index(
+        "new MediaRecorder"
+    ), "il controllo arriva dopo aver gia' cominciato a registrare"
+
+
+def test_lo_stato_della_voce_non_si_ricorda_finche_non_e_definitivo():
+    """«Non ancora pronto» e' vero adesso e falso fra un minuto.
+
+    La risposta si teneva da parte alla prima lettura: ricordare un «sto
+    caricando» vorrebbe dire un microfono spento fino al prossimo
+    ricaricamento della pagina, cioe' un rimedio peggiore del difetto.
+    """
+    testo = _testo(PAGINA)
+
+    corpo = testo[
+        testo.index("async function leggiStatoVoce()") : testo.index(
+            "async function toggleSpeechRecognition()"
+        )
+    ]
+    corpo = re.sub(r"//[^\n]*", "", corpo)
+
+    assert "modello_caricato" in corpo, "la pagina si ricorda anche uno stato provvisorio"

@@ -17,6 +17,7 @@ import logging
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from starlette.concurrency import run_in_threadpool
 
 from shinra.api.sicurezza import richiedi_autenticazione
 from shinra.domain import trascrizione as dominio
@@ -52,11 +53,18 @@ async def trascrivi(
     Il tetto sulla dimensione si applica **prima** di leggere tutto: leggere
     per intero un caricamento senza limite e poi misurarlo vuol dire averlo
     gia' in memoria, che e' il problema che il limite dovrebbe evitare.
+
+    La trascrizione gira su un altro filo. Far girare il modello qui dentro,
+    dove tutto e' `async`, significa fermare il filo che serve **tutte** le
+    richieste: per i secondi della trascrizione l'hub non risponde piu' a
+    niente — non la dashboard, non le rotte di Alexa, non gli eventi della
+    casa. Una frase detta al microfono non deve poter spegnere la casa per il
+    tempo in cui viene capita.
     """
     dati = await audio.read(dominio.DIMENSIONE_MASSIMA + 1)
 
     try:
-        testo = servizio_trascrizione.trascrivi(dati, tipo or audio.content_type)
+        testo = await run_in_threadpool(servizio_trascrizione.trascrivi, dati, tipo or audio.content_type)
     except AudioRifiutato as errore:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(errore)) from errore
     except NonSiPuo as errore:
