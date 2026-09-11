@@ -680,6 +680,75 @@ def test_ogni_pulsante_a_tinta_traslucida_si_vede_di_giorno():
     assert mancanti == [], f"di giorno questi pulsanti sembrano spenti: {mancanti}"
 
 
+def test_ogni_fondo_scuro_o_velato_ha_un_colore_per_il_giorno():
+    """La terza faccia dello stesso problema, e quella che e' sfuggita.
+
+    Due famiglie di fondi non possono restare com'e' sono su bianco: le tinte
+    950, nate per stare sul buio, e i veli con opacita', che sul buio sono un
+    accenno di colore e sul bianco quasi niente.
+
+    L'etichetta verde «Parla» delle routine e' rimasta illeggibile per intere
+    versioni per questo: `bg-emerald-950/80` non era nell'elenco delle
+    riscritture — c'erano `/40` e `/60` — mentre `text-emerald-400` si', e
+    diventava verde scuro. Verde scuro su verde quasi nero.
+
+    Le due guardie di prima non bastavano: una guarda il testo, l'altra
+    guarda i fondi **dei soli pulsanti**. Un'etichetta non e' un pulsante.
+    """
+    testo = _testo(PAGINA)
+    stile = _stile(testo)
+
+    usati = set(
+        re.findall(
+            r"\bbg-((?!slate|white|black|gradient)[a-z]+-"
+            r"(?:(?:900|950)(?:/\d+)?|(?:300|400|500|600)/\d+))\b",
+            testo,
+        )
+    )
+    # `\/` perche' nel foglio di stile la barra della classe va protetta.
+    coperti = set(re.findall(r"html\.light[^{]*?\.bg-([a-z]+-\d+(?:\\/\d+)?)\b", stile))
+    coperti = {c.replace("\\/", "/") for c in coperti}
+
+    assert usati, "nessun fondo di questo tipo nella pagina: il test non guarda piu' niente"
+    mancanti = sorted(f"bg-{c}" for c in usati - coperti)
+    assert mancanti == [], f"di giorno questi fondi restano scuri o spariscono: {mancanti}"
+
+
+def test_la_chiusura_dell_editor_sta_fuori_dalla_finestra():
+    """Una X in fila dopo «Salva» sembra una terza azione fra cui scegliere.
+
+    Non lo e': e' l'uscita, e sta dove la cercano le mani — nell'angolo, fuori
+    dal riquadro. In fila fra i comandi era anche pericolosa, perche' il
+    bersaglio di «chiudi senza salvare» stava a otto pixel da «salva».
+    """
+    testo = _testo(PAGINA)
+
+    apertura = testo.index("function renderFlowCanvasModal()")
+    corpo = testo[apertura : testo.index("function initCanvasInteractions")]
+
+    assert "closeModal()" in corpo, "l'editor non si puo' piu' chiudere"
+    assert "-top-3.5 -right-3.5" in corpo, "la chiusura non e' nell'angolo, fuori dal riquadro"
+
+    # E la fetta attorno a «Salva» non deve contenere anche la chiusura.
+    intorno = corpo[corpo.index("saveCanvasMode()") :][:600]
+    assert "closeModal()" not in intorno, "la X e' tornata in fila accanto a «Salva»"
+
+
+def test_la_finestra_larga_non_taglia_cio_che_sporge():
+    """La X nell'angolo esiste solo se la finestra la lascia sporgere."""
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("function showModal(") : testo.index("function closeModal(")]
+    largo = corpo[corpo.index("if (isWide)") : corpo.index("} else {")]
+    # I commenti si tolgono prima di guardare: qui sopra ce n'e' uno che
+    # **nomina** `overflow-hidden` per spiegare perche' non c'e' piu', e
+    # cercarlo nel testo grezzo lo trovava li'.
+    largo = re.sub(r"//[^\n]*", "", largo)
+
+    assert "overflow-hidden" not in largo, "la finestra larga taglia la chiusura nell'angolo"
+    assert "relative" in largo, "senza posizionamento, l'angolo non e' l'angolo della finestra"
+
+
 def test_la_tela_dell_editor_segue_il_tema_della_casa():
     """L'unica superficie che restava notturna a mezzogiorno.
 

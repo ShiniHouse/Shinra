@@ -397,6 +397,68 @@
             color: #0e7490 !important;
         }
 
+        /* ============ FONDI SCURI E VELI, IN TEMA CHIARO ============
+
+           Due famiglie che su bianco non possono restare come sono: le tinte
+           950 (nate per stare sul buio) e i veli con opacita' (che sul buio
+           sono un accenno di colore e sul bianco quasi niente).
+
+           L'elenco qui sotto e' cresciuto una riga alla volta, e ogni volta
+           per lo stesso motivo: qualcuno ha scritto `/80` dove l'elenco
+           aveva `/60`. L'etichetta verde «Parla» delle routine e' rimasta
+           cosi' per intere versioni — `bg-emerald-950/80` mai riscritto e
+           `text-emerald-400` riscritto in verde scuro: verde scuro su verde
+           quasi nero, illeggibile e per giunta solo di giorno.
+
+           La guardia `test_ogni_fondo_scuro_o_velato_ha_un_colore_per_il_giorno`
+           impedisce che l'elenco resti indietro un'altra volta. */
+
+        html.light .bg-indigo-950\/40,
+        html.light .bg-indigo-950\/70,
+        html.light .bg-indigo-600\/25,
+        html.light .bg-indigo-600\/30,
+        html.light .bg-indigo-600\/40,
+        html.light .bg-indigo-500\/10,
+        html.light .bg-indigo-500\/15,
+        html.light .bg-indigo-500\/20 {
+            background-color: #e0e7ff !important;
+            border-color: #c7d2fe !important;
+            color: #4338ca !important;
+        }
+
+        html.light .bg-emerald-950\/70,
+        html.light .bg-emerald-950\/80 {
+            background-color: #dcfce7 !important;
+            border-color: #bbf7d0 !important;
+            color: #15803d !important;
+        }
+
+        html.light .bg-amber-950\/30,
+        html.light .bg-amber-950\/80,
+        html.light .bg-amber-500\/20 {
+            background-color: #fef3c7 !important;
+            border-color: #fde68a !important;
+            color: #b45309 !important;
+        }
+
+        html.light .bg-rose-500\/20 {
+            background-color: #ffe4e6 !important;
+            border-color: #fecdd3 !important;
+            color: #be123c !important;
+        }
+
+        html.light .bg-yellow-950 {
+            background-color: #fef9c3 !important;
+            border-color: #fde047 !important;
+            color: #a16207 !important;
+        }
+
+        /* I bordi delle etichette colorate: senza, resta un filo scuro
+           attorno a un fondo pastello. */
+        html.light .border-emerald-800 { border-color: #bbf7d0 !important; }
+        html.light .border-amber-800 { border-color: #fde68a !important; }
+        html.light .border-indigo-800 { border-color: #c7d2fe !important; }
+
         /* Light mode buttons */
         html.light button.bg-indigo-600\/20,
         html.light button.bg-indigo-600\/30 {
@@ -4503,6 +4565,14 @@
             const triggersStr = _canvasState.trigger_phrases.join(', ');
 
             showModal(`
+                <!-- La chiusura sta fuori dalla finestra, nell'angolo.
+                     Stava in fila dopo «Salva», e una X accanto a un pulsante
+                     di salvataggio non e' una terza azione fra cui scegliere:
+                     e' l'uscita, e va dove la cercano le mani. -->
+                <button type="button" onclick="closeModal()" title="Chiudi l'editor"
+                        class="absolute -top-3.5 -right-3.5 z-50 w-9 h-9 rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:bg-rose-600 hover:text-white hover:border-rose-500 shadow-xl flex items-center justify-center transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
                 <div class="flex flex-col h-[85vh] w-full select-none">
                     <!-- Top Control Toolbar -->
                     <div class="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-900/90 border-b border-slate-800 rounded-t-2xl">
@@ -4515,8 +4585,12 @@
                             <input type="text" id="cv-triggers" value="${triggersStr}" placeholder="Frasi vocali: es. modalità cinema, relax" oninput="_canvasState.trigger_phrases = this.value.split(',').map(s=>s.trim()).filter(s=>s.length>0)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 flex-1 min-w-[180px]">
                         </div>
 
-                        <!-- Add Node Buttons Toolbar -->
+                        <!-- I blocchi da aggiungere. La parola «Aggiungi»
+                             davanti costa due centimetri e toglie la domanda:
+                             cinque pulsanti colorati in fila, senza, si
+                             leggono come cinque comandi da dare adesso. -->
                         <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mr-0.5">Aggiungi</span>
                             <button type="button" onclick="addCanvasNode('ha_device')" class="px-2.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 hover:text-white rounded-lg text-xs font-semibold border border-indigo-500/40 transition flex items-center gap-1">
                                 + 💡 Dispositivo HA
                             </button>
@@ -4534,16 +4608,17 @@
                             </button>
                         </div>
 
-                        <!-- Action Toolbar -->
-                        <div class="flex items-center gap-2">
-                            <button type="button" onclick="simulateCanvasFlow()" id="btn-sim-canvas" class="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5">
-                                ▶️ Simula Flusso
+                        <!-- Le due azioni vere, e si vede quale delle due
+                             chiude il lavoro: «Prova» e' un aiuto, «Salva» e'
+                             la conclusione. Prima erano due pulsanti pieni
+                             affiancati, entrambi col loro colore acceso, e
+                             sembravano alternative alla pari. -->
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" onclick="simulateCanvasFlow()" id="btn-sim-canvas" class="px-3 py-1.5 bg-violet-600/20 hover:bg-violet-600 text-violet-200 hover:text-white border border-violet-500/40 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                                ▶️ Prova il flusso
                             </button>
-                            <button type="button" onclick="saveCanvasMode()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5">
+                            <button type="button" onclick="saveCanvasMode()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5">
                                 💾 Salva
-                            </button>
-                            <button type="button" onclick="closeModal()" class="p-1.5 text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800 transition">
-                                <i data-lucide="x" class="w-4 h-4"></i>
                             </button>
                         </div>
                     </div>
@@ -5081,7 +5156,7 @@
         // qui resta solo il disegno (issue #28).
         async function simulateCanvasFlow() {
             const btn = document.getElementById('btn-sim-canvas');
-            const testoPulsante = '▶️ Simula Flusso';
+            const testoPulsante = '▶️ Prova il flusso';
             if (!_canvasState.nodes.length) return;
             if (btn) btn.innerHTML = '<span class="animate-spin">⏳</span> Simulazione...';
 
@@ -6422,7 +6497,13 @@
         function showModal(contentHtml, isWide = false) {
             const modal = document.getElementById('modal-container');
             if (isWide) {
-                modal.className = "bg-slate-900 border border-slate-800 rounded-2xl max-w-6xl w-full p-0 shadow-2xl overflow-hidden";
+                // Niente `overflow-hidden`: serve a far sporgere la X di
+                // chiusura fuori dall'angolo, dove la cercano tutti. Gli
+                // angoli restano arrotondati lo stesso, perche' a toccarli
+                // sono la barra in alto e quella in basso, che hanno il
+                // proprio raggio.
+                modal.className =
+                    "bg-slate-900 border border-slate-800 rounded-2xl max-w-6xl w-full p-0 shadow-2xl relative";
             } else {
                 modal.className = "bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4";
             }
