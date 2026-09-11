@@ -17,6 +17,7 @@ from __future__ import annotations
 import io
 import logging
 import threading
+import time
 from typing import Any, Optional
 
 from shinra.domain import trascrizione as dominio
@@ -44,6 +45,12 @@ _preparazione: Optional[threading.Thread] = None
 # sente dire «riprova fra un minuto, succede una volta sola» per sempre.
 # Questa stringa e' la differenza fra un'attesa e una bugia.
 _ultimo_errore: str = ""
+
+# Quando e' cominciata l'ultima preparazione. «Quanto manca» non si puo'
+# sapere; «da quanto si aspetta» si', ed e' cio' che distingue un'attesa
+# normale da una che non finira' — un caricamento fermo da dodici minuti
+# assomiglia a uno appena partito, se nessuno guarda l'orologio.
+_iniziata: float = 0.0
 
 # `int8` invece di `float16`: su una CPU e' l'unica combinazione che dia una
 # latenza sopportabile, e la perdita di precisione su frasi brevi in italiano
@@ -85,9 +92,14 @@ def carica(nome: str) -> Any:
     with _lucchetto:
         if _modello is None or _modello_caricato != voluto:
             logger.info("Carico il modello di trascrizione '%s' (%s)...", voluto, CALCOLO)
+            cominciato = time.monotonic()
             _modello = modulo.WhisperModel(voluto, device="cpu", compute_type=CALCOLO)
             _modello_caricato = voluto
-            logger.info("Modello '%s' pronto.", voluto)
+            # La durata non e' un vezzo: con i pesi gia' sul disco sono
+            # secondi, senza sono minuti. Averla scritta accanto a «pronto»
+            # e' cio' che permette, la volta dopo, di capire in un colpo
+            # d'occhio se il caricamento era lento o fermo.
+            logger.info("Modello '%s' pronto in %.1fs.", voluto, time.monotonic() - cominciato)
     return _modello
 
 
@@ -99,6 +111,13 @@ def caricato(nome: str) -> bool:
 def in_preparazione() -> bool:
     """Se un filo in sottofondo lo sta caricando proprio adesso."""
     return _preparazione is not None and _preparazione.is_alive()
+
+
+def da_quanto_prepara() -> float:
+    """Secondi dall'inizio dell'ultima preparazione, zero se non ne e' partita."""
+    if not _iniziata:
+        return 0.0
+    return max(0.0, time.monotonic() - _iniziata)
 
 
 def prepara(nome: str) -> bool:
@@ -116,11 +135,12 @@ def prepara(nome: str) -> bool:
     if not disponibile() or caricato(nome):
         return False
 
-    global _preparazione, _ultimo_errore
+    global _preparazione, _ultimo_errore, _iniziata
     with _lucchetto_preparazione:
         if _preparazione is not None and _preparazione.is_alive():
             return False
         _ultimo_errore = ""
+        _iniziata = time.monotonic()
         _preparazione = threading.Thread(
             target=_prepara_adesso, args=(nome,), name="shinra-whisper", daemon=True
         )
@@ -156,11 +176,12 @@ def _prepara_adesso(nome: str) -> None:
 
 def scarica() -> None:
     """Dimentica il modello. Serve ai test e a chi cambia modello a caldo."""
-    global _modello, _modello_caricato, _ultimo_errore
+    global _modello, _modello_caricato, _ultimo_errore, _iniziata
     with _lucchetto:
         _modello = None
         _modello_caricato = ""
         _ultimo_errore = ""
+        _iniziata = 0.0
 
 
 def trascrivi(audio: bytes, modello: str, lingua: str = dominio.LINGUA_PREDEFINITA) -> str:

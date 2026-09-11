@@ -314,6 +314,37 @@ def test_con_i_pesi_non_ancora_in_memoria_non_si_trascrive(con_libreria, monkeyp
     assert avviati, "il rifiuto non mette in moto niente: il modello non arrivera' mai"
 
 
+def test_un_attesa_lunga_dice_da_quanto_dura(con_libreria, monkeypatch):
+    """«Riprova fra un minuto — succede una volta sola», al dodicesimo
+    minuto, e' di nuovo una bugia.
+
+    Quanto manchi non si puo' sapere. Da quanto si aspetta si', e basta a
+    distinguere un'attesa normale da una che non finira': un caricamento
+    fermo da un quarto d'ora assomiglia a uno appena partito, se nessuno
+    guarda l'orologio.
+    """
+    monkeypatch.setattr(servizio_modulo.whisper, "caricato", lambda nome: False)
+    monkeypatch.setattr(servizio_modulo.whisper, "perche_non_e_pronto", lambda: "")
+    monkeypatch.setattr(servizio_modulo.whisper, "da_quanto_prepara", lambda: 12 * 60.0)
+
+    messaggio = servizio_trascrizione.perche_il_modello_non_e_pronto()
+
+    assert "12 minuti" in messaggio
+    assert "una volta sola" not in messaggio, "continua a farla sembrare una cosa di un minuto"
+
+
+def test_un_attesa_appena_cominciata_resta_rassicurante(con_libreria, monkeypatch):
+    """Nei primi minuti l'attesa **e'** normale, e dirlo e' corretto: la
+    guardia di sopra non deve trasformare ogni avvio in un allarme."""
+    monkeypatch.setattr(servizio_modulo.whisper, "caricato", lambda nome: False)
+    monkeypatch.setattr(servizio_modulo.whisper, "perche_non_e_pronto", lambda: "")
+    monkeypatch.setattr(servizio_modulo.whisper, "da_quanto_prepara", lambda: 8.0)
+
+    messaggio = servizio_trascrizione.perche_il_modello_non_e_pronto()
+
+    assert messaggio == dominio.spiega(dominio.MODELLO_IN_PREPARAZIONE)
+
+
 def test_un_caricamento_fallito_non_si_racconta_come_un_attesa(con_libreria, monkeypatch):
     """La bugia che si ripete identica.
 

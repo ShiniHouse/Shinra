@@ -163,6 +163,31 @@ def spiega(motivo: str) -> str:
     return ""
 
 
+# Oltre questo, un'attesa smette di essere normale e diventa un sintomo.
+# Scaricare i pesi di `base` su una linea di casa sta abbondantemente
+# sotto; caricarli da disco e' questione di secondi.
+PREPARAZIONE_LUNGA_SECONDI = 180
+
+
+def spiega_preparazione(secondi: float) -> str:
+    """Quanto manchi non si sa; da quanto si aspetta, si'.
+
+    Il messaggio era identico al primo secondo e al dodicesimo minuto:
+    «riprova fra un minuto — succede una volta sola». Alla dodicesima volta
+    e' di nuovo una bugia, e manda a guardare dalla parte sbagliata. L'ora
+    d'inizio il servizio ce l'ha: dirla e' cio' che trasforma un'attesa in
+    un'informazione.
+    """
+    if secondi < PREPARAZIONE_LUNGA_SECONDI:
+        return spiega(MODELLO_IN_PREPARAZIONE)
+    minuti = int(secondi // 60)
+    return (
+        f"Sto preparando il modello di riconoscimento da {minuti} minuti. "
+        "Al primo avvio i pesi si scaricano, ma tanto tempo non e' normale: "
+        "nel log del server c'e' fin dove e' arrivato."
+    )
+
+
 def spiega_caricamento_fallito(dettaglio: str) -> str:
     """Il caricamento ha gia' provato, e non ce l'ha fatta.
 
