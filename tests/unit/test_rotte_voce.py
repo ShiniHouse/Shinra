@@ -69,6 +69,35 @@ def test_una_registrazione_torna_come_testo(cliente_autenticato, con_motore):
     assert risposta.json() == {"testo": "accendi la luce", "vuota": False}
 
 
+def test_un_caricamento_etichettato_json_non_si_puo_leggere(cliente_autenticato, con_motore):
+    """La causa, misurata, del microfono che non ha mai trascritto niente.
+
+    La pagina mandava il file con le intestazioni di sempre, e fra quelle
+    c'era `Content-Type: application/json`. Il corpo restava multipart, ma
+    l'etichetta diceva altro: senza il «boundary» non c'e' modo di sapere
+    dove finisce un pezzo e comincia l'altro, e il campo `audio` risulta
+    mancante.
+
+    Questo test non difende un comportamento che vogliamo: fissa la causa.
+    Se un giorno il framework accettasse un multipart etichettato male,
+    fallirebbe qui — e sarebbe giusto accorgersene, perche' vorrebbe dire
+    che la guardia scritta nella pagina non serve piu' a niente.
+    """
+    risposta = cliente_autenticato.post(
+        "/api/voce/trascrivi",
+        files=_file(),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert risposta.status_code == 422
+
+    # E cosi' il rifiuto non e' una frase ma un elenco: e' il motivo per cui
+    # la dashboard mostrava «[object Object]» invece di una spiegazione.
+    dettaglio = risposta.json()["detail"]
+    assert isinstance(dettaglio, list)
+    assert any("audio" in str(voce.get("loc", "")) for voce in dettaglio)
+
+
 def test_il_silenzio_torna_come_niente_non_come_errore(cliente_autenticato, monkeypatch):
     """«Non ho sentito niente» e' una risposta, non un guasto: chi riceve un
     500 crede che il server sia rotto e non riprova."""
