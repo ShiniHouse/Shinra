@@ -76,7 +76,7 @@ class ServizioTrascrizione:
         guasto = whisper.perche_non_e_pronto()
         if guasto:
             return dominio.spiega_caricamento_fallito(guasto)
-        return dominio.spiega(dominio.MODELLO_IN_PREPARAZIONE)
+        return dominio.spiega_preparazione(whisper.da_quanto_prepara())
 
     def prepara(self) -> bool:
         """Comincia a caricare il modello, se ha senso farlo.
