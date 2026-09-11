@@ -277,6 +277,48 @@ def test_un_audio_vuoto_viene_rifiutato(con_libreria):
         servizio_trascrizione.trascrivi(b"", "audio/webm")
 
 
+def test_i_pesi_gia_scaricati_si_aprono_senza_toccare_la_rete():
+    """Il difetto che ha tenuto fermo il microfono per venticinque minuti.
+
+    `WhisperModel`, per difetto, contatta huggingface.co anche quando il
+    modello e' gia' in cache: controlla se ce n'e' uno nuovo. Se quella
+    chiamata non torna — rete filtrata, DNS muto, il servizio dall'altra
+    parte che tace — il caricamento resta appeso, con i pesi sul disco a
+    mezzo metro di distanza. In casa: 142 MB scaricati, zero processi al
+    lavoro, zero errori, zero CPU, e il microfono fermo.
+
+    Un hub domotico che ha i pesi non deve dipendere da internet per usarli.
+    """
+    aperture: list[bool] = []
+
+    class ModuloFinto:
+        @staticmethod
+        def WhisperModel(nome, **opzioni):
+            aperture.append(bool(opzioni.get("local_files_only")))
+            return "modello"
+
+    assert servizio_modulo.whisper._apri(ModuloFinto, "base") == "modello"
+    assert aperture == [True], "la prima apertura e' andata a cercare in rete"
+
+
+def test_se_i_pesi_non_ci_sono_ancora_si_scaricano():
+    """La rete resta la seconda strada, non sparisce: la prima volta, e
+    quando qualcuno cambia modello in configurazione, i pesi vanno presi."""
+    aperture: list[bool] = []
+
+    class ModuloFinto:
+        @staticmethod
+        def WhisperModel(nome, **opzioni):
+            solo_dal_disco = bool(opzioni.get("local_files_only"))
+            aperture.append(solo_dal_disco)
+            if solo_dal_disco:
+                raise OSError("non c'e' niente in cache")
+            return "modello"
+
+    assert servizio_modulo.whisper._apri(ModuloFinto, "base") == "modello"
+    assert aperture == [True, False], "senza cache non si e' ripiegato sul download"
+
+
 def test_senza_la_libreria_non_si_prepara_niente(monkeypatch):
     """Non c'e' niente da caricare, e un filo che parte per scoprirlo e' un
     filo che muore con un'eccezione nel log a ogni avvio."""

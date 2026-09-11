@@ -72,6 +72,29 @@ def disponibile() -> bool:
     return libreria() is not None
 
 
+def _apri(modulo: Any, voluto: str) -> Any:
+    """Prima dal disco, e solo se manca qualcosa si va in rete.
+
+    `WhisperModel`, per difetto, contatta comunque huggingface.co anche con
+    il modello gia' in cache: controlla se ce n'e' una versione nuova. Se
+    quella chiamata non torna — rete filtrata, DNS che non risponde, il
+    servizio dall'altra parte che tace — il caricamento resta appeso a tempo
+    indeterminato, con i pesi gia' sul disco a mezzo metro di distanza.
+
+    E' successo in casa: 142 MB di modello scaricati, nessun processo al
+    lavoro, nessun errore, e il microfono fermo per venticinque minuti.
+
+    Un hub domotico che ha i pesi non deve dipendere da internet per usarli.
+    La rete resta la seconda strada, per la prima volta o per un modello
+    cambiato in configurazione — non la prima.
+    """
+    try:
+        return modulo.WhisperModel(voluto, device="cpu", compute_type=CALCOLO, local_files_only=True)
+    except Exception as manca:
+        logger.info("Modello '%s' non ancora in cache (%s): lo scarico.", voluto, manca)
+        return modulo.WhisperModel(voluto, device="cpu", compute_type=CALCOLO)
+
+
 def carica(nome: str) -> Any:
     """Il modello, caricandolo la prima volta.
 
@@ -93,7 +116,7 @@ def carica(nome: str) -> Any:
         if _modello is None or _modello_caricato != voluto:
             logger.info("Carico il modello di trascrizione '%s' (%s)...", voluto, CALCOLO)
             cominciato = time.monotonic()
-            _modello = modulo.WhisperModel(voluto, device="cpu", compute_type=CALCOLO)
+            _modello = _apri(modulo, voluto)
             _modello_caricato = voluto
             # La durata non e' un vezzo: con i pesi gia' sul disco sono
             # secondi, senza sono minuti. Averla scritta accanto a «pronto»
