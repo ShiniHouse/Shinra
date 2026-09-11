@@ -206,7 +206,43 @@ da `.env`, tiene il filesystem in sola lettura tranne `data/` e `config/`, e
 smette di insistere dopo cinque avvii falliti di fila invece di riavviarsi
 all'infinito.
 
-### 5. Prova a vuoto
+### 5. Impedisci alla macchina di addormentarsi
+
+```bash
+sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+```
+
+Un'installazione Debian con ambiente grafico **sospende la macchina dopo un
+po' di inattivita'**, e lo fa anche se nessuno ha mai fatto il login: e' GDM,
+il gestore di accesso, con le impostazioni di risparmio energia predefinite.
+Il segnale e' un messaggio come questo, che compare a chiunque sia collegato:
+
+```
+Broadcast message from Debian-gdm@... : The system will suspend now!
+```
+
+Su un portatile e' ragionevole. Su un hub domotico e' la fine di tutto: un
+server sospeso non fa scattare nessuna regola, non riceve gli eventi di Home
+Assistant, non manda notifiche e non risponde alla dashboard. E non si
+diagnostica facilmente, perche' **appena qualcuno ci si collega la macchina
+si sveglia** e sembra che vada benissimo — il difetto sparisce proprio nel
+momento in cui lo si cerca.
+
+E' successo davvero, ed e' costato giorni di «il server non si raggiunge».
+
+`mask` agisce a livello di systemd, quindi vale qualunque cosa chieda la
+sospensione — GDM, il coperchio di un portatile, il pulsante di accensione.
+Si verifica cosi':
+
+```bash
+systemctl status sleep.target | head -3   # deve dire: masked
+```
+
+Se la macchina e' un server e basta, togliere del tutto l'ambiente grafico
+(`sudo systemctl set-default multi-user.target`) risolve anche la causa, non
+solo il sintomo — ma e' una scelta piu' grande e non serve a questo scopo.
+
+### 6. Prova a vuoto
 
 ```bash
 sudo /opt/Shinra/scripts/deploy.sh --dry-run
