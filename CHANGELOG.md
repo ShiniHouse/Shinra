@@ -14,6 +14,10 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+---
+
+## [0.4.0] - 2026-09-11 - Proattivita'
+
 ### Corretto
 - **L'editor a nodi non salvava il disegno. Mai.** Le colonne `nodes` ed
   `edges` non esistevano nella tabella delle routine: l'editor le mandava, il

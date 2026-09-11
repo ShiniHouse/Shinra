@@ -102,15 +102,23 @@ Sono un investimento unico che sblocca l'intero resto della roadmap.
 | 27 | Motore di regole con trigger su evento, stato e orario |
 | 28 | Nodi condizione e trigger temporale nell'editor a grafo |
 | 29 | Notifiche web push (VAPID, handler `push` nel service worker) |
-| 30 | Wake word locale (openWakeWord) |
 | 31 | Riconoscimento vocale locale (faster-whisper) al posto della Web Speech API |
 | 32 | RAG con embedding sulla knowledge base |
 | 33 | Satelliti vocali per stanza |
 
 **Criteri di uscita**
-- Nessun audio della casa lascia la rete locale.
-- Una regola creata dall'interfaccia scatta da sola su un evento reale.
-- Il contesto inviato al modello non cresce linearmente con la knowledge base.
+- ~~Nessun audio della casa lascia la rete locale.~~ — soddisfatto per il
+  microfono di Shinra; **non** per Alexa, dove l'audio va ad Amazon per
+  costruzione. Vedi la tabella nel README.
+- Una regola creata dall'interfaccia scatta da sola su un evento reale. —
+  **da verificare in casa**: il motore funziona e i test coprono la catena,
+  ma nessuno ha ancora guardato una regola scattare davvero.
+- ~~Il contesto inviato al modello non cresce linearmente con la knowledge
+  base.~~ — soddisfatto dalla #32.
+
+La **#30**, la parola di attivazione, e' stata spostata alla `v0.5.0`: il suo
+criterio sui falsi positivi si misura solo con un microfono acceso per giorni,
+e non c'era hardware su cui farlo. Vedi la scheda.
 
 ---
 
@@ -120,6 +128,7 @@ Sono un investimento unico che sblocca l'intero resto della roadmap.
 
 | # | Lavoro |
 | :-- | :--- |
+| 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` |
 | 34 | Scomporre `index.html` (4.657 righe) in moduli ES |
 | 35 | Backup e restore della configurazione, con versione di schema |
 | 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) |
