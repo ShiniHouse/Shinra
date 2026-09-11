@@ -129,11 +129,43 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | # | Lavoro |
 | :-- | :--- |
 | 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` |
-| 34 | Scomporre `index.html` (4.657 righe) in moduli ES |
+| 34 | Scomporre `index.html` (6.600 righe) in moduli ES |
 | 35 | Backup e restore della configurazione, con versione di schema |
 | 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) |
 | 37 | Immagine Docker e add-on per Home Assistant OS |
 | 38 | Documentazione utente e guida all'installazione verificata |
+| 125 | Le chiamate all'API partono senza intestazioni di autenticazione |
+| 127 | Ogni lista vuota insegna la mossa successiva |
+| 123 | La colonna della console racconta adesso, non la diagnostica |
+| 128 | Da otto ingressi a tre, senza perdere niente |
+| 124 | Impostazioni a sezioni, aperta solo quella che serve |
+| 126 | Una scorciatoia per «a quest'ora fai questo» |
+
+### L'interfaccia, prima della 1.0.0
+
+Le sei voci da **#125** a **#126** vanno in quest'ordine, e non e' casuale:
+le prime due sono difetti — una lista vuota per mancanza di permessi e una
+lista vuota che non spiega niente hanno lo stesso aspetto, e finche' e' cosi'
+non si sa nemmeno quali schermate siano davvero vuote. Le altre quattro sono
+scelte di struttura, e una scelta di struttura si fa dopo aver smesso di
+guardare dati sbagliati.
+
+Le misure che le motivano: otto ingressi di primo livello tutti dello stesso
+peso; **Impostazioni pesa quanto le altre sette schede insieme** (421 righe,
+19 campi, 15 pulsanti); **Automazioni ne pesa 19**; un terzo della schermata
+di casa e' occupato stabilmente da diagnostica.
+
+Due vincoli che valgono per tutte e sei:
+
+- **nessuna funzione sparisce** — cambia solo cosa e' visibile a riposo;
+- **l'editor a nodi resta al primo livello**, non va sostituito e non va
+  semplificato: e' l'unico posto dove si puo' dire alla casa qualcosa che non
+  sta in una riga.
+
+La **#34** (frontend modulare) e' la sorella maggiore di tutte: su un file di
+seimilaseicento righe ogni modifica all'interfaccia costa piu' del dovuto. Se
+si affronta per prima, le altre diventano piu' facili; se si affronta dopo,
+si rifa' due volte lo stesso lavoro sui punti che toccano entrambe.
 
 ---
 
