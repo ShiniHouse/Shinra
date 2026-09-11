@@ -32,6 +32,33 @@ def _voci() -> list[dict]:
     return registro.voci(limite=100)
 
 
+# ------------------------------------------------------- la pulizia periodica
+
+
+def test_la_pulizia_quotidiana_fa_davvero_qualcosa(monkeypatch):
+    """Il lavoro programmato che non ha mai fatto niente.
+
+    `_pulisci_registro` portava `@asynccontextmanager`, finito per sbaglio su
+    di lei invece che su `lifespan`. Lo scheduler la chiamava, riceveva un
+    gestore di contesto e lo buttava via: il corpo non e' mai stato eseguito.
+    Nessun errore, nessun avviso, niente nel log — e una tabella che su un hub
+    domotico cresce a ogni comando.
+
+    Il test chiama la funzione come la chiama lo scheduler — `funzione()`, e
+    basta — perche' e' esattamente quella chiamata che non faceva niente.
+    """
+    from shinra.api import app as applicazione
+
+    puliti: list[int] = []
+    monkeypatch.setattr(applicazione.registro, "pulisci", lambda giorni: puliti.append(giorni) or 0)
+    monkeypatch.setattr(applicazione.settings.registro, "retention_days", 30)
+
+    esito = applicazione._pulisci_registro()
+
+    assert esito is None, "lo scheduler riceve qualcosa invece di eseguire il lavoro"
+    assert puliti == [30], "il registro non viene ripulito"
+
+
 # ------------------------------------------------------------- i segreti
 
 

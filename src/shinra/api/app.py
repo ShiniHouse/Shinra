@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import secrets
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Optional
 
@@ -140,9 +141,19 @@ def _prepara_accesso() -> None:
     )
 
 
-@asynccontextmanager
-async def _pulisci_registro() -> None:
-    """Eseguita una volta al giorno dallo scheduler."""
+def _pulisci_registro() -> None:
+    """Eseguita una volta al giorno dallo scheduler.
+
+    Qui sopra c'era `@asynccontextmanager`, finito per sbaglio su questa
+    funzione invece che su `lifespan`, due definizioni piu' in basso. Non
+    faceva rumore: lo scheduler chiamava la funzione, riceveva un gestore di
+    contesto e lo buttava via — **il corpo non e' mai stato eseguito**. Il
+    registro delle azioni non e' mai stato ripulito da quando questa riga
+    esiste, e su un hub domotico e' una tabella che cresce a ogni comando.
+
+    Un decoratore fuori posto non da' errore, non da' avviso e non si vede
+    rileggendo: la funzione e' li', il lavoro e' programmato, il log tace.
+    """
     registro.pulisci(settings.registro.retention_days)
 
 
@@ -180,7 +191,8 @@ def _prepara_archivio() -> None:
         logger.error("Preparazione del database non riuscita: %s", e, exc_info=True)
 
 
-async def lifespan(_: FastAPI):
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Controlli e migrazioni all'avvio.
 
     Nessuno di questi passi puo' impedire l'avvio: un hub domotico che si
