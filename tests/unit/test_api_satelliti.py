@@ -160,6 +160,28 @@ def test_due_frasi_diverse_si_eseguono_tutte_e_due(cliente_autenticato, agente_f
     assert len(agente_finto) == 2
 
 
+def test_il_deposito_non_restituisce_mai_un_ambiguo_a_caso():
+    """La porta di servizio della risoluzione.
+
+    `resolve_alias_or_entity` la chiamano pezzi che non sanno gestire
+    un'ambiguita' e vogliono solo tirare avanti. Deve restituire il
+    riferimento **cosi' com'e'** — che a valle non corrisponde a niente e
+    produce un errore dicibile — e non una delle alternative. Restituirne una
+    sarebbe il difetto originale rimesso un livello piu' sotto, dove nessuno
+    guarda.
+    """
+    from shinra.infra.data_store import data_store
+
+    assert data_store.resolve_alias_or_entity("luce") == "luce"
+    assert data_store.resolve_alias_or_entity("luce cucina") == "light.cucina"
+
+
+def test_il_deposito_usa_la_stanza_quando_gliela_si_da():
+    from shinra.infra.data_store import data_store
+
+    assert data_store.resolve_alias_or_entity("luce", "Salotto") == "light.salotto"
+
+
 @pytest.fixture
 def casa_muta(monkeypatch):
     """Home Assistant sostituito: si guarda **quale servizio** chiediamo."""

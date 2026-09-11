@@ -448,7 +448,17 @@ def test_la_dashboard_si_dichiara_punto_di_ascolto():
     testo = _testo(PAGINA)
 
     assert "'/api/satelliti'" in testo, "il dispositivo non si annuncia mai"
-    assert "annunciaQuestoDispositivo();" in testo, "l'annuncio non viene chiamato all'avvio"
+
+    # La chiamata **all'avvio**, dentro il gestore del caricamento. Cercare
+    # `annunciaQuestoDispositivo();` ovunque nel file la trovava dentro
+    # `scegliStanza`, che la chiama quando si cambia stanza a mano: la
+    # guardia restava verde con l'annuncio iniziale tolto, e un dispositivo
+    # che si annuncia solo se qualcuno tocca la stanza non si annuncia mai.
+    #
+    # E' la quarta volta che scrivo questa guardia debole in tre giorni. La
+    # forma giusta e' sempre la stessa: ancorarsi al blocco, non al nome.
+    avvio = testo[testo.index("window.addEventListener('load'") :]
+    assert "annunciaQuestoDispositivo();" in avvio, "l'annuncio non viene chiamato all'avvio"
 
 
 def test_la_stanza_viaggia_con_ogni_messaggio():
@@ -479,9 +489,18 @@ def test_la_memoria_della_stanza_non_fa_esplodere_la_pagina():
     prezzo assurdo per una comodita'."""
     testo = _testo(PAGINA)
 
-    corpo = testo[testo.index("function satelliteDiQuestoDispositivo") :][:700]
+    # Solo questa funzione, non i settecento caratteri che seguono: la fetta
+    # larga arrivava dentro `stanzaDiQuestoDispositivo`, che ha il suo
+    # `catch`, e la guardia restava verde anche togliendo quello di qui.
+    corpo = testo[
+        testo.index("function satelliteDiQuestoDispositivo") : testo.index(
+            "function stanzaDiQuestoDispositivo"
+        )
+    ]
 
-    assert "try {" in corpo and "catch" in corpo, "l'accesso alla memoria del sito non e' protetto"
+    assert "try {" in corpo, "l'accesso alla memoria del sito non e' protetto"
+    assert "} catch (e) {" in corpo, "un errore della memoria del sito non viene raccolto"
+    assert "return null;" in corpo, "senza memoria non si resta un dispositivo senza stanza"
 
 
 def test_le_stanze_suggerite_vengono_dagli_alias():

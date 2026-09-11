@@ -127,9 +127,15 @@ def _corrisponde(cercate: Sequence[str], dispositivo: Dispositivo) -> bool:
     In questa direzione e non nell'altra: «luce» trova «luce cucina», mentre
     «luce cucina» non deve trovare «luce» — chiedere di piu' restringe, non
     allarga.
+
+    Non c'e' nessun controllo sul fatto che `cercate` sia vuota, e non e' una
+    dimenticanza: ce n'era uno, e toglierlo non faceva fallire niente perche'
+    `risolvi` si ferma prima. Un `all()` su un elenco vuoto risponde di si',
+    quindi il controllo servirebbe davvero — ma serve **la'**, dove sta, e
+    qui era solo una seconda rete che nessuna caduta poteva toccare.
     """
     disponibili = set(parole(dispositivo.alias)) | set(parole(dispositivo.entity_id))
-    return bool(cercate) and all(p in disponibili for p in cercate)
+    return all(p in disponibili for p in cercate)
 
 
 def _nella_stanza(dispositivi: Sequence[Dispositivo], stanza: str) -> list[Dispositivo]:

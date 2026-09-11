@@ -43,6 +43,14 @@ installabile e utilizzabile.
   presenza e (ora) le regole. Adesso è una sola: due letture dello stesso
   attributo divergono, e la divergenza si vede come «la simulazione crede che
   tramonti a un'ora e le regole a un'altra».
+- **«Accendi la luce» ne accendeva una a caso.** La ricerca dell'alias era un
+  `riferimento in nome`: «luce» corrispondeva a «luce cucina», «luce salotto» e
+  «luce bagno» insieme, e vinceva quella che l'archivio restituiva per prima.
+  Senza un avviso, e senza modo di accorgersene se non guardando quale
+  lampadina si accende. Adesso un riferimento ambiguo **si dichiara ambiguo**:
+  o la stanza di chi parla sceglie, o la casa chiede «quale?» elencando le
+  alternative. Chiedere costa due secondi; indovinare costa la fiducia di chi
+  ascolta.
 - **Creare un'automazione a un orario rispondeva 500.** L'ora veniva calcolata
   senza fuso orario e lo scheduler la confronta con un istante in UTC: Python
   si rifiuta di paragonare i due, e l'eccezione usciva fino all'API. Colpiva
@@ -75,6 +83,15 @@ installabile e utilizzabile.
   contendono lo stesso lavoro, e il secondo si scopre quando la luce si accende
   due volte. Togliere l'innesco e risalvare toglie anche la regola; cancellare
   la routine la cancella; disattivarla a mano la lascia disattivata.
+- **La casa sa da quale stanza le stai parlando.** Un punto di ascolto dichiara
+  dove si trova, e «accendi la luce» accende quella di lì senza bisogno di
+  nominarla. Non serve un dispositivo dedicato: la dashboard aperta sul
+  telefono in cucina **è** un punto di ascolto, e la stanza si sceglie sotto il
+  microfono — dove si parla, non in un pannello di impostazioni.
+- **Due dispositivi che sentono la stessa frase non rispondono in due.**
+  Risponde chi arriva per primo — che è quasi sempre chi sta più vicino — e
+  agli altri si dice che è già stata presa in carico. Per una luce non si
+  noterebbe; per una serranda sì.
 - **Le automazioni hanno una schermata.** Il motore di regole è esistito per
   due versioni senza: l'API c'era, la dashboard no, e l'unico modo di chiedere
   «perché non è successo niente?» era leggere i log del server. La scheda
