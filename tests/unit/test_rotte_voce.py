@@ -196,6 +196,38 @@ def test_all_avvio_il_modello_si_mette_in_carico_da_solo(monkeypatch):
     assert chiamate, "l'avvio non prepara il modello: lo paghera' il primo che parla"
 
 
+def test_l_avvio_scrive_nel_log_come_sta_la_voce(monkeypatch):
+    """Un ramo che non fa niente in silenzio costa ore.
+
+    Quando in casa il microfono non trascriveva, dal log non si poteva dire
+    se la preparazione non fosse partita o fosse partita e morta: la riga
+    c'era solo nel caso in cui partiva. Ho passato mezz'ora a ragionare per
+    esclusione su un'informazione che il servizio aveva e non scriveva.
+
+    Adesso lo stato della voce finisce nel log a ogni avvio, anche — anzi,
+    soprattutto — quando non c'e' niente da preparare.
+    """
+    from shinra.api import app as applicazione
+
+    righe: list[str] = []
+
+    class LoggerFinto:
+        def info(self, messaggio, *argomenti):
+            righe.append(messaggio % argomenti if argomenti else messaggio)
+
+        def __getattr__(self, _nome):
+            return lambda *a, **k: None
+
+    monkeypatch.setattr(applicazione, "logger", LoggerFinto())
+
+    with TestClient(app):
+        pass
+
+    voce = [r for r in righe if r.startswith("Voce:")]
+    assert voce, "l'avvio non dice come sta la voce"
+    assert "motore=" in voce[0] and "gia_in_memoria=" in voce[0]
+
+
 def test_lo_stato_distingue_installato_da_caricato(cliente_autenticato, monkeypatch):
     """La dashboard deve poter dire «aspetta» invece di far parlare qualcuno
     dentro un'attesa che finira' tagliata."""

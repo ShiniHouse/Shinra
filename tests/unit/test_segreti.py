@@ -199,6 +199,30 @@ def test_segnala_il_debug_esposto_in_rete() -> None:
     assert any("debug" in p.lower() for p in verifica_configurazione(config))
 
 
+def test_segnala_il_debug_anche_quando_ascolta_solo_in_locale() -> None:
+    """Il controllo che non si e' mai acceso in casa.
+
+    Guardava anche l'indirizzo di ascolto, e un server dietro un proxy
+    ascolta su `127.0.0.1`: `server.debug` e' rimasto acceso in produzione
+    per intere versioni senza che nessuno lo dicesse.
+
+    Ma il ricaricamento automatico non e' un problema di rete: sorveglia i
+    file, **riavvia il processo** e butta via i lavori in sottofondo. Il
+    caricamento del modello vocale — minuti — non e' mai arrivato in fondo,
+    e da fuori sembrava un microfono rotto.
+    """
+    config = AppConfig()
+    config.home_assistant.enabled = False
+    config.alexa.enabled = False
+    config.server.debug = True
+    config.server.host = "127.0.0.1"
+
+    problemi = verifica_configurazione(config)
+
+    assert any("debug" in p.lower() for p in problemi)
+    assert any("sottofondo" in p for p in problemi), "non si dice cosa comporta davvero"
+
+
 def test_il_segreto_di_sessione_non_ha_un_valore_predefinito() -> None:
     """Un segreto uguale per tutte le installazioni non e' un segreto."""
     assert not AppConfig().security.session_secret

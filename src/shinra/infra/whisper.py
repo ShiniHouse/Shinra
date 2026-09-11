@@ -38,6 +38,13 @@ _modello_caricato: str = ""
 _lucchetto_preparazione = threading.Lock()
 _preparazione: Optional[threading.Thread] = None
 
+# Perche' l'ultimo tentativo di caricamento e' fallito, se e' fallito. Un
+# caricamento che muore in sottofondo lascia il servizio in uno stato che da
+# fuori assomiglia a «sto ancora lavorando» — e chi preme il microfono si
+# sente dire «riprova fra un minuto, succede una volta sola» per sempre.
+# Questa stringa e' la differenza fra un'attesa e una bugia.
+_ultimo_errore: str = ""
+
 # `int8` invece di `float16`: su una CPU e' l'unica combinazione che dia una
 # latenza sopportabile, e la perdita di precisione su frasi brevi in italiano
 # non si nota. Su GPU si potrebbe fare meglio, ma un hub domotico che pretende
@@ -109,10 +116,11 @@ def prepara(nome: str) -> bool:
     if not disponibile() or caricato(nome):
         return False
 
-    global _preparazione
+    global _preparazione, _ultimo_errore
     with _lucchetto_preparazione:
         if _preparazione is not None and _preparazione.is_alive():
             return False
+        _ultimo_errore = ""
         _preparazione = threading.Thread(
             target=_prepara_adesso, args=(nome,), name="shinra-whisper", daemon=True
         )
@@ -120,26 +128,39 @@ def prepara(nome: str) -> bool:
     return True
 
 
+def perche_non_e_pronto() -> str:
+    """Perche' l'ultimo caricamento e' fallito, o stringa vuota se non lo e'.
+
+    Serve a non confondere «sto lavorando» con «ci ho provato»: sono due
+    stati che da fuori si assomigliano e portano a due comportamenti
+    opposti — aspettare, oppure andare a guardare cosa non va.
+    """
+    return _ultimo_errore
+
+
 def _prepara_adesso(nome: str) -> None:
     """Il corpo del filo di preparazione.
 
-    Un guasto qui non deve spegnere niente: il microfono continuera' a dire
-    che il modello non e' pronto, che e' la verita', e il motivo resta nel
-    log. Far morire il filo con un'eccezione non stampata lascerebbe il
-    servizio convinto di stare ancora caricando, per sempre.
+    Un guasto qui non deve spegnere niente, ma non deve nemmeno sparire: se
+    il filo muore in silenzio, da fuori il servizio sembra star ancora
+    caricando, e il microfono ripete «riprova fra un minuto» per sempre. Il
+    motivo si tiene, e diventa il messaggio che legge chi ha premuto.
     """
+    global _ultimo_errore
     try:
         carica(nome)
     except Exception as errore:  # pragma: no cover - dipende dall'ambiente
+        _ultimo_errore = str(errore) or errore.__class__.__name__
         logger.error("Preparazione del modello non riuscita: %s", errore, exc_info=True)
 
 
 def scarica() -> None:
     """Dimentica il modello. Serve ai test e a chi cambia modello a caldo."""
-    global _modello, _modello_caricato
+    global _modello, _modello_caricato, _ultimo_errore
     with _lucchetto:
         _modello = None
         _modello_caricato = ""
+        _ultimo_errore = ""
 
 
 def trascrivi(audio: bytes, modello: str, lingua: str = dominio.LINGUA_PREDEFINITA) -> str:

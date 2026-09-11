@@ -723,6 +723,11 @@ def test_non_si_registra_mentre_il_modello_si_sta_caricando():
     assert corpo.index("stato.modello_caricato") < corpo.index(
         "new MediaRecorder"
     ), "il controllo arriva dopo aver gia' cominciato a registrare"
+    # Il messaggio arriva dal server: «sto preparando» e «ci ho provato e non
+    # ci sono riuscito» sono due cose diverse, e una frase fissa scritta qui
+    # dentro non puo' distinguerle — ripeterebbe «riprova fra un minuto,
+    # succede una volta sola» anche a caricamento gia' morto.
+    assert "stato.spiegazione_modello" in corpo, "il motivo e' una frase fissa scritta nella pagina"
 
 
 def test_lo_stato_della_voce_non_si_ricorda_finche_non_e_definitivo():

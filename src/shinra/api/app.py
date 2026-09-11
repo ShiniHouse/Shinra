@@ -274,6 +274,20 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # qualcosa davanti al server non la taglia — Cloudflare a cento secondi,
     # con un 524 che non spiega niente. Qui non sta aspettando nessuno
     # (issue #31).
+    #
+    # Lo stato si scrive nel log **sempre**, anche quando non c'e' niente da
+    # fare. Un ramo che decide di non fare niente in silenzio e' esattamente
+    # cio' che ha reso impossibile capire, dal log di casa, perche' il
+    # microfono non trascrivesse: non sapere se la preparazione non fosse
+    # partita, o fosse partita e morta, costringe a indovinare.
+    voce = servizio_trascrizione.per_l_interfaccia()
+    logger.info(
+        "Voce: motore=%s pronto=%s modello=%s gia_in_memoria=%s",
+        voce["motore"],
+        voce["pronto"],
+        voce["modello"] or "-",
+        voce["modello_caricato"],
+    )
     if servizio_trascrizione.prepara():
         logger.info("Preparo il modello di trascrizione in sottofondo.")
 

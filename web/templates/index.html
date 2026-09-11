@@ -2290,7 +2290,11 @@
                 // la': il motore c'e', ma i pesi non sono ancora in memoria.
                 // Registrare adesso vuol dire parlare dentro un'attesa che
                 // finira' tagliata da qualunque proxy stia davanti al server.
-                alert('Sto ancora preparando il modello di riconoscimento: al primo avvio i pesi vanno scaricati. Riprova fra un minuto — succede una volta sola.');
+                //
+                // Il messaggio arriva dal server e non e' scritto qui, perche'
+                // «sto preparando» e «ci ho provato e non ci sono riuscito»
+                // sono due cose diverse e solo il server sa quale delle due.
+                alert(stato.spiegazione_modello || 'Sto ancora preparando il modello di riconoscimento. Riprova fra un minuto.');
                 return;
             }
             if (!navigator.mediaDevices || !window.MediaRecorder) {
