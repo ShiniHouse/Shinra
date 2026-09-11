@@ -314,6 +314,67 @@ def test_con_i_pesi_non_ancora_in_memoria_non_si_trascrive(con_libreria, monkeyp
     assert avviati, "il rifiuto non mette in moto niente: il modello non arrivera' mai"
 
 
+def test_un_caricamento_fallito_non_si_racconta_come_un_attesa(con_libreria, monkeypatch):
+    """La bugia che si ripete identica.
+
+    «Sto preparando il modello: riprova fra un minuto, succede una volta
+    sola» e' vero finche' il caricamento sta andando. Se il filo e' gia'
+    morto — la rete, il disco pieno, i pesi che non arrivano — la stessa
+    frase esce a ogni pressione del microfono e tiene qualcuno ad aspettare
+    una cosa che non arrivera' mai. E' successo in casa: cinque minuti di
+    «succede una volta sola» mentre non stava succedendo niente.
+
+    Il motivo vero, anche brutto, vale piu' di una rassicurazione.
+    """
+    monkeypatch.setattr(servizio_modulo.whisper, "caricato", lambda nome: False)
+    monkeypatch.setattr(servizio_modulo.whisper, "perche_non_e_pronto", lambda: "No space left on device")
+    monkeypatch.setattr(servizio_modulo.whisper, "prepara", lambda nome: False)
+
+    with pytest.raises(NonSiPuo) as errore:
+        servizio_trascrizione.trascrivi(_audio(), "audio/webm")
+
+    assert "No space left on device" in str(errore.value)
+    assert "una volta sola" not in str(errore.value), "continua a dire che basta aspettare"
+
+
+def test_il_motivo_si_legge_prima_di_riprovare(con_libreria, monkeypatch):
+    """Rimettere in moto la preparazione azzera il guasto precedente.
+
+    Se il messaggio si componesse dopo, direbbe sempre «sto preparando»:
+    il tentativo nuovo avrebbe gia' cancellato il motivo di quello vecchio,
+    e il difetto sarebbe tornato identico passando da un'altra porta.
+    """
+    ordine: list[str] = []
+
+    def perche():
+        ordine.append("letto")
+        return "pesi non scaricati"
+
+    def prepara(nome):
+        ordine.append("riavviato")
+        return True
+
+    monkeypatch.setattr(servizio_modulo.whisper, "caricato", lambda nome: False)
+    monkeypatch.setattr(servizio_modulo.whisper, "perche_non_e_pronto", perche)
+    monkeypatch.setattr(servizio_modulo.whisper, "prepara", prepara)
+
+    with pytest.raises(NonSiPuo):
+        servizio_trascrizione.trascrivi(_audio(), "audio/webm")
+
+    assert ordine == ["letto", "riavviato"]
+
+
+def test_l_interfaccia_porta_il_motivo_a_chi_preme_il_microfono(con_libreria, monkeypatch):
+    """Il messaggio si scrive nel server, non nella pagina: una frase fissa
+    nel JavaScript non puo' distinguere un'attesa da un guasto."""
+    monkeypatch.setattr(servizio_modulo.whisper, "caricato", lambda nome: False)
+    monkeypatch.setattr(servizio_modulo.whisper, "perche_non_e_pronto", lambda: "connessione rifiutata")
+
+    stato = servizio_trascrizione.per_l_interfaccia()
+
+    assert "connessione rifiutata" in stato["spiegazione_modello"]
+
+
 def test_l_interfaccia_distingue_installato_da_caricato(con_libreria, monkeypatch):
     """«C'e' la libreria» e «i pesi sono in memoria» sono due cose diverse, e
     la dashboard deve poterle distinguere per non far parlare qualcuno dentro

@@ -353,10 +353,24 @@ def verifica_configurazione(config: Optional[AppConfig] = None) -> list[str]:
             "comandare l'impianto e leggere i dati della famiglia."
         )
 
+    if cfg.server.debug:
+        # Il controllo guardava anche l'indirizzo di ascolto, e su un server
+        # dietro un proxy — che ascolta su 127.0.0.1 — non diceva mai niente.
+        # Ma il ricaricamento automatico non e' un problema di rete: sorveglia
+        # i file e **riavvia il processo**, buttando via tutto quello che
+        # stava girando in sottofondo. Il modello di trascrizione, che si
+        # carica in minuti, non arriva mai in fondo. E' successo in casa, e
+        # dal di fuori sembrava che il microfono non funzionasse.
+        problemi.append(
+            "server.debug e' attivo: uvicorn ricarica a ogni modifica dei file e "
+            "riavvia il servizio, interrompendo i lavori in sottofondo (fra cui il "
+            "caricamento del modello vocale). Mettilo a false, se non stai sviluppando."
+        )
+
     if cfg.server.debug and cfg.server.host == "0.0.0.0":
         problemi.append(
             "server.debug e' attivo con il servizio in ascolto su tutte le interfacce: "
-            "il ricaricamento automatico e le tracce di errore non vanno esposti in rete."
+            "le tracce di errore non vanno esposte in rete."
         )
 
     if cfg.alexa.enabled and not (cfg.alexa.skill_id or "").strip():

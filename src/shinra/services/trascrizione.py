@@ -57,7 +57,26 @@ class ServizioTrascrizione:
             # per non far parlare qualcuno dentro un'attesa di minuti.
             "modello_caricato": in_memoria,
             "in_preparazione": whisper.in_preparazione(),
+            # Il messaggio si scrive qui, non nella pagina: «sto preparando» e
+            # «ci ho provato e non ci sono riuscito» sono due cose diverse, e
+            # una frase scritta a mano nel JavaScript non puo' distinguerle.
+            "spiegazione_modello": (
+                "" if in_memoria or not stato.in_casa else self.perche_il_modello_non_e_pronto()
+            ),
         }
+
+    def perche_il_modello_non_e_pronto(self) -> str:
+        """Cosa dire a chi preme il microfono mentre i pesi non ci sono.
+
+        «Sto preparando, riprova fra un minuto — succede una volta sola» e'
+        vero finche' il caricamento sta andando. Se e' gia' morto, la stessa
+        frase si ripete identica a ogni pressione e tiene qualcuno ad
+        aspettare una cosa che non arrivera'.
+        """
+        guasto = whisper.perche_non_e_pronto()
+        if guasto:
+            return dominio.spiega_caricamento_fallito(guasto)
+        return dominio.spiega(dominio.MODELLO_IN_PREPARAZIONE)
 
     def prepara(self) -> bool:
         """Comincia a caricare il modello, se ha senso farlo.
@@ -105,8 +124,12 @@ class ServizioTrascrizione:
         # moto il caricamento per la volta dopo. E' un rifiuto che scade da
         # solo.
         if not whisper.caricato(settings.voce.modello):
+            # Il motivo si legge **prima** di rimettere in moto: far ripartire
+            # la preparazione azzera il guasto precedente, ed e' proprio
+            # quello che qui bisogna raccontare.
+            messaggio = self.perche_il_modello_non_e_pronto()
             whisper.prepara(settings.voce.modello)
-            raise NonSiPuo(dominio.spiega(dominio.MODELLO_IN_PREPARAZIONE))
+            raise NonSiPuo(messaggio)
 
         try:
             grezzo = whisper.trascrivi(

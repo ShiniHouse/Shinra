@@ -163,6 +163,25 @@ def spiega(motivo: str) -> str:
     return ""
 
 
+def spiega_caricamento_fallito(dettaglio: str) -> str:
+    """Il caricamento ha gia' provato, e non ce l'ha fatta.
+
+    Dire «sto preparando, riprova fra un minuto — succede una volta sola»
+    quando il tentativo e' gia' morto non e' un'imprecisione: e' una frase
+    che si ripete identica a ogni pressione e tiene qualcuno ad aspettare
+    una cosa che non arrivera'. Il motivo vero, anche brutto, vale piu' di
+    una rassicurazione.
+    """
+    motivo = (dettaglio or "").strip()
+    if not motivo:
+        return spiega(MODELLO_NON_CARICATO)
+    return (
+        f"Il modello di riconoscimento non si e' caricato: {motivo}. "
+        "Ci riprovo adesso; se il messaggio torna uguale, il dettaglio completo "
+        "e' nel log del server."
+    )
+
+
 def formato_accettabile(tipo: Optional[str]) -> bool:
     """Il tipo dichiarato dal browser, senza i parametri.
 
