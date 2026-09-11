@@ -32,6 +32,16 @@ class EntitaSconosciuta(Exception):
         super().__init__(messaggio)
 
 
+class EntitaAmbigua(EntitaSconosciuta):
+    """Il riferimento vale per piu' dispositivi, e non si sa quale.
+
+    Discende da `EntitaSconosciuta` di proposito: chi gia' cattura quella
+    continua a funzionare e riferisce la frase all'utente, che e' esattamente
+    il comportamento giusto. Prima non esisteva e non serviva, perche' un
+    riferimento ambiguo non veniva dichiarato: se ne sceglieva uno a caso.
+    """
+
+
 def _somiglianza(cercato: str, candidato: str) -> int:
     """Quante parole hanno in comune. Basta a proporre l'alternativa giusta."""
     parole = {p for p in cercato.replace(".", " ").replace("_", " ").split() if len(p) > 2}
@@ -45,17 +55,44 @@ async def stati_noti() -> list[dict[str, Any]]:
     return await client_home_assistant().stati_correnti()
 
 
-def risolvi(riferimento: str) -> str:
-    """Da «lampadario salotto» a `light.salotto_main`, se c'e' un alias."""
+def risolvi(riferimento: str, stanza: Optional[str] = None) -> str:
+    """Da «lampadario salotto» a `light.salotto_main`, se c'e' un alias.
+
+    La stanza, quando non viene passata, si legge dal contesto della
+    richiesta: e' li' che il canale scrive da dove sta parlando chi parla
+    (issue #33). Passa per il contesto e non come parametro perche' i tool
+    che chiamano questa funzione sono una dozzina e nessuno di loro ha
+    ragione di sapere che esistono i satelliti — e' la stessa strada gia'
+    usata per l'attore e per il canale.
+
+    Con una stanza, «accendi la luce» diventa la luce di quella stanza senza
+    bisogno di nominarla.
+
+    Solleva `EntitaAmbigua` quando il riferimento vale per piu' dispositivi e
+    non c'e' una stanza che scelga. Prima non succedeva: se ne prendeva uno a
+    caso, e chi ascoltava credeva di essere stato capito.
+    """
+    from shinra.domain import contesto, stanze
     from shinra.infra.data_store import data_store
 
-    return data_store.resolve_alias_or_entity((riferimento or "").strip())
+    dove = contesto.stanza_corrente() if stanza is None else stanza
+    esito = data_store.cerca_dispositivo((riferimento or "").strip(), dove)
+
+    if esito.tipo == stanze.AMBIGUO:
+        raise EntitaAmbigua(
+            f"«{riferimento}» puo' essere piu' di una cosa: "
+            f"{stanze.descrivi_alternative(esito.alternative)}. Quale?",
+            [d.entity_id for d in esito.alternative],
+        )
+
+    return esito.entity_id if esito.certo else (riferimento or "").strip().lower()
 
 
 async def verifica(
     riferimento: str,
     domini: Iterable[str],
     stati: Optional[list[dict[str, Any]]] = None,
+    stanza: Optional[str] = None,
 ) -> str:
     """L'`entity_id` reale, oppure un errore che si puo' riferire a voce.
 
@@ -67,7 +104,7 @@ async def verifica(
     trasforma «non lo so» in «non esiste» impedirebbe di comandare la casa
     proprio nei momenti in cui e' gia' in difficolta'.
     """
-    entita = risolvi(riferimento)
+    entita = risolvi(riferimento, stanza)
     ammessi = set(domini)
 
     elenco = stati if stati is not None else await stati_noti()

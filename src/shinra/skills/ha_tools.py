@@ -8,6 +8,8 @@ from shinra.domain import presenza as presenza_dominio
 from shinra.domain.eventi import RICHIESTA_AVVISO, Evento, bus
 from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
+from shinra.skills.entita import EntitaSconosciuta
+from shinra.skills.entita import risolvi as risolvi_entita
 
 logger = logging.getLogger(__name__)
 
@@ -87,8 +89,18 @@ async def control_device(
     """
     Controlla un dispositivo smart della casa tramite Home Assistant o risolvendo l'alias configurato.
     """
-    # Risoluzione automatica alias (es. "lampadario salotto" -> "light.salotto_main")
-    resolved_entity = data_store.resolve_alias_or_entity(entity_id)
+    # Risoluzione automatica alias (es. "lampadario salotto" -> "light.salotto_main"),
+    # tenendo conto della stanza da cui arriva la richiesta: «accendi la
+    # luce» detto dalla cucina e' la luce della cucina (issue #33).
+    #
+    # Passa da `entita.risolvi` e non piu' dritto al deposito perche' e' li'
+    # che un riferimento buono per piu' dispositivi viene dichiarato tale.
+    # Prima ne veniva scelto uno a caso e questo tool — il piu' usato di
+    # tutti — accendeva una lampadina qualunque senza dire niente.
+    try:
+        resolved_entity = risolvi_entita(entity_id)
+    except EntitaSconosciuta as ambiguita:
+        return {"success": False, "message": str(ambiguita)}
 
     domain = resolved_entity.split(".")[0] if "." in resolved_entity else "homeassistant"
     service_data: Dict[str, Any] = {"entity_id": resolved_entity}

@@ -28,6 +28,7 @@ from shinra.config.settings import (
     settings,
     verifica_configurazione,
 )
+from shinra.domain import contesto
 from shinra.domain.eventi import (
     AVVISO,
     CASA_ABITATA,
@@ -55,6 +56,7 @@ from shinra.services.manutenzione import servizio_manutenzione
 from shinra.services.notifiche import servizio_notifiche
 from shinra.services.presenza import presenza
 from shinra.services.regole import motore_regole
+from shinra.services.satelliti import registro_satelliti
 from shinra.services.simulazione import servizio_simulazione
 from shinra.services.timer_engine import timer_engine
 from shinra.services.user_manager import user_manager
@@ -361,6 +363,10 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 class ChatRequest(BaseModel):
     message: str
     user_id: Optional[str] = None
+    # Da quale punto di ascolto arriva (issue #33). La dashboard lo manda se
+    # si e' dichiarata satellite di una stanza; chi non lo manda continua a
+    # funzionare come prima.
+    satellite: Optional[str] = None
 
 
 from fastapi.responses import Response
@@ -399,8 +405,44 @@ async def chat_endpoint(payload: ChatRequest):
     if not payload.message.strip():
         raise HTTPException(status_code=400, detail="Il messaggio non può essere vuoto.")
 
+    if payload.satellite:
+        # Chi ha sentito la frase per primo risponde; agli altri si dice che
+        # e' gia' stata presa in carico, e non si esegue niente. Due
+        # dispositivi sullo stesso tavolo sentono la stessa cosa, e due
+        # esecuzioni della stessa richiesta su una serranda si notano.
+        if not registro_satelliti.prende_in_carico(payload.satellite, payload.message):
+            return {"response": "", "gia_in_carico": True}
+        contesto.dichiara_stanza(registro_satelliti.stanza_di(payload.satellite))
+
     result = await agent.process_user_input(user_text=payload.message, user_id=payload.user_id)
     return result
+
+
+class SatelliteIn(BaseModel):
+    id: str
+    nome: Optional[str] = ""
+    stanza: Optional[str] = ""
+
+
+@app.post("/api/satelliti", dependencies=[Depends(sicurezza.richiedi_autenticazione)])
+async def annuncia_satellite(payload: SatelliteIn):
+    """Un punto di ascolto si presenta e dice in quale stanza si trova.
+
+    Non chiede il permesso di modificare niente: dichiarare dove ci si trova
+    non cambia la casa, cambia solo a chi si riferiscono le proprie frasi. Il
+    permesso serve per **comandare**, e quello si controlla dove si comanda.
+    """
+    if not payload.id.strip():
+        raise HTTPException(status_code=400, detail="Un satellite ha bisogno di un identificativo.")
+
+    satellite = registro_satelliti.annuncia(payload.id.strip(), payload.nome or "", payload.stanza or "")
+    return {"success": True, "stanza": satellite.stanza}
+
+
+@app.get("/api/satelliti", dependencies=[Depends(sicurezza.richiedi_autenticazione)])
+async def elenco_satelliti():
+    """Chi sta ascoltando, e da dove."""
+    return {"satelliti": registro_satelliti.per_l_interfaccia()}
 
 
 class TTSRequest(BaseModel):

@@ -826,6 +826,26 @@
                     <div id="recording-status" class="hidden mt-2 text-xs text-rose-400 flex items-center gap-1.5 animate-pulse">
                         <span class="w-2 h-2 rounded-full bg-rose-500"></span> In ascolto... Parla adesso!
                     </div>
+
+                    <!-- Da quale stanza sto parlando (issue #33).
+                         Sta qui, sotto il microfono, e non fra le impostazioni:
+                         è una proprietà di *questo* dispositivo in *questo*
+                         momento — il telefono che si sposta di stanza cambia
+                         risposta — e nasconderla in un pannello vorrebbe dire
+                         che nessuno la aggiorna mai. -->
+                    <div class="mt-2 flex items-center gap-2 text-[11px] text-slate-500">
+                        <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                        <span>Parlo da:</span>
+                        <input
+                            type="text"
+                            id="scelta-stanza"
+                            list="stanze-note"
+                            placeholder="nessuna stanza"
+                            onchange="scegliStanza(this.value)"
+                            class="bg-transparent border-b border-slate-700 focus:border-indigo-500 focus:outline-none px-1 py-0.5 text-slate-300 w-32"
+                            title="Dicendo la stanza, «accendi la luce» accende quella di qui">
+                        <datalist id="stanze-note"></datalist>
+                    </div>
                 </div>
             </div>
 
@@ -2602,7 +2622,15 @@
                 const res = await fetch('/api/chat', {
                     method: 'POST',
                     headers: getAuthHeaders(),
-                    body: JSON.stringify({ message: text, user_id: activeUserId || 'alessio' })
+                    body: JSON.stringify({
+                        message: text,
+                        user_id: activeUserId || 'alessio',
+                        // Da quale stanza si sta parlando (issue #33). Va
+                        // sempre, anche scrivendo: chi scrive dalla cucina
+                        // intende la luce della cucina esattamente come chi
+                        // parla.
+                        satellite: satelliteDiQuestoDispositivo()
+                    })
                 });
                 hideTypingIndicator();
                 if (!res.ok) {
@@ -2626,6 +2654,101 @@
         function sendQuickPrompt(promptText) {
             document.getElementById('user-input').value = promptText;
             handleSend();
+        }
+
+        // ==================== QUESTO DISPOSITIVO COME PUNTO DI ASCOLTO ====================
+        //
+        // La dashboard aperta in cucina **è** un satellite: ha un microfono,
+        // sta in una stanza, e può dire quale. Non serve un Raspberry per
+        // avere «accendi la luce» che accende quella giusta — serve sapere
+        // da dove arriva la frase (issue #33).
+        //
+        // L'identificativo e la stanza vivono nel browser e non sul server:
+        // sono una proprietà di *questo* dispositivo, e un elenco di punti di
+        // ascolto salvato sul server sopravviverebbe ai dispositivi spenti,
+        // cioè manderebbe risposte in stanze vuote.
+
+        const CHIAVE_SATELLITE = 'shinra_satellite_id';
+        const CHIAVE_STANZA = 'shinra_satellite_stanza';
+
+        function satelliteDiQuestoDispositivo() {
+            try {
+                let id = localStorage.getItem(CHIAVE_SATELLITE);
+                if (!id) {
+                    id = 'sat_' + Math.random().toString(36).slice(2, 10);
+                    localStorage.setItem(CHIAVE_SATELLITE, id);
+                }
+                return id;
+            } catch (e) {
+                // Navigazione privata, o memoria del sito bloccata: si resta
+                // un dispositivo senza stanza, che è come funzionava prima.
+                return null;
+            }
+        }
+
+        function stanzaDiQuestoDispositivo() {
+            try {
+                return localStorage.getItem(CHIAVE_STANZA) || '';
+            } catch (e) {
+                return '';
+            }
+        }
+
+        async function annunciaQuestoDispositivo() {
+            const id = satelliteDiQuestoDispositivo();
+            if (!id) return;
+            try {
+                await fetch('/api/satelliti', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        id,
+                        nome: 'Questo dispositivo',
+                        stanza: stanzaDiQuestoDispositivo()
+                    })
+                });
+            } catch (e) {
+                // Non poter dire dove si è non impedisce di parlare.
+            }
+            mostraStanzaScelta();
+        }
+
+        async function scegliStanza(stanza) {
+            try {
+                localStorage.setItem(CHIAVE_STANZA, stanza || '');
+            } catch (e) {
+                alert('Il browser non mi lascia ricordare la stanza su questo dispositivo.');
+                return;
+            }
+            await annunciaQuestoDispositivo();
+        }
+
+        function mostraStanzaScelta() {
+            const campo = document.getElementById('scelta-stanza');
+            if (!campo) return;
+            const stanza = stanzaDiQuestoDispositivo();
+            campo.value = stanza;
+            // Verde quando la stanza c'è: chi guarda deve poter vedere in un
+            // colpo d'occhio se «accendi la luce» sa dove si trova.
+            campo.classList.toggle('border-emerald-600', !!stanza);
+            campo.classList.toggle('border-slate-700', !stanza);
+        }
+
+        async function riempiStanzeNote() {
+            // Le stanze non sono un elenco a parte: sono quelle già scritte
+            // sugli alias dei dispositivi. Un secondo elenco divergerebbe dal
+            // primo, e «Cucina» contro «cucina » sono due stanze che non si
+            // incontreranno mai.
+            const elenco = document.getElementById('stanze-note');
+            if (!elenco) return;
+            try {
+                const res = await fetch('/api/aliases', { headers: getAuthHeaders() });
+                const alias = await res.json();
+                const stanze = [...new Set((alias || []).map(a => (a.room || '').trim()).filter(Boolean))];
+                elenco.innerHTML = stanze.sort().map(s => `<option value="${s}"></option>`).join('');
+            } catch (e) {
+                // Senza suggerimenti la stanza si scrive a mano, e va bene.
+            }
         }
 
         // ==================== KNOWLEDGE TEMPLATES ====================
@@ -6220,6 +6343,10 @@
             loadReminders();
             startTimerTick();
             collegaEventi();
+            // Questo dispositivo si presenta come punto di ascolto: da dove
+            // parla decide quale luce accende «accendi la luce» (issue #33).
+            riempiStanzeNote();
+            annunciaQuestoDispositivo();
             checkSystemHealth();
             setInterval(checkSystemHealth, 8000);
             // La presenza non va interrogata a intervalli: arriva sul
