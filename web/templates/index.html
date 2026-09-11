@@ -2252,7 +2252,11 @@
         let registratore = null;
 
         async function leggiStatoVoce() {
-            if (statoVoce) return statoVoce;
+            // Si tiene da parte solo una risposta definitiva. Finche' il
+            // modello si sta caricando, «non ancora pronto» e' vero adesso e
+            // falso fra un minuto: ricordarselo vorrebbe dire un microfono
+            // che resta spento fino al prossimo ricaricamento della pagina.
+            if (statoVoce && (!statoVoce.in_casa || statoVoce.modello_caricato)) return statoVoce;
             try {
                 const res = await fetch('/api/voce/stato', { headers: getAuthHeaders() });
                 if (res.ok) statoVoce = await res.json();
@@ -2279,6 +2283,14 @@
                 // Meglio dirlo prima di registrare: chi preme e poi scopre che
                 // non serviva a niente ha gia' parlato.
                 alert(stato.spiegazione || 'Il riconoscimento vocale non e\' disponibile.');
+                return;
+            }
+            if (!stato.modello_caricato) {
+                // Stessa ragione del controllo qui sopra, un passo piu' in
+                // la': il motore c'e', ma i pesi non sono ancora in memoria.
+                // Registrare adesso vuol dire parlare dentro un'attesa che
+                // finira' tagliata da qualunque proxy stia davanti al server.
+                alert('Sto ancora preparando il modello di riconoscimento: al primo avvio i pesi vanno scaricati. Riprova fra un minuto — succede una volta sola.');
                 return;
             }
             if (!navigator.mediaDevices || !window.MediaRecorder) {

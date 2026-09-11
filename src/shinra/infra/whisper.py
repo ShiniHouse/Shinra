@@ -32,6 +32,12 @@ _lucchetto = threading.Lock()
 _modello: Optional[Any] = None
 _modello_caricato: str = ""
 
+# Il filo che sta caricando il modello, quando c'e'. Separato dal lucchetto
+# di sopra: `carica` tiene quel lucchetto per tutto il caricamento, e
+# chiedere «sta caricando?» non deve mettersi in coda dietro la risposta.
+_lucchetto_preparazione = threading.Lock()
+_preparazione: Optional[threading.Thread] = None
+
 # `int8` invece di `float16`: su una CPU e' l'unica combinazione che dia una
 # latenza sopportabile, e la perdita di precisione su frasi brevi in italiano
 # non si nota. Su GPU si potrebbe fare meglio, ma un hub domotico che pretende
@@ -76,6 +82,56 @@ def carica(nome: str) -> Any:
             _modello_caricato = voluto
             logger.info("Modello '%s' pronto.", voluto)
     return _modello
+
+
+def caricato(nome: str) -> bool:
+    """Se il modello chiesto e' gia' in memoria, e quindi trascrivere e' svelto."""
+    return _modello is not None and _modello_caricato == dominio.modello_valido(nome)
+
+
+def in_preparazione() -> bool:
+    """Se un filo in sottofondo lo sta caricando proprio adesso."""
+    return _preparazione is not None and _preparazione.is_alive()
+
+
+def prepara(nome: str) -> bool:
+    """Comincia a caricare il modello in sottofondo. Vero se e' partito adesso.
+
+    Il primo caricamento scarica i pesi, e possono volerci minuti. Farlo
+    accadere **dentro** la prima richiesta vuol dire una richiesta che non
+    risponde per minuti: qualunque cosa stia davanti al server la taglia molto
+    prima — Cloudflare a cento secondi — e chi ha parlato riceve un 524, che
+    non ha niente a che vedere con cio' che ha detto e non suggerisce nemmeno
+    di riprovare.
+
+    Percio' si comincia all'avvio del servizio, quando nessuno sta aspettando.
+    """
+    if not disponibile() or caricato(nome):
+        return False
+
+    global _preparazione
+    with _lucchetto_preparazione:
+        if _preparazione is not None and _preparazione.is_alive():
+            return False
+        _preparazione = threading.Thread(
+            target=_prepara_adesso, args=(nome,), name="shinra-whisper", daemon=True
+        )
+        _preparazione.start()
+    return True
+
+
+def _prepara_adesso(nome: str) -> None:
+    """Il corpo del filo di preparazione.
+
+    Un guasto qui non deve spegnere niente: il microfono continuera' a dire
+    che il modello non e' pronto, che e' la verita', e il motivo resta nel
+    log. Far morire il filo con un'eccezione non stampata lascerebbe il
+    servizio convinto di stare ancora caricando, per sempre.
+    """
+    try:
+        carica(nome)
+    except Exception as errore:  # pragma: no cover - dipende dall'ambiente
+        logger.error("Preparazione del modello non riuscita: %s", errore, exc_info=True)
 
 
 def scarica() -> None:

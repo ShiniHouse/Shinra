@@ -35,6 +35,7 @@ MOTORE_PREDEFINITO = LOCALE
 PRONTO = "pronto"
 LIBRERIA_ASSENTE = "libreria_assente"
 MODELLO_NON_CARICATO = "modello_non_caricato"
+MODELLO_IN_PREPARAZIONE = "modello_in_preparazione"
 SCELTO_IL_BROWSER = "scelto_il_browser"
 
 # I modelli di Whisper, dal piu' svelto al piu' preciso. Su una CPU di un
@@ -146,6 +147,12 @@ def spiega(motivo: str) -> str:
             "Il modello di riconoscimento non si e' caricato. Il dettaglio e' nel "
             "log del server; il primo avvio scarica il modello e puo' volerci "
             "qualche minuto."
+        )
+    if motivo == MODELLO_IN_PREPARAZIONE:
+        return (
+            "Sto preparando il modello di riconoscimento: al primo avvio i pesi "
+            "vanno scaricati, e possono volerci alcuni minuti. Riprova fra poco — "
+            "succede una volta sola, poi il modello resta in memoria."
         )
     if motivo == SCELTO_IL_BROWSER:
         return (

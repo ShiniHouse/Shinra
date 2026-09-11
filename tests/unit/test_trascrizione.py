@@ -190,6 +190,18 @@ def con_libreria(monkeypatch):
     return monkeypatch
 
 
+@pytest.fixture
+def con_modello(con_libreria):
+    """La libreria c'e' **e** i pesi sono gia' in memoria.
+
+    Sono due condizioni diverse, e il difetto del 524 sta esattamente nello
+    scarto fra le due: la libreria c'era dal primo avvio, i pesi no, e
+    scaricarli dentro la richiesta la teneva aperta oltre ogni timeout.
+    """
+    con_libreria.setattr(servizio_modulo.whisper, "caricato", lambda nome: True)
+    return con_libreria
+
+
 def _audio(byte: int = 1024) -> bytes:
     return b"\x00" * byte
 
@@ -265,7 +277,70 @@ def test_un_audio_vuoto_viene_rifiutato(con_libreria):
         servizio_trascrizione.trascrivi(b"", "audio/webm")
 
 
-def test_una_trascrizione_riuscita_torna_pulita(con_libreria, monkeypatch):
+def test_senza_la_libreria_non_si_prepara_niente(monkeypatch):
+    """Non c'e' niente da caricare, e un filo che parte per scoprirlo e' un
+    filo che muore con un'eccezione nel log a ogni avvio."""
+    monkeypatch.setattr(servizio_modulo.whisper, "disponibile", lambda: False)
+
+    assert servizio_modulo.whisper.prepara("base") is False
+    assert servizio_modulo.whisper.in_preparazione() is False
+
+
+def test_con_i_pesi_non_ancora_in_memoria_non_si_trascrive(con_libreria, monkeypatch):
+    """Il difetto del 524.
+
+    Whisper carica i pesi al primo uso, e la prima volta li scarica: possono
+    volerci minuti. Finche' quel caricamento avveniva dentro la richiesta, la
+    richiesta restava aperta per tutto il tempo, e qualunque cosa stia davanti
+    al server la tagliava prima — Cloudflare a cento secondi.
+
+    Il rifiuto deve mettere in moto il caricamento, altrimenti non arrivera'
+    mai: sarebbe un microfono che dice sempre «sto preparando» e non prepara
+    niente.
+    """
+    avviati = []
+    monkeypatch.setattr(servizio_modulo.whisper, "caricato", lambda nome: False)
+    monkeypatch.setattr(servizio_modulo.whisper, "prepara", lambda nome: avviati.append(nome))
+
+    def non_si_deve_arrivare_qui(audio, modello, lingua):
+        raise AssertionError("il modello e' stato fatto girare dentro la richiesta")
+
+    monkeypatch.setattr(servizio_modulo.whisper, "trascrivi", non_si_deve_arrivare_qui)
+
+    with pytest.raises(NonSiPuo) as errore:
+        servizio_trascrizione.trascrivi(_audio(), "audio/webm")
+
+    assert "preparando" in str(errore.value)
+    assert avviati, "il rifiuto non mette in moto niente: il modello non arrivera' mai"
+
+
+def test_l_interfaccia_distingue_installato_da_caricato(con_libreria, monkeypatch):
+    """«C'e' la libreria» e «i pesi sono in memoria» sono due cose diverse, e
+    la dashboard deve poterle distinguere per non far parlare qualcuno dentro
+    un'attesa di minuti."""
+    monkeypatch.setattr(servizio_modulo.whisper, "caricato", lambda nome: False)
+
+    stato = servizio_trascrizione.per_l_interfaccia()
+
+    assert stato["pronto"] is True
+    assert stato["modello_caricato"] is False
+
+
+def test_col_browser_scelto_non_si_prepara_nessun_modello(monkeypatch):
+    """Caricare in memoria un modello che nessuno usera' e' mezzo gigabyte
+    buttato su un server di casa."""
+    from shinra.config.settings import settings
+
+    chiamate = []
+    monkeypatch.setattr(servizio_modulo.whisper, "disponibile", lambda: True)
+    monkeypatch.setattr(servizio_modulo.whisper, "prepara", lambda nome: chiamate.append(nome))
+    monkeypatch.setattr(settings.voce, "motore", "browser")
+
+    assert servizio_trascrizione.prepara() is False
+    assert chiamate == []
+
+
+def test_una_trascrizione_riuscita_torna_pulita(con_modello, monkeypatch):
     monkeypatch.setattr(
         servizio_modulo.whisper, "trascrivi", lambda audio, modello, lingua: "  accendi la luce "
     )
@@ -273,7 +348,7 @@ def test_una_trascrizione_riuscita_torna_pulita(con_libreria, monkeypatch):
     assert servizio_trascrizione.trascrivi(_audio(), "audio/webm;codecs=opus") == "accendi la luce"
 
 
-def test_un_titolo_di_coda_torna_come_niente(con_libreria, monkeypatch):
+def test_un_titolo_di_coda_torna_come_niente(con_modello, monkeypatch):
     monkeypatch.setattr(
         servizio_modulo.whisper,
         "trascrivi",
@@ -283,7 +358,7 @@ def test_un_titolo_di_coda_torna_come_niente(con_libreria, monkeypatch):
     assert servizio_trascrizione.trascrivi(_audio(), "audio/webm") == ""
 
 
-def test_un_modello_che_non_si_carica_non_diventa_un_guasto(con_libreria, monkeypatch):
+def test_un_modello_che_non_si_carica_non_diventa_un_guasto(con_modello, monkeypatch):
     def esplode(audio, modello, lingua):
         raise RuntimeError("pesi non trovati")
 
@@ -292,10 +367,15 @@ def test_un_modello_che_non_si_carica_non_diventa_un_guasto(con_libreria, monkey
     with pytest.raises(NonSiPuo) as errore:
         servizio_trascrizione.trascrivi(_audio(), "audio/webm")
 
-    assert "modello" in str(errore.value).lower()
+    # «non si e' caricato», non «lo sto caricando»: sono due messaggi
+    # diversi e portano a due comportamenti diversi — guardare il log
+    # oppure aspettare. Cercare la sola parola «modello» li confonde, ed e'
+    # cosi' che questo test e' rimasto verde per il motivo sbagliato quando
+    # e' comparsa la preparazione in sottofondo.
+    assert "non si e' caricato" in str(errore.value)
 
 
-def test_il_modello_si_legge_dalla_configurazione(con_libreria, monkeypatch):
+def test_il_modello_si_legge_dalla_configurazione(con_modello, monkeypatch):
     from shinra.config.settings import settings
 
     visti = {}
