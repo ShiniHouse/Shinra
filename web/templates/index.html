@@ -88,6 +88,32 @@
         .port-pin-vero:hover  { border-color: #34d399; background: #065f46; }
         .port-pin-falso:hover { border-color: #fb7185; background: #881337; }
 
+        /* La tela dell'editor a nodi.
+
+           La griglia stava scritta dentro l'attributo `style` del div, sopra
+           un nero fisso: era l'unica superficie della dashboard che restava
+           notturna anche a mezzogiorno, con tutto il resto passato al bianco.
+           Da qui segue il tema come ogni altra. */
+        .tela-flusso {
+            background-color: #030712;
+            background-image: radial-gradient(rgba(99, 102, 241, 0.25) 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+        }
+        html.light .tela-flusso {
+            background-color: #f8fafc;
+            background-image: radial-gradient(rgba(79, 70, 229, 0.22) 1.5px, transparent 1.5px);
+        }
+
+        /* I pin, di giorno: chiari sul chiaro, col bordo a fare il lavoro.
+           Un pallino quasi nero su una tela bianca si vede benissimo, ma
+           sembra un buco nel foglio, non una presa da cui tirare un cavo. */
+        html.light .port-pin { background: #e2e8f0; border-color: #475569; }
+        html.light .port-pin:hover { background: #c7d2fe; border-color: #4f46e5; }
+        html.light .port-pin-vero  { background: #d1fae5; border-color: #059669; }
+        html.light .port-pin-falso { background: #ffe4e6; border-color: #e11d48; }
+        html.light .port-pin-vero:hover  { background: #a7f3d0; border-color: #047857; }
+        html.light .port-pin-falso:hover { background: #fecdd3; border-color: #be123c; }
+
         /* Un nodo che il server ha segnalato al salvataggio. */
         .nodo-in-errore {
             border-color: #f43f5e !important;
@@ -401,6 +427,93 @@
         }
         html.light button.bg-rose-600\/20:hover {
             background-color: #e11d48 !important;
+            color: #ffffff !important;
+        }
+
+        /* ==================== TINTE PALLIDE IN TEMA CHIARO ====================
+
+           Le tinte da 100 a 300 sono fatte per stare su un fondo scuro. Su
+           bianco non spariscono del tutto — si intuisce che c'e' scritto
+           qualcosa — ed e' questo che le rende insidiose: la pagina non
+           sembra rotta, sembra sbiadita, e chi la guarda pensa di avere il
+           monitor tarato male.
+
+           Quattro pulsanti dell'editor a nodi sono rimasti cosi' per intere
+           versioni: «Quando», «Voce Shinra», «Condizione», «Notifica». Il
+           quinto si leggeva, perche' era indigo e l'indigo qui sopra c'era
+           gia'.
+
+           Ogni tinta pallida usata nella pagina deve avere la sua controparte
+           scura qui. Non e' una convenzione da ricordare: la verifica
+           `test_ogni_tinta_pallida_ha_un_colore_per_il_giorno`. */
+
+        html.light .text-emerald-200 {
+            color: #15803d !important;
+        }
+        html.light .text-amber-200 {
+            color: #b45309 !important;
+        }
+        html.light .text-violet-200 {
+            color: #6d28d9 !important;
+        }
+        html.light .text-yellow-300 {
+            color: #a16207 !important;
+        }
+        html.light .text-sky-200,
+        html.light .text-sky-300,
+        html.light .text-sky-400 {
+            color: #0369a1 !important;
+        }
+
+        /* I pulsanti a tinta traslucida: sul fondo scuro il `/30` e' un velo
+           di colore, su bianco e' quasi nulla. Di giorno diventano pastelli
+           pieni, e al passaggio del mouse il colore vero con testo bianco —
+           la stessa grammatica che l'indigo aveva gia'. */
+        html.light button.bg-emerald-600\/20,
+        html.light button.bg-emerald-600\/30 {
+            background-color: #dcfce7 !important;
+            border-color: #bbf7d0 !important;
+            color: #15803d !important;
+        }
+        html.light button.bg-emerald-600\/20:hover,
+        html.light button.bg-emerald-600\/30:hover {
+            background-color: #16a34a !important;
+            color: #ffffff !important;
+        }
+
+        html.light button.bg-amber-600\/20,
+        html.light button.bg-amber-600\/30 {
+            background-color: #fef3c7 !important;
+            border-color: #fde68a !important;
+            color: #b45309 !important;
+        }
+        html.light button.bg-amber-600\/20:hover,
+        html.light button.bg-amber-600\/30:hover {
+            background-color: #d97706 !important;
+            color: #ffffff !important;
+        }
+
+        html.light button.bg-violet-600\/20,
+        html.light button.bg-violet-600\/30 {
+            background-color: #ede9fe !important;
+            border-color: #ddd6fe !important;
+            color: #6d28d9 !important;
+        }
+        html.light button.bg-violet-600\/20:hover,
+        html.light button.bg-violet-600\/30:hover {
+            background-color: #7c3aed !important;
+            color: #ffffff !important;
+        }
+
+        html.light button.bg-sky-600\/20,
+        html.light button.bg-sky-600\/30 {
+            background-color: #e0f2fe !important;
+            border-color: #bae6fd !important;
+            color: #0369a1 !important;
+        }
+        html.light button.bg-sky-600\/20:hover,
+        html.light button.bg-sky-600\/30:hover {
+            background-color: #0284c7 !important;
             color: #ffffff !important;
         }
 
@@ -4420,7 +4533,7 @@
                     </div>
 
                     <!-- Flow Canvas Viewport (Visio 2D Grid) -->
-                    <div id="flow-canvas" class="relative flex-1 w-full overflow-hidden bg-[#030712] cursor-default" style="background-image: radial-gradient(rgba(99, 102, 241, 0.25) 1.5px, transparent 1.5px); background-size: 24px 24px;">
+                    <div id="flow-canvas" class="tela-flusso relative flex-1 w-full overflow-hidden cursor-default">
                         <!-- SVG Cables Layer -->
                         <svg id="flow-svg-layer" class="absolute inset-0 w-full h-full pointer-events-none z-10" style="overflow: visible;">
                             <defs>
@@ -4559,7 +4672,7 @@
                                 <input type="text" value="${t.entity_id || ''}" oninput="setDatoInnesco('${node.id}', 'entity_id', this.value)" placeholder="solo per questa entità (facoltativo)" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
                             ` : ''}
                             ${t.tipo !== 'voce' ? `
-                                <p class="text-[10px] text-amber-500/80 leading-snug">Al salvataggio questa routine parte da sola: diventa una regola del motore delle automazioni. Per fermarla, togli l'innesco e risalva.</p>
+                                <p class="text-[10px] text-amber-400 leading-snug">Al salvataggio questa routine parte da sola: diventa una regola del motore delle automazioni. Per fermarla, togli l'innesco e risalva.</p>
                             ` : ''}
                         </div>
                     `;

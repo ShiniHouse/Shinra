@@ -619,3 +619,82 @@ esigi(_testoDelDettaglio(undefined, 503) === 'Errore 503',
 
     esito = _esegui_con_node(prova)
     assert esito.returncode == 0, esito.stderr or esito.stdout
+
+
+# ------------------------------------------------- leggibilita' di giorno
+
+
+def _stile(testo: str) -> str:
+    """Il foglio di stile scritto nella pagina."""
+    blocco = re.search(r"<style>(.*?)</style>", testo, re.S)
+    assert blocco, "la pagina non ha piu' un blocco <style>: il test non guarda piu' niente"
+    return blocco.group(1)
+
+
+def test_ogni_tinta_pallida_ha_un_colore_per_il_giorno():
+    """Il tema chiaro non e' un tema: e' un elenco di eccezioni.
+
+    Le classi di Tailwind vengono compilate per un fondo scuro, e il giorno
+    si ottiene riscrivendone i colori una per una sotto `html.light`. Chi
+    scrive un pannello nuovo con una tinta che non e' ancora in quell'elenco
+    non se ne accorge, a meno di aprire la dashboard di giorno: di sera tutto
+    e' perfetto.
+
+    E' successo ai quattro pulsanti dell'editor a nodi — «Quando», «Voce
+    Shinra», «Condizione», «Notifica» — rimasti illeggibili per intere
+    versioni, mentre il quinto si vedeva benissimo perche' era indigo e
+    l'indigo era gia' nell'elenco.
+
+    La guardia non giudica i colori: pretende solo che per ogni tinta
+    pallida usata ce ne sia una scelta anche per il giorno.
+    """
+    testo = _testo(PAGINA)
+    stile = _stile(testo)
+
+    usate = set(re.findall(r"\btext-([a-z]+)-(100|200|300)\b", testo))
+    coperte = set(re.findall(r"html\.light[^{]*?\.text-([a-z]+)-(100|200|300)\b", stile))
+
+    assert usate, "nessuna tinta pallida nella pagina: il test non guarda piu' niente"
+    mancanti = sorted(f"text-{colore}-{tinta}" for colore, tinta in usate - coperte)
+    assert mancanti == [], f"di giorno queste scritte sbiadiscono sul bianco: {mancanti}"
+
+
+def test_ogni_pulsante_a_tinta_traslucida_si_vede_di_giorno():
+    """Stessa storia, dalla parte del fondo.
+
+    Un `bg-emerald-600/30` sul buio e' un velo di verde dietro una scritta
+    chiara; sul bianco e' quasi niente, e il pulsante sembra disabilitato.
+    """
+    testo = _testo(PAGINA)
+    stile = _stile(testo)
+
+    usati = set(re.findall(r"\bbg-([a-z]+)-600/(20|30)\b", testo))
+    # `(?!:)` esclude le regole `:hover`. Senza, una tinta col solo colore
+    # del passaggio del mouse risultava coperta: e' quello che e' successo
+    # alla prima stesura di questa guardia, che non mordeva togliendo la
+    # regola vera e lasciando quella dell'hover.
+    coperti = set(re.findall(r"html\.light button\.bg-([a-z]+)-600\\/(20|30)(?!:)", stile))
+
+    assert usati, "nessun pulsante a tinta traslucida: il test non guarda piu' niente"
+    mancanti = sorted(f"bg-{colore}-600/{quota}" for colore, quota in usati - coperti)
+    assert mancanti == [], f"di giorno questi pulsanti sembrano spenti: {mancanti}"
+
+
+def test_la_tela_dell_editor_segue_il_tema_della_casa():
+    """L'unica superficie che restava notturna a mezzogiorno.
+
+    Il nero e la griglia stavano scritti nell'attributo `style` del div: un
+    colore dentro l'HTML non lo raggiunge nessun tema, e l'editor restava una
+    finestra sulla notte in mezzo a una dashboard bianca.
+    """
+    testo = _testo(PAGINA)
+    stile = _stile(testo)
+
+    apertura = testo.index('id="flow-canvas"')
+    tag = testo[apertura : testo.index(">", apertura)]
+
+    assert "tela-flusso" in tag, "la tela non usa la classe che porta il tema"
+    assert "bg-[#" not in tag, "la tela ha ancora un fondo scritto a mano"
+    assert "background-image" not in tag, "la griglia e' ancora chiusa dentro l'attributo style"
+    assert ".tela-flusso {" in stile, "la classe della tela non esiste"
+    assert "html.light .tela-flusso" in stile, "di giorno la tela resta notturna"
