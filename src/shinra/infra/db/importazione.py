@@ -61,6 +61,11 @@ def applica_migrazioni() -> None:
 
     cfg = Config(str(percorsi.RADICE / "alembic.ini"))
     cfg.set_main_option("script_location", str(percorsi.MIGRAZIONI))
+    # Qui siamo dentro l'applicazione, che il logging se l'e' gia'
+    # configurato. Senza questa riga alembic lo sostituisce con il proprio —
+    # radice a WARNING e logger esistenti spenti — e da quel momento l'hub
+    # non racconta piu' niente nel journal.
+    cfg.attributes["configure_logger"] = False
     command.upgrade(cfg, "head")
 
 

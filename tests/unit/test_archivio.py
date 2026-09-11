@@ -32,6 +32,44 @@ def archivio(tmp_path):
     yield percorso
 
 
+# --------------------------------------------------------- il log dell'hub
+
+
+def test_applicare_le_migrazioni_non_riconfigura_il_logging(archivio):
+    """Il difetto per cui in produzione l'hub non raccontava piu' niente.
+
+    `migrazioni/env.py` chiamava `fileConfig(alembic.ini)` sempre. Quel file
+    porta il logger radice a WARNING e, per difetto, **spegne uno per uno**
+    tutti i logger gia' esistenti. Da riga di comando e' innocuo: quel
+    processo fa solo migrazioni. Ma le migrazioni girano anche all'avvio
+    dell'applicazione, prima di tutto il resto — e da li' in poi ogni riga
+    INFO dell'hub spariva.
+
+    Non si notava perche' gli avvisi continuavano a passare: il journal
+    sembrava funzionante, e mancava solo tutto quello che serviva a capire.
+    Il microfono che non trascriveva e' stato diagnosticato al buio per
+    questo: «Carico il modello di trascrizione» veniva scritto e buttato via.
+    """
+    import logging
+
+    radice = logging.getLogger()
+    livello_prima = radice.level
+    radice.setLevel(logging.INFO)
+    spia = logging.getLogger("Shinra.ProvaDelLog")
+
+    try:
+        assert spia.isEnabledFor(logging.INFO), "il test parte da uno stato che non prova niente"
+
+        importazione.applica_migrazioni()
+
+        assert not spia.disabled, "le migrazioni hanno spento un logger dell'applicazione"
+        assert radice.level == logging.INFO, "le migrazioni hanno abbassato il livello del radice"
+        assert spia.isEnabledFor(logging.INFO), "l'INFO dell'hub non arriva piu' da nessuna parte"
+    finally:
+        radice.setLevel(livello_prima)
+        spia.disabled = False
+
+
 # ------------------------------------------------------------- impostazioni
 
 

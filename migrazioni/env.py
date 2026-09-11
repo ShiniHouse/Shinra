@@ -24,7 +24,23 @@ from shinra.infra.db.modelli import Base  # noqa: E402
 from shinra.infra.db.motore import motore  # noqa: E402
 
 config = context.config
-if config.config_file_name is not None:
+
+# `fileConfig` non aggiunge: **sostituisce**. Riporta il logger radice al
+# livello scritto in `alembic.ini` (WARNING) e, per difetto, spegne uno per
+# uno tutti i logger che esistevano gia'.
+#
+# Da riga di comando va benissimo: quel processo fa solo migrazioni. Ma le
+# migrazioni girano anche dentro l'applicazione, all'avvio e prima di
+# qualunque altra cosa — e da quel momento in poi tutto l'INFO dell'hub
+# spariva dal journal. Ogni riga scritta con cura per raccontare cosa sta
+# succedendo in casa («Carico il modello di trascrizione», «Ripresi 3
+# timer», «Trascrizione completata») e' stata invisibile in produzione da
+# quando esistono le migrazioni. Restavano solo gli avvisi, che e' il
+# motivo per cui sembrava che il servizio non dicesse niente.
+#
+# Chi chiama le migrazioni dall'interno mette `configure_logger` a falso:
+# il logging se lo e' gia' configurato per conto suo.
+if config.config_file_name is not None and config.attributes.get("configure_logger", True):
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
