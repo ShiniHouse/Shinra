@@ -6,19 +6,24 @@ Il nome *Shinra* nasce dall'unione concettuale con **Shinigami** (死神 — ent
 
 ---
 
-## 🚧 Stato del progetto — beta, in lavorazione verso la `0.4.0`
+## 🚧 Stato del progetto — beta, in lavorazione verso la `0.5.0`
 
 Shinra è in **beta** e procede per fasi verso la `1.0.0`. Ogni versione minor
 corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino
 alla `1.0.0` una minor può introdurre modifiche incompatibili.
 
-**L'ultima release è la `0.3.0`**, che porta la casa a comandare serrature e
-allarme, a sapere chi c'è, e a occuparsi di clima, tapparelle, energia, liste,
-calendario e scadenze. La `0.4.0` è in lavorazione: proattività — notifiche
-push, un motore di regole, recupero della conoscenza, identità sul canale
-vocale e passkey al posto del PIN.
+**L'ultima release è la `0.4.0`**: la casa smette di aspettare la domanda.
+Le routine partono da sole — a un orario, all'alba, su una soglia — quello che
+dici al microfono della dashboard resta in casa, e la casa sa da quale stanza
+le stai parlando. Più passkey al posto del PIN, notifiche push, e identità sul
+canale vocale.
 
-Note complete: [`docs/release/v0.3.0.md`](docs/release/v0.3.0.md).
+Due cose che quella release **non** dichiara risolte, e le dice: da un Echo
+l'audio va ad Amazon per costruzione, e nessuno ha ancora guardato una regola
+scattare in una casa vera. La `0.5.0` è in lavorazione: prodotto — parola di
+attivazione, frontend modulare, backup, distribuzione.
+
+Note complete: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.md).
 
 | Documento | Cosa contiene |
 | :--- | :--- |
