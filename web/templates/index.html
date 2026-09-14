@@ -869,27 +869,45 @@
             <button onclick="switchTab('console')" id="tab-btn-console" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-600/30 dark:bg-indigo-600/30 light:bg-indigo-100 text-indigo-300 dark:text-indigo-300 light:text-indigo-800 border border-indigo-500/40 dark:border-indigo-500/40 light:border-indigo-300 transition shadow-sm">
                 <i data-lucide="message-square" class="w-4 h-4"></i> Console Vocale
             </button>
-            <button onclick="switchTab('knowledge')" id="tab-btn-knowledge" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
-                <i data-lucide="book-open" class="w-4 h-4"></i> Conoscenza Casa
-            </button>
-            <button onclick="switchTab('sources')" id="tab-btn-sources" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
-                <i data-lucide="globe" class="w-4 h-4"></i> Fonti & Notizie
+            <button onclick="switchTab('automazioni')" id="tab-btn-automazioni" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
+                <i data-lucide="zap" class="w-4 h-4"></i> Automazioni e routine
             </button>
             <button onclick="switchTab('aliases')" id="tab-btn-aliases" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
-                <i data-lucide="layout-grid" class="w-4 h-4"></i> Mappa Dispositivi
+                <i data-lucide="layout-grid" class="w-4 h-4"></i> Dispositivi
             </button>
-            <button onclick="switchTab('modes')" id="tab-btn-modes" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
-                <i data-lucide="sparkles" class="w-4 h-4"></i> Modalità & Routine
-            </button>
-            <button onclick="switchTab('regole')" id="tab-btn-regole" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
-                <i data-lucide="zap" class="w-4 h-4"></i> Automazioni
-            </button>
-            <button onclick="switchTab('users')" id="tab-btn-users" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
-                <i data-lucide="users" class="w-4 h-4"></i> Gestione Utenti
-            </button>
-            <button onclick="switchTab('settings')" id="tab-btn-settings" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
-                <i data-lucide="settings" class="w-4 h-4"></i> Impostazioni
-            </button>
+
+            <!-- Le quattro schede che si aprono una volta e poi quasi mai:
+                 conoscenza, fonti, utenti, impostazioni. Stanno dietro un solo
+                 ingresso perche' trattarle come gemelle di «parla alla casa»
+                 e' la scelta che generava piu' affaticamento di qualunque
+                 altra. Restano scritte per esteso, non ridotte a icone: un
+                 indovinello che si ripresenta ogni volta non e' un guadagno.
+                 Le tre di sopra, quelle di ogni giorno, non si nascondono
+                 dietro nessun menu. Riferimento: #128. -->
+            <div class="relative ml-auto">
+                <button type="button" onclick="alternaMenuConfigurazione(event)" id="tab-btn-configurazione" aria-haspopup="true" aria-expanded="false" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Configurazione
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                </button>
+                <div id="menu-configurazione" class="hidden absolute right-0 top-full mt-1.5 w-64 z-40 rounded-xl border border-slate-800 bg-slate-900 shadow-2xl p-1.5 space-y-0.5">
+                    <button type="button" onclick="switchTab('knowledge')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                        <span class="flex items-center gap-2 text-slate-200"><i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i> Conoscenza della casa</span>
+                        <span class="block text-[11px] text-slate-500 font-normal mt-0.5 pl-6">Cosa Shinra sa di voi</span>
+                    </button>
+                    <button type="button" onclick="switchTab('sources')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                        <span class="flex items-center gap-2 text-slate-200"><i data-lucide="globe" class="w-4 h-4 text-sky-400"></i> Fonti e notizie</span>
+                        <span class="block text-[11px] text-slate-500 font-normal mt-0.5 pl-6">Da dove legge quando gli chiedi le novità</span>
+                    </button>
+                    <button type="button" onclick="switchTab('users')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                        <span class="flex items-center gap-2 text-slate-200"><i data-lucide="users" class="w-4 h-4 text-pink-400"></i> Persone e permessi</span>
+                        <span class="block text-[11px] text-slate-500 font-normal mt-0.5 pl-6">Chi abita qui e cosa può fare</span>
+                    </button>
+                    <button type="button" onclick="switchTab('settings')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                        <span class="flex items-center gap-2 text-slate-200"><i data-lucide="settings" class="w-4 h-4 text-slate-400"></i> Impostazioni dell'hub</span>
+                        <span class="block text-[11px] text-slate-500 font-normal mt-0.5 pl-6">Modello, Home Assistant, Alexa, voce</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Mobile Drawer Menu (< md) -->
@@ -905,32 +923,38 @@
                 </select>
             </div>
 
-            <!-- Navigation Links -->
-            <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+            <!-- Navigation Links — una navigazione sola, non due elenchi
+                 diversi fra telefono e computer. Le tre di ogni giorno in
+                 alto, le quattro di configurazione sotto, separate da una
+                 riga che dice cosa sono. Riferimento: #128. -->
+            <div class="grid grid-cols-1 gap-2 text-xs font-semibold">
                 <button onclick="switchTabMobile('console')" class="tab-btn-m p-2.5 rounded-xl bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 flex items-center gap-2 text-left">
                     <i data-lucide="message-square" class="w-4 h-4"></i> Console Vocale
                 </button>
-                <button onclick="switchTabMobile('knowledge')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
-                    <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i> Conoscenza Casa
-                </button>
-                <button onclick="switchTabMobile('sources')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
-                    <i data-lucide="globe" class="w-4 h-4 text-sky-400"></i> Fonti & Notizie
+                <button onclick="switchTabMobile('automazioni')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                    <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Automazioni e routine
                 </button>
                 <button onclick="switchTabMobile('aliases')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
                     <i data-lucide="layout-grid" class="w-4 h-4 text-amber-400"></i> Dispositivi
                 </button>
-                <button onclick="switchTabMobile('modes')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
-                    <i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Routine
-                </button>
-                <button onclick="switchTabMobile('regole')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
-                    <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Automazioni
-                </button>
-                <button onclick="switchTabMobile('users')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
-                    <i data-lucide="users" class="w-4 h-4 text-pink-400"></i> Utenti
-                </button>
-                <button onclick="switchTabMobile('settings')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left col-span-2">
-                    <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i> Impostazioni Hub
-                </button>
+            </div>
+
+            <div class="space-y-2">
+                <p class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold px-1">Configurazione</p>
+                <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+                    <button onclick="switchTabMobile('knowledge')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                        <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i> Conoscenza
+                    </button>
+                    <button onclick="switchTabMobile('sources')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                        <i data-lucide="globe" class="w-4 h-4 text-sky-400"></i> Fonti
+                    </button>
+                    <button onclick="switchTabMobile('users')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                        <i data-lucide="users" class="w-4 h-4 text-pink-400"></i> Persone
+                    </button>
+                    <button onclick="switchTabMobile('settings')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                        <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i> Impostazioni
+                    </button>
+                </div>
             </div>
 
             <!-- Quick Action: Shinra Istruisci -->
@@ -1199,32 +1223,21 @@
             </div>
         </div>
 
-        <!-- ==================== TAB 5: MODALITÀ & ROUTINE MODULARI ==================== -->
-        <div id="tab-modes" class="tab-content hidden space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
-                <div>
-                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-                        <i data-lucide="workflow" class="w-5 h-5 text-indigo-400"></i> Costruttore Routine & Modalità Modulari
-                    </h2>
-                    <p class="text-xs text-slate-400 mt-1">Crea pipeline a blocchi collegati: un comando innesca una serie di azioni, ritardi temporali e risposte vocali.</p>
-                </div>
-                <button onclick="openModularModeBuilder()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shrink-0 shadow-lg shadow-indigo-600/20">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Nuova Routine Modulare
-                </button>
-            </div>
+        <!-- ==================== AUTOMAZIONI E ROUTINE ====================
+             Una scheda sola, perche' sono la stessa cosa vista da due lati: una
+             routine e' una sequenza che parte a comando, un'automazione e' una
+             sequenza che parte da sola. Lo dice gia' il codice delle rotte.
 
-            <!-- Lista Routine Modulari -->
-            <div id="modes-list" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <!-- Caricato dinamicamente in formato Modular Flow -->
-            </div>
-        </div>
+             Tenerle in due schede separate e' esattamente il motivo per cui una
+             routine poteva esistere di qua e non comparire di la' senza che
+             nessuna delle due schermate lo spiegasse: e' la domanda da cui e'
+             nata la issue #127, e questa scheda e' la sua risposta strutturale.
 
-        <!-- ==================== TAB: AUTOMAZIONI (le regole della #27) ====================
-             Il motore delle regole esisteva da due versioni e non aveva nessuna
-             schermata: l'API c'era, la dashboard no. Chi disegnava un innesco
-             automatico in una routine non aveva modo di vedere la regola che ne
-             nasceva, ne' di sapere perche' non fosse scattata. Riferimento: #27. -->
-        <div id="tab-regole" class="tab-content hidden space-y-6">
+             L'editor a nodi resta al primo livello, dentro questa scheda: rami,
+             condizioni, ritardi e sequenze non si esprimono in un modulo, ed e'
+             l'unico posto dove si puo' dire alla casa qualcosa che non sta in
+             una riga. Riferimenti: #27, #127, #128. -->
+        <div id="tab-automazioni" class="tab-content hidden space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
                 <div>
                     <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -1239,6 +1252,23 @@
 
             <div id="regole-lista" class="space-y-3">
                 <!-- Caricato dinamicamente -->
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="workflow" class="w-5 h-5 text-indigo-400"></i> Le routine che disegni
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Blocchi collegati: un innesco, poi azioni, attese e risposte vocali. Da qui nascono anche le automazioni qui sopra — basta dare al primo blocco un innesco che non sia la voce.</p>
+                </div>
+                <button onclick="openModularModeBuilder()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shrink-0 shadow-lg shadow-indigo-600/20">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Nuova Routine Modulare
+                </button>
+            </div>
+
+            <!-- Lista Routine Modulari -->
+            <div id="modes-list" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <!-- Caricato dinamicamente in formato Modular Flow -->
             </div>
         </div>
 
@@ -2225,15 +2255,29 @@
 
         // Store del display originale per ogni tab
         const tabDisplayMap = {
-            'console':   'grid',
-            'knowledge': 'block',
-            'sources':   'block',
-            'aliases':   'block',
-            'modes':     'block',
-            'regole':    'block',
-            'users':     'block',
-            'settings':  'block',
+            'console':     'grid',
+            'knowledge':   'block',
+            'sources':     'block',
+            'aliases':     'block',
+            'automazioni': 'block',
+            'users':       'block',
+            'settings':    'block',
         };
+
+        // Le destinazioni di prima che adesso sono la stessa schermata.
+        // Stanno qui e non nei punti che le chiamano: una scorciatoia scritta
+        // altrove nella pagina — o un collegamento che qualcuno si e' salvato
+        // — deve continuare a portare dove serve, non in una scheda che non
+        // esiste piu'. Riferimento: #128.
+        const SCHEDE_UNITE = {
+            'modes':  'automazioni',
+            'regole': 'automazioni',
+        };
+
+        // Le quattro che stanno dietro «Configurazione». Il pulsante di primo
+        // livello si accende per tutte e quattro: chi e' dentro deve vedere da
+        // dove ci e' entrato, altrimenti la barra non dice piu' dov'e'.
+        const SCHEDE_DI_CONFIGURAZIONE = ['knowledge', 'sources', 'users', 'settings'];
 
         // ==================== MOBILE MENU HAMBURGER CONTROLLER ====================
         let isMobileMenuOpen = false;
@@ -2259,8 +2303,51 @@
             toggleMobileMenu();
         }
 
+        // ==================== MENU DI CONFIGURAZIONE (desktop) ====================
+        let _menuConfigurazioneAperto = false;
+
+        function chiudiMenuConfigurazione() {
+            const menu = document.getElementById('menu-configurazione');
+            const bottone = document.getElementById('tab-btn-configurazione');
+            if (menu) menu.classList.add('hidden');
+            if (bottone) bottone.setAttribute('aria-expanded', 'false');
+            _menuConfigurazioneAperto = false;
+        }
+
+        function alternaMenuConfigurazione(evento) {
+            // Senza questo, il clic arriva anche al guardiano qui sotto e il
+            // menu si chiude nello stesso istante in cui si e' aperto.
+            if (evento) evento.stopPropagation();
+            const menu = document.getElementById('menu-configurazione');
+            const bottone = document.getElementById('tab-btn-configurazione');
+            if (!menu) return;
+            if (_menuConfigurazioneAperto) { chiudiMenuConfigurazione(); return; }
+            menu.classList.remove('hidden');
+            if (bottone) bottone.setAttribute('aria-expanded', 'true');
+            _menuConfigurazioneAperto = true;
+        }
+
+        // Un menu che resta aperto dietro alla schermata e' un pezzo di
+        // interfaccia che nessuno ha chiesto: si chiude da fuori e con Esc.
+        document.addEventListener('click', function (evento) {
+            if (!_menuConfigurazioneAperto) return;
+            const menu = document.getElementById('menu-configurazione');
+            const bottone = document.getElementById('tab-btn-configurazione');
+            if (menu && menu.contains(evento.target)) return;
+            if (bottone && bottone.contains(evento.target)) return;
+            chiudiMenuConfigurazione();
+        });
+
+        document.addEventListener('keydown', function (evento) {
+            if (evento.key === 'Escape') chiudiMenuConfigurazione();
+        });
+
         // Tab Navigation — usa style.display invece di hidden class (evita conflitti Tailwind JIT)
         function switchTab(tabId) {
+            // Le vecchie destinazioni prima di tutto: da qui in giu' esiste
+            // solo il nome nuovo.
+            tabId = SCHEDE_UNITE[tabId] || tabId;
+
             // Nasconde tutti i tab
             Object.keys(tabDisplayMap).forEach(id => {
                 const el = document.getElementById(`tab-${id}`);
@@ -2277,18 +2364,28 @@
             const targetEl = document.getElementById(`tab-${tabId}`);
             if (targetEl) targetEl.style.display = tabDisplayMap[tabId] || 'block';
 
-            // Attiva il pulsante selezionato
-            const btn = document.getElementById(`tab-btn-${tabId}`);
+            // Attiva il pulsante selezionato. Le quattro schede dietro
+            // «Configurazione» non hanno un pulsante proprio: si accende il
+            // loro ingresso, che e' da dove ci si e' passati.
+            const btn = document.getElementById(`tab-btn-${tabId}`)
+                || (SCHEDE_DI_CONFIGURAZIONE.includes(tabId)
+                    ? document.getElementById('tab-btn-configurazione')
+                    : null);
             if (btn) {
                 btn.classList.add('bg-indigo-600/30', 'text-indigo-300', 'border-indigo-500/40', 'border');
                 btn.classList.remove('text-slate-400');
             }
 
+            // Scegliere dove andare chiude il menu da cui si e' scelto.
+            chiudiMenuConfigurazione();
+
             if (tabId === 'knowledge') loadKnowledge();
             if (tabId === 'sources') loadSources();
             if (tabId === 'aliases') loadAliases();
-            if (tabId === 'modes') loadModes();
-            if (tabId === 'regole') loadRegole();
+            // Una scheda sola, due elenchi: le automazioni e le routine da cui
+            // nascono. Caricarne uno solo lascerebbe meta' schermata vuota
+            // senza che niente lo spieghi.
+            if (tabId === 'automazioni') { loadRegole(); loadModes(); }
             if (tabId === 'users') loadUsers();
             if (tabId === 'settings') loadSettings();
         }
@@ -4356,7 +4453,7 @@
                 contenitore.innerHTML = etichetta + `
                     <div class="text-[11px] text-slate-500 py-1 leading-relaxed">
                         Niente in programma: nelle prossime ore la casa aspetta te.
-                        <button type="button" onclick="switchTab('regole')" class="text-indigo-400 hover:text-indigo-300 font-semibold underline decoration-dotted">Vedi le automazioni</button>
+                        <button type="button" onclick="switchTab('automazioni')" class="text-indigo-400 hover:text-indigo-300 font-semibold underline decoration-dotted">Vedi le automazioni</button>
                     </div>`;
                 return;
             }
@@ -5524,6 +5621,19 @@
             }
         }
 
+        // Le routine adesso stanno nella stessa schermata, piu' in basso.
+        // «Vai alle routine» non e' piu' un cambio di scheda ma uno
+        // scorrimento: cambiare scheda verso se stessi non fa niente, ed e'
+        // esattamente cio' che sarebbe successo lasciando `switchTab('modes')`
+        // dopo aver unito le due schede (#128).
+        function vaiAlleRoutine() {
+            switchTab('automazioni');
+            const elenco = document.getElementById('modes-list');
+            if (elenco && elenco.scrollIntoView) {
+                elenco.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
         function quandoScatta(regola) {
             // Tre stati diversi che una schermata ingenua confonde in uno.
             // «Nessun prossimo scatto» su una regola su evento è normale;
@@ -5567,10 +5677,10 @@
                         <p class="text-sm text-slate-300 font-semibold">La casa non fa ancora niente da sola.</p>
                         <p class="text-xs text-slate-500 mt-2 max-w-md mx-auto">
                             Le automazioni nascono dagli inneschi delle routine: apri una routine
-                            in <span class="text-slate-300">Modalità &amp; Routine</span>, metti un
-                            innesco «a un orario» o «al tramonto» sul primo nodo, e salva.
+                            <span class="text-slate-300">qui sotto</span>, metti un innesco
+                            «a un orario» o «al tramonto» sul primo nodo, e salva.
                         </p>
-                        <button type="button" onclick="switchTab('modes')" class="mt-4 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
+                        <button type="button" onclick="vaiAlleRoutine()" class="mt-4 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
                             Vai alle routine
                         </button>
                     </div>`);
@@ -5632,7 +5742,7 @@
                                             ? `<span class="text-[10px] text-slate-500 font-mono ml-2 truncate">"${(m.trigger_phrases || [])[0]}"</span>`
                                             : '<span class="text-[10px] text-amber-400 ml-2">senza frasi: non la puoi nemmeno chiamare</span>'}
                                     </div>
-                                    <button type="button" onclick="switchTab('modes')" class="shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold">
+                                    <button type="button" onclick="openModularModeBuilder('${m.id}')" class="shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold" title="Apre il disegno di questa routine">
                                         Apri
                                     </button>
                                 </div>`).join('')}

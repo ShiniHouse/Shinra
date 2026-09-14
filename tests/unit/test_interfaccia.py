@@ -48,6 +48,16 @@ def _senza_commenti(testo: str) -> str:
     return re.sub(r"//[^\n]*", "", testo)
 
 
+def _senza_commenti_html(testo: str) -> str:
+    """Lo stesso principio del precedente, per il markup.
+
+    Un commento che spiega perche' un pulsante e' li' nomina il pulsante: una
+    guardia che conta gli ingressi contando le occorrenze di `tab-btn-` ne
+    troverebbe uno in piu' per ogni riga di spiegazione.
+    """
+    return re.sub(r"<!--.*?-->", "", testo, flags=re.S)
+
+
 def _script_inline(testo: str) -> list[str]:
     """Solo gli script scritti nella pagina: quelli con `src` non sono nostri."""
     return re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", testo, re.S)
@@ -354,15 +364,21 @@ def test_le_automazioni_hanno_una_schermata():
     l'unico modo di chiedere «perche' non e' successo niente?» era leggere i
     log del server.
 
-    Riferimento: issue #27.
+    Dalla #128 la scheda si chiama «Automazioni e routine» e contiene anche
+    il costruttore a nodi: sono la stessa cosa vista da due lati. Quello che
+    questa guardia difende non cambia — che la schermata esista, che ci si
+    arrivi da computer e da telefono, e che aprendola si carichi qualcosa.
     """
     testo = _testo(PAGINA)
 
-    assert 'id="tab-regole"' in testo, "la scheda non esiste"
-    assert "switchTab('regole')" in testo, "non ci si arriva dalla navigazione"
-    assert "switchTabMobile('regole')" in testo, "dal telefono non ci si arriva"
-    assert "if (tabId === 'regole') loadRegole();" in testo, "aprendola non carica niente"
-    assert "'regole':    'block'," in testo, "la scheda non comparirebbe mai"
+    assert 'id="tab-automazioni"' in testo, "la scheda non esiste"
+    assert "switchTab('automazioni')" in testo, "non ci si arriva dalla navigazione"
+    assert "switchTabMobile('automazioni')" in testo, "dal telefono non ci si arriva"
+    assert (
+        "if (tabId === 'automazioni') { loadRegole(); loadModes(); }" in testo
+    ), "aprendola non carica niente, o ne carica solo meta'"
+    assert "'automazioni': 'block'," in testo, "la scheda non comparirebbe mai"
+    assert 'id="regole-lista"' in testo, "l'elenco delle automazioni non c'e' piu'"
 
 
 def test_una_regola_dice_quando_scattera_la_prossima_volta():
@@ -1222,3 +1238,186 @@ def test_la_colonna_della_console_resta_leggera():
         f"{titoli} titoli nella colonna: ogni titolo in piu' e' una cosa in "
         "piu' da leggere prima di trovare quella che serve"
     )
+
+
+# --------------------------------------------- da otto ingressi a tre (#128)
+
+
+# Le schede che devono restare al primo livello, e quelle che stanno dietro
+# «Configurazione». Non e' un dettaglio di gusto: tre si usano ogni giorno,
+# quattro si aprono una volta e poi quasi mai, e trattarle come voci gemelle
+# e' la scelta che generava piu' affaticamento di qualunque altra.
+PRIMO_LIVELLO = ["console", "automazioni", "aliases"]
+DIETRO_LA_CONFIGURAZIONE = ["knowledge", "sources", "users", "settings"]
+
+
+def _barra_desktop(testo: str) -> str:
+    inizio = testo.index("<!-- Desktop Navigation Tabs Bar")
+    return testo[inizio : testo.index("<!-- Mobile Drawer Menu", inizio)]
+
+
+def _cassetto_telefono(testo: str) -> str:
+    inizio = testo.index("<!-- Mobile Drawer Menu")
+    return testo[inizio : testo.index("</header>", inizio)]
+
+
+def test_il_primo_livello_ha_tre_ingressi_piu_la_configurazione():
+    """Otto schede dello stesso peso, ciascuna con un'etichetta da due parole,
+    su una riga che riempiva tutta la larghezza.
+
+    Ma non erano la stessa cosa: «parla alla casa» e «configura le fonti RSS»
+    non si usano con la stessa frequenza, e metterle sulla stessa riga chiede
+    di rileggerla per intero ogni volta.
+    """
+    barra = _senza_commenti_html(_barra_desktop(_testo(PAGINA)))
+
+    ingressi = re.findall(r'id="tab-btn-([a-z]+)"', barra)
+
+    assert ingressi == [*PRIMO_LIVELLO, "configurazione"], (
+        f"gli ingressi di primo livello sono {ingressi}: devono essere i tre di "
+        "ogni giorno piu' l'unico ingresso di configurazione"
+    )
+
+
+def test_le_quattro_schede_di_configurazione_restano_raggiungibili():
+    """Ridurre gli ingressi non e' togliere le schede.
+
+    Una guardia che contasse solo i pulsanti sarebbe verde anche il giorno
+    che qualcuno cancella le quattro schede invece di raggrupparle, ed e'
+    l'errore piu' facile da fare riorganizzando una navigazione.
+    """
+    testo = _testo(PAGINA)
+    menu = testo[testo.index('id="menu-configurazione"') : testo.index("<!-- Mobile Drawer Menu")]
+
+    for scheda in DIETRO_LA_CONFIGURAZIONE:
+        assert f'id="tab-{scheda}"' in testo, f"la scheda {scheda} non esiste piu'"
+        assert f"switchTab('{scheda}')" in menu, f"dal menu di configurazione non si arriva a {scheda}"
+
+
+def test_dal_telefono_la_navigazione_e_una_sola():
+    """Su telefono non c'e' spazio per un menu dentro un menu.
+
+    Il cassetto resta un elenco solo, con le quattro di configurazione
+    raggruppate sotto una riga che dice cosa sono — non una seconda
+    navigazione scritta a parte.
+    """
+    cassetto = _senza_commenti_html(_cassetto_telefono(_testo(PAGINA)))
+
+    destinazioni = re.findall(r"switchTabMobile\('([a-z]+)'\)", cassetto)
+
+    assert destinazioni == PRIMO_LIVELLO + DIETRO_LA_CONFIGURAZIONE, (
+        f"dal telefono si arriva a {destinazioni}: manca qualcosa, o l'ordine "
+        "non e' piu' «prima quelle di ogni giorno»"
+    )
+    assert "Configurazione" in cassetto, "il gruppo di configurazione non si presenta"
+
+
+def test_l_editor_a_nodi_resta_al_primo_livello():
+    """Il vincolo esplicito della scheda, e l'unico che il proprietario della
+    casa ha messo per iscritto guardando l'analisi: *«lo condivido a pieno
+    tranne la parte di rimuovere editor delle automazioni, quello rimane»*.
+
+    Rami, condizioni, ritardi e sequenze non si esprimono in un modulo. Sta
+    dentro «Automazioni e routine» perche' e' li' che appartiene, non per
+    levarlo di mezzo: si apre da una scheda di primo livello, senza passare
+    dalla configurazione.
+    """
+    testo = _testo(PAGINA)
+
+    inizio = testo.index('<div id="tab-automazioni"')
+    scheda = testo[inizio : testo.index('<div id="tab-users"', inizio)]
+
+    assert "openModularModeBuilder()" in scheda, "l'editor non si apre da questa scheda"
+    assert 'id="modes-list"' in scheda, "l'elenco delle routine non e' in questa scheda"
+    assert 'id="regole-lista"' in scheda, "l'elenco delle automazioni non e' in questa scheda"
+
+    barra = _barra_desktop(testo)
+    assert 'id="tab-btn-automazioni"' in barra, "la scheda che contiene l'editor non e' al primo livello"
+
+
+def test_le_vecchie_destinazioni_portano_ancora_da_qualche_parte():
+    """Due schede diventate una lasciano dietro dei nomi.
+
+    `switchTab('modes')` scritto in un punto qualunque della pagina — o un
+    collegamento che qualcuno si e' salvato — non deve portare in una scheda
+    che non esiste piu': porterebbe a una schermata bianca senza che niente
+    lo spieghi. La traduzione sta in un posto solo, dove si vede.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    testo = _testo(PAGINA)
+    dichiarazione = testo[testo.index("const SCHEDE_UNITE = {") :]
+    dichiarazione = dichiarazione[: dichiarazione.index("};") + 2]
+
+    prova = dichiarazione + """
+const mancanti = ['modes', 'regole'].filter(v => SCHEDE_UNITE[v] !== 'automazioni');
+if (mancanti.length) { console.error('non tradotte: ' + mancanti); process.exit(1); }
+console.log('ok');
+"""
+
+    esito = _esegui_con_node(prova)
+
+    assert esito.returncode == 0, esito.stderr
+    assert "tabId = SCHEDE_UNITE[tabId] || tabId;" in _senza_commenti(
+        testo
+    ), "la traduzione esiste ma `switchTab` non la usa"
+
+
+def test_dentro_la_configurazione_la_barra_dice_ancora_dove_sei():
+    """Le quattro schede raggruppate non hanno piu' un pulsante proprio.
+
+    Senza questo, entrare in Impostazioni spegne ogni pulsante della barra: la
+    navigazione smette di dire dov'e' chi la guarda, ed e' peggio della riga
+    lunga da cui si e' partiti.
+    """
+    testo = _senza_commenti(_testo(PAGINA))
+
+    corpo = _funzione_javascript(testo, "switchTab")
+
+    assert (
+        "SCHEDE_DI_CONFIGURAZIONE.includes(tabId)" in corpo
+    ), "dentro le quattro schede raggruppate non si accende niente"
+    assert "tab-btn-configurazione" in corpo, "non si accende il loro ingresso"
+
+
+def test_il_menu_di_configurazione_si_chiude():
+    """Un menu che resta aperto dietro la schermata e' un pezzo di
+    interfaccia che nessuno ha chiesto.
+
+    Tre modi di chiuderlo, e tutti e tre servono: scegliendo una voce (o il
+    menu copre cio' che si e' appena aperto), cliccando fuori, con Esc.
+    """
+    testo = _senza_commenti(_testo(PAGINA))
+
+    assert "function chiudiMenuConfigurazione(" in testo, "il menu non sa chiudersi"
+    assert "chiudiMenuConfigurazione();" in _funzione_javascript(
+        testo, "switchTab"
+    ), "scegliendo una voce il menu resta aperto sopra la schermata scelta"
+    assert "evento.key === 'Escape'" in testo, "Esc non chiude il menu"
+    assert "menu.contains(evento.target)" in testo, "un clic fuori non chiude il menu"
+    # Senza `stopPropagation`, il clic sul pulsante arriva anche al guardiano
+    # del clic-fuori e il menu si chiude nello stesso istante in cui si apre.
+    assert "evento.stopPropagation()" in _funzione_javascript(
+        testo, "alternaMenuConfigurazione"
+    ), "il menu si richiude da solo nell'istante in cui si apre"
+
+
+def test_nessuna_etichetta_e_diventata_un_indovinello():
+    """«Non togliere le scritte per fare posto alle icone».
+
+    Un'icona senza etichetta e' un indovinello che si ripresenta ogni volta:
+    si risparmia larghezza e si perde la mappa. Ogni ingresso di primo
+    livello, su computer, porta delle parole.
+    """
+    barra = _senza_commenti_html(_barra_desktop(_testo(PAGINA)))
+
+    muti = []
+    for pulsante in re.findall(r'<button[^>]*id="tab-btn-\w+".*?</button>', barra, re.S):
+        nome = re.search(r'id="tab-btn-(\w+)"', pulsante).group(1)
+        # Il testo del pulsante: tutto cio' che non e' un tag.
+        parole = re.sub(r"<[^>]+>", " ", pulsante).strip()
+        if len(parole) < 3:
+            muti.append(nome)
+
+    assert muti == [], f"questi ingressi sono solo un'icona: {muti}"
