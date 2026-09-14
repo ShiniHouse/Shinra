@@ -1902,6 +1902,75 @@
             return intestazioni;
         }
 
+        // ============ UN RIFIUTO NON DEVE SEMBRARE UN VUOTO ============
+        //
+        // Quasi ogni schermata legge cosi':
+        //
+        //     const dati = await res.json();
+        //     render(dati.regole || []);
+        //
+        // Con un 401 il corpo e' `{"detail": ...}`, `dati.regole` non esiste, e
+        // la schermata mostra «non c'e' niente». «Non c'e' niente» e «non ho il
+        // permesso di vederlo» diventano la stessa cosa, in una decina di posti
+        // — ed e' esattamente la domanda con cui e' cominciata la issue #125.
+        //
+        // Il controllo sta qui, attorno a `fetch`, e non in ogni chiamata, per
+        // la stessa ragione per cui il contesto del registro sta in un
+        // middleware e non nelle singole rotte: cosi' nessuna chiamata nuova
+        // puo' dimenticarsene.
+        (function sorvegliaIRifiuti() {
+            const originale = window.fetch.bind(window);
+            window.fetch = async (risorsa, opzioni) => {
+                const risposta = await originale(risorsa, opzioni);
+                const indirizzo = typeof risorsa === 'string' ? risorsa : (risorsa && risorsa.url) || '';
+                // Le rotte di accesso rispondono 401 quando il PIN e'
+                // sbagliato: li' non e' un guasto, e' la risposta, e chi sta
+                // entrando la sta gia' leggendo sotto la tastiera.
+                const daSorvegliare = indirizzo.startsWith('/api/') && !indirizzo.startsWith('/api/auth/');
+                if (daSorvegliare && (risposta.status === 401 || risposta.status === 403)) {
+                    mostraRifiuto(risposta.status);
+                }
+                return risposta;
+            };
+        })();
+
+        function mostraRifiuto(stato) {
+            let barra = document.getElementById('barra-rifiuto');
+            if (!barra) {
+                barra = document.createElement('div');
+                barra.id = 'barra-rifiuto';
+                barra.className = 'fixed top-0 left-0 right-0 z-[1000] px-4 py-2.5 bg-rose-600 text-white text-xs font-semibold flex items-center justify-center gap-3 shadow-lg';
+                document.body.appendChild(barra);
+            }
+            // Il secondo periodo e' il punto di tutta la correzione: dice che
+            // le schermate vuote potrebbero non esserlo.
+            const messaggio = stato === 403
+                ? 'Non hai il permesso di vedere questa parte. Quello che manca non e\' assente: e\' riservato.'
+                : 'La sessione e\' scaduta. Le schermate che vedi vuote potrebbero non esserlo: rientra per saperlo.';
+            barra.innerHTML = `<span>${messaggio}</span>`;
+            if (stato !== 403) {
+                const entra = document.createElement('button');
+                entra.type = 'button';
+                entra.className = 'px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 transition font-bold';
+                entra.textContent = 'Rientra';
+                entra.onclick = () => { nascondiRifiuto(); lockSession(); };
+                barra.appendChild(entra);
+            }
+            const chiudi = document.createElement('button');
+            chiudi.type = 'button';
+            chiudi.className = 'px-2 py-1 rounded-lg hover:bg-white/20 transition';
+            chiudi.textContent = '✕';
+            chiudi.title = 'Nascondi l\'avviso';
+            chiudi.onclick = nascondiRifiuto;
+            barra.appendChild(chiudi);
+            barra.classList.remove('hidden');
+        }
+
+        function nascondiRifiuto() {
+            const barra = document.getElementById('barra-rifiuto');
+            if (barra) barra.classList.add('hidden');
+        }
+
         async function checkAuthStatus() {
             try {
                 const res = await fetch('/api/auth/status', {
@@ -2252,7 +2321,7 @@
         // Active User Management
         async function loadUsersDropdown() {
             try {
-                const res = await fetch('/api/users');
+                const res = await fetch('/api/users', { headers: getAuthHeaders() });
                 usersData = await res.json();
                 const select = document.getElementById('user-select');
                 const mobileSelect = document.getElementById('mobile-user-select');
@@ -2656,7 +2725,7 @@
                     }
                     const res = await fetch('/api/tts', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
+                        headers: getAuthHeaders(),
                         body: JSON.stringify({
                             text: clean,
                             voice: neuralVoice
@@ -3645,7 +3714,7 @@
         }
 
         async function toggleSingleSource(sourceId, enable) {
-            const res = await fetch('/api/sources');
+            const res = await fetch('/api/sources', { headers: getAuthHeaders() });
             const items = await res.json();
             const source = items.find(s => s.id === sourceId);
             if (source) {
@@ -3715,7 +3784,7 @@
         async function addCatalogSource(id, name, category, url) {
             await fetch('/api/sources', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ id, name, category, url, enabled: true })
             });
             loadSources();
@@ -3746,7 +3815,7 @@
             if (!name || !url) return;
             await fetch('/api/sources', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ name, category, url, enabled: true })
             });
             closeModal();
@@ -3755,14 +3824,14 @@
 
         async function deleteSource(id) {
             if (!confirm('Rimuovere questa fonte?')) return;
-            await fetch(`/api/sources/${id}`, { method: 'DELETE' });
+            await fetch(`/api/sources/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
             loadSources();
         }
 
         // ==================== ALIASES CRUD ====================
         async function loadAliases() {
             try {
-                const res = await fetch('/api/aliases');
+                const res = await fetch('/api/aliases', { headers: getAuthHeaders() });
                 const items = await res.json();
                 const container = document.getElementById('aliases-list');
                 if (!items.length) {
@@ -3819,7 +3888,7 @@
             safeCreateIcons();
 
             try {
-                const res = await fetch('/api/ha/entities');
+                const res = await fetch('/api/ha/entities', { headers: getAuthHeaders() });
                 const data = await res.json();
 
                 btn.disabled = false;
@@ -3968,7 +4037,7 @@
             }
             await fetch('/api/aliases', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ alias, entity_id, room })
             });
             closeModal();
@@ -3985,7 +4054,7 @@
 
         async function deleteAlias(id) {
             if (!confirm('Rimuovere questo alias?')) return;
-            await fetch(`/api/aliases/${id}`, { method: 'DELETE' });
+            await fetch(`/api/aliases/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
             loadAliases();
         }
 
@@ -4024,7 +4093,7 @@
 
         async function loadTimers() {
             try {
-                const res = await fetch('/api/timers');
+                const res = await fetch('/api/timers', { headers: getAuthHeaders() });
                 _activeTimers = await res.json();
                 renderTimers();
             } catch (e) { console.error('Errore loadTimers:', e); }
@@ -4072,7 +4141,7 @@
         }
 
         async function deleteTimer(id) {
-            await fetch(`/api/timers/${id}`, { method: 'DELETE' });
+            await fetch(`/api/timers/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
             _activeTimers = _activeTimers.filter(t => t.id !== id);
             renderTimers();
         }
@@ -4102,7 +4171,7 @@
             const secs = mins * 60;
             const res = await fetch('/api/timers', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ label, duration_seconds: secs, user_id: _currentUserId })
             });
             if (res.ok) {
@@ -4143,7 +4212,7 @@
 
         async function loadReminders() {
             try {
-                const res = await fetch('/api/reminders');
+                const res = await fetch('/api/reminders', { headers: getAuthHeaders() });
                 if (!res.ok) return;
                 _promemoria = (await res.json()).filter(r => !r.completed);
                 renderReminders();
@@ -4192,7 +4261,7 @@
         }
 
         async function deleteReminder(id) {
-            await fetch(`/api/reminders/${id}`, { method: 'DELETE' });
+            await fetch(`/api/reminders/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
             _promemoria = _promemoria.filter(r => r.id !== id);
             renderReminders();
         }
@@ -4480,7 +4549,7 @@
             if (card) card.classList.add('border-indigo-500', 'ring-1', 'ring-indigo-500/50');
 
             try {
-                const res = await fetch(`/api/modes/${encodeURIComponent(name)}/activate`, { method: 'POST' });
+                const res = await fetch(`/api/modes/${encodeURIComponent(name)}/activate`, { headers: getAuthHeaders(), method: 'POST' });
                 const data = await res.json();
                 if (data.messaggio) speakText(data.messaggio);
             } catch (e) { console.error('Errore attivazione modalità:', e); }
@@ -5164,7 +5233,7 @@
             try {
                 const res = await fetch('/api/modes/simula', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({ nodes: _canvasState.nodes, edges: _canvasState.edges })
                 });
                 if (!res.ok) throw new Error('simulazione rifiutata');
@@ -5272,7 +5341,7 @@
 
             const res = await fetch('/api/modes', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: getAuthHeaders(),
                 body: JSON.stringify(payload)
             });
 
@@ -5307,7 +5376,7 @@
 
         async function deleteMode(id) {
             if (!confirm('Eliminare questa routine?')) return;
-            await fetch(`/api/modes/${id}`, { method: 'DELETE' });
+            await fetch(`/api/modes/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
             loadModes();
         }
 
@@ -5323,7 +5392,7 @@
             const contenitore = document.getElementById('regole-lista');
             if (!contenitore) return;
             try {
-                const res = await fetch('/api/regole');
+                const res = await fetch('/api/regole', { headers: getAuthHeaders() });
                 const dati = await res.json();
                 renderRegole(dati.regole || []);
             } catch (e) {
@@ -5404,7 +5473,7 @@
         async function alternaRegola(id, attiva) {
             await fetch(`/api/regole/${id}`, {
                 method: 'PATCH',
-                headers: {'Content-Type': 'application/json'},
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ attiva })
             });
             loadRegole();
@@ -5415,7 +5484,7 @@
             // voluto, e serve a rispondere a «perché non scatta?». Una prova
             // che ignorasse anche le condizioni risponderebbe sempre di sì e
             // non direbbe niente.
-            const res = await fetch(`/api/regole/${id}/prova`, { method: 'POST' });
+            const res = await fetch(`/api/regole/${id}/prova`, { headers: getAuthHeaders(), method: 'POST' });
             const esito = await res.json().catch(() => ({}));
             if (esito.eseguita) {
                 alert('Fatta adesso.');
@@ -5429,7 +5498,7 @@
 
         async function cancellaRegola(id) {
             if (!confirm('Eliminare questa automazione?')) return;
-            await fetch(`/api/regole/${id}`, { method: 'DELETE' });
+            await fetch(`/api/regole/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
             loadRegole();
         }
 
@@ -6231,7 +6300,7 @@
             const select = document.getElementById('cfg-model');
             if (!select) return;
             try {
-                const res = await fetch('/api/ollama/models');
+                const res = await fetch('/api/ollama/models', { headers: getAuthHeaders() });
                 const data = await res.json();
                 if (data.success && data.models && data.models.length > 0) {
                     const current = selectedModel || data.active_model || select.value;
@@ -6460,18 +6529,18 @@
             resultBox.innerHTML = '<span class="animate-pulse">Test di connessione a Home Assistant in corso...</span>';
 
             // Prima salviamo le credenziali inserite
-            const res = await fetch('/api/settings');
+            const res = await fetch('/api/settings', { headers: getAuthHeaders() });
             const cfg = await res.json();
             cfg.home_assistant.url = document.getElementById('cfg-ha-url').value.trim();
             cfg.home_assistant.token = document.getElementById('cfg-ha-token').value.trim();
             await fetch('/api/settings', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: getAuthHeaders(),
                 body: JSON.stringify(cfg)
             });
 
             // Poi verifichiamo lo stato
-            const statusRes = await fetch('/api/status');
+            const statusRes = await fetch('/api/status', { headers: getAuthHeaders() });
             const statusData = await statusRes.json();
             const ha = statusData.home_assistant || {};
 
@@ -6519,7 +6588,7 @@
         // Status Health Check
         async function checkSystemHealth() {
             try {
-                const res = await fetch('/api/status');
+                const res = await fetch('/api/status', { headers: getAuthHeaders() });
                 const data = await res.json();
 
                 const ollamaBadge = document.getElementById('ollama-status');
