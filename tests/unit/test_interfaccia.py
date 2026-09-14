@@ -660,6 +660,106 @@ def test_l_avviso_dice_che_il_vuoto_potrebbe_non_essere_vuoto():
     assert "riservato" in corpo, "un 403 viene raccontato come una sessione scaduta"
 
 
+# Gli elenchi che possono restare vuoti **senza** doverlo dire, e perche'.
+# Ognuno e' una scelta, non una dimenticanza: e' il motivo per cui stanno
+# qui con un nome e una riga di spiegazione invece di essere saltati in
+# silenzio dall'espressione regolare.
+ELENCHI_CHE_POSSONO_TACERE = {
+    "riempiStanzeNote": "e' un <datalist>: vuoto e' invisibile per costruzione",
+    "renderKnowledgeTemplates": "l'elenco e' una costante scritta nella pagina",
+    "renderSourcesCatalog": "idem: il catalogo delle fonti e' fisso",
+    "renderCanvasElements": "la tela dell'editor nasce vuota, e la barra in basso lo spiega",
+    "loadUsers": "c'e' sempre almeno l'amministratore",
+    "loadRuoli": "`assicura_ruoli_predefiniti` garantisce i ruoli a ogni avvio",
+}
+
+
+def test_ogni_elenco_che_puo_restare_vuoto_dice_qualcosa():
+    """Una lista vuota che non insegna la mossa dopo sembra rotta.
+
+    «Non c'e' niente» e «non ho capito come si fa» hanno lo stesso aspetto,
+    ed e' la domanda da cui e' nata la issue #127.
+
+    Questa guardia **non** ha trovato un difetto: quando e' stata scritta, i
+    sette elenchi che potevano essere vuoti avevano gia' tutti la loro frase.
+    Serve a non perderli — sono la cosa piu' facile da dimenticare scrivendo
+    la schermata successiva, perche' chi la scrive ha i dati sotto gli occhi
+    e il caso vuoto non lo vede mai.
+
+    Le eccezioni stanno in un elenco con il loro motivo: un elenco costante o
+    un `<datalist>` non ha un caso vuoto da raccontare.
+    """
+    testo = _testo(PAGINA)
+
+    muti = []
+    funzioni = list(re.finditer(r"\n {8}(?:async )?function (\w+)\(", testo))
+    confini = [m.start() for m in funzioni] + [len(testo)]
+    for m, fine in zip(funzioni, confini[1:], strict=True):
+        nome = m.group(1)
+        corpo = _senza_commenti(testo[m.start() : fine])
+        rende = re.search(r"innerHTML\s*\+?=\s*[^;]{0,160}\.map\(|push\([^;]{0,80}\.map\(", corpo, re.S)
+        if not rende:
+            continue
+        if nome in ELENCHI_CHE_POSSONO_TACERE:
+            continue
+        # Il controllo va cercato **prima** del disegno, non nella funzione
+        # intera: `renderRegole` guarda anche `vocali.length`, ma dopo, e una
+        # guardia che accetta un controllo qualsiasi resterebbe verde togliendo
+        # proprio quello che serve.
+        prima = corpo[: rende.start()]
+        guarda_il_vuoto = re.search(
+            r"\.length\s*(?:===?\s*0|>\s*0|&&|\))|!\s*\w+(?:\.\w+)*\.length|!\s*\w+\s*\|\|", prima
+        )
+        if not guarda_il_vuoto:
+            muti.append(nome)
+
+    assert muti == [], (
+        "questi elenchi possono presentarsi come uno spazio bianco: dai loro "
+        f"una frase, oppure dichiarali in ELENCHI_CHE_POSSONO_TACERE col motivo — {muti}"
+    )
+
+
+def test_le_eccezioni_agli_stati_vuoti_esistono_ancora():
+    """Un'eccezione per una funzione che non c'e' piu' e' un permesso che
+    resta aperto su un nome libero: il giorno che qualcuno lo riusa, la
+    guardia tace senza che nessuno l'abbia deciso."""
+    testo = _testo(PAGINA)
+
+    fantasmi = [nome for nome in ELENCHI_CHE_POSSONO_TACERE if f"function {nome}(" not in testo]
+
+    assert fantasmi == [], f"eccezioni per funzioni che non esistono piu': {fantasmi}"
+
+
+def test_le_routine_a_innesco_vocale_si_vedono_fra_le_automazioni():
+    """La cosa che mancava davvero.
+
+    Chi ha disegnato due routine e le guarda dalla schermata delle automazioni
+    non vede niente, perche' una routine a innesco vocale non e' una regola.
+    Ma lui l'ha disegnata, se la ricorda, e il vuoto gli dice che non ha fatto
+    niente. Il vuoto aveva anche ragione — nessuna automazione c'era — e
+    proprio per questo e' peggio: e' una risposta esatta alla domanda
+    sbagliata.
+
+    Riferimento: issue #127.
+    """
+    testo = _testo(PAGINA)
+
+    corpo = _senza_commenti(
+        testo[testo.index("function routineSoloVocali(") : testo.index("async function alternaRegola(")]
+    )
+
+    assert "'grafo:'" in corpo, "non si distingue una routine che ha gia' generato una regola"
+    assert "partono solo se le chiami" in corpo, "le routine vocali non vengono nominate"
+    assert "cambia l'innesco" in corpo, "non si dice come farle partire da sole"
+
+    # E la schermata deve chiederle davvero, altrimenti l'elenco resta vuoto
+    # per sempre e la guardia sopra prova una funzione che nessuno chiama.
+    caricamento = _senza_commenti(
+        testo[testo.index("async function loadRegole()") : testo.index("function quandoScatta(")]
+    )
+    assert "'/api/modes'" in caricamento, "la schermata non chiede le routine al server"
+
+
 def _esegui_con_node(sorgente: str) -> subprocess.CompletedProcess:
     with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as file:
         file.write(sorgente)
