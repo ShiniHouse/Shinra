@@ -34,6 +34,19 @@ def _testo(percorso: Path) -> str:
     return percorso.read_text(encoding="utf-8")
 
 
+def _senza_commenti(testo: str) -> str:
+    """Il codice senza i commenti che lo spiegano.
+
+    Serve a ogni guardia che cerca una stringa nel **codice**: un commento che
+    spiega perche' una riga esiste contiene quasi sempre le parole di quella
+    riga, e una guardia che le trova li' resta verde anche con la riga tolta.
+    E' successo quattro volte in questo file — `illuminaNodiInErrore`,
+    `overflow-hidden`, e due volte una frase di un messaggio — sempre allo
+    stesso modo e sempre con lo stesso stupore.
+    """
+    return re.sub(r"//[^\n]*", "", testo)
+
+
 def _script_inline(testo: str) -> list[str]:
     """Solo gli script scritti nella pagina: quelli con `src` non sono nostri."""
     return re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", testo, re.S)
@@ -562,6 +575,89 @@ def test_una_fetch_con_un_modulo_non_si_porta_dietro_un_content_type_json():
         "una fetch manda un FormData con le intestazioni di sempre, "
         f"e fra quelle c'e' Content-Type: application/json — {colpevoli}"
     )
+
+
+ROTTE_PRIMA_DELLA_SESSIONE = ("/api/auth/profili", "/api/auth/login")
+
+
+def test_ogni_chiamata_all_api_porta_le_intestazioni_di_autenticazione():
+    """Ventisette chiamate su settantatre partivano senza.
+
+    Funzionavano lo stesso, ed e' questo che le ha nascoste: il browser di
+    casa e' un dispositivo fidato, e `sessione_dalla_richiesta` ha una seconda
+    strada che passa dal cookie. Su un browser non ancora fidato — il telefono
+    di un ospite, una finestra anonima, la PWA appena installata — le stesse
+    rotte rispondono 401.
+
+    E il 401 non si vedeva: `dati.regole || []` trasforma un rifiuto in un
+    elenco vuoto, e la schermata dice «non c'e' niente» invece di «non ho il
+    permesso di vederlo».
+
+    Le due eccezioni sono dichiarate per nome e non per comodita': si chiamano
+    **prima** di avere una sessione, quindi un'intestazione di autenticazione
+    li' non esiste ancora.
+
+    Riferimento: issue #125.
+    """
+    testo = _testo(PAGINA)
+
+    colpevoli = []
+    for m in re.finditer(r"fetch\(\s*[`'\"](/api/[^`'\"]*)", testo):
+        if m.group(1) in ROTTE_PRIMA_DELLA_SESSIONE:
+            continue
+        chiamata = testo[m.start() : m.start() + 420]
+        if "getAuthHeaders(" in chiamata or "intestazioniPerModulo(" in chiamata:
+            continue
+        colpevoli.append(f"riga {testo[: m.start()].count(chr(10)) + 1}: {m.group(1)}")
+
+    assert colpevoli == [], (
+        "queste chiamate partono senza intestazioni: funzionano solo da un "
+        f"dispositivo gia' fidato — {colpevoli}"
+    )
+
+
+def test_un_rifiuto_dell_api_si_vede_invece_di_diventare_un_elenco_vuoto():
+    """Il controllo sta attorno a `fetch`, una volta sola.
+
+    Metterlo in ogni chiamata vorrebbe dire poterselo dimenticare alla
+    prossima — ed e' la stessa ragione per cui il contesto del registro sta in
+    un middleware e non nelle singole rotte.
+
+    Le rotte di accesso restano fuori: un 401 su `/api/auth/login` vuol dire
+    «PIN sbagliato», e chi sta entrando lo sta gia' leggendo sotto la tastiera.
+    """
+    testo = _testo(PAGINA)
+
+    apertura = testo.index("function sorvegliaIRifiuti()")
+    corpo = testo[apertura : testo.index("function mostraRifiuto(")]
+    corpo = re.sub(r"//[^\n]*", "", corpo)
+
+    assert "window.fetch =" in corpo, "nessuno sorveglia le risposte"
+    assert "401" in corpo and "403" in corpo, "il rifiuto non viene riconosciuto"
+    assert "mostraRifiuto(" in corpo, "il rifiuto viene riconosciuto e non detto"
+    assert (
+        "'/api/auth/'" in corpo or '"/api/auth/"' in corpo
+    ), "anche un PIN sbagliato farebbe comparire l'avviso"
+
+
+def test_l_avviso_dice_che_il_vuoto_potrebbe_non_essere_vuoto():
+    """«Sessione scaduta» da solo non basta.
+
+    Chi legge un errore di sessione non collega da se' che l'elenco vuoto che
+    ha sotto gli occhi potrebbe essere pieno. E' quella frase — non
+    l'avviso — a chiudere la issue.
+    """
+    testo = _testo(PAGINA)
+
+    corpo = testo[testo.index("function mostraRifiuto(") : testo.index("function nascondiRifiuto(")]
+    # I commenti si tolgono prima di guardare. E' la quarta volta in questo
+    # file che una guardia trova nel commento la parola che cercava nel
+    # codice, e resta verde con il codice svuotato: qui il commento spiega
+    # **proprio** quella frase, quindi la conteneva.
+    corpo = _senza_commenti(corpo)
+
+    assert "vuote potrebbero non esserlo" in corpo, "l'avviso non dice cosa comporta"
+    assert "riservato" in corpo, "un 403 viene raccontato come una sessione scaduta"
 
 
 def _esegui_con_node(sorgente: str) -> subprocess.CompletedProcess:
