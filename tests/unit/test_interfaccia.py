@@ -17,6 +17,7 @@ Riferimento: issue #46 e #47.
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -1012,3 +1013,212 @@ def test_lo_stato_della_voce_non_si_ricorda_finche_non_e_definitivo():
     corpo = re.sub(r"//[^\n]*", "", corpo)
 
     assert "modello_caricato" in corpo, "la pagina si ricorda anche uno stato provvisorio"
+
+
+# ------------------------------------------- la colonna della console (#123)
+
+
+def _colonna_della_console(testo: str) -> str:
+    """La colonna di destra della console vocale: un terzo della prima
+    schermata che si apre, e l'unica parte della pagina che sta accesa
+    davanti a chi abita la casa senza che l'abbia chiesta."""
+    inizio = testo.index("<!-- Right: Activity Logs & Active Timers -->")
+    return testo[inizio : testo.index('<div id="tab-knowledge"', inizio)]
+
+
+def test_la_colonna_della_console_non_porta_piu_la_diagnostica():
+    """Il nome del modello e la frase di Alexa non riguardano chi abita qui.
+
+    Stavano accesi un terzo dello schermo, sulla schermata che si apre per
+    prima, e non cambiano da un'ora all'altra: il modello si sceglie una
+    volta, la frase di invocazione si legge una volta nella vita. Nessuna
+    delle due sparisce — si leggono in Impostazioni, che e' dove si va
+    quando si vogliono cambiare.
+    """
+    colonna = _colonna_della_console(_testo(PAGINA))
+
+    assert "Stato Sistema" not in colonna, "il pannello della diagnostica e' ancora acceso"
+    assert 'id="model-name-badge"' not in colonna, "il nome del modello e' ancora nella colonna"
+    assert "Alexa, apri" not in colonna, "la frase di invocazione e' ancora nella colonna"
+    assert 'id="tool-logs"' not in colonna, "il registro dei tool e' ancora un pannello acceso"
+
+
+def test_il_modello_e_la_frase_di_alexa_si_leggono_nelle_impostazioni():
+    """Togliere non e' nascondere: il patto e' che tutto resti raggiungibile.
+
+    Una guardia che controllasse solo l'assenza dalla console sarebbe verde
+    anche il giorno che qualcuno cancella le due informazioni invece di
+    spostarle, ed e' esattamente l'errore che questa riorganizzazione puo'
+    fare.
+    """
+    testo = _testo(PAGINA)
+    impostazioni = testo.index('<div id="tab-settings"')
+
+    for identificativo in ('id="model-name-badge"', 'id="anteprima-invocazione"'):
+        assert identificativo in testo, f"{identificativo} non esiste piu' da nessuna parte"
+        assert (
+            testo.index(identificativo) > impostazioni
+        ), f"{identificativo} non sta in Impostazioni, dove si va per cambiarlo"
+
+
+def test_la_frase_di_alexa_viene_dal_campo_e_non_da_una_riga_scritta_a_mano():
+    """Nella console era scritta a mano: «Alexa, apri Kyra».
+
+    Restava quella anche dopo aver cambiato il nome di invocazione, cioe'
+    era un'informazione che poteva mentire — e sulla schermata principale,
+    per giunta. Adesso si costruisce da cio' che c'e' nel campo, e il test
+    la costruisce davvero invece di cercare la parola nel sorgente.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    funzione = _funzione_javascript(_testo(PAGINA), "updateAlexaGeneratorName")
+
+    prova = (
+        """
+const campi = {
+    'anteprima-invocazione': { innerText: '' },
+    'alexa-generated-json': { value: '' }
+};
+const document = { getElementById: (id) => campi[id] || null };
+function getAlexaInteractionModelJson() { return '{}'; }
+"""
+        + funzione
+        + """
+updateAlexaGeneratorName('Jarvis');
+console.log(campi['anteprima-invocazione'].innerText);
+"""
+    )
+
+    esito = _esegui_con_node(prova)
+
+    assert esito.returncode == 0, esito.stderr
+    detto = esito.stdout.strip()
+    assert "jarvis" in detto, f"la frase non segue il nome scelto: {detto}"
+    assert "kyra" not in detto, f"la frase ripete il nome di prima: {detto}"
+
+
+def test_la_storia_dei_tool_non_si_perde_a_finestra_chiusa():
+    """Il registro esce dalla colonna ma non dalla pagina.
+
+    Scriveva direttamente nel pannello: tolto il pannello, ogni chiamata
+    sarebbe finita nel vuoto e la finestra aperta dopo avrebbe mostrato una
+    casa che non ha mai fatto niente. Serve proprio quando qualcosa non
+    torna, cioe' sempre dopo, mai durante.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    testo = _testo(PAGINA)
+    prova = (
+        """
+const conta = { innerText: '' };
+const document = { getElementById: (id) => (id === 'conta-tool' ? conta : null) };
+let _toolInvocati = [];
+function _disegnaToolInvocati() { throw new Error('la finestra e\\' chiusa'); }
+"""
+        + _funzione_javascript(testo, "logAction")
+        + """
+logAction('luce', { stanza: 'cucina' }, 'accesa');
+logAction('meteo', { citta: 'Ancona' }, 'sereno');
+console.log(JSON.stringify({
+    quanti: _toolInvocati.length,
+    primo: _toolInvocati[0].tool,
+    conta: conta.innerText
+}));
+"""
+    )
+
+    esito = _esegui_con_node(prova)
+
+    assert esito.returncode == 0, esito.stderr
+    visto = json.loads(esito.stdout.strip())
+    assert visto["quanti"] == 2, "le chiamate non restano da nessuna parte"
+    assert visto["primo"] == "meteo", "la piu' recente non e' in cima"
+    assert "2" in visto["conta"], f"il numero non si vede dalla colonna: {visto['conta']}"
+
+
+def test_la_colonna_dice_cosa_scattera_e_in_che_ordine():
+    """Cio' che e' entrato al posto della diagnostica.
+
+    Tre cose che una lista ingenua confonde: una regola zittita non
+    scattera', una su evento non ha un orario, e l'ordine di arrivo del
+    server non e' l'ordine dell'orologio. Se la colonna deve raccontare
+    adesso, deve raccontarlo giusto.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    testo = _testo(PAGINA)
+    prova = (
+        """
+const contenitore = { innerHTML: '' };
+const document = { getElementById: () => contenitore };
+function _testoSicuro(t) { return String(t === undefined || t === null ? '' : t); }
+function _quandoLeggibile(iso) { return 'quando:' + iso; }
+function safeCreateIcons() {}
+function switchTab() {}
+"""
+        + _funzione_javascript(testo, "disegnaProssimiScatti")
+        + """
+disegnaProssimiScatti([
+    { nome: 'TARDI', attiva: true, prossimo: '2030-01-01T23:00:00' },
+    { nome: 'ZITTITA', attiva: false, prossimo: '2030-01-01T06:00:00' },
+    { nome: 'SUEVENTO', attiva: true, prossimo: null },
+    { nome: 'PRESTO', attiva: true, prossimo: '2030-01-01T07:00:00' }
+]);
+console.log(JSON.stringify(contenitore.innerHTML));
+disegnaProssimiScatti([{ nome: 'ZITTITA', attiva: false, prossimo: '2030-01-01T06:00:00' }]);
+console.log(JSON.stringify(contenitore.innerHTML));
+"""
+    )
+
+    esito = _esegui_con_node(prova)
+
+    assert esito.returncode == 0, esito.stderr
+    con_regole, senza_regole = (riga for riga in esito.stdout.strip().splitlines() if riga)
+
+    assert "ZITTITA" not in con_regole, "una regola messa a tacere e' annunciata come imminente"
+    assert "SUEVENTO" not in con_regole, "una regola su evento compare con un orario che non ha"
+    assert con_regole.index("PRESTO") < con_regole.index("TARDI"), "gli scatti non sono in ordine di orologio"
+
+    # Quando non scatta niente, la colonna non resta uno spazio bianco: dice
+    # come si riempie. E' la stessa regola di tutte le altre liste (#127).
+    assert "Niente in programma" in senza_regole, "la colonna vuota non dice niente"
+    assert "switchTab" in senza_regole, "dal vuoto non si raggiunge cio' che lo riempie"
+
+
+# Quanti elementi restava acceso a riposo la colonna, prima di questa
+# riorganizzazione: 27 tag e 3 titoli. E' un cricchetto come quello
+# dell'architettura — puo' scendere, non risalire.
+TAG_NELLA_COLONNA = 19
+TITOLI_NELLA_COLONNA = 1
+
+
+def test_la_colonna_della_console_resta_leggera():
+    """La misura, invece della sensazione.
+
+    La scheda chiedeva un calo di almeno un terzo degli elementi a riposo.
+    Misurato: i tag della colonna sono passati da 27 a 19 (-30%), i titoli
+    da 3 a 1 (-67%), i pannelli accesi da 3 a 2, e le informazioni di
+    diagnostica da 3 a nessuna. Il -30% non e' il terzo promesso: e' scritto
+    qui perche' resti scritto quanto e' stato davvero, e non quanto era
+    stato detto.
+
+    Il numero qui sotto non e' un obiettivo: e' un tetto. Serve il giorno
+    che qualcuno aggiunge un pannello «solo questo» a questa colonna.
+    """
+    colonna = re.sub(r"<!--.*?-->", "", _colonna_della_console(_testo(PAGINA)), flags=re.S)
+
+    tag = len(re.findall(r"<(?!/)[a-zA-Z]", colonna))
+    titoli = len(re.findall(r"<h\d", colonna))
+
+    assert tag <= TAG_NELLA_COLONNA, (
+        f"la colonna della console e' tornata a pesare: {tag} tag, il tetto e' "
+        f"{TAG_NELLA_COLONNA}. Se il pannello nuovo racconta davvero adesso, "
+        "abbassa il tetto togliendo altro; se no, non va qui."
+    )
+    assert titoli <= TITOLI_NELLA_COLONNA, (
+        f"{titoli} titoli nella colonna: ogni titolo in piu' e' una cosa in "
+        "piu' da leggere prima di trovare quella che serve"
+    )
