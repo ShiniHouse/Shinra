@@ -5392,9 +5392,18 @@
             const contenitore = document.getElementById('regole-lista');
             if (!contenitore) return;
             try {
-                const res = await fetch('/api/regole', { headers: getAuthHeaders() });
-                const dati = await res.json();
-                renderRegole(dati.regole || []);
+                // Anche le routine, non solo le regole. Una routine a innesco
+                // vocale non e' un'automazione — parte solo se la chiami — ma
+                // e' la cosa che chi guarda questa schermata **ha gia'
+                // disegnato**, e non vederla qui fa credere di non aver fatto
+                // niente. E' la domanda da cui e' nata la issue #127.
+                const [risposta, risposteModi] = await Promise.all([
+                    fetch('/api/regole', { headers: getAuthHeaders() }),
+                    fetch('/api/modes', { headers: getAuthHeaders() })
+                ]);
+                const dati = await risposta.json();
+                const modi = risposteModi.ok ? await risposteModi.json() : [];
+                renderRegole(dati.regole || [], Array.isArray(modi) ? modi : []);
             } catch (e) {
                 contenitore.innerHTML = '<p class="text-xs text-rose-400 p-4">Non riesco a leggere le automazioni: il server non ha risposto.</p>';
             }
@@ -5417,12 +5426,27 @@
             return { testo: 'non programmata: non scatterà', colore: 'text-rose-400' };
         }
 
-        function renderRegole(regole) {
+        // Le routine che hanno gia' generato un'automazione. Una regola nata
+        // da un disegno porta `origine: "grafo:<id della routine>"`, ed e'
+        // l'unico modo di sapere, da qui, quali routine partono da sole.
+        function routineSoloVocali(regole, modi) {
+            const automatizzate = new Set(
+                regole
+                    .map(r => String(r.origine || ''))
+                    .filter(o => o.startsWith('grafo:'))
+                    .map(o => o.slice('grafo:'.length))
+            );
+            return (modi || []).filter(m => !automatizzate.has(String(m.id)));
+        }
+
+        function renderRegole(regole, modi) {
             const contenitore = document.getElementById('regole-lista');
             if (!contenitore) return;
 
+            const pezzi = [];
+
             if (!regole.length) {
-                contenitore.innerHTML = `
+                pezzi.push(`
                     <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-8 text-center">
                         <i data-lucide="zap-off" class="w-8 h-8 text-slate-600 mx-auto mb-3"></i>
                         <p class="text-sm text-slate-300 font-semibold">La casa non fa ancora niente da sola.</p>
@@ -5431,12 +5455,13 @@
                             in <span class="text-slate-300">Modalità &amp; Routine</span>, metti un
                             innesco «a un orario» o «al tramonto» sul primo nodo, e salva.
                         </p>
-                    </div>`;
-                safeCreateIcons();
-                return;
+                        <button type="button" onclick="switchTab('modes')" class="mt-4 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
+                            Vai alle routine
+                        </button>
+                    </div>`);
             }
 
-            contenitore.innerHTML = regole.map(r => {
+            pezzi.push(regole.map(r => {
                 const stato = quandoScatta(r);
                 const dalGrafo = String(r.origine || '').startsWith('grafo:');
                 const ultimo = r.ultimo_scatto ? new Date(r.ultimo_scatto).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : null;
@@ -5466,7 +5491,41 @@
                                 : `<button type="button" onclick="cancellaRegola('${r.id}')" class="p-1.5 text-slate-500 hover:text-rose-400" title="Elimina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`}
                         </div>
                     </div>`;
-            }).join('');
+            }).join(''));
+
+            // Le routine che partono solo se le chiami. Esistono, e chi le ha
+            // disegnate se le ricorda: non vederle qui fa credere di non aver
+            // fatto niente, ed e' esattamente cio' che e' successo in casa.
+            const vocali = routineSoloVocali(regole, modi);
+            if (vocali.length) {
+                pezzi.push(`
+                    <div class="bg-slate-900/40 border border-slate-800 border-dashed rounded-2xl p-4 mt-2">
+                        <p class="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                            <i data-lucide="mic" class="w-3.5 h-3.5 text-slate-500"></i>
+                            Queste partono solo se le chiami
+                        </p>
+                        <p class="text-[11px] text-slate-500 mt-1 mb-3">
+                            Sono routine, non automazioni: aspettano la tua voce. Per farle
+                            partire da sole, apri la routine e cambia l'innesco del primo blocco.
+                        </p>
+                        <div class="space-y-1.5">
+                            ${vocali.map(m => `
+                                <div class="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                                    <div class="min-w-0">
+                                        <span class="text-xs font-semibold text-slate-200">${m.name || m.id}</span>
+                                        ${(m.trigger_phrases || []).length
+                                            ? `<span class="text-[10px] text-slate-500 font-mono ml-2 truncate">"${(m.trigger_phrases || [])[0]}"</span>`
+                                            : '<span class="text-[10px] text-amber-400 ml-2">senza frasi: non la puoi nemmeno chiamare</span>'}
+                                    </div>
+                                    <button type="button" onclick="switchTab('modes')" class="shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold">
+                                        Apri
+                                    </button>
+                                </div>`).join('')}
+                        </div>
+                    </div>`);
+            }
+
+            contenitore.innerHTML = pezzi.join('');
             safeCreateIcons();
         }
 
