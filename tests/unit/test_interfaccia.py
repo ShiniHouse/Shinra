@@ -1421,3 +1421,34 @@ def test_nessuna_etichetta_e_diventata_un_indovinello():
             muti.append(nome)
 
     assert muti == [], f"questi ingressi sono solo un'icona: {muti}"
+
+
+def test_la_barra_non_taglia_il_menu_di_configurazione():
+    """Il menu si apriva e si vedeva una fetta alta tre righe, con le frecce
+    di una barra di scorrimento a lato.
+
+    `overflow-x-auto` sulla barra serviva a far scorrere otto schede quando
+    non ci stavano. Con quattro non serve, e un contenitore che scorre
+    **ritaglia tutto cio' che gli esce dai bordi**, menu a tendina compresi:
+    il menu non era posizionato male, era chiuso dentro.
+
+    E' lo stesso difetto della X dell'editor sigillata dentro
+    `overflow-hidden` (#122), ricomparso dall'altra parte della pagina e
+    scoperto nello stesso modo — guardando la schermata, non il codice.
+    Questa guardia esiste perche' la terza volta non succeda.
+    """
+    barra = _senza_commenti_html(_barra_desktop(_testo(PAGINA)))
+
+    contenitore = re.search(r'<div class="([^"]*)"', barra).group(1)
+
+    assert "overflow" not in contenitore, (
+        f"la barra ritaglia cio' che le esce dai bordi, e il menu di "
+        f"configurazione le esce dai bordi: {contenitore}"
+    )
+    # Se la riga non ci sta, deve andare a capo: l'alternativa a scorrere non
+    # e' lasciare che l'ultimo ingresso finisca fuori schermo.
+    assert "flex-wrap" in contenitore, "senza scorrimento e senza andare a capo, la riga si tronca"
+
+    # E il menu deve stare davvero li' dentro: se qualcuno lo spostasse fuori
+    # dalla barra, questa guardia guarderebbe il contenitore sbagliato.
+    assert 'id="menu-configurazione"' in barra, "il menu non e' piu' dentro la barra"

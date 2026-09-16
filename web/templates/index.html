@@ -864,8 +864,16 @@
             </div>
         </div>
 
-        <!-- Desktop Navigation Tabs Bar (>= md) -->
-        <div class="hidden md:flex max-w-7xl mx-auto px-4 sm:px-6 gap-2 border-t border-slate-800/60 dark:border-slate-800/60 light:border-slate-200/80 overflow-x-auto text-xs font-semibold py-1.5">
+        <!-- Desktop Navigation Tabs Bar (>= md)
+
+             Niente `overflow-x-auto`: serviva a far scorrere otto schede, e
+             adesso che sono quattro ritaglierebbe il menu di configurazione
+             invece di lasciarlo uscire — un contenitore che scorre taglia
+             tutto cio' che gli esce dai bordi, menu compresi. E' lo stesso
+             difetto della X dell'editor chiusa dentro `overflow-hidden`
+             (#122), ricomparso dall'altra parte della pagina. Se la riga non
+             ci sta, va a capo. -->
+        <div class="hidden md:flex flex-wrap max-w-7xl mx-auto px-4 sm:px-6 gap-2 border-t border-slate-800/60 dark:border-slate-800/60 light:border-slate-200/80 text-xs font-semibold py-1.5">
             <button onclick="switchTab('console')" id="tab-btn-console" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-600/30 dark:bg-indigo-600/30 light:bg-indigo-100 text-indigo-300 dark:text-indigo-300 light:text-indigo-800 border border-indigo-500/40 dark:border-indigo-500/40 light:border-indigo-300 transition shadow-sm">
                 <i data-lucide="message-square" class="w-4 h-4"></i> Console Vocale
             </button>
