@@ -20,9 +20,9 @@ altra.
 
 ## Cosa fare
 
-- [ ] Primo livello: **Console**, **Automazioni e routine**, **Dispositivi**
-- [ ] Dietro un solo ingresso di configurazione: Conoscenza, Fonti, Utenti, Impostazioni
-- [ ] Unire in un ingresso solo l'elenco delle automazioni e il costruttore di routine
+- [x] Primo livello: **Console**, **Automazioni e routine**, **Dispositivi**
+- [x] Dietro un solo ingresso di configurazione: Conoscenza, Fonti, Utenti, Impostazioni
+- [x] Unire in un ingresso solo l'elenco delle automazioni e il costruttore di routine
 
 ## L'editor a nodi resta al primo livello
 
@@ -40,12 +40,29 @@ nell'altra senza che nessuna delle due lo spieghi.
 
 ## Cosa non fare
 
-- [ ] Non nascondere dietro un menu a panino, su computer, cio' che si usa ogni giorno: si guadagna spazio e si perde la mappa
-- [ ] Non togliere le scritte per fare posto alle icone: un'icona senza etichetta e' un indovinello che si ripresenta ogni volta
+- [x] Non nascondere dietro un menu a panino, su computer, cio' che si usa ogni giorno: si guadagna spazio e si perde la mappa
+- [x] Non togliere le scritte per fare posto alle icone: un'icona senza etichetta e' un indovinello che si ripresenta ogni volta
 
 ## Criteri di accettazione
 
-- [ ] Gli ingressi di primo livello sono tre
-- [ ] Nessuna funzione raggiungibile prima richiede piu' di due clic in piu'
-- [ ] L'editor a nodi si apre dal primo livello
-- [ ] Su telefono la navigazione resta una sola, non una seconda scritta a parte
+- [x] Gli ingressi di primo livello sono tre
+- [x] Nessuna funzione raggiungibile prima richiede piu' di due clic in piu'
+- [x] L'editor a nodi si apre dal primo livello
+- [x] Su telefono la navigazione resta una sola, non una seconda scritta a parte
+
+## Com'e' andata
+
+Fatta con la PR #133.
+
+Nessuna funzione si e' allontanata di piu' di **un** clic; il criterio ne
+ammetteva due.
+
+Due cose che si sarebbero rotte in silenzio: le vecchie destinazioni
+`switchTab('modes')` e `switchTab('regole')`, tradotte in un posto solo invece
+di portare a una schermata bianca; e «vai alle routine», che cambiava scheda e
+adesso che la scheda e' la stessa scorre.
+
+**Un difetto e' sfuggito a tutte le nove guardie**: `overflow-x-auto` sulla
+barra ritagliava il menu di configurazione. Le guardie leggono il sorgente e
+nessuna puo' vedere un elemento tagliato dal CSS di un antenato. Trovato
+guardando la schermata, riparato con la #134.

@@ -22,13 +22,30 @@ Conoscenza: cinque schermate, cinque silenzi identici.
 
 ## Cosa fare
 
-- [ ] Automazioni: «Non c'e' ancora nessuna automazione. Nascono dalle routine: creane una e dai al primo blocco un innesco che non sia la voce», con il pulsante che porta li'
-- [ ] Automazioni: elencare sotto le routine a innesco vocale, dicendo che esistono ma partono solo se chiamate — e' l'informazione che oggi manca del tutto
-- [ ] Modalita' e Routine, Fonti, Dispositivi, Conoscenza: uno stato vuoto ciascuno, che nomina l'azione successiva
-- [ ] Guardia: ogni contenitore che puo' restare vuoto ha un ramo che scrive qualcosa
+- [x] Automazioni: «Non c'e' ancora nessuna automazione. Nascono dalle routine: creane una e dai al primo blocco un innesco che non sia la voce», con il pulsante che porta li'
+- [x] Automazioni: elencare sotto le routine a innesco vocale, dicendo che esistono ma partono solo se chiamate — e' l'informazione che oggi manca del tutto
+- [x] Modalita' e Routine, Fonti, Dispositivi, Conoscenza: uno stato vuoto ciascuno, che nomina l'azione successiva
+- [x] Guardia: ogni contenitore che puo' restare vuoto ha un ramo che scrive qualcosa
 
 ## Criteri di accettazione
 
-- [ ] Nessuna delle cinque schermate puo' presentarsi come uno spazio bianco
-- [ ] Da ciascuno stato vuoto si raggiunge in un clic l'azione che lo riempie
-- [ ] La guardia fallisce se una lista nuova nasce senza stato vuoto
+- [x] Nessuna delle cinque schermate puo' presentarsi come uno spazio bianco
+- [x] Da ciascuno stato vuoto si raggiunge in un clic l'azione che lo riempie
+- [x] La guardia fallisce se una lista nuova nasce senza stato vuoto
+
+## Com'e' andata
+
+Fatta con la PR #131.
+
+**La premessa della scheda era sbagliata, ed e' stato misurato.** «Cinque
+schermate, cinque silenzi identici» non corrispondeva al vero: tutte le liste
+che potevano restare vuote avevano gia' la loro frase, e lo stato vuoto delle
+Automazioni aveva gia' una guardia dalla #108. La correzione e' scritta in un
+commento sulla issue.
+
+Cio' che mancava davvero era la seconda casella: le routine a innesco vocale
+non comparivano da nessuna parte fra le automazioni, ed e' la domanda da cui
+la scheda e' nata. Quella e' stata costruita.
+
+La guardia `test_ogni_elenco_che_puo_restare_vuoto_dice_qualcosa` tiene il
+resto, con sei eccezioni dichiarate con il loro motivo.

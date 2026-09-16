@@ -126,46 +126,74 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 
 > Quello che serve perche' lo installi qualcuno che non sei tu.
 
-| # | Lavoro |
-| :-- | :--- |
-| 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` |
-| 34 | Scomporre `index.html` (6.600 righe) in moduli ES |
-| 35 | Backup e restore della configurazione, con versione di schema |
-| 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) |
-| 37 | Immagine Docker e add-on per Home Assistant OS |
-| 38 | Documentazione utente e guida all'installazione verificata |
-| 125 | Le chiamate all'API partono senza intestazioni di autenticazione |
-| 127 | Ogni lista vuota insegna la mossa successiva |
-| 123 | La colonna della console racconta adesso, non la diagnostica |
-| 128 | Da otto ingressi a tre, senza perdere niente |
-| 124 | Impostazioni a sezioni, aperta solo quella che serve |
-| 126 | Una scorciatoia per «a quest'ora fai questo» |
+| # | Lavoro | Stato |
+| :-- | :--- | :--- |
+| 125 | Le chiamate all'API partono senza intestazioni di autenticazione | fatta (#130) |
+| 127 | Ogni lista vuota insegna la mossa successiva | fatta (#131) |
+| 123 | La colonna della console racconta adesso, non la diagnostica | fatta (#132) |
+| 128 | Da otto ingressi a tre, senza perdere niente | fatta (#133) |
+| 134 | La barra della navigazione ritagliava il menu di configurazione | fatta (#135) |
+| 136 | Tre test delle scadenze dipendevano dal giorno in cui giravano | fatta (#137) |
+| 124 | Impostazioni a sezioni, aperta solo quella che serve | fatta (#138) |
+| 126 | Una scorciatoia per «a quest'ora fai questo» | fatta (#140) |
+| 139 | Un nome di icona sbagliato non da' errore, da' un buco | da fare |
+| 118 | Lo spegnimento del servizio si pianta: 90 secondi e poi SIGKILL | da fare |
+| 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` | da fare |
+| 34 | Scomporre `index.html` (7.438 righe) in moduli ES | da fare |
+| 35 | Backup e restore della configurazione, con versione di schema | da fare |
+| 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | da fare |
+| 37 | Immagine Docker e add-on per Home Assistant OS | da fare |
+| 38 | Documentazione utente e guida all'installazione verificata | da fare |
 
-### L'interfaccia, prima della 1.0.0
+### L'interfaccia, prima della 1.0.0 — fatta
 
-Le sei voci da **#125** a **#126** vanno in quest'ordine, e non e' casuale:
-le prime due sono difetti — una lista vuota per mancanza di permessi e una
-lista vuota che non spiega niente hanno lo stesso aspetto, e finche' e' cosi'
-non si sa nemmeno quali schermate siano davvero vuote. Le altre quattro sono
-scelte di struttura, e una scelta di struttura si fa dopo aver smesso di
+Le sei voci da **#125** a **#126** sono state fatte in quest'ordine, e non era
+casuale: le prime due erano difetti — una lista vuota per mancanza di permessi
+e una lista vuota che non spiega niente hanno lo stesso aspetto, e finche' e'
+cosi' non si sa nemmeno quali schermate siano davvero vuote. Le altre quattro
+erano scelte di struttura, e una scelta di struttura si fa dopo aver smesso di
 guardare dati sbagliati.
 
-Le misure che le motivano: otto ingressi di primo livello tutti dello stesso
-peso; **Impostazioni pesa quanto le altre sette schede insieme** (421 righe,
-19 campi, 15 pulsanti); **Automazioni ne pesa 19**; un terzo della schermata
-di casa e' occupato stabilmente da diagnostica.
+I due vincoli sono stati rispettati e hanno una guardia ciascuno: **nessuna
+funzione e' sparita** — al massimo un clic piu' lontana — e **l'editor a nodi
+e' rimasto al primo livello**, dentro «Automazioni e routine».
 
-Due vincoli che valgono per tutte e sei:
+#### Cosa dicono i numeri, misurati
 
-- **nessuna funzione sparisce** — cambia solo cosa e' visibile a riposo;
-- **l'editor a nodi resta al primo livello**, non va sostituito e non va
-  semplificato: e' l'unico posto dove si puo' dire alla casa qualcosa che non
-  sta in una riga.
+| | prima | dopo |
+| :--- | :-- | :-- |
+| Ingressi di primo livello | 8 | 3 + configurazione |
+| Colonna della console: tag a riposo | 27 | 19 (**-30%**, non il terzo promesso) |
+| Colonna della console: diagnostica a vista | 3 | 0 |
+| Impostazioni: campi visibili all'apertura | 17 | 0 |
+| Impostazioni: pannelli aperti insieme | 8 | 1 |
+| Clic in piu' per la funzione piu' lontana | — | 1 (il criterio ne ammetteva 2) |
 
-La **#34** (frontend modulare) e' la sorella maggiore di tutte: su un file di
-seimilaseicento righe ogni modifica all'interfaccia costa piu' del dovuto. Se
-si affronta per prima, le altre diventano piu' facili; se si affronta dopo,
-si rifa' due volte lo stesso lavoro sui punti che toccano entrambe.
+Il **-30%** della #123 e' l'unico criterio non raggiunto, ed e' scritto nella
+guardia insieme al tetto: la scheda chiedeva insieme di togliere la
+diagnostica e di aggiungere i prossimi scatti, e le due cose non stavano nello
+stesso conto.
+
+#### Quello che si e' imparato per strada
+
+Tre difetti non erano in nessuna scheda e **nessuna guardia poteva vederli**,
+perche' leggono il sorgente e nel sorgente erano tutti corretti:
+
+- un menu ritagliato da `overflow-x-auto` su un antenato (#134);
+- due nomi di icona che in lucide non esistono — da qui la #139;
+- fondi grigi senza riscrittura per il tema chiaro, nella famiglia che la
+  guardia dei colori salta apposta.
+
+Tutti e tre trovati **guardando la schermata renderizzata**. Da qui in avanti
+ogni modifica all'interfaccia si guarda prima di aprire la PR.
+
+Due difetti sono invece emersi **provando a rompere il codice apposta**: il
+server accettava un'azione che non diceva su cosa agire (#126), e tre test
+prendevano meta' del tempo dal calendario vero e meta' da una costante (#136).
+
+La **#34** (frontend modulare) resta la sorella maggiore di tutte: `index.html`
+e' passato da 6.600 a **7.438 righe** proprio facendo queste sei. Su un file
+cosi' ogni modifica all'interfaccia costa piu' del dovuto.
 
 ---
 
