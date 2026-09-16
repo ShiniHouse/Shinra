@@ -1452,3 +1452,238 @@ def test_la_barra_non_taglia_il_menu_di_configurazione():
     # E il menu deve stare davvero li' dentro: se qualcuno lo spostasse fuori
     # dalla barra, questa guardia guarderebbe il contenitore sbagliato.
     assert 'id="menu-configurazione"' in barra, "il menu non e' piu' dentro la barra"
+
+
+# ----------------------------------- Impostazioni a sezioni richiudibili (#124)
+
+
+def _scheda_impostazioni(testo: str) -> str:
+    inizio = testo.index('<div id="tab-settings"')
+    return testo[inizio : testo.index("</main>", inizio)]
+
+
+def _a_riposo(pezzo: str) -> str:
+    """Cio' che si vede aprendo la scheda, senza toccare niente.
+
+    Di una sezione chiusa resta il solo sommario; tutto il resto della scheda
+    — compreso il pulsante «Salva», che sta fuori dalle sezioni — si vede.
+    I `<details>` non sono annidati, percio' il non-goloso e' esatto.
+    """
+
+    def solo_il_sommario(trovato):
+        sommario = re.search(r"<summary.*?</summary>", trovato.group(1), re.S)
+        return sommario.group(0) if sommario else ""
+
+    return re.sub(
+        r"<details\b(?![^>]*\bopen\b)[^>]*>(.*?)</details>",
+        solo_il_sommario,
+        _senza_commenti_html(pezzo),
+        flags=re.S,
+    )
+
+
+def test_le_impostazioni_si_aprono_una_sezione_alla_volta():
+    """Quattrocentoventun righe di markup con tutto aperto insieme.
+
+    Non e' una schermata da leggere, e' una schermata in cui si cerca — e
+    cercare in un muro aperto e' piu' lento che aprire la sezione giusta.
+    """
+    scheda = _senza_commenti_html(_scheda_impostazioni(_testo(PAGINA)))
+
+    sezioni = re.findall(r'<details class="sezione-impostazioni" data-sezione="(\w+)"([^>]*)>', scheda)
+
+    assert len(sezioni) >= 8, f"le sezioni sono {len(sezioni)}: la scheda non e' stata divisa"
+
+    aperte = [nome for nome, resto in sezioni if "open" in resto]
+    assert len(aperte) == 1, f"all'arrivo sono aperte {len(aperte)} sezioni: {aperte}"
+    assert aperte[0] == sezioni[0][0], "l'unica aperta non e' la prima"
+
+
+def test_ogni_sezione_dice_cosa_contiene_anche_da_chiusa():
+    """Una sezione chiusa che non dice cosa c'e' dentro e' un cassetto senza
+    etichetta: si aprono tutti finche' non salta fuori quello giusto, che e'
+    esattamente cio' da cui si voleva uscire."""
+    scheda = _senza_commenti_html(_scheda_impostazioni(_testo(PAGINA)))
+
+    mute = []
+    for sezione in re.findall(r'data-sezione="(\w+)".*?</summary>', scheda, re.S):
+        blocco = re.search(rf'data-sezione="{sezione}".*?</summary>', scheda, re.S).group(0)
+        titolo = re.search(r"<h3[^>]*>(.*?)</h3>", blocco, re.S)
+        riga = re.search(r'<p class="text-\[11px\][^"]*"[^>]*>(.*?)</p>', blocco, re.S)
+        if not titolo or not riga or len(re.sub(r"<[^>]+>", "", riga.group(1)).strip()) < 15:
+            mute.append(sezione)
+
+    assert mute == [], f"queste sezioni non dicono cosa contengono da chiuse: {mute}"
+
+
+def test_nessun_campo_sparisce_dalle_impostazioni():
+    """Richiudere non e' togliere.
+
+    Una guardia che contasse solo cio' che si vede a riposo sarebbe verde
+    anche il giorno che qualcuno cancella una sezione invece di chiuderla,
+    ed e' l'errore piu' facile da fare riorganizzando una schermata piena.
+    """
+    testo = _testo(PAGINA)
+    scheda = _senza_commenti_html(_scheda_impostazioni(testo))
+
+    # Gli identificativi dei campi che la pagina legge e scrive davvero.
+    letti = set(re.findall(r"getElementById\('(cfg-[\w-]+)'\)", _senza_commenti(testo)))
+    assert letti, "nessun campo di configurazione: il test non guarda piu' niente"
+
+    mancanti = sorted(c for c in letti if f'id="{c}"' not in scheda)
+
+    assert mancanti == [], f"la pagina cerca questi campi e non sono piu' in Impostazioni: {mancanti}"
+
+
+def test_a_riposo_le_impostazioni_mostrano_meno_di_un_terzo_dei_campi():
+    """Il criterio della scheda, misurato invece che sperato.
+
+    Misurato: 17 campi e 7 pulsanti visibili a riposo sono diventati 0 campi
+    e 1 pulsante — quello che salva. Lo zero non e' un trionfo: la prima
+    sezione e' la scelta della palette, che si fa con delle carte e non con
+    dei campi. Cio' che conta e' che i 17 restino tutti a un clic.
+    """
+    scheda = _scheda_impostazioni(_testo(PAGINA))
+
+    tutti = len(re.findall(r"<(?:input|select|textarea)\b", _senza_commenti_html(scheda)))
+    visibili = len(re.findall(r"<(?:input|select|textarea)\b", _a_riposo(scheda)))
+
+    assert tutti >= 15, f"solo {tutti} campi in tutta la scheda: ne e' sparito qualcuno"
+    assert (
+        visibili * 3 < tutti
+    ), f"a riposo se ne vedono {visibili} su {tutti}: la scheda e' tornata un muro aperto"
+
+
+def test_la_sezione_aperta_si_ricorda_senza_rompere_niente():
+    """`localStorage` non risponde sempre — finestra anonima, dati del sito
+    bloccati, spazio esaurito — e in quei casi *lancia*, non torna `null`.
+
+    Ricordare quale sezione era aperta e' una comodita': se costasse una
+    schermata bianca sarebbe un pessimo affare.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    testo = _testo(PAGINA)
+
+    prova = (
+        """
+const localStorage = {
+    getItem() { throw new Error('dati del sito bloccati'); },
+    setItem() { throw new Error('dati del sito bloccati'); },
+    removeItem() { throw new Error('dati del sito bloccati'); }
+};
+const window = { localStorage };
+const MEMORIA_SEZIONE = 'prova';
+"""
+        + _funzione_javascript(testo, "_ricordaSezione")
+        + "\n"
+        + _funzione_javascript(testo, "_sezioneRicordata")
+        + """
+_ricordaSezione('voce');
+_ricordaSezione(null);
+console.log(JSON.stringify({ letta: _sezioneRicordata() }));
+"""
+    )
+
+    esito = _esegui_con_node(prova)
+
+    assert esito.returncode == 0, "con `localStorage` che protesta la schermata si pianta: " + esito.stderr
+    assert json.loads(esito.stdout.strip())["letta"] is None
+
+
+def test_aprire_una_sezione_chiude_le_altre():
+    """«Aperta solo quella che serve» e' il titolo della scheda.
+
+    Senza questo si torna al muro un pannello alla volta, e la memoria di
+    quale fosse aperta non vorrebbe piu' dire niente.
+
+    La guardia **esegue** la funzione con una finta pagina invece di cercare
+    `altra.open = false` nel sorgente: quella riga sopravvive intatta anche
+    dentro un `if (false)`, e infatti la prima versione di questo test non se
+    ne accorgeva.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    testo = _testo(PAGINA)
+
+    prova = (
+        """
+const memoria = {};
+const window = { localStorage: {
+    getItem: (k) => (k in memoria ? memoria[k] : null),
+    setItem: (k, v) => { memoria[k] = String(v); },
+    removeItem: (k) => { delete memoria[k]; }
+}};
+const MEMORIA_SEZIONE = 'prova';
+function safeCreateIcons() {}
+
+function finta(nome, aperta) {
+    return {
+        nome, open: aperta, dataset: {}, ascoltatori: [],
+        getAttribute: function () { return this.nome; },
+        addEventListener: function (_evento, fn) { this.ascoltatori.push(fn); }
+    };
+}
+const sezioni = [finta('aspetto', true), finta('casa', false), finta('voce', false)];
+const document = { querySelectorAll: () => sezioni };
+"""
+        + _funzione_javascript(testo, "_ricordaSezione")
+        + "\n"
+        + _funzione_javascript(testo, "_sezioneRicordata")
+        + "\n"
+        + _funzione_javascript(testo, "preparaSezioniImpostazioni")
+        + """
+preparaSezioniImpostazioni();
+preparaSezioniImpostazioni();
+
+// Il browser apre la sezione e poi avvisa: si fa lo stesso qui.
+sezioni[2].open = true;
+sezioni[2].ascoltatori.forEach(fn => fn());
+
+console.log(JSON.stringify({
+    aperte: sezioni.filter(s => s.open).map(s => s.nome),
+    ricordata: memoria[MEMORIA_SEZIONE] || null,
+    ascoltatori: sezioni.map(s => s.ascoltatori.length)
+}));
+"""
+    )
+
+    esito = _esegui_con_node(prova)
+
+    assert esito.returncode == 0, esito.stderr
+    visto = json.loads(esito.stdout.strip())
+
+    assert visto["aperte"] == [
+        "voce"
+    ], f"aprendo «voce» restano aperte anche {visto['aperte']}: la scheda torna un muro"
+    assert visto["ricordata"] == "voce", "chi torna non ritrova la sezione che stava sistemando"
+    # La scheda si riapre molte volte in una sessione: se ogni giro aggiunge
+    # un ascoltatore, un solo clic finisce per chiudere le altre N volte.
+    assert visto["ascoltatori"] == [1, 1, 1], f"ascoltatori doppi: {visto['ascoltatori']}"
+
+
+# Le famiglie di grigio velato che la guardia dei colori salta apposta.
+# `bg-slate-900/50` — le carte delle palette — e' rimasto grigio scuro su
+# bianco proprio per questo, e si e' visto solo guardando la schermata.
+def test_anche_i_veli_di_grigio_hanno_un_colore_per_il_giorno():
+    """La sorella della guardia dei colori, per la famiglia che quella esclude.
+
+    `test_ogni_fondo_scuro_o_velato_ha_un_colore_per_il_giorno` salta `slate`
+    di proposito, perche' i grigi hanno il loro blocco di riscritture. Ma quel
+    blocco e' un elenco scritto a mano come tutti gli altri, e restava
+    indietro allo stesso modo: `bg-slate-900/50`, `bg-slate-800/20` e
+    `bg-slate-800/30` non c'erano.
+    """
+    testo = _testo(PAGINA)
+    stile = _stile(testo)
+
+    usati = set(re.findall(r"\bbg-(slate-(?:800|900|950)/\d+)\b", testo))
+    coperti = {
+        c.replace("\\/", "/") for c in re.findall(r"html\.light[^{]*?\.bg-(slate-\d+(?:\\/\d+)?)\b", stile)
+    }
+
+    assert usati, "nessun velo di grigio nella pagina: il test non guarda piu' niente"
+    mancanti = sorted(f"bg-{c}" for c in usati - coperti)
+    assert mancanti == [], f"di giorno questi grigi restano scuri: {mancanti}"
