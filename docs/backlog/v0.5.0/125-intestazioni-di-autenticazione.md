@@ -32,12 +32,20 @@ mancava un'intestazione.
 
 ## Cosa fare
 
-- [ ] Aggiungere `getAuthHeaders()` a tutte le chiamate che ne sono prive, tranne `/api/auth/profili` e `/api/auth/login`, che per definizione precedono la sessione
-- [ ] Rendere visibile un rifiuto: una chiamata che torna 401 o 403 deve dirlo nella schermata, non lasciare una lista vuota
-- [ ] Guardia: ogni `fetch` verso `/api/` porta le intestazioni, salvo le due eccezioni dichiarate per nome
+- [x] Aggiungere `getAuthHeaders()` a tutte le chiamate che ne sono prive, tranne `/api/auth/profili` e `/api/auth/login`, che per definizione precedono la sessione
+- [x] Rendere visibile un rifiuto: una chiamata che torna 401 o 403 deve dirlo nella schermata, non lasciare una lista vuota
+- [x] Guardia: ogni `fetch` verso `/api/` porta le intestazioni, salvo le due eccezioni dichiarate per nome
 
 ## Criteri di accettazione
 
-- [ ] Un browser mai autenticato e non fidato vede tutte le schermate popolate dopo il PIN
-- [ ] Una schermata che non puo' leggere i suoi dati lo dice, e dice perche'
-- [ ] La guardia fallisce se una fetch nuova nasce senza intestazioni
+- [x] Un browser mai autenticato e non fidato vede tutte le schermate popolate dopo il PIN
+- [x] Una schermata che non puo' leggere i suoi dati lo dice, e dice perche'
+- [x] La guardia fallisce se una fetch nuova nasce senza intestazioni
+
+## Com'e' andata
+
+Fatta con la PR #130.
+
+Ventisette chiamate `fetch` verso `/api/` partivano senza intestazioni. La
+guardia `test_ogni_chiamata_api_della_pagina_porta_le_intestazioni` dichiara
+per nome le due eccezioni che precedono la sessione.
