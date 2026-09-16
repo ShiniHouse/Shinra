@@ -1898,3 +1898,117 @@ def test_la_scorciatoia_non_ha_tolto_niente_all_editor():
     # ritardi e sequenze non si esprimono in un modulo.
     for pezzo in ("addCanvasNode('condizione')", "addCanvasNode('delay')", "addCanvasNode('tts')"):
         assert pezzo in testo, f"l'editor ha perso un pezzo: {pezzo}"
+
+
+# ------------------------------------------- i nomi delle icone (issue #139)
+
+ICONE = RADICE / "tests" / "dati" / "icone-lucide.txt"
+
+
+def _icone_valide() -> tuple[str, set[str]]:
+    """La versione dichiarata e le chiavi delle icone, dall'elenco generato."""
+    versione = ""
+    nomi: set[str] = set()
+    for riga in ICONE.read_text(encoding="utf-8").splitlines():
+        riga = riga.strip()
+        if not riga or riga.startswith("#"):
+            continue
+        if riga.startswith("versione:"):
+            versione = riga.split(":", 1)[1].strip()
+            continue
+        nomi.add(riga)
+    return versione, nomi
+
+
+def _in_pascal(nome: str) -> str:
+    """La stessa conversione che fa lucide, copiata dal suo bundle:
+
+        t.replace(/(\\w)(\\w*)(_|-|\\s*)/g, (d, c, p) => c.toUpperCase() + p.toLowerCase())
+
+    Cioe': ogni gruppo di caratteri di parola diventa Iniziale+resto minuscolo,
+    e il separatore sparisce. Riprodurla — invece di inventare una conversione
+    kebab «ragionevole» — e' l'unico modo perche' la guardia dica la stessa
+    cosa che dira' il browser.
+    """
+    return re.sub(
+        r"(\w)(\w*)(_|-|\s*)",
+        lambda t: t.group(1).upper() + t.group(2).lower(),
+        nome,
+    )
+
+
+def _nomi_di_icona_nella_pagina(testo: str) -> set[str]:
+    """Ogni nome che puo' finire in `data-lucide`, anche quelli scelti a runtime.
+
+    Un ternario dentro un'interpolazione — `${isDay ? 'sun-medium' : 'moon'}` —
+    ne nasconde due, e sbagliarne uno si vede solo di notte.
+    """
+    nomi: set[str] = set()
+    for valore in re.findall(r'data-lucide="([^"]*)"', testo):
+        if "$" in valore or "{" in valore:
+            # Le costanti dentro l'interpolazione: quelle si possono guardare.
+            nomi.update(re.findall(r"'([a-z0-9][a-z0-9-]*)'", valore))
+            continue
+        nomi.add(valore)
+    # Anche quelli scritti con `setAttribute('data-lucide', 'x')`.
+    nomi.update(re.findall(r"setAttribute\('data-lucide',\s*'([^']+)'\)", testo))
+    return {n for n in nomi if n}
+
+
+def test_l_elenco_delle_icone_parla_della_versione_fissata():
+    """Un elenco che parla di un'altra versione e' peggio di nessun elenco:
+    direbbe di si' a nomi che il browser non conosce, e di no a nomi validi."""
+    versione_elenco, nomi = _icone_valide()
+
+    assert len(nomi) > 800, f"l'elenco ha solo {len(nomi)} nomi: rigeneralo"
+
+    trovato = re.search(r"lucide@([\d.]+)/dist/umd/lucide\.min\.js", _testo(PAGINA))
+    assert trovato, "la pagina non fissa piu' una versione di lucide"
+
+    assert trovato.group(1) == versione_elenco, (
+        f"la pagina usa lucide {trovato.group(1)} e l'elenco parla della "
+        f"{versione_elenco}: rigeneralo con `python scripts/aggiorna_icone.py`"
+    )
+
+
+def test_ogni_icona_della_pagina_esiste_davvero():
+    """Un nome sbagliato non da' errore: da' un buco.
+
+    Lucide non trova la chiave, scrive un avviso nella console e lascia il tag
+    vuoto. Nel sorgente il nome c'e', quindi nessuna guardia che legge il
+    sorgente se ne accorge — e infatti in una sola giornata sono passati
+    `house` (invece di `home`) e `wand-sparkles`, che in questa versione non
+    esiste. Tutti e due visti guardando la schermata renderizzata.
+
+    Questa guardia fa la stessa cosa che fa il browser: prende il nome scritto
+    nell'attributo, lo converte con la funzione di lucide, e lo cerca fra le
+    chiavi vere.
+
+    Riferimento: issue #139.
+    """
+    _, chiavi = _icone_valide()
+
+    testo = _testo(PAGINA)
+    usate = _nomi_di_icona_nella_pagina(testo)
+
+    assert len(usate) > 40, f"solo {len(usate)} icone trovate: il test non guarda piu' niente"
+
+    buchi = sorted(n for n in usate if _in_pascal(n) not in chiavi)
+
+    assert buchi == [], f"questi nomi non esistono in lucide e lasciano un buco al loro posto: {buchi}"
+
+
+def test_la_guardia_delle_icone_riconosce_i_due_nomi_che_l_hanno_ingannata():
+    """La prova che l'oracolo e' un oracolo.
+
+    Se `house` e `wand-sparkles` risultassero validi, la guardia di sopra
+    sarebbe verde su entrambi i difetti che l'hanno motivata — e non varrebbe
+    niente. Costa due righe saperlo.
+    """
+    _, chiavi = _icone_valide()
+
+    for buono in ("home", "chevron-down", "sparkles", "shield-check"):
+        assert _in_pascal(buono) in chiavi, f"«{buono}» dovrebbe essere valido"
+
+    for cattivo in ("house", "wand-sparkles", "casa-mia"):
+        assert _in_pascal(cattivo) not in chiavi, f"«{cattivo}» non dovrebbe essere valido"
