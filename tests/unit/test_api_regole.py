@@ -155,3 +155,59 @@ def test_l_elenco_descrive_a_parole_quando_scatta(cliente_autenticato):
     identificativo = _regola("Sera", {"tipo": "tramonto"})
 
     assert "tramonto" in _elenco(cliente_autenticato)[identificativo]["descrizione"]
+
+
+def test_un_azione_che_non_dice_su_cosa_agire_viene_rifiutata(cliente_autenticato):
+    """Lo stesso metro di «una regola senza azioni non fa niente», un passo
+    piu' in la'.
+
+    Un'azione su un dispositivo senza entita' viene salvata, scatta, chiama
+    `homeassistant.turn_off` su una stringa vuota e torna «riuscita». Nel
+    frattempo l'elenco mostra «ultima volta: riuscita» e la luce e' accesa.
+    E' peggio di un errore: e' un errore che si dichiara un successo.
+
+    Trovato provando a rompere la scorciatoia della #126, che mandava
+    volentieri un `entity_id` vuoto senza che niente protestasse.
+
+    Riferimento: issue #126.
+    """
+    vuote = [
+        ({"tipo": "dispositivo", "servizio": "turn_off"}, "entita"),
+        ({"tipo": "dispositivo", "entity_id": "   ", "servizio": "turn_off"}, "entita"),
+        ({"tipo": "modalita", "modalita": ""}, "nome"),
+        ({"tipo": "avviso", "testo": ""}, "testo"),
+    ]
+
+    for azione, parola in vuote:
+        risposta = cliente_autenticato.post(
+            "/api/regole",
+            json={
+                "nome": "prova",
+                "trigger": {"tipo": "orario", "ora": "23:00"},
+                "condizioni": [],
+                "azioni": [azione],
+            },
+        )
+        assert risposta.status_code == 400, f"accettata un'azione che non fa niente: {azione}"
+        assert parola in risposta.json()["detail"].lower(), risposta.json()["detail"]
+
+
+def test_un_azione_completa_resta_accettata(cliente_autenticato):
+    """La guardia di sopra non deve chiudere la porta a chi fa le cose per
+    bene: una sola riga sbagliata nel controllo, e nessuna automazione si crea
+    piu'."""
+    for azione in (
+        {"tipo": "dispositivo", "entity_id": "light.salotto", "servizio": "turn_off"},
+        {"tipo": "modalita", "modalita": "Buonanotte"},
+        {"tipo": "avviso", "testo": "chiudi il gas"},
+    ):
+        risposta = cliente_autenticato.post(
+            "/api/regole",
+            json={
+                "nome": f"prova {azione['tipo']}",
+                "trigger": {"tipo": "orario", "ora": "23:00"},
+                "condizioni": [],
+                "azioni": [azione],
+            },
+        )
+        assert risposta.status_code == 200, risposta.text

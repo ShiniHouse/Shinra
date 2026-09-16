@@ -374,9 +374,13 @@ def test_le_automazioni_hanno_una_schermata():
     assert 'id="tab-automazioni"' in testo, "la scheda non esiste"
     assert "switchTab('automazioni')" in testo, "non ci si arriva dalla navigazione"
     assert "switchTabMobile('automazioni')" in testo, "dal telefono non ci si arriva"
-    assert (
-        "if (tabId === 'automazioni') { loadRegole(); loadModes(); }" in testo
-    ), "aprendola non carica niente, o ne carica solo meta'"
+    # Il **ramo**, non la riga esatta: fissare la riga vuol dire che chiunque
+    # aggiunga un terzo pezzo alla scheda deve toccare questa guardia, e una
+    # guardia che si tocca a ogni aggiunta smette di dire qualcosa.
+    ramo = re.search(r"if \(tabId === 'automazioni'\)\s*\{([^}]*)\}", _senza_commenti(testo))
+    assert ramo, "aprendola non carica niente"
+    for carico in ("loadRegole()", "loadModes()"):
+        assert carico in ramo.group(1), f"aprendola non chiama {carico}: mezza schermata resta vuota"
     assert "'automazioni': 'block'," in testo, "la scheda non comparirebbe mai"
     assert 'id="regole-lista"' in testo, "l'elenco delle automazioni non c'e' piu'"
 
@@ -1687,3 +1691,210 @@ def test_anche_i_veli_di_grigio_hanno_un_colore_per_il_giorno():
     assert usati, "nessun velo di grigio nella pagina: il test non guarda piu' niente"
     mancanti = sorted(f"bg-{c}" for c in usati - coperti)
     assert mancanti == [], f"di giorno questi grigi restano scuri: {mancanti}"
+
+
+# --------------------------------------- la scorciatoia per le regole (#126)
+
+
+def _corpo_della_scorciatoia(campi: dict) -> dict:
+    """Il corpo che il modulo manderebbe, costruito dalle **sue** funzioni.
+
+    Riscriverlo qui a mano proverebbe la mia idea di cosa manda, non cio' che
+    manda. E' la differenza fra un test e una ripetizione.
+    """
+    testo = _testo(PAGINA)
+
+    sorgente = (
+        "const campi = "
+        + json.dumps({k: {"value": v} for k, v in campi.items()})
+        + ";\nconst document = { getElementById: (id) => campi[id] || null };\n"
+        + _funzione_javascript(testo, "inniescoDallaScorciatoia")
+        + "\n"
+        + _funzione_javascript(testo, "_azioneDallaScorciatoia")
+        + "\n"
+        + _funzione_javascript(testo, "nomeDallaScorciatoia")
+        + """
+const innesco = inniescoDallaScorciatoia();
+const azione = _azioneDallaScorciatoia();
+console.log(JSON.stringify({
+    nome: nomeDallaScorciatoia(innesco, azione),
+    trigger: innesco,
+    condizioni: [],
+    azioni: [azione]
+}));
+"""
+    )
+
+    esito = _esegui_con_node(sorgente)
+    assert esito.returncode == 0, esito.stderr
+    return json.loads(esito.stdout.strip())
+
+
+def test_alle_23_spegni_tutto_si_crea_senza_aprire_l_editor(cliente_autenticato):
+    """Il primo criterio della scheda, provato fino in fondo.
+
+    Non «il modulo esiste»: il corpo che il modulo manda viene costruito
+    eseguendo le sue funzioni, spedito alla rotta vera, e poi si guarda se la
+    regola c'e' e **quando scattera'**. Una regola che nasce e non ha un
+    prossimo scatto e' una regola che non scattera' mai, ed e' il difetto che
+    ha tenuto ferme le regole del sole per due versioni.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    corpo = _corpo_della_scorciatoia(
+        {
+            "scorciatoia-quando": "orario",
+            "scorciatoia-ora": "23:00",
+            "scorciatoia-cosa": "dispositivo",
+            "scorciatoia-dispositivo": "light.salotto",
+            "scorciatoia-servizio": "turn_off",
+        }
+    )
+
+    risposta = cliente_autenticato.post("/api/regole", json=corpo)
+    assert risposta.status_code == 200, risposta.text
+
+    elenco = cliente_autenticato.get("/api/regole").json()["regole"]
+    nate = [r for r in elenco if r["nome"] == corpo["nome"]]
+
+    assert nate, f"la regola non compare nell'elenco: {[r['nome'] for r in elenco]}"
+    regola = nate[0]
+    assert regola["prossimo"], "nata senza un prossimo scatto: non scattera' mai"
+    assert regola["prossimo"].endswith("23:00:00"), f"scatterebbe alle {regola['prossimo']}, non alle 23"
+    # E deve spegnere **quella** luce. Un'azione che non dice su cosa agire
+    # scatta, riesce e non fa niente: e' il modo piu' silenzioso di avere
+    # un'automazione finta, ed e' quello che questa guardia non vedeva finche'
+    # una mutazione non le ha svuotato l'entita' sotto il naso.
+    assert regola["azioni"] == [
+        {"tipo": "dispositivo", "entity_id": "light.salotto", "servizio": "turn_off"}
+    ], regola["azioni"]
+    # Indistinguibile dalle altre: stessa riga, stessa prova, stesso elenco.
+    assert regola["descrizione"], "senza descrizione, nell'elenco e' una riga muta"
+
+
+def test_il_nome_della_scorciatoia_dice_cosa_fa():
+    """«Nuova regola 3» costringe ad aprirla per ricordarsi cos'era."""
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    corpo = _corpo_della_scorciatoia(
+        {
+            "scorciatoia-quando": "tramonto",
+            "scorciatoia-scarto": "-15",
+            "scorciatoia-cosa": "modalita",
+            "scorciatoia-modalita": "Buonanotte",
+        }
+    )
+
+    assert "tramonto" in corpo["nome"].lower(), corpo["nome"]
+    assert "Buonanotte" in corpo["nome"], corpo["nome"]
+    assert corpo["trigger"] == {"tipo": "tramonto", "scarto_minuti": -15}
+
+
+def test_il_rifiuto_del_server_si_legge_nella_schermata(cliente_autenticato):
+    """La rotta sa gia' dire perche' no, e lo dice meglio di qualunque
+    controllo riscritto nella pagina.
+
+    Due cose insieme: che il server rifiuti davvero cio' che non potrebbe
+    scattare, e che la pagina abbia dove scriverlo — un riquadro, non un
+    `alert`, che si chiude senza lasciare traccia di cosa non andava.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    corpo = _corpo_della_scorciatoia(
+        {
+            "scorciatoia-quando": "stato",
+            "scorciatoia-cosa": "avviso",
+            "scorciatoia-testo": "occhio",
+        }
+    )
+    # Un trigger su stato senza entita': il server lo sa, la pagina no.
+    rifiuto = cliente_autenticato.post("/api/regole", json=corpo)
+
+    assert rifiuto.status_code == 400, rifiuto.text
+    assert "entita" in rifiuto.json()["detail"].lower()
+
+    pagina = _senza_commenti_html(_testo(PAGINA))
+    assert 'id="scorciatoia-esito"' in pagina, "il rifiuto non ha dove farsi leggere"
+
+    corpo_js = _senza_commenti(_funzione_javascript(_testo(PAGINA), "creaScorciatoia"))
+    assert "_mostraEsitoScorciatoia" in corpo_js, "il rifiuto non viene mostrato"
+    assert "alert(" not in corpo_js, "il rifiuto finisce in un avviso di sistema"
+    assert "dati.detail" in corpo_js, "viene mostrato un messaggio inventato qui, non il motivo del server"
+
+
+def test_passare_all_editor_non_perde_quello_che_hai_scritto():
+    """«Serve qualcosa di piu' complicato?» non deve voler dire «ricomincia».
+
+    Chi ha gia' scelto «al tramonto» e scopre di aver bisogno di una
+    condizione non deve ritrovarsi una tela vuota: sarebbe la ragione per cui
+    nessuno userebbe piu' la scorciatoia.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    testo = _testo(PAGINA)
+
+    prova = (
+        """
+const campi = {
+    'scorciatoia-quando': { value: 'tramonto' },
+    'scorciatoia-scarto': { value: '30' },
+    'scorciatoia-nome': { value: 'Sera in giardino' }
+};
+const document = { getElementById: (id) => campi[id] || null };
+const _canvasState = { nodes: [], edges: [], name: '' };
+function openModularModeBuilder() {
+    _canvasState.name = 'Nuova Routine';
+    _canvasState.nodes = [
+        { id: 'node_trig', type: 'trigger', data: { phrases: ['modalita relax'] } },
+        { id: 'node_ha1', type: 'ha_device', data: {} }
+    ];
+}
+function renderFlowCanvasModal() {}
+"""
+        + _funzione_javascript(testo, "inniescoDallaScorciatoia")
+        + "\n"
+        + _funzione_javascript(testo, "apriEditorDallaScorciatoia")
+        + """
+apriEditorDallaScorciatoia();
+const nodo = _canvasState.nodes.find(n => n.type === 'trigger');
+console.log(JSON.stringify({ innesco: nodo.data.trigger, nome: _canvasState.name }));
+"""
+    )
+
+    esito = _esegui_con_node(prova)
+
+    assert esito.returncode == 0, esito.stderr
+    visto = json.loads(esito.stdout.strip())
+
+    assert visto["innesco"] == {
+        "tipo": "tramonto",
+        "scarto_minuti": 30,
+    }, f"l'editor si apre con {visto['innesco']}: quello che avevi scelto e' andato perso"
+    assert visto["nome"] == "Sera in giardino", "anche il nome e' andato perso"
+
+
+def test_la_scorciatoia_non_ha_tolto_niente_all_editor():
+    """Il vincolo della scheda, e l'unico messo per iscritto dal proprietario
+    della casa: *«l'editor delle automazioni rimane»*.
+
+    Questa e' una porta in piu' sulla stessa stanza. Una guardia che
+    guardasse solo il modulo nuovo sarebbe verde anche il giorno che qualcuno
+    decide che adesso la scorciatoia basta.
+    """
+    testo = _testo(PAGINA)
+    scheda = _senza_commenti_html(
+        testo[testo.index('<div id="tab-automazioni"') : testo.index('<div id="tab-users"')]
+    )
+
+    assert "openModularModeBuilder()" in scheda, "l'editor non si apre piu' da questa scheda"
+    assert 'id="modes-list"' in scheda, "l'elenco delle routine e' sparito"
+    assert 'id="scorciatoia"' in scheda, "la scorciatoia non e' qui"
+
+    # E i pezzi dell'editor sono tutti al loro posto: rami, condizioni,
+    # ritardi e sequenze non si esprimono in un modulo.
+    for pezzo in ("addCanvasNode('condizione')", "addCanvasNode('delay')", "addCanvasNode('tts')"):
+        assert pezzo in testo, f"l'editor ha perso un pezzo: {pezzo}"

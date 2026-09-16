@@ -89,8 +89,27 @@ def _valida(regola: RegolaIn) -> None:
         )
 
     for azione in regola.azioni:
-        if str(azione.get("tipo") or "") not in dominio.AZIONI:
+        tipo_azione = str(azione.get("tipo") or "")
+        if tipo_azione not in dominio.AZIONI:
             raise HTTPException(status_code=400, detail=f"Azione «{azione.get('tipo')}» sconosciuta.")
+
+        # Lo stesso metro di «una regola senza azioni non fa niente», un passo
+        # piu' in la': un'azione che non dice **su cosa** agire non fa niente
+        # lo stesso, ma in modo piu' silenzioso — la regola scatta, il
+        # servizio viene chiamato su un'entita' vuota, e l'elenco mostra
+        # «ultima volta: riuscita». Trovato provando a rompere la scorciatoia
+        # della #126, che mandava volentieri un `entity_id` vuoto.
+        if tipo_azione == dominio.AZIONE_DISPOSITIVO and not str(azione.get("entity_id") or "").strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Un'azione su un dispositivo ha bisogno di sapere quale: manca l'entita'.",
+            )
+        if tipo_azione == dominio.AZIONE_MODALITA and not str(azione.get("modalita") or "").strip():
+            raise HTTPException(
+                status_code=400, detail="Un'azione che avvia una routine ha bisogno del suo nome."
+            )
+        if tipo_azione == dominio.AZIONE_AVVISO and not str(azione.get("testo") or "").strip():
+            raise HTTPException(status_code=400, detail="Un avviso senza testo non dice niente a nessuno.")
 
 
 @router.get("")

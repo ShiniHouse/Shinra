@@ -1310,6 +1310,76 @@
                 </button>
             </div>
 
+            <!-- La scorciatoia (#126).
+                 `POST /api/regole` esiste dalla v0.3.0 e la dashboard non la
+                 chiamava mai: l'unico modo di fare un'automazione era aprire
+                 l'editor, disegnare una routine e cambiare l'innesco del
+                 primo blocco. Per «alle 23 spegni tutto» e' un giro lungo.
+
+                 Questa e' una porta in piu' sulla stessa stanza, non una
+                 porta al posto di quella: copre un innesco, nessuna
+                 condizione, un'azione. Quando serve di piu', porta
+                 all'editor invece di crescere. -->
+            <details id="scorciatoia" class="sezione-impostazioni">
+                <summary>
+                    <div class="min-w-0">
+                        <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                            <!-- `sparkles`, non `wand-sparkles`: il secondo non
+                                 esiste in lucide 0.344.0 e si vede come un
+                                 buco. E' il secondo nome sbagliato in un
+                                 giorno — ci vuole una guardia (#139). -->
+                            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i> «Alle 23, spegni tutto»
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Un innesco, un'azione, senza aprire l'editor. Per tutto il resto c'è il disegno a blocchi.</p>
+                    </div>
+                    <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
+                </summary>
+                <div class="corpo-sezione space-y-4 text-xs">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-slate-400 font-semibold block">Quando</label>
+                            <select id="scorciatoia-quando" onchange="disegnaScorciatoia()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                                <option value="orario">A un orario</option>
+                                <option value="alba">All'alba</option>
+                                <option value="tramonto">Al tramonto</option>
+                                <option value="stato">Quando un valore supera una soglia</option>
+                                <option value="evento">Quando succede qualcosa in casa</option>
+                            </select>
+                            <div id="scorciatoia-quando-campi" class="space-y-2"></div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-slate-400 font-semibold block">Fai questo</label>
+                            <select id="scorciatoia-cosa" onchange="disegnaScorciatoia()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                                <option value="modalita">Avvia una routine</option>
+                                <option value="dispositivo">Accendi o spegni un dispositivo</option>
+                                <option value="avviso">Mandami un avviso</option>
+                            </select>
+                            <div id="scorciatoia-cosa-campi" class="space-y-2"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-slate-400 font-semibold block mb-1">Come la chiamo <span class="text-slate-600 font-normal">(facoltativo)</span></label>
+                        <input type="text" id="scorciatoia-nome" placeholder="Se lo lasci vuoto, il nome lo scrivo io" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                    </div>
+
+                    <!-- Il rifiuto del server si legge qui, non in un `alert`:
+                         un avviso di sistema si chiude e non lascia traccia di
+                         cosa non andava. -->
+                    <div id="scorciatoia-esito" class="hidden p-2.5 rounded-lg"></div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                        <button type="button" onclick="apriEditorDallaScorciatoia()" class="text-indigo-400 hover:text-indigo-300 font-semibold underline decoration-dotted text-left">
+                            Serve qualcosa di più complicato?
+                        </button>
+                        <button type="button" onclick="creaScorciatoia()" id="scorciatoia-crea" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shrink-0">
+                            Crea l'automazione
+                        </button>
+                    </div>
+                </div>
+            </details>
+
             <div id="regole-lista" class="space-y-3">
                 <!-- Caricato dinamicamente -->
             </div>
@@ -2504,7 +2574,7 @@
             // Una scheda sola, due elenchi: le automazioni e le routine da cui
             // nascono. Caricarne uno solo lascerebbe meta' schermata vuota
             // senza che niente lo spieghi.
-            if (tabId === 'automazioni') { loadRegole(); loadModes(); }
+            if (tabId === 'automazioni') { loadRegole(); loadModes(); disegnaScorciatoia(); }
             if (tabId === 'users') loadUsers();
             if (tabId === 'settings') { loadSettings(); preparaSezioniImpostazioni(); }
         }
@@ -4834,6 +4904,10 @@
             try {
                 const res = await fetch('/api/modes', { headers: getAuthHeaders() });
                 _allModesCache = await res.json();
+                // La scorciatoia offre di far partire una routine gia'
+                // disegnata: l'elenco lo sa solo adesso, e prima di adesso
+                // avrebbe proposto una tendina vuota (#126).
+                if (document.getElementById('scorciatoia-cosa')) disegnaScorciatoia();
                 const container = document.getElementById('modes-list');
                 if (!container) return;
 
@@ -5827,6 +5901,204 @@
             if (elenco && elenco.scrollIntoView) {
                 elenco.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
+        }
+
+
+        // ============ LA SCORCIATOIA (issue #126) ============
+        // `POST /api/regole` c'era dalla v0.3.0 e nessuno la chiamava da qui.
+        // Questa e' una porta in piu' sulla stessa stanza: un innesco, nessuna
+        // condizione, un'azione. L'editor a nodi resta intatto e resta la
+        // strada per rami, condizioni, ritardi e sequenze — quando serve di
+        // piu', questo modulo **porta li'** invece di crescere.
+
+        function _campiQuandoScorciatoia(tipo) {
+            if (tipo === 'orario') {
+                return `<input type="time" id="scorciatoia-ora" value="23:00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
+            }
+            if (tipo === 'alba' || tipo === 'tramonto') {
+                return `
+                    <label class="text-[11px] text-slate-500 block">Minuti di scarto (negativi per anticipare)</label>
+                    <input type="number" id="scorciatoia-scarto" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
+            }
+            if (tipo === 'stato') {
+                return `
+                    <input type="text" id="scorciatoia-entita" placeholder="es. sensor.temperatura_salotto" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">
+                    <select id="scorciatoia-confronto" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                        <option value="attraversa_sotto">scende sotto</option>
+                        <option value="attraversa_sopra">sale sopra</option>
+                        <option value="diventa">diventa</option>
+                    </select>
+                    <input type="text" id="scorciatoia-valore" placeholder="es. 15" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
+            }
+            return `<input type="text" id="scorciatoia-evento" placeholder="es. casa.vuota" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
+        }
+
+        function _campiCosaScorciatoia(tipo) {
+            if (tipo === 'modalita') {
+                // Le routine gia' disegnate: la scorciatoia non le duplica, le
+                // fa partire. E' l'aggancio fra le due meta' di questa scheda.
+                const routine = (_allModesCache || []).map(m =>
+                    `<option value="${_testoSicuro(m.name || m.id)}">${_testoSicuro(m.name || m.id)}</option>`
+                ).join('');
+                if (!routine) {
+                    return `<p class="text-[11px] text-amber-400 leading-snug">Non hai ancora routine da far partire. Disegnane una qui sotto, oppure scegli un'altra azione.</p>`;
+                }
+                return `<select id="scorciatoia-modalita" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">${routine}</select>`;
+            }
+            if (tipo === 'dispositivo') {
+                return `
+                    <input type="text" id="scorciatoia-dispositivo" placeholder="es. light.salotto" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">
+                    <select id="scorciatoia-servizio" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                        <option value="turn_off">spegni</option>
+                        <option value="turn_on">accendi</option>
+                    </select>`;
+            }
+            return `<input type="text" id="scorciatoia-testo" placeholder="es. Ricordati di chiudere il gas" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
+        }
+
+        function disegnaScorciatoia() {
+            const quando = document.getElementById('scorciatoia-quando');
+            const cosa = document.getElementById('scorciatoia-cosa');
+            if (!quando || !cosa) return;
+
+            document.getElementById('scorciatoia-quando-campi').innerHTML = _campiQuandoScorciatoia(quando.value);
+            document.getElementById('scorciatoia-cosa-campi').innerHTML = _campiCosaScorciatoia(cosa.value);
+            _mostraEsitoScorciatoia(null);
+        }
+
+        // L'innesco come lo vuole il server, dai campi che ci sono adesso.
+        function inniescoDallaScorciatoia() {
+            const tipo = (document.getElementById('scorciatoia-quando') || {}).value || 'orario';
+            const leggi = (id, ripiego) => {
+                const campo = document.getElementById(id);
+                return campo ? campo.value : ripiego;
+            };
+
+            if (tipo === 'orario') return { tipo: 'orario', ora: leggi('scorciatoia-ora', '23:00'), giorni: [] };
+            if (tipo === 'alba' || tipo === 'tramonto') {
+                return { tipo: tipo, scarto_minuti: parseInt(leggi('scorciatoia-scarto', '0'), 10) || 0 };
+            }
+            if (tipo === 'stato') {
+                return {
+                    tipo: 'stato',
+                    entity_id: leggi('scorciatoia-entita', ''),
+                    confronto: leggi('scorciatoia-confronto', 'attraversa_sotto'),
+                    valore: leggi('scorciatoia-valore', '')
+                };
+            }
+            return { tipo: 'evento', evento: leggi('scorciatoia-evento', '') };
+        }
+
+        function _azioneDallaScorciatoia() {
+            const tipo = (document.getElementById('scorciatoia-cosa') || {}).value || 'modalita';
+            const leggi = (id, ripiego) => {
+                const campo = document.getElementById(id);
+                return campo ? campo.value : ripiego;
+            };
+
+            if (tipo === 'modalita') return { tipo: 'modalita', modalita: leggi('scorciatoia-modalita', '') };
+            if (tipo === 'dispositivo') {
+                return {
+                    tipo: 'dispositivo',
+                    entity_id: leggi('scorciatoia-dispositivo', ''),
+                    servizio: leggi('scorciatoia-servizio', 'turn_off')
+                };
+            }
+            return { tipo: 'avviso', testo: leggi('scorciatoia-testo', '') };
+        }
+
+        // Un nome scritto da noi e' meglio di «Nuova regola 3»: dice cosa fa,
+        // e chi la ritrova fra sei mesi non deve aprirla per ricordarselo.
+        function nomeDallaScorciatoia(innesco, azione) {
+            const quando = {
+                orario: `Alle ${innesco.ora || ''}`,
+                alba: "All'alba",
+                tramonto: 'Al tramonto',
+                stato: `Quando ${innesco.entity_id || 'qualcosa'} cambia`,
+                evento: `Su ${innesco.evento || 'un evento'}`
+            }[innesco.tipo] || 'Automazione';
+
+            const cosa = {
+                modalita: `avvia «${azione.modalita || ''}»`,
+                dispositivo: `${azione.servizio === 'turn_on' ? 'accendi' : 'spegni'} ${azione.entity_id || ''}`,
+                avviso: 'mandami un avviso'
+            }[azione.tipo] || 'fai qualcosa';
+
+            return `${quando}, ${cosa}`.trim();
+        }
+
+        function _mostraEsitoScorciatoia(messaggio, andata) {
+            const riquadro = document.getElementById('scorciatoia-esito');
+            if (!riquadro) return;
+            if (!messaggio) {
+                riquadro.className = 'hidden p-2.5 rounded-lg';
+                riquadro.innerHTML = '';
+                return;
+            }
+            riquadro.className = andata
+                ? 'p-2.5 rounded-lg bg-emerald-950/70 border border-emerald-800 text-emerald-300'
+                : 'p-2.5 rounded-lg bg-rose-950 border border-rose-800 text-rose-300';
+            riquadro.innerText = messaggio;
+        }
+
+        async function creaScorciatoia() {
+            const innesco = inniescoDallaScorciatoia();
+            const azione = _azioneDallaScorciatoia();
+            const scritto = (document.getElementById('scorciatoia-nome') || {}).value || '';
+
+            const bottone = document.getElementById('scorciatoia-crea');
+            if (bottone) bottone.disabled = true;
+
+            try {
+                const risposta = await fetch('/api/regole', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        nome: scritto.trim() || nomeDallaScorciatoia(innesco, azione),
+                        trigger: innesco,
+                        condizioni: [],
+                        azioni: [azione]
+                    })
+                });
+
+                const dati = await risposta.json().catch(() => ({}));
+
+                if (!risposta.ok) {
+                    // Il server sa gia' dire perche' no — «Trigger sconosciuto»,
+                    // «Un trigger su stato ha bisogno di un'entita'». Quella
+                    // frase vale piu' di qualunque controllo riscritto qui, e
+                    // si legge nella schermata invece di sparire in un avviso.
+                    _mostraEsitoScorciatoia(_testoDelDettaglio(dati.detail, risposta.status), false);
+                    return;
+                }
+
+                _mostraEsitoScorciatoia('Fatta. La trovi qui sotto, con il suo prossimo scatto.', true);
+                const nome = document.getElementById('scorciatoia-nome');
+                if (nome) nome.value = '';
+                loadRegole();
+            } catch (e) {
+                _mostraEsitoScorciatoia('Il server non ha risposto: l\'automazione non e\' stata creata.', false);
+            } finally {
+                if (bottone) bottone.disabled = false;
+            }
+        }
+
+        // «Serve qualcosa di piu' complicato?» — l'editor si apre con
+        // l'innesco gia' messo. Ricominciare da capo sarebbe il modo piu'
+        // sicuro di far tornare tutti a disegnare da zero ogni volta.
+        function apriEditorDallaScorciatoia() {
+            const innesco = inniescoDallaScorciatoia();
+            openModularModeBuilder();
+
+            const nodo = (_canvasState.nodes || []).find(n => n.type === 'trigger');
+            if (nodo) {
+                nodo.data = nodo.data || {};
+                nodo.data.trigger = innesco;
+            }
+            const scritto = (document.getElementById('scorciatoia-nome') || {}).value || '';
+            if (scritto.trim()) _canvasState.name = scritto.trim();
+
+            renderFlowCanvasModal();
         }
 
         function quandoScatta(regola) {
