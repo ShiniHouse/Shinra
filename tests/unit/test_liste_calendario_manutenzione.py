@@ -17,6 +17,8 @@ Riferimento: issue #25.
 
 from __future__ import annotations
 
+import re
+import sys
 from datetime import date, datetime, timedelta
 
 import pytest
@@ -450,7 +452,11 @@ def test_il_preavviso_e_per_riga():
 
 
 async def test_segnare_una_scadenza_e_ritrovarla():
-    await manutenzione.aggiungi_scadenza("cambio filtri caldaia", "il 15", ogni=6, unita="mesi")
+    # «Fra tre giorni», non «il 15»: la frase deve dire una distanza, perche'
+    # e' la distanza che conta. «Il 15» la fa dipendere da che giorno e' oggi
+    # nel mondo vero, e questo test e' rimasto rosso per giorni senza che
+    # nessuno avesse toccato le scadenze (#136).
+    await manutenzione.aggiungi_scadenza("cambio filtri caldaia", "fra 3 giorni", ogni=6, unita="mesi")
 
     esito = await manutenzione.scadenze_in_arrivo(giorni=30)
 
@@ -526,13 +532,18 @@ async def test_una_scadenza_genera_un_promemoria_che_scatta(scheduler_finto):
     """Il terzo criterio di accettazione della scheda, e quello che rende
     utile tutta la funzione: una scadenza in un elenco che nessuno apre e'
     una scadenza dimenticata. E' stato possibile prometterlo solo dopo la
-    riparazione dei promemoria (#92)."""
+    riparazione dei promemoria (#92).
+
+    La scadenza si dice «fra tre giorni» e si controlla oggi: prima diceva
+    «il 15» e si controllava al 12 settembre 2026, cioe' prendeva meta' del
+    tempo dal mondo e meta' da una costante. Tornava solo nella settimana
+    giusta (#136)."""
     from shinra.services.manutenzione import servizio_manutenzione
     from shinra.skills import reminders
 
-    await manutenzione.aggiungi_scadenza("cambio filtri", "il 15", ogni=6, unita="mesi")
+    await manutenzione.aggiungi_scadenza("cambio filtri", "fra 3 giorni", ogni=6, unita="mesi")
 
-    creati = servizio_manutenzione.controlla(oggi=date(2026, 9, 12))
+    creati = servizio_manutenzione.controlla(oggi=date.today())
 
     assert creati == 1
     assert reminders._promemoria_in_attesa() == 1
@@ -543,10 +554,10 @@ async def test_non_si_crea_un_promemoria_a_ogni_giro(scheduler_finto):
     """Un bollo con sette giorni di preavviso produrrebbe sette sveglie."""
     from shinra.services.manutenzione import servizio_manutenzione
 
-    await manutenzione.aggiungi_scadenza("cambio filtri", "il 15", ogni=6, unita="mesi")
+    await manutenzione.aggiungi_scadenza("cambio filtri", "fra 3 giorni", ogni=6, unita="mesi")
 
-    primo = servizio_manutenzione.controlla(oggi=date(2026, 9, 12))
-    secondo = servizio_manutenzione.controlla(oggi=date(2026, 9, 13))
+    primo = servizio_manutenzione.controlla(oggi=date.today())
+    secondo = servizio_manutenzione.controlla(oggi=date.today() + timedelta(days=1))
 
     assert (primo, secondo) == (1, 0)
 
@@ -554,9 +565,75 @@ async def test_non_si_crea_un_promemoria_a_ogni_giro(scheduler_finto):
 async def test_una_scadenza_lontana_non_produce_niente(scheduler_finto):
     from shinra.services.manutenzione import servizio_manutenzione
 
-    await manutenzione.aggiungi_scadenza("revisione auto", "il 15", ogni=2, unita="anni")
+    await manutenzione.aggiungi_scadenza("revisione auto", "fra 300 giorni", ogni=2, unita="anni")
 
-    assert servizio_manutenzione.controlla(oggi=date(2026, 1, 1)) == 0
+    assert servizio_manutenzione.controlla(oggi=date.today()) == 0
+
+
+async def test_il_conto_non_dipende_dal_giorno_in_cui_gira(scheduler_finto):
+    """La proprieta' che era rimasta implicita, e che per questo si e' rotta.
+
+    Il preavviso predefinito e' di sette giorni: una scadenza entro quella
+    distanza produce un promemoria, una piu' lontana no. Detta cosi' vale
+    ogni giorno dell'anno — e i tre test qui sopra la davano per scontata
+    scrivendo una data a mano accanto a una frase risolta sul calendario
+    vero, che e' un altro modo di non dirla affatto.
+
+    Riferimento: issue #136.
+    """
+    from shinra.domain import manutenzione as dominio
+    from shinra.services.manutenzione import servizio_manutenzione
+
+    preavviso = dominio.PREAVVISO_PREDEFINITO
+
+    # Non serve svuotare fra un giro e l'altro: una scadenza che ha gia' il
+    # suo promemoria viene saltata, ed e' proprio la regola che impedisce
+    # sette sveglie per un bollo. Lasciarle li' la mette alla prova.
+    for distanza, atteso in ((1, 1), (preavviso - 1, 1), (preavviso + 30, 0)):
+        await manutenzione.aggiungi_scadenza(f"filtri {distanza}", f"fra {distanza} giorni")
+
+        creati = servizio_manutenzione.controlla(oggi=date.today())
+
+        assert creati == atteso, (
+            f"una scadenza fra {distanza} giorni, con {preavviso} di preavviso, "
+            f"doveva produrre {atteso} promemoria e ne ha prodotti {creati}"
+        )
+
+
+def test_nessun_test_mescola_il_calendario_vero_con_una_data_scritta_a_mano():
+    """La guardia contro il ricascarci, e vale la pena dire perche' esiste.
+
+    `aggiungi_scadenza` interpreta la frase sul calendario **vero**: «il 15»
+    e' il quindici che verra', qualunque giorno sia oggi. Se poi il risultato
+    si controlla a una data scritta a mano, il conto torna solo quando le due
+    cose capitano vicine — cioe' in certe settimane e in altre no.
+
+    Tre test hanno fatto esattamente questo e sono rimasti verdi per mesi,
+    finche' non si sono accesi tutti insieme su un ramo che parlava d'altro.
+    Misurato: la versione di prima falliva in sei giorni su dieci provati
+    lungo l'anno.
+
+    O la distanza la si dice nella frase e si controlla oggi, o si costruisce
+    la `Scadenza` a mano e si controlla a una data a mano. Mai meta' e meta'.
+
+    Riferimento: issue #136.
+    """
+    import inspect
+
+    sorgente = inspect.getsource(sys.modules[__name__])
+
+    colpevoli = []
+    for pezzo in re.split(r"\n(?:async )?def ", sorgente)[1:]:
+        nome = pezzo.split("(")[0]
+        if "aggiungi_scadenza(" not in pezzo:
+            continue
+        if re.search(r"oggi\s*=\s*date\(\s*\d{4}\s*,", pezzo):
+            colpevoli.append(nome)
+
+    assert colpevoli == [], (
+        "questi test prendono meta' del tempo dal mondo e meta' da una "
+        f"costante, e torneranno rossi da soli in un giorno qualunque: {colpevoli}"
+    )
 
 
 def test_una_scadenza_passata_si_annuncia_subito():
