@@ -258,6 +258,7 @@
 
         html.light .bg-slate-900,
         html.light .bg-slate-900\/40,
+        html.light .bg-slate-900\/50,
         html.light .bg-slate-900\/60,
         html.light .bg-slate-900\/70,
         html.light .bg-slate-900\/80,
@@ -279,6 +280,8 @@
         }
 
         html.light .bg-slate-800,
+        html.light .bg-slate-800\/20,
+        html.light .bg-slate-800\/30,
         html.light .bg-slate-800\/40,
         html.light .bg-slate-800\/50,
         html.light .bg-slate-800\/60,
@@ -395,6 +398,55 @@
         }
         html.light .text-cyan-300 {
             color: #0e7490 !important;
+        }
+
+        /* ============ SEZIONI RICHIUDIBILI DELLE IMPOSTAZIONI ============
+
+           Un `<details>` porta gia' l'apri-e-chiudi, la tastiera e il
+           comportamento giusto senza JavaScript: il copione serve solo a
+           ricordare quale era aperta, e se non gira la schermata funziona
+           lo stesso. Riferimento: issue #124. */
+
+        .sezione-impostazioni {
+            background-color: rgba(2, 6, 23, 0.6);
+            border: 1px solid #1e293b;
+            border-radius: 0.75rem;
+        }
+
+        html.light .sezione-impostazioni {
+            background-color: #f8fafc;
+            border-color: #e2e8f0;
+        }
+
+        .sezione-impostazioni > summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 1rem;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        /* Il triangolino di sistema: brutto, e in piu' ne avremmo due. */
+        .sezione-impostazioni > summary::-webkit-details-marker { display: none; }
+        .sezione-impostazioni > summary::marker { content: ""; }
+
+        .sezione-impostazioni > summary:hover h3 { text-decoration: underline; }
+
+        .sezione-impostazioni > summary:focus-visible {
+            outline: 2px solid #6366f1;
+            outline-offset: 2px;
+            border-radius: 0.75rem;
+        }
+
+        .freccia-sezione { transition: transform 0.15s ease; }
+        .sezione-impostazioni[open] > summary .freccia-sezione { transform: rotate(180deg); }
+
+        .corpo-sezione { padding: 0 1rem 1rem 1rem; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .freccia-sezione { transition: none; }
         }
 
         /* ============ FONDI SCURI E VELI, IN TEMA CHIARO ============
@@ -1385,16 +1437,21 @@
                 </h2>
 
                 <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-5 text-xs">
-                    <!-- Atmosfera & Palette di Design -->
-                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
-                        <div class="flex items-center justify-between">
-                            <div>
+                    <!-- Atmosfera & Palette di Design — l'unica aperta all'arrivo.
+                         Otto pannelli spalancati insieme non sono una schermata da
+                         leggere, sono una schermata in cui si cerca, e cercare in un
+                         muro aperto e' piu' lento che aprire la sezione giusta (#124). -->
+                    <details class="sezione-impostazioni" data-sezione="aspetto" open>
+                        <summary>
+                            <div class="min-w-0">
                                 <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
                                     <i data-lucide="palette" class="w-4 h-4 text-amber-400"></i> Atmosfera & Palette di Design
                                 </h3>
                                 <p class="text-[11px] text-slate-400 mt-0.5">Scegli la tonalità estetica e psicologica di Shinra (calibrata con studi di settore HCI per IA).</p>
                             </div>
-                        </div>
+                            <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
+                        </summary>
+                        <div class="corpo-sezione space-y-3">
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
                             <!-- Palette 1: Aurora (Apple Intelligence / Linear) -->
@@ -1448,11 +1505,21 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        </div>
+                    </details>
 
                     <!-- LLM -->
-                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
-                        <h3 class="font-semibold text-indigo-300">Intelligenza Artificiale (Ollama / Gemma)</h3>
+                    <details class="sezione-impostazioni" data-sezione="intelligenza">
+                        <summary>
+                            <div class="min-w-0">
+                                <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                                    <i data-lucide="brain" class="w-4 h-4 text-indigo-400"></i> Intelligenza Artificiale (Ollama / Gemma)
+                                </h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Quale modello risponde, su che server gira, e quanto può essere lunga una risposta.</p>
+                            </div>
+                            <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
+                        </summary>
+                        <div class="corpo-sezione space-y-3">
                         <div>
                             <label class="text-slate-400 block mb-1">URL Server Ollama:</label>
                             <input type="text" id="cfg-ollama-url" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
@@ -1483,12 +1550,22 @@
                             <input type="range" id="cfg-max-tokens" min="50" max="600" step="25" value="150" oninput="updateMaxTokensLabel(this.value)" class="w-full accent-indigo-500 cursor-pointer">
                             <p class="text-[10px] text-slate-500 mt-1">Valori consigliati: 100-150 per comandi vocali rapidi (8-12s); 300-500 per risposte più lunghe ed elaborate.</p>
                         </div>
-                    </div>
+                        </div>
+                    </details>
 
                     <!-- Home Assistant -->
-                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
-                        <div class="flex justify-between items-center">
-                            <h3 class="font-semibold text-indigo-300">Home Assistant Hub</h3>
+                    <details class="sezione-impostazioni" data-sezione="casa">
+                        <summary>
+                            <div class="min-w-0">
+                                <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                                    <i data-lucide="home" class="w-4 h-4 text-emerald-400"></i> Home Assistant Hub
+                                </h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">L'indirizzo dell'hub e il token con cui Shinra accende le luci di casa.</p>
+                            </div>
+                            <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
+                        </summary>
+                        <div class="corpo-sezione space-y-3">
+                        <div class="flex justify-end">
                             <button type="button" onclick="testHaConnection()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/40 rounded-lg text-[11px] font-semibold transition">
                                 🔌 Testa Connessione
                             </button>
@@ -1502,21 +1579,41 @@
                             <input type="password" id="cfg-ha-token" placeholder="eyJhbGci..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
                         </div>
                         <div id="ha-test-result" class="hidden p-2.5 rounded-lg text-xs"></div>
-                    </div>
+                        </div>
+                    </details>
 
                     <!-- Assistente -->
-                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
-                        <h3 class="font-semibold text-indigo-300">Assistente & Meteo</h3>
+                    <details class="sezione-impostazioni" data-sezione="assistente">
+                        <summary>
+                            <div class="min-w-0">
+                                <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                                    <i data-lucide="cloud-sun" class="w-4 h-4 text-sky-400"></i> Assistente & Meteo
+                                </h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">La città di cui Shinra dà il meteo quando non gliene indichi una.</p>
+                            </div>
+                            <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
+                        </summary>
+                        <div class="corpo-sezione space-y-3">
                         <div>
                             <label class="text-slate-400 block mb-1">Città Predefinita:</label>
                             <input type="text" id="cfg-default-city" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
-                    </div>
+                        </div>
+                    </details>
 
                     <!-- Sintesi Vocale & Umanizzazione -->
-                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
-                        <div class="flex justify-between items-center">
-                            <h3 class="font-semibold text-indigo-300">Sintesi Vocale & Audio HD</h3>
+                    <details class="sezione-impostazioni" data-sezione="voce">
+                        <summary>
+                            <div class="min-w-0">
+                                <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                                    <i data-lucide="volume-2" class="w-4 h-4 text-violet-400"></i> Sintesi Vocale & Audio HD
+                                </h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Che voce ha Shinra, quanto in fretta parla, e da dove esce il suono.</p>
+                            </div>
+                            <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
+                        </summary>
+                        <div class="corpo-sezione space-y-3">
+                        <div class="flex justify-end">
                             <button type="button" onclick="testVoicePreview()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/40 rounded-lg text-[11px] font-semibold transition flex items-center gap-1">
                                 🔊 Ascolta Anteprima
                             </button>
@@ -1559,17 +1656,22 @@
                             <input type="checkbox" id="cfg-voice-muted" onchange="setVoiceMuteState(this.checked)" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
                             <label for="cfg-voice-muted" class="text-slate-300 cursor-pointer font-medium">Disattiva riproduzione audio vocale (Modalità Silenziosa)</label>
                         </div>
-                    </div>
+                        </div>
+                    </details>
 
                     <!-- App Mobile & PWA -->
-                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div>
+                    <details class="sezione-impostazioni" data-sezione="app">
+                        <summary>
+                            <div class="min-w-0">
                                 <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
                                     <i data-lucide="smartphone" class="w-4 h-4 text-amber-400"></i> App Mobile & Installazione PWA
                                 </h3>
                                 <p class="text-[11px] text-slate-400 mt-0.5">Installa Shinra direttamente sullo smartphone o PC come applicazione nativa a schermo intero.</p>
                             </div>
+                            <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
+                        </summary>
+                        <div class="corpo-sezione space-y-3">
+                        <div class="flex justify-end">
                             <button type="button" id="pwa-settings-install-btn" onclick="installPwa()" class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/20 shrink-0">
                                 <i data-lucide="download" class="w-3.5 h-3.5"></i> Installa App
                             </button>
@@ -1584,17 +1686,22 @@
                                 <span class="text-slate-400">Clicca sul pulsante arancione sopra o tocca il menu a 3 puntini e scegli <strong>"Installa app"</strong>.</span>
                             </div>
                         </div>
-                    </div>
+                        </div>
+                    </details>
 
                     <!-- Sicurezza & Protezione Accesso -->
-                    <div class="space-y-3 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
-                        <div class="flex justify-between items-center">
-                            <div>
+                    <details class="sezione-impostazioni" data-sezione="sicurezza">
+                        <summary>
+                            <div class="min-w-0">
                                 <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
                                     <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Sicurezza & Protezione Accesso
                                 </h3>
                                 <p class="text-[11px] text-slate-400 mt-0.5">Proteggi la dashboard, i dati sensibili della casa e le credenziali da accessi non autorizzati.</p>
                             </div>
+                            <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
+                        </summary>
+                        <div class="corpo-sezione space-y-3">
+                        <div class="flex justify-end">
                             <button type="button" onclick="lockSession()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition">
                                 <i data-lucide="lock" class="w-3 h-3"></i> Blocca Ora
                             </button>
@@ -1625,18 +1732,21 @@
                                 <p class="text-[10px] text-slate-500 mt-1">Se non utilizzi o tocchi la dashboard per il tempo stabilito, Shinra blocca la sessione e richiede il PIN.</p>
                             </div>
                         </div>
-                    </div>
+                        </div>
+                    </details>
 
                     <!-- Integrazione Alexa & Generatore Schema Skill -->
-                    <div class="space-y-4 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div>
+                    <details class="sezione-impostazioni" data-sezione="alexa">
+                        <summary>
+                            <div class="min-w-0">
                                 <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
                                     <i data-lucide="mic" class="w-4 h-4 text-sky-400"></i> Integrazione Alexa & Generatore Skill
                                 </h3>
-                                <p class="text-[11px] text-slate-400 mt-0.5">Personalizza il nome con cui chiamare l'assistente su Alexa (es. <em>kyra</em>, <em>shinra</em>, <em>jarvis</em>, <em>casa</em>) e genera il file JSON pronto per Amazon Developer Console.</p>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Il nome con cui chiamare l'assistente su Alexa, e il file JSON per la Developer Console.</p>
                             </div>
-                        </div>
+                            <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
+                        </summary>
+                        <div class="corpo-sezione space-y-4">
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                             <div>
@@ -1670,7 +1780,8 @@
                                 💡 <strong>Come usarlo:</strong> Copia questo codice, vai su <a href="https://developer.amazon.com/alexa/console/ask" target="_blank" class="text-indigo-400 hover:underline font-medium">developer.amazon.com/alexa/console/ask</a> ➔ Entra nella tua Skill ➔ <strong>Interaction Model</strong> ➔ <strong>JSON Editor</strong> ➔ Incolla tutto ➔ Clicca <strong>Save Model</strong> e <strong>Build Model</strong>!
                             </p>
                         </div>
-                    </div>
+                        </div>
+                    </details>
 
                     <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition shadow-lg shadow-indigo-600/30">
                         Salva Tutte le Impostazioni
@@ -2395,7 +2506,83 @@
             // senza che niente lo spieghi.
             if (tabId === 'automazioni') { loadRegole(); loadModes(); }
             if (tabId === 'users') loadUsers();
-            if (tabId === 'settings') loadSettings();
+            if (tabId === 'settings') { loadSettings(); preparaSezioniImpostazioni(); }
+        }
+
+        // ============ SEZIONI DELLE IMPOSTAZIONI (issue #124) ============
+        // La scheda era 421 righe di markup con tutto aperto insieme: non una
+        // schermata da leggere, una schermata in cui si cerca. Adesso si apre
+        // quella che serve.
+        //
+        // L'apri-e-chiudi lo fa `<details>` da solo, anche senza questo
+        // copione: qui c'e' soltanto il ricordo di quale era aperta, per chi
+        // torna a sistemare la stessa cosa.
+
+        const MEMORIA_SEZIONE = 'shinra.impostazioni.sezione';
+
+        // `localStorage` non risponde sempre: finestra anonima, dati del sito
+        // bloccati, spazio esaurito. Sono comodita', non dati: se manca, la
+        // schermata si apre sulla prima sezione e non se ne accorge nessuno.
+        function _ricordaSezione(nome) {
+            try {
+                if (nome) {
+                    window.localStorage.setItem(MEMORIA_SEZIONE, nome);
+                } else {
+                    window.localStorage.removeItem(MEMORIA_SEZIONE);
+                }
+            } catch (e) { /* senza memoria si vive */ }
+        }
+
+        function _sezioneRicordata() {
+            try {
+                return window.localStorage.getItem(MEMORIA_SEZIONE);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function preparaSezioniImpostazioni() {
+            const sezioni = document.querySelectorAll('.sezione-impostazioni');
+            if (!sezioni.length) return;
+
+            const ricordata = _sezioneRicordata();
+            if (ricordata) {
+                let trovata = false;
+                sezioni.forEach(sezione => {
+                    const sua = sezione.getAttribute('data-sezione') === ricordata;
+                    sezione.open = sua;
+                    trovata = trovata || sua;
+                });
+                // Una sezione tolta dalla pagina lascia in memoria un nome che
+                // non apre piu' niente: meglio la prima che nessuna.
+                if (!trovata) {
+                    sezioni[0].open = true;
+                    _ricordaSezione(null);
+                }
+            }
+
+            sezioni.forEach(sezione => {
+                if (sezione.dataset.ascolta === 'si') return;
+                sezione.dataset.ascolta = 'si';
+                sezione.addEventListener('toggle', () => {
+                    if (!sezione.open) {
+                        // Chiudere l'ultima aperta non lascia un ricordo che
+                        // la riaprirebbe al prossimo giro.
+                        if (_sezioneRicordata() === sezione.getAttribute('data-sezione')) {
+                            _ricordaSezione(null);
+                        }
+                        return;
+                    }
+                    // Una sola aperta per volta: e' il punto della scheda —
+                    // trovare un'impostazione dev'essere un clic, non uno
+                    // scorrimento lungo un muro.
+                    sezioni.forEach(altra => {
+                        if (altra !== sezione) altra.open = false;
+                    });
+                    _ricordaSezione(sezione.getAttribute('data-sezione'));
+                    safeCreateIcons();
+                });
+            });
         }
 
         // Inizializzazione del layout tab all'avvio
