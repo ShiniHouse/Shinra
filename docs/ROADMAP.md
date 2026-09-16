@@ -136,7 +136,7 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | 136 | Tre test delle scadenze dipendevano dal giorno in cui giravano | fatta (#137) |
 | 124 | Impostazioni a sezioni, aperta solo quella che serve | fatta (#138) |
 | 126 | Una scorciatoia per «a quest'ora fai questo» | fatta (#140) |
-| 139 | Un nome di icona sbagliato non da' errore, da' un buco | da fare |
+| 139 | Un nome di icona sbagliato non da' errore, da' un buco | fatta (#142) |
 | 118 | Lo spegnimento del servizio si pianta: 90 secondi e poi SIGKILL | da fare |
 | 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` | da fare |
 | 34 | Scomporre `index.html` (7.438 righe) in moduli ES | da fare |
