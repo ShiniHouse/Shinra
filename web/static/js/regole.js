@@ -54,15 +54,15 @@ function vaiAlleRoutine() {
 
 function _campiQuandoScorciatoia(tipo) {
     if (tipo === 'orario') {
-        return `<input type="time" id="scorciatoia-ora" value="23:00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
+        return _html`<input type="time" id="scorciatoia-ora" value="23:00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
     }
     if (tipo === 'alba' || tipo === 'tramonto') {
-        return `
+        return _html`
             <label class="text-[11px] text-slate-500 block">Minuti di scarto (negativi per anticipare)</label>
             <input type="number" id="scorciatoia-scarto" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
     }
     if (tipo === 'stato') {
-        return `
+        return _html`
             <input type="text" id="scorciatoia-entita" placeholder="es. sensor.temperatura_salotto" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">
             <select id="scorciatoia-confronto" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                 <option value="attraversa_sotto">scende sotto</option>
@@ -71,33 +71,30 @@ function _campiQuandoScorciatoia(tipo) {
             </select>
             <input type="text" id="scorciatoia-valore" placeholder="es. 15" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
     }
-    return `<input type="text" id="scorciatoia-evento" placeholder="es. casa.vuota" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
+    return _html`<input type="text" id="scorciatoia-evento" placeholder="es. casa.vuota" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
 }
 
 function _campiCosaScorciatoia(tipo) {
     if (tipo === 'modalita') {
         // Le routine gia' disegnate: la scorciatoia non le duplica, le
         // fa partire. E' l'aggancio fra le due meta' di questa scheda.
-        const routine = (_allModesCache || [])
-            .map(
-                (m) =>
-                    `<option value="${_testoSicuro(m.name || m.id)}">${_testoSicuro(m.name || m.id)}</option>`,
-            )
-            .join('');
-        if (!routine) {
-            return `<p class="text-[11px] text-amber-400 leading-snug">Non hai ancora routine da far partire. Disegnane una qui sotto, oppure scegli un'altra azione.</p>`;
+        const routine = (_allModesCache || []).map(
+            (m) => _html`<option value="${m.name || m.id}">${m.name || m.id}</option>`,
+        );
+        if (!routine.length) {
+            return _html`<p class="text-[11px] text-amber-400 leading-snug">Non hai ancora routine da far partire. Disegnane una qui sotto, oppure scegli un'altra azione.</p>`;
         }
-        return `<select id="scorciatoia-modalita" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">${routine}</select>`;
+        return _html`<select id="scorciatoia-modalita" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">${routine}</select>`;
     }
     if (tipo === 'dispositivo') {
-        return `
+        return _html`
             <input type="text" id="scorciatoia-dispositivo" placeholder="es. light.salotto" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">
             <select id="scorciatoia-servizio" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                 <option value="turn_off">spegni</option>
                 <option value="turn_on">accendi</option>
             </select>`;
     }
-    return `<input type="text" id="scorciatoia-testo" placeholder="es. Ricordati di chiudere il gas" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
+    return _html`<input type="text" id="scorciatoia-testo" placeholder="es. Ricordati di chiudere il gas" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
 }
 
 function disegnaScorciatoia() {
@@ -286,7 +283,7 @@ function renderRegole(regole, modi) {
     const pezzi = [];
 
     if (!regole.length) {
-        pezzi.push(`
+        pezzi.push(_html`
             <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-8 text-center">
                 <i data-lucide="zap-off" class="w-8 h-8 text-slate-600 mx-auto mb-3"></i>
                 <p class="text-sm text-slate-300 font-semibold">La casa non fa ancora niente da sola.</p>
@@ -302,48 +299,48 @@ function renderRegole(regole, modi) {
     }
 
     pezzi.push(
-        regole
-            .map((r) => {
-                const stato = quandoScatta(r);
-                const dalGrafo = String(r.origine || '').startsWith('grafo:');
-                const ultimo = r.ultimo_scatto
-                    ? new Date(r.ultimo_scatto).toLocaleString('it-IT', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                      })
-                    : null;
-                return `
+        regole.map((r) => {
+            const stato = quandoScatta(r);
+            const dalGrafo = String(r.origine || '').startsWith('grafo:');
+            const ultimo = r.ultimo_scatto
+                ? new Date(r.ultimo_scatto).toLocaleString('it-IT', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                  })
+                : null;
+            return _html`
             <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 ${r.attiva ? '' : 'opacity-60'}">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="font-semibold text-slate-100 text-sm truncate">${r.nome || 'Automazione'}</span>
-                        ${dalGrafo ? '<span class="px-1.5 py-0.5 rounded bg-violet-600/20 text-violet-300 text-[10px] font-semibold border border-violet-500/30">dal disegno di una routine</span>' : ''}
+                        ${dalGrafo ? _grezzo('<span class="px-1.5 py-0.5 rounded bg-violet-600/20 text-violet-300 text-[10px] font-semibold border border-violet-500/30">dal disegno di una routine</span>') : ''}
                     </div>
                     <p class="text-xs text-slate-400 mt-0.5 truncate">${r.descrizione || ''}</p>
                     <div class="flex items-center gap-3 mt-1.5 flex-wrap text-[11px]">
                         <span class="${stato.colore} font-semibold">${stato.testo}</span>
-                        ${ultimo ? `<span class="text-slate-500">ultima volta ${ultimo}${r.ultimo_esito ? ': ' + r.ultimo_esito : ''}</span>` : ''}
-                        ${!ultimo && r.ultimo_esito ? `<span class="text-amber-400">${r.ultimo_esito}</span>` : ''}
+                        ${ultimo ? _html`<span class="text-slate-500">ultima volta ${ultimo}${r.ultimo_esito ? ': ' + r.ultimo_esito : ''}</span>` : ''}
+                        ${!ultimo && r.ultimo_esito ? _html`<span class="text-amber-400">${r.ultimo_esito}</span>` : ''}
                     </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <button type="button" onclick="provaRegola('${r.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold" title="Esegue adesso, saltando l'innesco ma non le condizioni">
+                    <button type="button" onclick="provaRegola(${_grezzo(_perAttributoJs(r.id))})" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold" title="Esegue adesso, saltando l'innesco ma non le condizioni">
                         Prova
                     </button>
-                    <button type="button" onclick="alternaRegola('${r.id}', ${!r.attiva})" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold ${r.attiva ? 'bg-amber-600/20 text-amber-300 hover:bg-amber-600/30' : 'bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30'}">
+                    <button type="button" onclick="alternaRegola(${_grezzo(_perAttributoJs(r.id))}, ${!r.attiva})" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold ${r.attiva ? 'bg-amber-600/20 text-amber-300 hover:bg-amber-600/30' : 'bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30'}">
                         ${r.attiva ? 'Zittisci' : 'Riattiva'}
                     </button>
                     ${
                         dalGrafo
-                            ? '<span class="text-[10px] text-slate-600 max-w-[7rem] leading-tight">Per toglierla, togli l\'innesco dalla routine</span>'
-                            : `<button type="button" onclick="cancellaRegola('${r.id}')" class="p-1.5 text-slate-500 hover:text-rose-400" title="Elimina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`
+                            ? _grezzo(
+                                  '<span class="text-[10px] text-slate-600 max-w-[7rem] leading-tight">Per toglierla, togli l\'innesco dalla routine</span>',
+                              )
+                            : _html`<button type="button" onclick="cancellaRegola(${_grezzo(_perAttributoJs(r.id))})" class="p-1.5 text-slate-500 hover:text-rose-400" title="Elimina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`
                     }
                 </div>
             </div>`;
-            })
-            .join(''),
+        }),
     );
 
     // Le routine che partono solo se le chiami. Esistono, e chi le ha
@@ -351,7 +348,7 @@ function renderRegole(regole, modi) {
     // fatto niente, ed e' esattamente cio' che e' successo in casa.
     const vocali = routineSoloVocali(regole, modi);
     if (vocali.length) {
-        pezzi.push(`
+        pezzi.push(_html`
             <div class="bg-slate-900/40 border border-slate-800 border-dashed rounded-2xl p-4 mt-2">
                 <p class="text-xs font-semibold text-slate-300 flex items-center gap-2">
                     <i data-lucide="mic" class="w-3.5 h-3.5 text-slate-500"></i>
@@ -362,29 +359,29 @@ function renderRegole(regole, modi) {
                     partire da sole, apri la routine e cambia l'innesco del primo blocco.
                 </p>
                 <div class="space-y-1.5">
-                    ${vocali
-                        .map(
-                            (m) => `
+                    ${vocali.map(
+                        (m) => _html`
                         <div class="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-slate-950/60 border border-slate-800">
                             <div class="min-w-0">
                                 <span class="text-xs font-semibold text-slate-200">${m.name || m.id}</span>
                                 ${
                                     (m.trigger_phrases || []).length
-                                        ? `<span class="text-[10px] text-slate-500 font-mono ml-2 truncate">"${(m.trigger_phrases || [])[0]}"</span>`
-                                        : '<span class="text-[10px] text-amber-400 ml-2">senza frasi: non la puoi nemmeno chiamare</span>'
+                                        ? _html`<span class="text-[10px] text-slate-500 font-mono ml-2 truncate">"${(m.trigger_phrases || [])[0]}"</span>`
+                                        : _grezzo(
+                                              '<span class="text-[10px] text-amber-400 ml-2">senza frasi: non la puoi nemmeno chiamare</span>',
+                                          )
                                 }
                             </div>
-                            <button type="button" onclick="openModularModeBuilder('${m.id}')" class="shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold" title="Apre il disegno di questa routine">
+                            <button type="button" onclick="openModularModeBuilder(${_grezzo(_perAttributoJs(m.id))})" class="shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold" title="Apre il disegno di questa routine">
                                 Apri
                             </button>
                         </div>`,
-                        )
-                        .join('')}
+                    )}
                 </div>
             </div>`);
     }
 
-    contenitore.innerHTML = pezzi.join('');
+    contenitore.innerHTML = _html`${pezzi}`;
     safeCreateIcons();
 }
 

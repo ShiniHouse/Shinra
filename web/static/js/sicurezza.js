@@ -83,14 +83,3 @@ function _html(pezzi, ...valori) {
 function _perAttributoJs(valore) {
     return _scappa(JSON.stringify(String(valore ?? '')));
 }
-
-// Il vecchio nome, per le aree non ancora convertite.
-//
-// Prima passava da `textContent`, che ripulisce `& < >` e lascia andare
-// apici e virgolette: bastava fra i tag e non bastava dentro un
-// attributo. Adesso e' `_scappa`, quindi i punti che lo usano stanno
-// meglio di prima senza aver cambiato una riga. Sparisce insieme
-// all'ultima voce di NON_ANCORA_CONVERTITI.
-function _testoSicuro(testo) {
-    return _scappa(testo);
-}
