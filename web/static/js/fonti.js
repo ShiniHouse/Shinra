@@ -167,12 +167,11 @@ async function loadSources() {
         const container = document.getElementById('sources-list');
 
         if (!items.length) {
-            container.innerHTML = `<p class="text-xs text-slate-500 col-span-2 py-3 text-center">Nessuna fonte attiva. Aggiungine dal catalogo qui sotto o clicca "Attiva Tutte".</p>`;
+            container.innerHTML = _html`<p class="text-xs text-slate-500 col-span-2 py-3 text-center">Nessuna fonte attiva. Aggiungine dal catalogo qui sotto o clicca "Attiva Tutte".</p>`;
         } else {
-            container.innerHTML = items
-                .map((s) => {
-                    const isEnabled = s.enabled !== false;
-                    return `
+            container.innerHTML = _html`${items.map((s) => {
+                const isEnabled = s.enabled !== false;
+                return _html`
                 <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex justify-between items-start gap-2 group hover:border-slate-700 transition">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
@@ -183,16 +182,15 @@ async function loadSources() {
                         <p class="text-[11px] text-slate-500 truncate mt-1">${s.url}</p>
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
-                        <button onclick="toggleSingleSource('${s.id}', ${!isEnabled})" class="text-slate-500 hover:text-indigo-400 p-1 transition" title="${isEnabled ? 'Disattiva' : 'Attiva'}">
+                        <button onclick="toggleSingleSource(${_grezzo(_perAttributoJs(s.id))}, ${!isEnabled})" class="text-slate-500 hover:text-indigo-400 p-1 transition" title="${isEnabled ? 'Disattiva' : 'Attiva'}">
                             <i data-lucide="${isEnabled ? 'toggle-right' : 'toggle-left'}" class="w-4 h-4 ${isEnabled ? 'text-indigo-400' : 'text-slate-600'}"></i>
                         </button>
-                        <button onclick="deleteSource('${s.id}')" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition" title="Elimina fonte">
+                        <button onclick="deleteSource(${_grezzo(_perAttributoJs(s.id))})" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition" title="Elimina fonte">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
                 </div>`;
-                })
-                .join('');
+            })}`;
         }
         safeCreateIcons();
 
@@ -233,13 +231,13 @@ function renderSourcesCatalog(activeUrls) {
     const container = document.getElementById('sources-catalog');
     if (!container) return;
 
-    container.innerHTML = SOURCES_CATALOG.map((group, idx) => {
+    container.innerHTML = _html`${SOURCES_CATALOG.map((group, idx) => {
         const activeCount = group.items.filter((s) => activeUrls.has(s.url)).length;
         const total = group.items.length;
         if (_sourcesAccordionState[idx] === undefined) _sourcesAccordionState[idx] = idx === 0;
         const isOpen = Boolean(_sourcesAccordionState[idx]);
 
-        return `
+        return _html`
         <div class="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm">
             <button type="button" onclick="toggleSourceCategory(${idx})" class="w-full bg-slate-800/40 hover:bg-slate-800/70 px-4 py-3 text-xs font-semibold text-slate-200 flex items-center justify-between transition">
                 <div class="flex items-center gap-2">
@@ -249,10 +247,9 @@ function renderSourcesCatalog(activeUrls) {
                 <i data-lucide="chevron-down" id="src-cat-chevron-${idx}" class="w-4 h-4 text-slate-400 transition-transform duration-200" style="transform: ${isOpen ? 'rotate(180deg)' : 'rotate(0deg)'}"></i>
             </button>
             <div id="src-cat-content-${idx}" class="${isOpen ? '' : 'hidden'} divide-y divide-slate-800/60">
-                ${group.items
-                    .map((src) => {
-                        const added = activeUrls.has(src.url);
-                        return `
+                ${group.items.map((src) => {
+                    const added = activeUrls.has(src.url);
+                    return _html`
                     <div class="flex items-center justify-between px-4 py-2.5 hover:bg-slate-800/20 transition">
                         <div class="flex-1 min-w-0">
                             <span class="text-xs font-medium text-slate-200">${src.name}</span>
@@ -260,18 +257,17 @@ function renderSourcesCatalog(activeUrls) {
                         </div>
                         ${
                             added
-                                ? `<span class="text-[11px] text-emerald-400 font-semibold px-2.5 py-1 bg-emerald-950/40 border border-emerald-800 rounded-full flex items-center gap-1">✓ Attiva</span>`
-                                : `<button onclick="addCatalogSource('${src.id}','${src.name.replace(/'/g, "\\'")}','${src.cat}','${src.url}')"
+                                ? _html`<span class="text-[11px] text-emerald-400 font-semibold px-2.5 py-1 bg-emerald-950/40 border border-emerald-800 rounded-full flex items-center gap-1">✓ Attiva</span>`
+                                : _html`<button onclick="addCatalogSource(${_grezzo(_perAttributoJs(src.id))},${_grezzo(_perAttributoJs(src.name))},${_grezzo(_perAttributoJs(src.cat))},${_grezzo(_perAttributoJs(src.url))})"
                                 class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-indigo-600/20 border border-indigo-600/40 text-indigo-300 hover:bg-indigo-600 hover:text-white transition">
                                 + Aggiungi
                                </button>`
                         }
                     </div>`;
-                    })
-                    .join('')}
+                })}
             </div>
         </div>`;
-    }).join('');
+    })}`;
     safeCreateIcons();
 }
 
@@ -285,7 +281,7 @@ async function addCatalogSource(id, name, category, url) {
 }
 
 function openAddSourceModal() {
-    showModal(`
+    showModal(_html`
         <h3 class="font-bold text-sm text-slate-100 mb-1">Aggiungi URL RSS Personalizzato</h3>
         <p class="text-xs text-slate-400 mb-4">Inserisci l'URL di qualsiasi feed RSS che vuoi aggiungere.</p>
         <label class="text-xs text-slate-400 block mb-1">Nome Fonte</label>

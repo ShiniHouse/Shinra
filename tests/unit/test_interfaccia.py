@@ -1261,10 +1261,12 @@ def test_la_colonna_dice_cosa_scattera_e_in_che_ordine():
 
     testo = _frontend()
     prova = (
-        """
+        # Il vero `sicurezza.js`, non un finto: da quando la colonna passa da
+        # `_html`, provarla con un finto proverebbe il finto.
+        _testo(CARTELLA_JS / "sicurezza.js")
+        + """
 const contenitore = { innerHTML: '' };
 const document = { getElementById: () => contenitore };
-function _testoSicuro(t) { return String(t === undefined || t === null ? '' : t); }
 function _quandoLeggibile(iso) { return 'quando:' + iso; }
 function safeCreateIcons() {}
 function switchTab() {}
@@ -1277,9 +1279,9 @@ disegnaProssimiScatti([
     { nome: 'SUEVENTO', attiva: true, prossimo: null },
     { nome: 'PRESTO', attiva: true, prossimo: '2030-01-01T07:00:00' }
 ]);
-console.log(JSON.stringify(contenitore.innerHTML));
+console.log(JSON.stringify(String(contenitore.innerHTML)));
 disegnaProssimiScatti([{ nome: 'ZITTITA', attiva: false, prossimo: '2030-01-01T06:00:00' }]);
-console.log(JSON.stringify(contenitore.innerHTML));
+console.log(JSON.stringify(String(contenitore.innerHTML)));
 """
     )
 
@@ -2528,9 +2530,6 @@ def test_prettier_non_tocca_il_python():
 NON_ANCORA_CONVERTITI = {
     "accesso.js",
     "avvio.js",
-    "conoscenza.js",
-    "dispositivi.js",
-    "fonti.js",
     "impostazioni.js",
     "istruisci.js",
     "navigazione.js",
@@ -2541,32 +2540,130 @@ NON_ANCORA_CONVERTITI = {
     "tela.js",
     "tela_disegno.js",
     "tela_nodi.js",
-    "timer.js",
     "utenti.js",
     "voce.js",
 }
 
 
-def _valori_interpolati(riga: str) -> bool:
-    return "${" in riga
+# Un tag vero: `<` seguito da un nome e poi da spazio, `>` o `/`. Serve a
+# distinguere il markup da un confronto (`i < n`, che ha uno spazio in
+# mezzo) e da un indirizzo.
+TAG = re.compile(r"</?[a-zA-Z][a-zA-Z0-9-]*[\s/>]")
+
+# Dove puo' cominciare un'espressione regolare: dopo uno di questi una
+# barra apre una regex, non una divisione.
+PRIMA_DI_UNA_REGEX = set("(,=:[!&|?{};+-*%~^") | {""}
 
 
-def _blocchi_che_disegnano(testo: str) -> list[tuple[int, str]]:
-    """I punti in cui una stringa diventa markup, col loro contenuto.
+def _aperture_di_template(sorgente: str) -> list[tuple[int, str]]:
+    r"""Ogni template literal del sorgente: dove si apre e cosa contiene.
 
-    Sono i tre sbocchi: `innerHTML = ...`, `insertAdjacentHTML(...)` e
-    `showModal(...)`, che e' `innerHTML` con un altro nome.
+    Un `${...}` dentro un template puo' contenere un altro template, e la
+    fine di quello annidato **non** e' la fine di quello che lo contiene.
+    Una guardia che cercasse l'apice inverso successivo scambierebbe una
+    chiusura per un'apertura — e' quello che faceva la prima versione, e
+    si e' vista sbagliare su `_html\`<ul>${v.map((x) => _html\`<li>...`.
+
+    Quindi si legge il sorgente una volta sola tenendo una pila, e si
+    saltano stringhe, commenti ed espressioni regolari, dove un apice
+    inverso non apre niente.
     """
+    pila: list[list] = []  # ["tpl", inizio, pezzi] oppure ["expr", profondita]
+    aperti: list[tuple[int, list]] = []
     trovati = []
-    for aggancio in (r"\.innerHTML\s*=\s*", r"\.insertAdjacentHTML\([^,]+,\s*", r"\bshowModal\("):
-        for m in re.finditer(aggancio, testo):
-            inizio = m.end()
-            # Fino alla fine dell'istruzione: `;` seguito da fine riga.
-            fine = testo.find(";\n", inizio)
-            trovati.append(
-                (testo.count("\n", 0, inizio) + 1, testo[inizio : fine if fine > 0 else inizio + 4000])
-            )
-    return trovati
+    i, n = 0, len(sorgente)
+    ultimo_significativo = ""
+
+    def dentro_un_template() -> bool:
+        return bool(pila) and pila[-1][0] == "tpl"
+
+    while i < n:
+        c = sorgente[i]
+
+        if dentro_un_template():
+            if c == "\\":
+                i += 2
+                continue
+            if c == "$" and sorgente[i : i + 2] == "${":
+                pila.append(["expr", 0])
+                i += 2
+                continue
+            if c == "`":
+                inizio_tpl, pezzi = aperti.pop()
+                pila.pop()
+                trovati.append((inizio_tpl, "".join(pezzi)))
+                i += 1
+                continue
+            aperti[-1][1].append(c)
+            i += 1
+            continue
+
+        # Qui siamo in codice: o al primo livello, o dentro un `${...}`.
+        if c in "'\"":
+            i += 1
+            while i < n and sorgente[i] != c:
+                i += 1 + (sorgente[i] == "\\")
+            i += 1
+            ultimo_significativo = "x"
+            continue
+        if sorgente[i : i + 2] == "//":
+            i = sorgente.find("\n", i)
+            if i < 0:
+                break
+            continue
+        if sorgente[i : i + 2] == "/*":
+            i = sorgente.find("*/", i) + 2
+            continue
+        if c == "/" and ultimo_significativo in PRIMA_DI_UNA_REGEX:
+            i += 1
+            in_classe = False
+            while i < n and (in_classe or sorgente[i] != "/"):
+                if sorgente[i] == "\\":
+                    i += 1
+                elif sorgente[i] == "[":
+                    in_classe = True
+                elif sorgente[i] == "]":
+                    in_classe = False
+                i += 1
+            i += 1
+            ultimo_significativo = "x"
+            continue
+        if c == "`":
+            pila.append(["tpl", i, []])
+            aperti.append((i, pila[-1][2]))
+            i += 1
+            continue
+        if pila and pila[-1][0] == "expr":
+            if c == "{":
+                pila[-1][1] += 1
+            elif c == "}":
+                if pila[-1][1] == 0:
+                    pila.pop()
+                    i += 1
+                    continue
+                pila[-1][1] -= 1
+
+        if not c.isspace():
+            ultimo_significativo = c
+        i += 1
+
+    # Arrivare in fondo con qualcosa ancora aperto vuol dire aver perso il
+    # filo: una stringa saltata male, un commento, una regex. E allora il
+    # guasto non e' l'elenco sbagliato — e' che l'elenco **si accorcia**,
+    # perche' un template che non si chiude non viene mai riportato. Una
+    # guardia che, quando si confonde, tace, e' peggio di nessuna guardia.
+    # E' successo davvero: su `fonti.js`, tagliato da `_senza_commenti`,
+    # questa funzione non vedeva meta' file e una mutazione vera e' passata.
+    if pila:
+        riga = sorgente.count("\n", 0, aperti[0][0]) + 1 if aperti else "?"
+        raise ValueError(f"sorgente non bilanciato: qualcosa aperto alla riga {riga} non si chiude")
+
+    return sorted(trovati)
+
+
+def _aperture_di_markup(sorgente: str) -> list[int]:
+    """Gli apici inversi che aprono un template che contiene markup."""
+    return [i for i, contenuto in _aperture_di_template(sorgente) if TAG.search(contenuto)]
 
 
 def test_il_markup_con_valori_dentro_passa_da_html():
@@ -2593,14 +2690,64 @@ def test_il_markup_con_valori_dentro_passa_da_html():
     for percorso in _copioni():
         if percorso.name in NON_ANCORA_CONVERTITI or percorso.name == "sicurezza.js":
             continue
-        testo = _senza_commenti(_testo(percorso))
-        for riga, blocco in _blocchi_che_disegnano(testo):
-            if not _valori_interpolati(blocco):
-                continue
-            if not re.match(r"_html`|_grezzo\(|\(?\s*_html`", blocco.strip()):
-                colpevoli.append(f"{percorso.name}:{riga} -> {blocco.strip()[:80]}")
+        # Il testo grezzo, non `_senza_commenti`: quella funzione toglie da
+        # `//` a fine riga, e in `fonti.js` ci sono decine di `https://...`
+        # dentro apici. Tagliarle lascia stringhe non chiuse, e lo scanner
+        # qui sotto perde il conto e smette di vedere meta' file — l'ho
+        # scoperto perche' una mutazione su `fonti.js` non mordeva.
+        # I commenti veri li salta gia' lo scanner, che sa dove guardare.
+        testo = _testo(percorso)
+        for i in _aperture_di_markup(testo):
+            if not testo[:i].rstrip().endswith("_html"):
+                riga = testo.count("\n", 0, i) + 1
+                colpevoli.append(f"{percorso.name}:{riga} -> {testo[i : i + 70]!r}")
 
-    assert not colpevoli, "markup con valori dentro, costruito attaccando stringhe:\n" + "\n".join(colpevoli)
+    assert not colpevoli, "markup costruito attaccando stringhe, senza passare da `_html`:\n" + "\n".join(
+        colpevoli
+    )
+
+
+def test_la_guardia_riconosce_il_markup_da_un_confronto():
+    """`i < n` non e' un tag, e `<p>` si'.
+
+    Senza questa distinzione la guardia griderebbe su ogni ciclo, qualcuno
+    la allenterebbe, e da quel momento non guarderebbe piu' niente. E il
+    contrario e' peggio: una guardia che scambia una chiusura per
+    un'apertura da' un elenco di colpevoli inventati, e lo stesso finisce.
+    """
+    assert _aperture_di_markup("const a = `<p>${x}</p>`;") == [10]
+    assert _aperture_di_markup("const a = _html`<p>${x}</p>`;") == [15]
+    assert _aperture_di_markup("const a = `/api/timers/${id}`;") == []
+    assert _aperture_di_markup("const a = `${i} < ${n} elementi`;") == []
+    assert _aperture_di_markup("const a = `stato-${x}`;") == []
+
+    # Uno annidato dentro un altro: due aperture, non tre. La chiusura di
+    # quello di dentro vede `)}</ul>` e non deve contarsi.
+    assert _aperture_di_markup("_html`<ul>${v.map((x) => _html`<li>${x}</li>`)}</ul>`") == [5, 30]
+
+    # Un apice inverso dentro una stringa, un commento o una regex non apre
+    # niente.
+    assert _aperture_di_markup("const a = '`<p>';") == []
+    assert _aperture_di_markup("// `<p>${x}</p>`\nconst a = 1;") == []
+    assert _aperture_di_markup("const a = /[`<p>]/.test(x);") == []
+
+    # Un indirizzo dentro apici non e' un commento. `_senza_commenti`
+    # taglierebbe da `//` in poi lasciando la stringa aperta, e da li' in
+    # avanti lo scanner perderebbe il conto: e' successo su `fonti.js`, e
+    # una mutazione vera e' passata inosservata per questo.
+    assert _aperture_di_markup("const u = 'https://esempio.it/x';\nconst a = `<p>${x}</p>`;") == [44]
+
+    # E se il filo si perde, lo deve dire. Un apice inverso che non si
+    # chiude e' il sintomo di uno scanner che ha sbagliato a saltare
+    # qualcosa: tacere vorrebbe dire restituire un elenco corto e sembrare
+    # a posto.
+    with pytest.raises(ValueError, match="non bilanciato"):
+        _aperture_di_markup("const a = `<p>manca la chiusura;")
+
+    # E il contenuto di un template annidato non finisce in quello esterno:
+    # se cosi' fosse, ogni esterno risulterebbe markup per colpa di dentro.
+    esterni = _aperture_di_template("`fuori ${`<p>dentro</p>`} ancora`")
+    assert esterni[0][1] == "fuori  ancora", esterni
 
 
 def test_la_lista_dei_non_convertiti_non_si_allunga():
@@ -2619,9 +2766,13 @@ def test_la_lista_dei_non_convertiti_non_si_allunga():
 
     # Il numero scende a ogni passo. Alzarlo vuol dire aver aggiunto
     # un'eccezione invece di toglierne una.
-    assert len(NON_ANCORA_CONVERTITI) <= 18, (
-        f"le aree non convertite sono {len(NON_ANCORA_CONVERTITI)}: erano 18 e devono "
-        "scendere, non risalire"
+    # Uguale, non «al massimo»: con `<=` bastava alzare il tetto per
+    # aggiungere un'eccezione senza che si vedesse. Cosi' il numero va
+    # cambiato apposta, e il cambiamento sta nella diff accanto al nome
+    # dell'area che entra o esce.
+    assert len(NON_ANCORA_CONVERTITI) == 14, (
+        f"le aree non convertite sono {len(NON_ANCORA_CONVERTITI)}, non 14: "
+        "se ne hai convertita una, aggiorna il numero; se ne hai aggiunta una, non farlo"
     )
 
 
