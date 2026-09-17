@@ -1232,6 +1232,7 @@
          spazio globale perche' la pagina le chiama dagli onclick.
          L'ordine e' quello del file unico da cui vengono: avvio.js
          per primo, impostazioni.js per ultimo. -->
+    <script src="/static/js/sicurezza.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
     <script src="/static/js/avvio.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
     <script src="/static/js/accesso.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
     <script src="/static/js/navigazione.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
