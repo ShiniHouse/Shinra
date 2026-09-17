@@ -75,7 +75,46 @@ jobs:
       # una parentesi, che su un file da cinquemila righe scritto a mano era
       # diventata un costo vero a ogni modifica.
       - name: Prettier
-        run: npx prettier --check web/static/
+        run: npx prettier --check web/static/ tests/gesti/ playwright.config.mjs eslint.config.js
+
+  gesti:
+    name: Frontend — gesti
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+      - run: pip install -e .
+
+      - name: Scarica il browser
+        run: npx playwright install chromium --with-deps
+
+      # Due difetti sono arrivati fino in casa passando davanti a tutte
+      # le guardie che leggono il sorgente: la crocetta di un nodo che
+      # faceva partire il trascinamento, e quella che stacca un cavo che
+      # non si poteva premere perche' un altro piano se la prendeva.
+      # Nessuna delle due si vede in un file. Qui si preme davvero.
+      - name: Gesti dell'interfaccia
+        run: npx playwright test
+
+      - name: Cosa e' successo, quando va male
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tracce-dei-gesti
+          path: test-results/
+          retention-days: 7
 
   ganci:
     name: Ganci pre-commit

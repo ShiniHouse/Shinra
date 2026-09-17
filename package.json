@@ -5,11 +5,13 @@
   "type": "module",
   "description": "Solo gli attrezzi del frontend: Shinra e' un progetto Python, qui non si costruisce niente e non si pubblica niente su npm.",
   "scripts": {
-    "lint": "eslint web/static/js/",
-    "formato": "prettier --check web/static/",
-    "formatta": "prettier --write web/static/"
+    "formato": "prettier --check web/static/ tests/gesti/ playwright.config.mjs eslint.config.js",
+    "formatta": "prettier --write web/static/ tests/gesti/ playwright.config.mjs eslint.config.js",
+    "gesti": "playwright test",
+    "lint": "eslint web/static/js/ tests/gesti/ playwright.config.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "eslint": "10.10.0",
     "globals": "17.12.0",
     "prettier": "3.9.7"

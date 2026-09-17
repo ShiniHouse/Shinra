@@ -5,7 +5,9 @@
 node_modules/
 .venv/
 src/
-tests/
+tests/unit/
+tests/integration/
+tests/dati/
 scripts/
 docs/
 data/
