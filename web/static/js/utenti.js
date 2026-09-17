@@ -39,10 +39,9 @@ async function loadUsers() {
         const container = document.getElementById('users-list');
         if (!container) return;
 
-        container.innerHTML = items
-            .map((u) => {
-                const av = getUserAvatarInfo(u);
-                return `
+        container.innerHTML = _html`${items.map((u) => {
+            const av = getUserAvatarInfo(u);
+            return _html`
             <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3 hover:border-slate-700 transition group shadow-sm">
                 <div class="flex justify-between items-start">
                     <div class="flex items-center gap-3">
@@ -53,35 +52,36 @@ async function loadUsers() {
                             <h4 class="font-bold text-xs text-slate-100 flex items-center gap-1.5">${u.name}</h4>
                             <div class="flex flex-wrap items-center gap-1 mt-0.5">
                                 <span class="px-2 py-0.5 rounded-full ${av.bg} border ${av.border} text-[10px] ${av.text} font-semibold">${av.badge}</span>
-                                <span class="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[10px] text-slate-300 font-semibold" title="Cosa puo' comandare">${_testoSicuro(nomeDelRuolo(u.role))}</span>
+                                <span class="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[10px] text-slate-300 font-semibold" title="Cosa puo' comandare">${nomeDelRuolo(u.role)}</span>
                             </div>
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5">
                         ${
                             amministra
-                                ? `
-                        <button onclick="openEditUserModal('${u.id}')" class="px-2.5 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition" title="Modifica profilo e avatar">
+                                ? _html`
+                        <button onclick="openEditUserModal(${_grezzo(_perAttributoJs(u.id))})" class="px-2.5 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition" title="Modifica profilo e avatar">
                             <i data-lucide="edit-3" class="w-3 h-3"></i> Modifica
                         </button>`
                                 : ''
                         }
                         ${
                             amministra && u.id !== 'alessio'
-                                ? `
-                        <button onclick="deleteUser('${u.id}')" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition" title="Elimina profilo">
+                                ? _html`
+                        <button onclick="deleteUser(${_grezzo(_perAttributoJs(u.id))})" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition" title="Elimina profilo">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                         </button>`
                                 : u.id === 'alessio'
-                                  ? `<span class="text-[10px] text-indigo-400/80 font-mono px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-900/50">Admin</span>`
+                                  ? _grezzo(
+                                        '<span class="text-[10px] text-indigo-400/80 font-mono px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-900/50">Admin</span>',
+                                    )
                                   : ''
                         }
                     </div>
                 </div>
                 <p class="text-[11px] text-slate-400 leading-relaxed">${u.notes || 'Nessuna nota o preferenza specifica.'}</p>
             </div>`;
-            })
-            .join('');
+        })}`;
         safeCreateIcons();
     } catch (e) {
         console.error('loadUsers error:', e);
@@ -125,19 +125,17 @@ function openUserModal(userId = null) {
                 : 'adult';
     const ruoloAttuale = user ? user.role || ruoloProposto : ruoloProposto;
     const elencoRuoli = ruoliData.length ? ruoliData : [{ id: ruoloAttuale, nome: ruoloAttuale }];
-    const opzioniRuolo = elencoRuoli
-        .map(
-            (r) =>
-                `<option value="${_testoSicuro(r.id)}" ${r.id === ruoloAttuale ? 'selected' : ''}>${_testoSicuro(r.nome)}</option>`,
-        )
-        .join('');
+    const opzioniRuolo = elencoRuoli.map(
+        (r) =>
+            _html`<option value="${r.id}" ${r.id === ruoloAttuale ? _grezzo('selected') : ''}>${r.nome}</option>`,
+    );
 
     showModal(
-        `
+        _html`
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
             <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
                 <i data-lucide="${isEdit ? 'user-cog' : 'user-plus'}" class="w-4 h-4 text-indigo-400"></i>
-                ${isEdit ? `Modifica Profilo di ${user.name}` : 'Registra Membro della Famiglia'}
+                ${isEdit ? _html`Modifica Profilo di ${user.name}` : 'Registra Membro della Famiglia'}
             </h3>
             <button onclick="closeModal()" class="text-slate-500 hover:text-slate-300 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
@@ -175,15 +173,15 @@ function openUserModal(userId = null) {
 
             <div>
                 <label class="text-[11px] font-semibold text-slate-300 block mb-1">2. Nome:</label>
-                <input type="text" id="new-u-name" value="${defaultName.replace(/"/g, '&quot;')}" placeholder="es. Marco, Sofia, Luca" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+                <input type="text" id="new-u-name" value="${defaultName}" placeholder="es. Marco, Sofia, Luca" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
             </div>
 
             <div>
                 <label class="text-[11px] font-semibold text-slate-300 block mb-1">3. Fascia d'Età & Filtri:</label>
                 <select id="new-u-age" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                    <option value="adult" ${defaultAge === 'adult' ? 'selected' : ''}>Adulto (Linguaggio Jarvis completo)</option>
-                    <option value="teen" ${defaultAge === 'teen' ? 'selected' : ''}>Ragazzo (13-17 anni)</option>
-                    <option value="child" ${defaultAge === 'child' ? 'selected' : ''}>Bambino / Junior (< 13 anni - Filtri protetti)</option>
+                    <option value="adult" ${defaultAge === 'adult' ? _grezzo('selected') : ''}>Adulto (Linguaggio Jarvis completo)</option>
+                    <option value="teen" ${defaultAge === 'teen' ? _grezzo('selected') : ''}>Ragazzo (13-17 anni)</option>
+                    <option value="child" ${defaultAge === 'child' ? _grezzo('selected') : ''}>Bambino / Junior (&lt; 13 anni - Filtri protetti)</option>
                 </select>
             </div>
 
@@ -199,13 +197,13 @@ function openUserModal(userId = null) {
 
             <div>
                 <label class="text-[11px] font-semibold text-slate-300 block mb-1">5. Note o Preferenze (opzionale):</label>
-                <input type="text" id="new-u-notes" value="${defaultNotes.replace(/"/g, '&quot;')}" placeholder="es. Moglie, camera da letto, appassionata di giardinaggio" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+                <input type="text" id="new-u-notes" value="${defaultNotes}" placeholder="es. Moglie, camera da letto, appassionata di giardinaggio" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
             </div>
         </div>
 
         <div class="flex justify-end gap-2 pt-4 border-t border-slate-800 mt-4">
             <button onclick="closeModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 transition">Annulla</button>
-            <button onclick="saveUserForm('${userId || ''}')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/30">
+            <button onclick="saveUserForm(${_grezzo(_perAttributoJs(userId || ''))})" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/30">
                 <i data-lucide="check" class="w-3.5 h-3.5"></i> ${isEdit ? 'Salva Modifiche' : 'Crea Profilo'}
             </button>
         </div>

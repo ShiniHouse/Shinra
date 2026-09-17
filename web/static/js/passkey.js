@@ -49,33 +49,31 @@ async function loadPasskey() {
     }
 
     if (!elenco.length) {
-        container.innerHTML = `<div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
+        container.innerHTML = _html`<div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
             Nessuna passkey. Il PIN continua a funzionare: le passkey lo affiancano, non lo sostituiscono.
         </div>`;
         return;
     }
 
-    container.innerHTML = elenco
-        .map(
-            (p) => `
+    container.innerHTML = _html`${elenco.map(
+        (p) => _html`
         <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between gap-3">
             <div class="flex items-center gap-3 min-w-0">
                 <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
                     <i data-lucide="fingerprint" class="w-4 h-4 text-slate-400"></i>
                 </div>
                 <div class="min-w-0">
-                    <h4 class="font-bold text-xs text-slate-100 truncate">${_testoSicuro(p.nome)}</h4>
+                    <h4 class="font-bold text-xs text-slate-100 truncate">${p.nome}</h4>
                     <p class="text-[10px] text-slate-500 truncate">
                         aggiunta ${_quando(p.creata_il)} · ultimo accesso ${_quando(p.ultimo_uso)}${p.tipo_dispositivo === 'multi_device' ? ' · sincronizzata' : ''}
                     </p>
                 </div>
             </div>
-            <button onclick="revocaPasskey('${encodeURIComponent(p.id)}', '${_testoSicuro(p.nome).replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold shrink-0 transition">
+            <button onclick="revocaPasskey(${_grezzo(_perAttributoJs(encodeURIComponent(p.id)))}, ${_grezzo(_perAttributoJs(p.nome))})" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold shrink-0 transition">
                 Revoca
             </button>
         </div>`,
-        )
-        .join('');
+    )}`;
     safeCreateIcons();
 }
 
@@ -174,12 +172,12 @@ async function loadVoci() {
         elenco = await res.json();
     } catch (e) {
         console.error('loadVoci error:', e);
-        container.innerHTML = `<div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-rose-300">Impossibile leggere le voci sentite.</div>`;
+        container.innerHTML = _html`<div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-rose-300">Impossibile leggere le voci sentite.</div>`;
         return;
     }
 
     if (!elenco.length) {
-        container.innerHTML = `<div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
+        container.innerHTML = _html`<div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
             Nessuna voce sentita. Ne compare una qui quando qualcuno parla a un Echo e i profili vocali di Alexa sono configurati.
         </div>`;
         return;
@@ -187,17 +185,14 @@ async function loadVoci() {
 
     const puoAssociare = posso('utenti.gestisci');
     const opzioni = (utente) =>
-        usersData
-            .map(
-                (u) =>
-                    `<option value="${_testoSicuro(u.id)}"${u.id === utente ? ' selected' : ''}>${_testoSicuro(u.name)}</option>`,
-            )
-            .join('');
+        usersData.map(
+            (u) =>
+                _html`<option value="${u.id}"${u.id === utente ? _grezzo(' selected') : ''}>${u.name}</option>`,
+        );
 
-    container.innerHTML = elenco
-        .map((v) => {
-            const noto = !!v.user_id;
-            return `
+    container.innerHTML = _html`${elenco.map((v) => {
+        const noto = !!v.user_id;
+        return _html`
         <div class="p-3.5 rounded-2xl bg-slate-900/60 border ${noto ? 'border-slate-800' : 'border-amber-700/50'} flex items-center justify-between gap-3">
             <div class="flex items-center gap-3 min-w-0">
                 <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
@@ -205,7 +200,7 @@ async function loadVoci() {
                 </div>
                 <div class="min-w-0">
                     <h4 class="font-bold text-xs text-slate-100 truncate">
-                        ${noto ? _testoSicuro(v.nome_profilo) : 'Voce non associata'}
+                        ${noto ? v.nome_profilo : 'Voce non associata'}
                     </h4>
                     <p class="text-[10px] text-slate-500 truncate">
                         ${v.quante_volte} richieste · ultima ${_quando(v.ultima_volta)}${noto ? '' : ' · comanda come un ospite'}
@@ -214,21 +209,20 @@ async function loadVoci() {
             </div>
             ${
                 puoAssociare
-                    ? `
+                    ? _html`
             <div class="flex items-center gap-1.5 shrink-0">
-                <select onchange="associaVoce('${encodeURIComponent(v.person_id)}', this.value)" class="px-2 py-1 rounded-xl bg-slate-800 border border-slate-700 text-[11px] text-slate-200">
-                    <option value=""${noto ? '' : ' selected'}>— nessuno —</option>
+                <select onchange="associaVoce(${_grezzo(_perAttributoJs(encodeURIComponent(v.person_id)))}, this.value)" class="px-2 py-1 rounded-xl bg-slate-800 border border-slate-700 text-[11px] text-slate-200">
+                    <option value=""${noto ? '' : _grezzo(' selected')}>— nessuno —</option>
                     ${opzioni(v.user_id)}
                 </select>
-                <button onclick="dimenticaVoce('${encodeURIComponent(v.person_id)}')" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold transition">
+                <button onclick="dimenticaVoce(${_grezzo(_perAttributoJs(encodeURIComponent(v.person_id)))})" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold transition">
                     Dimentica
                 </button>
             </div>`
                     : ''
             }
         </div>`;
-        })
-        .join('');
+    })}`;
     safeCreateIcons();
 }
 

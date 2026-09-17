@@ -498,7 +498,10 @@ def test_aspettare_un_evento_non_si_confonde_con_non_scattare_mai():
 def test_una_regola_si_puo_zittire_senza_cancellarla():
     testo = _frontend()
 
-    assert "alternaRegola('${r.id}', ${!r.attiva})" in testo, "non si puo' zittire una regola"
+    # Da quando l'identificativo passa da `_perAttributoJs`, fra le
+    # parentesi non c'e' piu' un apice scritto a mano: si guarda che la
+    # chiamata esista e che porti lo stato rovesciato, non come e' scritta.
+    assert re.search(r"alternaRegola\(.*?,\s*\$\{!r\.attiva\}\)", testo), "non si puo' zittire una regola"
     assert "'/api/regole/${id}'" in testo.replace("`", "'"), "lo stato non torna al server"
 
 
@@ -524,7 +527,9 @@ def test_di_una_regola_generata_non_si_offre_la_cancellazione():
 
     assert "cancellaRegola" not in ramo_generata, "si offre di cancellare una regola che tornerebbe"
     assert "cancellaRegola" in ramo_a_mano, "una regola scritta a mano non si puo' piu' cancellare"
-    assert "togli l\\'innesco" in ramo_generata, "non si dice come toglierla davvero"
+    # `_grezzo(` finisce sulla riga del `?`, e la frase su quella dopo: si
+    # guarda il ramo intero, che e' quello che il lettore vede.
+    assert "togli l\\'innesco" in scelta[: scelta.index("</div>")], "non si dice come toglierla davvero"
 
 
 def test_la_prova_di_una_regola_dice_perche_non_e_scattata():
@@ -2533,14 +2538,10 @@ NON_ANCORA_CONVERTITI = {
     "impostazioni.js",
     "istruisci.js",
     "navigazione.js",
-    "passkey.js",
-    "regole.js",
     "routine.js",
-    "ruoli.js",
     "tela.js",
     "tela_disegno.js",
     "tela_nodi.js",
-    "utenti.js",
     "voce.js",
 }
 
@@ -2770,8 +2771,8 @@ def test_la_lista_dei_non_convertiti_non_si_allunga():
     # aggiungere un'eccezione senza che si vedesse. Cosi' il numero va
     # cambiato apposta, e il cambiamento sta nella diff accanto al nome
     # dell'area che entra o esce.
-    assert len(NON_ANCORA_CONVERTITI) == 14, (
-        f"le aree non convertite sono {len(NON_ANCORA_CONVERTITI)}, non 14: "
+    assert len(NON_ANCORA_CONVERTITI) == 10, (
+        f"le aree non convertite sono {len(NON_ANCORA_CONVERTITI)}, non 10: "
         "se ne hai convertita una, aggiorna il numero; se ne hai aggiunta una, non farlo"
     )
 
@@ -2877,4 +2878,54 @@ console.log(JSON.stringify(casi));
     assert (
         "'" not in visto["perAttributoJs"]
         and '"' not in visto["perAttributoJs"].split("fai(")[1].split(")")[0]
+    )
+
+
+def _argomento_di(sorgente: str, apertura: int) -> str:
+    """Cio' che sta fra le parentesi, contando quelle annidate."""
+    i = sorgente.index("(", apertura) + 1
+    profondita, inizio = 1, i
+    while i < len(sorgente) and profondita:
+        if sorgente[i] == "(":
+            profondita += 1
+        elif sorgente[i] == ")":
+            profondita -= 1
+        i += 1
+    return sorgente[inizio : i - 1].strip()
+
+
+def test_grezzo_si_usa_solo_su_markup_scritto_da_noi():
+    """`_grezzo` e' la scappatoia del meccanismo, e va sorvegliata.
+
+    Tutto l'impianto di `_html` regge su una cosa sola: che `_grezzo` sia
+    raro e si usi solo su markup che abbiamo scritto noi. Metterci dentro
+    un valore che arriva dal server — `_grezzo(r.nome)` — spegne le fughe
+    in quel punto e basta, senza rumore: nessuna delle altre guardie se ne
+    accorge, e la riga accanto sembra identica a una giusta.
+
+    L'ho scoperto provando a rovinare una riga cosi': l'unica mutazione,
+    su otto, che non mordeva.
+
+    Quindi l'argomento deve essere una stringa scritta li' — apici e
+    nient'altro — oppure `_perAttributoJs(...)`, che ripulisce a modo suo.
+
+    Riferimento: issue #34.
+    """
+    colpevoli = []
+    for percorso in _copioni():
+        if percorso.name in NON_ANCORA_CONVERTITI or percorso.name == "sicurezza.js":
+            continue
+        testo = _testo(percorso)
+        for m in re.finditer(r"\b_grezzo\s*\(", testo):
+            argomento = _argomento_di(testo, m.start())
+            letterale = re.fullmatch(r"(?s)(['\"]).*\1,?", argomento)
+            calcolato = argomento.startswith("_perAttributoJs(")
+            if not (letterale or calcolato):
+                riga = testo.count("\n", 0, m.start()) + 1
+                colpevoli.append(f"{percorso.name}:{riga} -> _grezzo({argomento[:60]})")
+
+    assert not colpevoli, (
+        "`_grezzo` con dentro qualcosa che non e' markup scritto a mano:\n"
+        + "\n".join(colpevoli)
+        + "\nSe il valore viene dal server, toglilo: `_html` lo ripulisce da solo."
     )
