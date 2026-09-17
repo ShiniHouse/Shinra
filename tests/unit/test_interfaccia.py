@@ -29,6 +29,9 @@ import pytest
 RADICE = Path(__file__).resolve().parent.parent.parent
 PAGINA = RADICE / "web" / "templates" / "index.html"
 ACCESSO = RADICE / "web" / "templates" / "accesso.html"
+# Dalla #34 il foglio di stile e il copione stanno in file propri.
+FOGLIO = RADICE / "web" / "static" / "css" / "shinra.css"
+COPIONE = RADICE / "web" / "static" / "js" / "shinra.js"
 
 
 def _testo(percorso: Path) -> str:
@@ -58,12 +61,49 @@ def _senza_commenti_html(testo: str) -> str:
     return re.sub(r"<!--.*?-->", "", testo, flags=re.S)
 
 
+def _frontend() -> str:
+    """Markup, foglio di stile e copione insieme.
+
+    Dalla #34 vivono in tre file (issue #34). Una guardia che chiede «questa
+    cosa esiste nel frontend?» guarda qui; una che dice **dove** deve stare
+    guarda il file preciso — `_frontend()` per il markup, `_stile()` per
+    i colori, `_testo(COPIONE)` per il comportamento.
+    """
+    return "\n".join(_testo(p) for p in (PAGINA, FOGLIO, COPIONE))
+
+
+def _stile() -> str:
+    """Il foglio di stile. Era dentro la pagina, dalla #34 e' un file suo."""
+    foglio = _testo(FOGLIO)
+    assert len(foglio) > 5000, "il foglio di stile e' quasi vuoto: il test non guarda piu' niente"
+    return foglio
+
+
 def _script_inline(testo: str) -> list[str]:
     """Solo gli script scritti nella pagina: quelli con `src` non sono nostri."""
     return re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", testo, re.S)
 
 
 # ------------------------------------------------------------------ sintassi
+
+
+def test_il_copione_e_sintatticamente_valido():
+    """Le cinquemila righe che la #34 ha portato fuori dalla pagina.
+
+    Finche' stavano dentro `index.html` le copriva
+    `test_gli_script_inline_sono_sintatticamente_validi`. Spostandole, quella
+    guardia ha smesso di vederle: un errore di sintassi li' dentro non da' un
+    500, da' una pagina morta — niente schede, niente console, niente — e il
+    server continua a rispondere 200.
+
+    Riferimento: issue #34.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    esito = subprocess.run(["node", "--check", str(COPIONE)], capture_output=True, text=True, check=False)
+
+    assert esito.returncode == 0, f"il copione non si compila:\n{esito.stderr}"
 
 
 @pytest.mark.parametrize("percorso", [PAGINA, ACCESSO], ids=lambda p: p.name)
@@ -109,7 +149,7 @@ def test_ogni_identificativo_cercato_dal_javascript_esiste():
     che il pulsante «Blocca» e' rimasto assente per intere versioni mentre
     `checkAuthStatus` lo cercava a ogni caricamento.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
     cercati = set(re.findall(r"getElementById\(\s*['\"]([A-Za-z0-9_-]+)['\"]", testo))
     # Nella pagina, oppure creato a mano dal JavaScript con `.id = '...'`.
     esistenti = set(re.findall(r'\bid="([A-Za-z0-9_-]+)"', testo)) | set(
@@ -140,7 +180,7 @@ def test_ogni_chiamata_api_della_pagina_corrisponde_a_una_rotta():
         percorso = re.sub(r"\$\{[^}]*\}", "{x}", percorso)
         return percorso.split("?")[0].rstrip("/") or "/"
 
-    chiamate = {normalizza(g) for g in re.findall(r"fetch\(\s*[`'\"](/api/[^`'\"]*)[`'\"]", _testo(PAGINA))}
+    chiamate = {normalizza(g) for g in re.findall(r"fetch\(\s*[`'\"](/api/[^`'\"]*)[`'\"]", _frontend())}
     rotte = {re.sub(r"\{[^}]*\}", "{x}", r.path).rstrip("/") or "/" for r in rotte_api(app)}
 
     assert chiamate, "nessuna chiamata trovata: il test non guarda piu' niente"
@@ -158,7 +198,7 @@ def test_il_ruolo_si_sceglie_e_non_si_deduce_dall_avatar():
     degli adulti, cioe' serrature e allarme. Adesso il ruolo e' un campo, e
     quello che il modulo manda al server e' quello scelto.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     assert (
         "age_group === 'child' ? 'child' : 'adult'" not in testo
@@ -174,7 +214,7 @@ def test_la_scheda_profili_porta_ruoli_e_dispositivi():
     chiamare l'API a mano. Una sezione nel markup che nessuno popola sarebbe
     lo stesso problema con un aspetto migliore.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     for identificativo in ("sezione-ruoli", "ruoli-lista", "sezione-dispositivi", "dispositivi-lista"):
         assert f'id="{identificativo}"' in testo, f"manca la sezione {identificativo}"
@@ -189,7 +229,7 @@ def test_la_scheda_profili_porta_ruoli_e_dispositivi():
 def test_le_sezioni_riservate_si_nascondono_a_chi_non_amministra():
     """Nascondere non protegge — il server rifiuta comunque — ma mostrare un
     pannello che risponde sempre 403 fa sembrare rotta l'applicazione."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     assert "caricaPermessiCorrenti" in testo, "la pagina non chiede quali permessi ha chi la guarda"
     assert "posso('utenti.gestisci')" in testo, "la sezione dei ruoli non e' condizionata al permesso"
@@ -212,7 +252,7 @@ def test_il_microfono_non_torna_alla_web_speech_api_di_nascosto():
     commento che spiega cosa fa: restava verde anche dopo aver spento il
     controllo che descriveva.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     apertura = testo.index("async function toggleSpeechRecognition()")
     corpo = testo[apertura : testo.index("async function toggleTrascrizioneLocale(")]
@@ -238,7 +278,7 @@ def test_i_pin_dei_cavi_hanno_una_dimensione():
 
     Riferimento: issue #28.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     assert ".port-pin {" in testo, "i pin dei cavi non hanno nessuno stile: sarebbero invisibili"
     for regola in (".port-pin-in", ".port-pin-out", ".port-pin-vero", ".port-pin-falso"):
@@ -248,7 +288,7 @@ def test_i_pin_dei_cavi_hanno_una_dimensione():
 def test_una_condizione_ha_due_uscite_distinte():
     """Un'uscita sola non e' una condizione: e' un filtro che a volte ferma
     tutto, e chi lo disegna si aspetta due strade."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     assert "onPinMouseDown('${node.id}', event, 'vero')" in testo
     assert "onPinMouseDown('${node.id}', event, 'falso')" in testo
@@ -258,7 +298,7 @@ def test_una_condizione_ha_due_uscite_distinte():
 def test_il_salvataggio_mostra_cosa_non_va_e_dove():
     """«Il grafo non e' valido» manda a guardarne trenta, e chi ne ha
     disegnati trenta non lo fa: salva lo stesso, o rinuncia."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     # La **chiamata**, col punto e virgola, non il nome della funzione.
     # Questa guardia e' stata riscritta due volte per lo stesso motivo: prima
@@ -278,7 +318,7 @@ def test_il_salvataggio_mostra_cosa_non_va_e_dove():
 def test_il_microfono_si_spegne_davvero_dopo_la_registrazione():
     """La spia di registrazione del browser che resta accesa e' il modo
     peggiore di far credere a qualcuno che lo stai ascoltando sempre."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[testo.index("registratore.onstop") :][:1200]
     assert "getTracks().forEach(t => t.stop())" in corpo, "il flusso del microfono non viene chiuso"
@@ -295,7 +335,7 @@ def test_la_simulazione_la_chiede_al_server():
 
     Riferimento: issue #28.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     apertura = testo.index("async function simulateCanvasFlow()")
     corpo = testo[apertura : testo.index("function spegniLaSimulazione")]
@@ -308,7 +348,7 @@ def test_la_simulazione_la_chiede_al_server():
 def test_la_simulazione_accende_un_ramo_solo():
     """Il ramo non percorso deve restare spento: due rami accesi dicono che
     succedono due cose che si escludono a vicenda."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     apertura = testo.index("async function simulateCanvasFlow()")
     corpo = testo[apertura : testo.index("function spegniLaSimulazione")]
@@ -320,7 +360,7 @@ def test_la_simulazione_accende_un_ramo_solo():
 def test_la_simulazione_dice_perche_ha_scelto_quel_ramo():
     """Il ramo preso senza il perche' e' indistinguibile da un ramo preso a
     caso."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[testo.index("function mostraLeDecisioni") :][:1400]
 
@@ -335,7 +375,7 @@ def test_la_simulazione_dice_perche_ha_scelto_quel_ramo():
 def test_l_innesco_di_una_routine_si_puo_scegliere():
     """I nodi trigger temporali della scheda #28. Senza il selettore, il nodo
     resta quello che era: un innesco vocale e basta."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     assert "setTipoInnesco('${node.id}', this.value)" in testo, "non si puo' cambiare tipo di innesco"
     for tipo in ("orario", "alba", "tramonto", "stato", "evento"):
@@ -345,7 +385,7 @@ def test_l_innesco_di_una_routine_si_puo_scegliere():
 def test_cambiare_tipo_di_innesco_riparte_da_zero():
     """I campi di un innesco a orario non valgono per uno su soglia: lasciarli
     in giro produce una regola che porta dietro dati che nessuno legge."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[testo.index("function setTipoInnesco") : testo.index("function setDatoInnesco")]
 
@@ -369,7 +409,7 @@ def test_le_automazioni_hanno_una_schermata():
     questa guardia difende non cambia — che la schermata esista, che ci si
     arrivi da computer e da telefono, e che aprendola si carichi qualcosa.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     assert 'id="tab-automazioni"' in testo, "la scheda non esiste"
     assert "switchTab('automazioni')" in testo, "non ci si arriva dalla navigazione"
@@ -388,7 +428,7 @@ def test_le_automazioni_hanno_una_schermata():
 def test_una_regola_dice_quando_scattera_la_prossima_volta():
     """E' la domanda con cui si arriva a questa schermata, sempre: «e allora
     perche' non e' successo niente?»."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[testo.index("function quandoScatta") : testo.index("function renderRegole")]
 
@@ -407,7 +447,7 @@ def test_aspettare_un_evento_non_si_confonde_con_non_scattare_mai():
     per due versioni. Mostrarle uguali vorrebbe dire nascondere di nuovo
     quello che questa schermata esiste per far vedere.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[testo.index("function quandoScatta") : testo.index("function renderRegole")]
 
@@ -415,7 +455,7 @@ def test_aspettare_un_evento_non_si_confonde_con_non_scattare_mai():
 
 
 def test_una_regola_si_puo_zittire_senza_cancellarla():
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     assert "alternaRegola('${r.id}', ${!r.attiva})" in testo, "non si puo' zittire una regola"
     assert "'/api/regole/${id}'" in testo.replace("`", "'"), "lo stato non torna al server"
@@ -425,7 +465,7 @@ def test_di_una_regola_generata_non_si_offre_la_cancellazione():
     """Cancellarla non servirebbe a niente: risalvando la routine tornerebbe
     identica. Offrire un pulsante che non ottiene quello che promette e'
     peggio che non offrirlo."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[testo.index("function renderRegole") : testo.index("async function alternaRegola")]
 
@@ -448,7 +488,7 @@ def test_la_prova_di_una_regola_dice_perche_non_e_scattata():
     """«Prova» esegue saltando l'innesco **ma non le condizioni**: serve
     proprio a rispondere a «perche' non scatta?», e una prova che ignorasse
     anche le condizioni risponderebbe sempre di si'."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[testo.index("async function provaRegola") : testo.index("async function cancellaRegola")]
 
@@ -460,7 +500,7 @@ def test_la_prova_di_una_regola_dice_perche_non_e_scattata():
 
 def test_senza_automazioni_la_schermata_dice_come_farne_una():
     """Un elenco vuoto e basta lascia chi guarda esattamente dov'era."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[testo.index("function renderRegole") : testo.index("async function alternaRegola")]
 
@@ -479,7 +519,7 @@ def test_la_dashboard_si_dichiara_punto_di_ascolto():
 
     Riferimento: issue #33.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     assert "'/api/satelliti'" in testo, "il dispositivo non si annuncia mai"
 
@@ -498,7 +538,7 @@ def test_la_dashboard_si_dichiara_punto_di_ascolto():
 def test_la_stanza_viaggia_con_ogni_messaggio():
     """Se si ferma per strada, tutto il resto e' inutile: il dominio sa
     scegliere e nessuno gli dice da dove si parla."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[testo.index("const res = await fetch('/api/chat'") :][:800]
 
@@ -508,7 +548,7 @@ def test_la_stanza_viaggia_con_ogni_messaggio():
 def test_la_stanza_si_puo_cambiare_da_dove_si_parla():
     """Il telefono che si sposta di stanza cambia risposta: nasconderlo in un
     pannello di impostazioni vorrebbe dire che nessuno lo aggiorna mai."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     assert 'id="scelta-stanza"' in testo, "non si puo' scegliere la stanza"
     assert "scegliStanza(this.value)" in testo, "la scelta non viene salvata"
@@ -521,7 +561,7 @@ def test_la_memoria_della_stanza_non_fa_esplodere_la_pagina():
     """In navigazione privata `localStorage` solleva invece di rispondere. Una
     dashboard che non si apre perche' non puo' ricordare una stanza sarebbe un
     prezzo assurdo per una comodita'."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     # Solo questa funzione, non i settecento caratteri che seguono: la fetta
     # larga arrivava dentro `stanzaDiQuestoDispositivo`, che ha il suo
@@ -540,7 +580,7 @@ def test_la_memoria_della_stanza_non_fa_esplodere_la_pagina():
 def test_le_stanze_suggerite_vengono_dagli_alias():
     """Un secondo elenco di stanze divergerebbe dal primo, e «Cucina» contro
     «cucina » sono due stanze che non si incontreranno mai."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[testo.index("async function riempiStanzeNote") :][:900]
 
@@ -552,17 +592,20 @@ def test_le_stanze_suggerite_vengono_dagli_alias():
 
 
 def _funzione_javascript(testo: str, nome: str) -> str:
-    """La funzione scritta nella pagina, dalla firma alla sua parentesi.
+    """La funzione, dalla firma alla sua parentesi.
 
-    Tutte le funzioni della pagina stanno a otto spazi di rientro dentro il
-    `<script>`: la prima riga fatta di otto spazi e una parentesi chiusa e'
-    la fine della funzione. Serve per darla a `node` ed eseguirla davvero,
-    invece di cercare stringhe dentro al sorgente.
+    Le funzioni del copione stanno a margine: la prima riga fatta di una sola
+    parentesi chiusa e' la fine della funzione. Fino alla #34 stavano a otto
+    spazi, perche' erano annidate dentro il `<script>` della pagina.
+
+    Serve per darla a `node` ed eseguirla davvero, invece di cercare stringhe
+    dentro al sorgente — che e' il modo in cui una guardia resta verde su una
+    riga svuotata.
     """
     apertura = testo.index(f"function {nome}(")
     resto = testo[apertura:]
-    chiusura = resto.index("\n        }\n")
-    return resto[: chiusura + len("\n        }")]
+    chiusura = resto.index("\n}\n")
+    return resto[: chiusura + len("\n}")]
 
 
 def test_una_fetch_con_un_modulo_non_si_porta_dietro_un_content_type_json():
@@ -579,7 +622,7 @@ def test_una_fetch_con_un_modulo_non_si_porta_dietro_un_content_type_json():
     riga che sembra giusta — `headers: getAuthHeaders()`, come tutte le altre
     fetch della pagina.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     moduli = set(re.findall(r"(?:const|let|var)\s+(\w+)\s*=\s*new FormData\(", testo))
     assert moduli, "nessun FormData nella pagina: il test non guarda piu' niente"
@@ -620,7 +663,7 @@ def test_ogni_chiamata_all_api_porta_le_intestazioni_di_autenticazione():
 
     Riferimento: issue #125.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     colpevoli = []
     for m in re.finditer(r"fetch\(\s*[`'\"](/api/[^`'\"]*)", testo):
@@ -647,7 +690,7 @@ def test_un_rifiuto_dell_api_si_vede_invece_di_diventare_un_elenco_vuoto():
     Le rotte di accesso restano fuori: un 401 su `/api/auth/login` vuol dire
     «PIN sbagliato», e chi sta entrando lo sta gia' leggendo sotto la tastiera.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     apertura = testo.index("function sorvegliaIRifiuti()")
     corpo = testo[apertura : testo.index("function mostraRifiuto(")]
@@ -668,7 +711,7 @@ def test_l_avviso_dice_che_il_vuoto_potrebbe_non_essere_vuoto():
     ha sotto gli occhi potrebbe essere pieno. E' quella frase — non
     l'avviso — a chiudere la issue.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[testo.index("function mostraRifiuto(") : testo.index("function nascondiRifiuto(")]
     # I commenti si tolgono prima di guardare. E' la quarta volta in questo
@@ -710,10 +753,10 @@ def test_ogni_elenco_che_puo_restare_vuoto_dice_qualcosa():
     Le eccezioni stanno in un elenco con il loro motivo: un elenco costante o
     un `<datalist>` non ha un caso vuoto da raccontare.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     muti = []
-    funzioni = list(re.finditer(r"\n {8}(?:async )?function (\w+)\(", testo))
+    funzioni = list(re.finditer(r"\n(?:async )?function (\w+)\(", testo))
     confini = [m.start() for m in funzioni] + [len(testo)]
     for m, fine in zip(funzioni, confini[1:], strict=True):
         nome = m.group(1)
@@ -744,7 +787,7 @@ def test_le_eccezioni_agli_stati_vuoti_esistono_ancora():
     """Un'eccezione per una funzione che non c'e' piu' e' un permesso che
     resta aperto su un nome libero: il giorno che qualcuno lo riusa, la
     guardia tace senza che nessuno l'abbia deciso."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     fantasmi = [nome for nome in ELENCHI_CHE_POSSONO_TACERE if f"function {nome}(" not in testo]
 
@@ -763,7 +806,7 @@ def test_le_routine_a_innesco_vocale_si_vedono_fra_le_automazioni():
 
     Riferimento: issue #127.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = _senza_commenti(
         testo[testo.index("function routineSoloVocali(") : testo.index("async function alternaRegola(")]
@@ -807,7 +850,7 @@ def test_un_rifiuto_a_piu_voci_si_legge_invece_di_stampare_object_object():
     if shutil.which("node") is None:
         pytest.skip("node non disponibile: in CI c'e'")
 
-    funzione = _funzione_javascript(_testo(PAGINA), "_testoDelDettaglio")
+    funzione = _funzione_javascript(_frontend(), "_testoDelDettaglio")
 
     prova = funzione + """
 function esigi(condizione, messaggio) {
@@ -841,13 +884,6 @@ esigi(_testoDelDettaglio(undefined, 503) === 'Errore 503',
 # ------------------------------------------------- leggibilita' di giorno
 
 
-def _stile(testo: str) -> str:
-    """Il foglio di stile scritto nella pagina."""
-    blocco = re.search(r"<style>(.*?)</style>", testo, re.S)
-    assert blocco, "la pagina non ha piu' un blocco <style>: il test non guarda piu' niente"
-    return blocco.group(1)
-
-
 def test_ogni_tinta_pallida_ha_un_colore_per_il_giorno():
     """Il tema chiaro non e' un tema: e' un elenco di eccezioni.
 
@@ -865,8 +901,8 @@ def test_ogni_tinta_pallida_ha_un_colore_per_il_giorno():
     La guardia non giudica i colori: pretende solo che per ogni tinta
     pallida usata ce ne sia una scelta anche per il giorno.
     """
-    testo = _testo(PAGINA)
-    stile = _stile(testo)
+    testo = _frontend()
+    stile = _stile()
 
     usate = set(re.findall(r"\btext-([a-z]+)-(100|200|300)\b", testo))
     coperte = set(re.findall(r"html\.light[^{]*?\.text-([a-z]+)-(100|200|300)\b", stile))
@@ -882,8 +918,8 @@ def test_ogni_pulsante_a_tinta_traslucida_si_vede_di_giorno():
     Un `bg-emerald-600/30` sul buio e' un velo di verde dietro una scritta
     chiara; sul bianco e' quasi niente, e il pulsante sembra disabilitato.
     """
-    testo = _testo(PAGINA)
-    stile = _stile(testo)
+    testo = _frontend()
+    stile = _stile()
 
     usati = set(re.findall(r"\bbg-([a-z]+)-600/(20|30)\b", testo))
     # `(?!:)` esclude le regole `:hover`. Senza, una tinta col solo colore
@@ -912,8 +948,8 @@ def test_ogni_fondo_scuro_o_velato_ha_un_colore_per_il_giorno():
     Le due guardie di prima non bastavano: una guarda il testo, l'altra
     guarda i fondi **dei soli pulsanti**. Un'etichetta non e' un pulsante.
     """
-    testo = _testo(PAGINA)
-    stile = _stile(testo)
+    testo = _frontend()
+    stile = _stile()
 
     usati = set(
         re.findall(
@@ -938,7 +974,7 @@ def test_la_chiusura_dell_editor_sta_fuori_dalla_finestra():
     dal riquadro. In fila fra i comandi era anche pericolosa, perche' il
     bersaglio di «chiudi senza salvare» stava a otto pixel da «salva».
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     apertura = testo.index("function renderFlowCanvasModal()")
     corpo = testo[apertura : testo.index("function initCanvasInteractions")]
@@ -953,7 +989,7 @@ def test_la_chiusura_dell_editor_sta_fuori_dalla_finestra():
 
 def test_la_finestra_larga_non_taglia_cio_che_sporge():
     """La X nell'angolo esiste solo se la finestra la lascia sporgere."""
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[testo.index("function showModal(") : testo.index("function closeModal(")]
     largo = corpo[corpo.index("if (isWide)") : corpo.index("} else {")]
@@ -973,8 +1009,8 @@ def test_la_tela_dell_editor_segue_il_tema_della_casa():
     colore dentro l'HTML non lo raggiunge nessun tema, e l'editor restava una
     finestra sulla notte in mezzo a una dashboard bianca.
     """
-    testo = _testo(PAGINA)
-    stile = _stile(testo)
+    testo = _frontend()
+    stile = _stile()
 
     apertura = testo.index('id="flow-canvas"')
     tag = testo[apertura : testo.index(">", apertura)]
@@ -996,7 +1032,7 @@ def test_non_si_registra_mentre_il_modello_si_sta_caricando():
     uscito un «Errore 524», che non c'entra niente con quello che era stato
     detto.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[
         testo.index("async function toggleTrascrizioneLocale(") : testo.index(
@@ -1023,7 +1059,7 @@ def test_lo_stato_della_voce_non_si_ricorda_finche_non_e_definitivo():
     caricando» vorrebbe dire un microfono spento fino al prossimo
     ricaricamento della pagina, cioe' un rimedio peggiore del difetto.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     corpo = testo[
         testo.index("async function leggiStatoVoce()") : testo.index(
@@ -1055,7 +1091,7 @@ def test_la_colonna_della_console_non_porta_piu_la_diagnostica():
     delle due sparisce — si leggono in Impostazioni, che e' dove si va
     quando si vogliono cambiare.
     """
-    colonna = _colonna_della_console(_testo(PAGINA))
+    colonna = _colonna_della_console(_frontend())
 
     assert "Stato Sistema" not in colonna, "il pannello della diagnostica e' ancora acceso"
     assert 'id="model-name-badge"' not in colonna, "il nome del modello e' ancora nella colonna"
@@ -1071,7 +1107,7 @@ def test_il_modello_e_la_frase_di_alexa_si_leggono_nelle_impostazioni():
     spostarle, ed e' esattamente l'errore che questa riorganizzazione puo'
     fare.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
     impostazioni = testo.index('<div id="tab-settings"')
 
     for identificativo in ('id="model-name-badge"', 'id="anteprima-invocazione"'):
@@ -1092,7 +1128,7 @@ def test_la_frase_di_alexa_viene_dal_campo_e_non_da_una_riga_scritta_a_mano():
     if shutil.which("node") is None:
         pytest.skip("node non disponibile: in CI c'e'")
 
-    funzione = _funzione_javascript(_testo(PAGINA), "updateAlexaGeneratorName")
+    funzione = _funzione_javascript(_frontend(), "updateAlexaGeneratorName")
 
     prova = (
         """
@@ -1129,7 +1165,7 @@ def test_la_storia_dei_tool_non_si_perde_a_finestra_chiusa():
     if shutil.which("node") is None:
         pytest.skip("node non disponibile: in CI c'e'")
 
-    testo = _testo(PAGINA)
+    testo = _frontend()
     prova = (
         """
 const conta = { innerText: '' };
@@ -1169,7 +1205,7 @@ def test_la_colonna_dice_cosa_scattera_e_in_che_ordine():
     if shutil.which("node") is None:
         pytest.skip("node non disponibile: in CI c'e'")
 
-    testo = _testo(PAGINA)
+    testo = _frontend()
     prova = (
         """
 const contenitore = { innerHTML: '' };
@@ -1228,7 +1264,7 @@ def test_la_colonna_della_console_resta_leggera():
     Il numero qui sotto non e' un obiettivo: e' un tetto. Serve il giorno
     che qualcuno aggiunge un pannello «solo questo» a questa colonna.
     """
-    colonna = re.sub(r"<!--.*?-->", "", _colonna_della_console(_testo(PAGINA)), flags=re.S)
+    colonna = re.sub(r"<!--.*?-->", "", _colonna_della_console(_frontend()), flags=re.S)
 
     tag = len(re.findall(r"<(?!/)[a-zA-Z]", colonna))
     titoli = len(re.findall(r"<h\d", colonna))
@@ -1273,7 +1309,7 @@ def test_il_primo_livello_ha_tre_ingressi_piu_la_configurazione():
     non si usano con la stessa frequenza, e metterle sulla stessa riga chiede
     di rileggerla per intero ogni volta.
     """
-    barra = _senza_commenti_html(_barra_desktop(_testo(PAGINA)))
+    barra = _senza_commenti_html(_barra_desktop(_frontend()))
 
     ingressi = re.findall(r'id="tab-btn-([a-z]+)"', barra)
 
@@ -1290,7 +1326,7 @@ def test_le_quattro_schede_di_configurazione_restano_raggiungibili():
     che qualcuno cancella le quattro schede invece di raggrupparle, ed e'
     l'errore piu' facile da fare riorganizzando una navigazione.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
     menu = testo[testo.index('id="menu-configurazione"') : testo.index("<!-- Mobile Drawer Menu")]
 
     for scheda in DIETRO_LA_CONFIGURAZIONE:
@@ -1305,7 +1341,7 @@ def test_dal_telefono_la_navigazione_e_una_sola():
     raggruppate sotto una riga che dice cosa sono — non una seconda
     navigazione scritta a parte.
     """
-    cassetto = _senza_commenti_html(_cassetto_telefono(_testo(PAGINA)))
+    cassetto = _senza_commenti_html(_cassetto_telefono(_frontend()))
 
     destinazioni = re.findall(r"switchTabMobile\('([a-z]+)'\)", cassetto)
 
@@ -1326,7 +1362,7 @@ def test_l_editor_a_nodi_resta_al_primo_livello():
     levarlo di mezzo: si apre da una scheda di primo livello, senza passare
     dalla configurazione.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     inizio = testo.index('<div id="tab-automazioni"')
     scheda = testo[inizio : testo.index('<div id="tab-users"', inizio)]
@@ -1350,7 +1386,7 @@ def test_le_vecchie_destinazioni_portano_ancora_da_qualche_parte():
     if shutil.which("node") is None:
         pytest.skip("node non disponibile: in CI c'e'")
 
-    testo = _testo(PAGINA)
+    testo = _frontend()
     dichiarazione = testo[testo.index("const SCHEDE_UNITE = {") :]
     dichiarazione = dichiarazione[: dichiarazione.index("};") + 2]
 
@@ -1375,7 +1411,7 @@ def test_dentro_la_configurazione_la_barra_dice_ancora_dove_sei():
     navigazione smette di dire dov'e' chi la guarda, ed e' peggio della riga
     lunga da cui si e' partiti.
     """
-    testo = _senza_commenti(_testo(PAGINA))
+    testo = _senza_commenti(_frontend())
 
     corpo = _funzione_javascript(testo, "switchTab")
 
@@ -1392,7 +1428,7 @@ def test_il_menu_di_configurazione_si_chiude():
     Tre modi di chiuderlo, e tutti e tre servono: scegliendo una voce (o il
     menu copre cio' che si e' appena aperto), cliccando fuori, con Esc.
     """
-    testo = _senza_commenti(_testo(PAGINA))
+    testo = _senza_commenti(_frontend())
 
     assert "function chiudiMenuConfigurazione(" in testo, "il menu non sa chiudersi"
     assert "chiudiMenuConfigurazione();" in _funzione_javascript(
@@ -1414,7 +1450,7 @@ def test_nessuna_etichetta_e_diventata_un_indovinello():
     si risparmia larghezza e si perde la mappa. Ogni ingresso di primo
     livello, su computer, porta delle parole.
     """
-    barra = _senza_commenti_html(_barra_desktop(_testo(PAGINA)))
+    barra = _senza_commenti_html(_barra_desktop(_frontend()))
 
     muti = []
     for pulsante in re.findall(r'<button[^>]*id="tab-btn-\w+".*?</button>', barra, re.S):
@@ -1441,7 +1477,7 @@ def test_la_barra_non_taglia_il_menu_di_configurazione():
     scoperto nello stesso modo — guardando la schermata, non il codice.
     Questa guardia esiste perche' la terza volta non succeda.
     """
-    barra = _senza_commenti_html(_barra_desktop(_testo(PAGINA)))
+    barra = _senza_commenti_html(_barra_desktop(_frontend()))
 
     contenitore = re.search(r'<div class="([^"]*)"', barra).group(1)
 
@@ -1492,7 +1528,7 @@ def test_le_impostazioni_si_aprono_una_sezione_alla_volta():
     Non e' una schermata da leggere, e' una schermata in cui si cerca — e
     cercare in un muro aperto e' piu' lento che aprire la sezione giusta.
     """
-    scheda = _senza_commenti_html(_scheda_impostazioni(_testo(PAGINA)))
+    scheda = _senza_commenti_html(_scheda_impostazioni(_frontend()))
 
     sezioni = re.findall(r'<details class="sezione-impostazioni" data-sezione="(\w+)"([^>]*)>', scheda)
 
@@ -1507,7 +1543,7 @@ def test_ogni_sezione_dice_cosa_contiene_anche_da_chiusa():
     """Una sezione chiusa che non dice cosa c'e' dentro e' un cassetto senza
     etichetta: si aprono tutti finche' non salta fuori quello giusto, che e'
     esattamente cio' da cui si voleva uscire."""
-    scheda = _senza_commenti_html(_scheda_impostazioni(_testo(PAGINA)))
+    scheda = _senza_commenti_html(_scheda_impostazioni(_frontend()))
 
     mute = []
     for sezione in re.findall(r'data-sezione="(\w+)".*?</summary>', scheda, re.S):
@@ -1527,7 +1563,7 @@ def test_nessun_campo_sparisce_dalle_impostazioni():
     anche il giorno che qualcuno cancella una sezione invece di chiuderla,
     ed e' l'errore piu' facile da fare riorganizzando una schermata piena.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
     scheda = _senza_commenti_html(_scheda_impostazioni(testo))
 
     # Gli identificativi dei campi che la pagina legge e scrive davvero.
@@ -1547,7 +1583,7 @@ def test_a_riposo_le_impostazioni_mostrano_meno_di_un_terzo_dei_campi():
     sezione e' la scelta della palette, che si fa con delle carte e non con
     dei campi. Cio' che conta e' che i 17 restino tutti a un clic.
     """
-    scheda = _scheda_impostazioni(_testo(PAGINA))
+    scheda = _scheda_impostazioni(_frontend())
 
     tutti = len(re.findall(r"<(?:input|select|textarea)\b", _senza_commenti_html(scheda)))
     visibili = len(re.findall(r"<(?:input|select|textarea)\b", _a_riposo(scheda)))
@@ -1568,7 +1604,7 @@ def test_la_sezione_aperta_si_ricorda_senza_rompere_niente():
     if shutil.which("node") is None:
         pytest.skip("node non disponibile: in CI c'e'")
 
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     prova = (
         """
@@ -1610,7 +1646,7 @@ def test_aprire_una_sezione_chiude_le_altre():
     if shutil.which("node") is None:
         pytest.skip("node non disponibile: in CI c'e'")
 
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     prova = (
         """
@@ -1680,8 +1716,8 @@ def test_anche_i_veli_di_grigio_hanno_un_colore_per_il_giorno():
     indietro allo stesso modo: `bg-slate-900/50`, `bg-slate-800/20` e
     `bg-slate-800/30` non c'erano.
     """
-    testo = _testo(PAGINA)
-    stile = _stile(testo)
+    testo = _frontend()
+    stile = _stile()
 
     usati = set(re.findall(r"\bbg-(slate-(?:800|900|950)/\d+)\b", testo))
     coperti = {
@@ -1702,7 +1738,7 @@ def _corpo_della_scorciatoia(campi: dict) -> dict:
     Riscriverlo qui a mano proverebbe la mia idea di cosa manda, non cio' che
     manda. E' la differenza fra un test e una ripetizione.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     sorgente = (
         "const campi = "
@@ -1816,10 +1852,10 @@ def test_il_rifiuto_del_server_si_legge_nella_schermata(cliente_autenticato):
     assert rifiuto.status_code == 400, rifiuto.text
     assert "entita" in rifiuto.json()["detail"].lower()
 
-    pagina = _senza_commenti_html(_testo(PAGINA))
+    pagina = _senza_commenti_html(_frontend())
     assert 'id="scorciatoia-esito"' in pagina, "il rifiuto non ha dove farsi leggere"
 
-    corpo_js = _senza_commenti(_funzione_javascript(_testo(PAGINA), "creaScorciatoia"))
+    corpo_js = _senza_commenti(_funzione_javascript(_frontend(), "creaScorciatoia"))
     assert "_mostraEsitoScorciatoia" in corpo_js, "il rifiuto non viene mostrato"
     assert "alert(" not in corpo_js, "il rifiuto finisce in un avviso di sistema"
     assert "dati.detail" in corpo_js, "viene mostrato un messaggio inventato qui, non il motivo del server"
@@ -1835,7 +1871,7 @@ def test_passare_all_editor_non_perde_quello_che_hai_scritto():
     if shutil.which("node") is None:
         pytest.skip("node non disponibile: in CI c'e'")
 
-    testo = _testo(PAGINA)
+    testo = _frontend()
 
     prova = (
         """
@@ -1885,7 +1921,7 @@ def test_la_scorciatoia_non_ha_tolto_niente_all_editor():
     guardasse solo il modulo nuovo sarebbe verde anche il giorno che qualcuno
     decide che adesso la scorciatoia basta.
     """
-    testo = _testo(PAGINA)
+    testo = _frontend()
     scheda = _senza_commenti_html(
         testo[testo.index('<div id="tab-automazioni"') : testo.index('<div id="tab-users"')]
     )
@@ -1962,7 +1998,7 @@ def test_l_elenco_delle_icone_parla_della_versione_fissata():
 
     assert len(nomi) > 800, f"l'elenco ha solo {len(nomi)} nomi: rigeneralo"
 
-    trovato = re.search(r"lucide@([\d.]+)/dist/umd/lucide\.min\.js", _testo(PAGINA))
+    trovato = re.search(r"lucide@([\d.]+)/dist/umd/lucide\.min\.js", _frontend())
     assert trovato, "la pagina non fissa piu' una versione di lucide"
 
     assert trovato.group(1) == versione_elenco, (
@@ -1988,7 +2024,7 @@ def test_ogni_icona_della_pagina_esiste_davvero():
     """
     _, chiavi = _icone_valide()
 
-    testo = _testo(PAGINA)
+    testo = _frontend()
     usate = _nomi_di_icona_nella_pagina(testo)
 
     assert len(usate) > 40, f"solo {len(usate)} icone trovate: il test non guarda piu' niente"
@@ -2012,3 +2048,95 @@ def test_la_guardia_delle_icone_riconosce_i_due_nomi_che_l_hanno_ingannata():
 
     for cattivo in ("house", "wand-sparkles", "casa-mia"):
         assert _in_pascal(cattivo) not in chiavi, f"«{cattivo}» non dovrebbe essere valido"
+
+
+# ------------------------------------------ la pagina scomposta (issue #34)
+
+
+def test_la_pagina_non_porta_piu_dentro_il_copione_e_il_foglio():
+    """Settemilaquattrocento righe in un file solo.
+
+    Markup, CSS e JavaScript insieme vogliono dire che l'ambito di qualunque
+    cosa e' tutto, e che ogni modifica all'interfaccia costa piu' del dovuto.
+    E' il freno principale alle altre schede rimaste.
+
+    Restano in linea due copioni, e devono restarci: configurano Tailwind e
+    rimediano a lucide che non carica, tutti e due **prima** che la pagina si
+    disegni. Un file esterno arriverebbe troppo tardi.
+    """
+    pagina = _testo(PAGINA)
+
+    assert "<style>" not in pagina, "il foglio di stile e' tornato dentro la pagina"
+
+    inline = _script_inline(pagina)
+    assert len(inline) == 2, (
+        f"i copioni in linea sono {len(inline)}: devono restare solo i due del "
+        "`<head>`, che girano prima del disegno"
+    )
+    for blocco in inline:
+        assert len(blocco) < 2000, "un copione in linea e' cresciuto: va in un file suo"
+
+    assert (
+        len(pagina.splitlines()) < 2000
+    ), f"la pagina e' {len(pagina.splitlines())} righe: era 7.438 e deve scendere, non risalire"
+
+
+def test_il_foglio_e_il_copione_esistono_e_non_sono_vuoti():
+    """Una guardia che controllasse solo l'assenza dalla pagina sarebbe verde
+    anche il giorno che qualcuno cancella i due file invece di collegarli."""
+    for percorso, minimo in ((FOGLIO, 400), (COPIONE, 4000)):
+        assert percorso.exists(), f"{percorso.name} non esiste"
+        righe = len(_testo(percorso).splitlines())
+        assert righe > minimo, f"{percorso.name} ha {righe} righe: ne mancano"
+
+
+def test_la_pagina_li_collega_con_la_versione_attaccata():
+    """Il browser tiene i file statici finche' non cambia l'indirizzo.
+
+    Con il copione dentro la pagina il problema non c'era: la pagina si
+    rivalida a ogni apertura. Portandolo fuori si e' aperta una superficie di
+    cache nuova, e una dashboard che gira su JavaScript vecchio dopo un
+    aggiornamento e' esattamente il genere di guasto che fa perdere un
+    pomeriggio — e' gia' successo con la pagina intera.
+
+    La versione cambia a ogni commit: attaccarla all'indirizzo basta.
+    """
+    pagina = _testo(PAGINA)
+
+    for indirizzo in ("/static/css/shinra.css", "/static/js/shinra.js"):
+        assert indirizzo in pagina, f"la pagina non collega {indirizzo}"
+        collegamento = re.search(rf'{re.escape(indirizzo)}\?v=([^"]+)"', pagina)
+        assert collegamento, f"{indirizzo} e' collegato senza la versione attaccata"
+        assert "versione" in collegamento.group(1), (
+            f"{indirizzo} porta una versione fissa invece di quella vera: " f"{collegamento.group(1)}"
+        )
+
+
+def test_il_server_serve_davvero_il_foglio_e_il_copione(cliente_autenticato):
+    """Le guardie di sopra leggono il disco. Questa chiede al server.
+
+    Un `<link>` o uno `<script src>` verso un indirizzo che risponde 404
+    lascia la dashboard senza stile e senza comportamento, e la pagina
+    continua a rispondere 200: nessuna guardia che legge i file se ne
+    accorgerebbe. E' lo stesso genere di silenzio per cui esiste
+    `test_ogni_chiamata_api_della_pagina_corrisponde_a_una_rotta`.
+    """
+    pagina = cliente_autenticato.get("/")
+    assert pagina.status_code == 200
+
+    indirizzi = re.findall(r'(?:href|src)="(/static/(?:css|js)/[^"]+)"', pagina.text)
+    assert len(indirizzi) == 2, f"collegamenti trovati: {indirizzi}"
+
+    for indirizzo in indirizzi:
+        risposta = cliente_autenticato.get(indirizzo)
+        assert risposta.status_code == 200, f"{indirizzo} risponde {risposta.status_code}"
+        assert len(risposta.content) > 1000, f"{indirizzo} e' quasi vuoto"
+
+        # E la versione attaccata deve essere quella vera: se il template non
+        # venisse riempito, l'indirizzo non cambierebbe mai e il browser
+        # terrebbe il file vecchio per sempre.
+        versione = indirizzo.split("?v=")[-1]
+        assert "{{" not in versione and versione not in (
+            "",
+            "dev",
+        ), f"la versione non e' stata riempita: {versione}"
