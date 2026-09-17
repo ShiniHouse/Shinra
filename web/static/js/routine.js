@@ -33,24 +33,20 @@ async function loadModes() {
             const isOpen = Boolean(_modeAccordionState[m.id]);
 
             const stepsHtml = actions.map((act, idx) => {
-                let icon = 'zap';
                 let title = 'Azione';
                 let desc = '';
                 let badge = '';
 
                 if (act.type === 'ha_device' || act.type === 'ha_service') {
-                    icon = 'power';
                     title = act.entity_id || act.data?.entity_id || 'Dispositivo HA';
                     const cmd = act.action || act.service || 'turn_on';
                     desc = cmd === 'turn_on' ? 'Accendi' : cmd === 'turn_off' ? 'Spegni' : cmd;
                     badge = `<span class="text-[10px] text-indigo-400 bg-indigo-950/80 px-1.5 py-0.5 rounded border border-indigo-800">💡 HA</span>`;
                 } else if (act.type === 'delay') {
-                    icon = 'clock';
                     title = `Pausa ${act.seconds || act.delay_seconds || 1}s`;
                     desc = 'Attesa prima del prossimo step';
                     badge = `<span class="text-[10px] text-amber-400 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800">⏱️ Pausa</span>`;
                 } else if (act.type === 'tts') {
-                    icon = 'message-circle';
                     title = 'Annuncio Vocale';
                     desc = `"${act.message || ''}"`;
                     badge = `<span class="text-[10px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800">🗣️ Parla</span>`;

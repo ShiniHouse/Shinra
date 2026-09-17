@@ -98,7 +98,7 @@ function renderHAEntities(data, filterText = '') {
     let html = '';
     let visibleCount = 0;
 
-    for (const [domain, entities] of Object.entries(data.groups)) {
+    for (const entities of Object.values(data.groups)) {
         const filtered = filterText ? entities.filter(e =>
             e.friendly_name.toLowerCase().includes(lc) ||
             e.entity_id.toLowerCase().includes(lc) ||

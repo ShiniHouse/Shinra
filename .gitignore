@@ -74,3 +74,7 @@ data/*.sqlite3
 # Corpi delle PR, scritti su file perche' cmd.exe tronca le stringhe
 # multi-riga passate a --body. Non fanno parte del progetto.
 _corpi_pr/
+
+# Gli attrezzi del frontend (ESLint). Il package-lock.json invece si versiona:
+# e' quello che rende ripetibile il controllo in CI.
+node_modules/

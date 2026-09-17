@@ -26,7 +26,7 @@ async function loadRegole() {
         // zittisce una regola qui deve vederla sparire di la' subito,
         // non al prossimo giro del minuto.
         disegnaProssimiScatti(dati.regole || []);
-    } catch (e) {
+    } catch {
         contenitore.innerHTML = '<p class="text-xs text-rose-400 p-4">Non riesco a leggere le automazioni: il server non ha risposto.</p>';
     }
 }
@@ -217,7 +217,7 @@ async function creaScorciatoia() {
         const nome = document.getElementById('scorciatoia-nome');
         if (nome) nome.value = '';
         loadRegole();
-    } catch (e) {
+    } catch {
         _mostraEsitoScorciatoia('Il server non ha risposto: l\'automazione non e\' stata creata.', false);
     } finally {
         if (bottone) bottone.disabled = false;

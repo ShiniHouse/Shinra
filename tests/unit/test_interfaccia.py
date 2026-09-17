@@ -604,7 +604,12 @@ def test_la_memoria_della_stanza_non_fa_esplodere_la_pagina():
     ]
 
     assert "try {" in corpo, "l'accesso alla memoria del sito non e' protetto"
-    assert "} catch (e) {" in corpo, "un errore della memoria del sito non viene raccolto"
+    # `catch {` senza nome vale quanto `catch (e) {`: l'errore si raccoglie
+    # lo stesso, e da quando ESLint e' in CI i nomi che nessuno legge si
+    # tolgono. La guardia guarda che ci sia un `catch`, non come si chiama.
+    assert re.search(
+        r"\}\s*catch\s*(\(\s*\w+\s*\))?\s*\{", corpo
+    ), "un errore della memoria del sito non viene raccolto"
     assert "return null;" in corpo, "senza memoria non si resta un dispositivo senza stanza"
 
 
@@ -634,6 +639,12 @@ def _funzione_javascript(testo: str, nome: str) -> str:
     riga svuotata.
     """
     apertura = testo.index(f"function {nome}(")
+    # `async` sta prima di `function`: dimenticarlo qui da' una funzione che
+    # non compila, perche' il suo corpo ha degli `await` dentro una funzione
+    # che non e' piu' asincrona. Il messaggio di node parla di moduli e manda
+    # a cercare dalla parte sbagliata.
+    if testo[:apertura].endswith("async "):
+        apertura -= len("async ")
     resto = testo[apertura:]
     chiusura = resto.index("\n}\n")
     return resto[: chiusura + len("\n}")]
@@ -2247,3 +2258,200 @@ def test_il_server_serve_davvero_il_foglio_e_il_copione(cliente_autenticato):
             "",
             "dev",
         ), f"la versione non e' stata riempita: {versione}"
+
+
+def test_avviare_un_timer_a_mano_non_muore_su_un_nome_che_non_esiste():
+    """Il pulsante «+ Timer» chiamava una variabile che non e' mai esistita.
+
+    `saveNewTimerManual` metteva nel corpo della richiesta `_currentUserId`:
+    un nome che nessun file dichiara. In JavaScript non e' un errore di
+    sintassi, e' un `ReferenceError` che scatta **quando si preme il
+    pulsante** — la funzione muore prima della `fetch`, la finestra resta
+    aperta, il timer non nasce e sullo schermo non succede niente. Nessuna
+    delle guardie che leggono il sorgente poteva vederlo, e infatti non
+    l'hanno visto: l'ha trovato ESLint il giorno che e' entrato in CI.
+
+    Questa guardia **esegue** la funzione con una finta pagina e una finta
+    `fetch`, e guarda cosa parte davvero.
+
+    Riferimento: issue #34.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    prova = (
+        """
+let activeUserId = 'alessio';
+let partita = null;
+const campi = { 'new-timer-label': { value: '  Pasta  ' }, 'new-timer-min': { value: '9' } };
+const document = { getElementById: (id) => campi[id] || null };
+function getAuthHeaders() { return {}; }
+function closeModal() {}
+function loadTimers() {}
+async function fetch(indirizzo, opzioni) {
+    partita = { indirizzo, corpo: JSON.parse(opzioni.body) };
+    return { ok: true };
+}
+"""
+        + _funzione_javascript(_comportamento(), "saveNewTimerManual")
+        + """
+saveNewTimerManual()
+    .then(() => console.log(JSON.stringify(partita)))
+    .catch((e) => { console.log(JSON.stringify({ errore: String(e) })); });
+"""
+    )
+
+    esito = _esegui_con_node(prova)
+
+    assert esito.returncode == 0, esito.stderr
+    visto = json.loads(esito.stdout.strip())
+
+    assert "errore" not in visto, f"il pulsante muore prima di chiamare il server: {visto['errore']}"
+    assert visto["indirizzo"] == "/api/timers"
+    assert visto["corpo"]["user_id"] == "alessio", (
+        "il timer parte senza dire di chi e': finisce sul profilo predefinito "
+        "invece che su chi l'ha chiesto"
+    )
+    assert visto["corpo"]["label"] == "Pasta"
+    assert visto["corpo"]["duration_seconds"] == 9 * 60
+
+
+# ---------------------------------------------------------------- ESLint
+
+ESLINT = RADICE / "eslint.config.js"
+FLUSSO_CI = RADICE / ".github" / "workflows" / "ci.yml"
+PACCHETTO = RADICE / "package.json"
+
+
+def test_i_copioni_passano_da_eslint_in_ci():
+    """Un controllo che gira solo sulla macchina di chi scrive non esiste.
+
+    ESLint e' entrato perche' `node --check` vede la sintassi e basta: un
+    nome scritto male compila benissimo e muore al clic. Il primo giro ne ha
+    trovato uno che era in produzione — `_currentUserId` in `timer.js`, che
+    rendeva inutile il pulsante «+ Timer».
+
+    `--max-warnings 0` non e' pignoleria: un elenco di avvisi che nessuno
+    guarda e' peggio di nessun elenco, perche' l'errore vero ci si nasconde
+    dentro.
+
+    Riferimento: issue #34.
+    """
+    ci = FLUSSO_CI.read_text(encoding="utf-8")
+
+    assert "eslint" in ci, "la CI non fa girare ESLint"
+    assert "--max-warnings 0" in ci, "ESLint gira ma gli avvisi non fanno fallire niente"
+    assert "npm ci" in ci, "senza `npm ci` la versione di ESLint cambia sotto i piedi a ogni giro"
+
+    pacchetto = json.loads(_testo(PACCHETTO))
+    fissata = pacchetto["devDependencies"]["eslint"]
+    assert re.fullmatch(r"\d+\.\d+\.\d+", fissata), f"la versione di ESLint non e' fissata: {fissata}"
+
+    assert (RADICE / "package-lock.json").exists(), "senza il lock il controllo non e' ripetibile"
+
+
+def test_eslint_non_ha_niente_da_ridire():
+    """Lo stesso controllo della CI, qui, per chi lavora in locale.
+
+    Salta se gli attrezzi non sono installati: `npm install` non e' un
+    requisito per far girare i test di un progetto Python.
+    """
+    eseguibile = RADICE / "node_modules" / ".bin" / "eslint"
+    if not eseguibile.exists():
+        pytest.skip("ESLint non installato: `npm install` per averlo. In CI c'e'")
+
+    esito = subprocess.run(
+        [str(eseguibile), "--max-warnings", "0", "web/static/js/"],
+        cwd=RADICE,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert esito.returncode == 0, f"ESLint ha da ridire:\n{esito.stdout}\n{esito.stderr}"
+
+
+def test_eslint_impara_i_nomi_globali_dalla_cartella():
+    """La configurazione non tiene un elenco di nomi scritto a mano.
+
+    I copioni sono file separati che si chiamano fra loro passando per lo
+    spazio globale: ESLint, che guarda un file per volta, va informato di
+    quali sono i nostri nomi. Se l'elenco fosse fisso, il giorno dopo
+    sarebbe vecchio — e il modo in cui invecchia e' il peggiore: `no-undef`
+    comincia a gridare su codice giusto, qualcuno la spegne per far passare
+    la CI, e da quel momento non guarda piu' niente.
+
+    La guardia **esegue** la configurazione e le chiede cosa ha imparato,
+    invece di cercare `readdirSync` nel sorgente.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+    # La configurazione importa `globals`, che sta negli attrezzi.
+    if not (RADICE / "node_modules").exists():
+        pytest.skip("attrezzi del frontend non installati: `npm install` per averli. In CI ci sono")
+
+    # `timer.js` deve conoscere un nome dichiarato da `navigazione.js`
+    # (`activeUserId`: e' quello che mancava) e uno da `accesso.js`.
+    lettura = """
+import config from './eslint.config.js';
+const per = (f) => config.find(c => c.files && c.files.includes('web/static/js/' + f));
+const nomi = (f) => Object.keys(per(f).languageOptions.globals);
+console.log(JSON.stringify({
+    timer: nomi('timer.js'),
+    quanti: config.filter(c => c.files && c.files[0].startsWith('web/static/js/')).length,
+}));
+"""
+    prova = RADICE / "_prova_eslint.mjs"
+    prova.write_text(lettura, encoding="utf-8")
+    try:
+        esito = subprocess.run(["node", str(prova)], cwd=RADICE, capture_output=True, text=True, check=False)
+    finally:
+        prova.unlink(missing_ok=True)
+
+    assert esito.returncode == 0, esito.stderr
+    visto = json.loads(esito.stdout.strip())
+
+    assert visto["quanti"] == len(_copioni()), (
+        f"la configurazione copre {visto['quanti']} copioni, sul disco ce ne sono " f"{len(_copioni())}"
+    )
+    for nome in ("activeUserId", "getAuthHeaders", "document", "fetch"):
+        assert nome in visto["timer"], f"ESLint non sa che `{nome}` esiste: gridera' su codice giusto"
+    assert "saveNewTimerManual" not in visto["timer"], (
+        "i nomi che timer.js dichiara da se' gli vengono dati anche come globali: " "e' una ridichiarazione"
+    )
+
+
+def test_le_regole_di_eslint_sono_accese_davvero():
+    """Una guardia che dice «ESLint non ha da ridire» resta verde anche il
+    giorno che qualcuno spegne le regole per far passare la CI.
+
+    E' successo il contrario, in questo file, altre volte: la guardia cercava
+    una stringa e la trovava in un commento. Qui il rischio e' lo stesso a
+    rovescio, e si chiude allo stesso modo — dandole da mangiare del codice
+    rotto e pretendendo che se ne accorga.
+
+    Il codice rotto non tocca il disco: passa dallo standard input con il
+    nome di un file vero, cosi' prende le sue regole senza esistere.
+    """
+    eseguibile = RADICE / "node_modules" / ".bin" / "eslint"
+    if not eseguibile.exists():
+        pytest.skip("ESLint non installato: `npm install` per averlo. In CI c'e'")
+
+    rotture = {
+        "no-undef": "function prova() { return nomeCheNessunoHaMaiDichiarato; }",
+        "valid-typeof": "function prova(x) { return typeof x === 'strng'; }",
+        "no-unreachable": "function prova() { return 1; const mai = 2; return mai; }",
+        "no-dupe-keys": "function prova() { return { a: 1, a: 2 }; }",
+        "no-unused-vars": "function prova() { const inutile = 1; return 2; }",
+    }
+
+    for regola, sorgente in rotture.items():
+        esito = subprocess.run(
+            [str(eseguibile), "--stdin", "--stdin-filename", "web/static/js/timer.js"],
+            input=sorgente,
+            cwd=RADICE,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert regola in esito.stdout, f"`{regola}` non e' accesa: ESLint non dice niente su:\n{sorgente}"

@@ -201,7 +201,7 @@ async function toggleLearningMic() {
     }
 
     if (isLearningListening && learningRecognition) {
-        try { learningRecognition.stop(); } catch(e) {}
+        try { learningRecognition.stop(); } catch {}
         isLearningListening = false;
         if (statusLabel) statusLabel.classList.add('hidden');
         if (micBtn) {
@@ -307,7 +307,7 @@ async function closeLearningModal() {
             headers: getAuthHeaders(),
             body: JSON.stringify({ user_id: activeUserId || 'alessio' })
         });
-    } catch (e) {}
+    } catch {}
 
     await loadKnowledge();
 }

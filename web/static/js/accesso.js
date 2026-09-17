@@ -206,7 +206,7 @@ async function handleUnlockSubmit(e) {
             // ha appena dimostrato di essere se stesso con il PIN.
             if (data.utente && data.utente.id) {
                 activeUserId = data.utente.id;
-                try { localStorage.setItem('shinra_active_user', data.utente.id); } catch (e) {}
+                try { localStorage.setItem('shinra_active_user', data.utente.id); } catch {}
                 if (typeof updateActiveUserBanner === 'function') updateActiveUserBanner();
                 if (typeof loadUsersDropdown === 'function') loadUsersDropdown();
             }
@@ -236,7 +236,7 @@ async function handleUnlockSubmit(e) {
                 pinInput.focus();
             }
         }
-    } catch (err) {
+    } catch {
         if (errBox) {
             errBox.innerText = 'Errore di connessione al server.';
             errBox.classList.remove('hidden');
@@ -250,7 +250,7 @@ async function lockSession() {
             method: 'POST',
             headers: getAuthHeaders()
         });
-    } catch (e) {}
+    } catch {}
     sessionStorage.removeItem('shinra_auth_token');
     await checkAuthStatus();
 }

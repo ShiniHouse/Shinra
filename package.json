@@ -1,0 +1,14 @@
+{
+  "name": "shinra-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Solo gli attrezzi del frontend: Shinra e' un progetto Python, qui non si costruisce niente e non si pubblica niente su npm.",
+  "scripts": {
+    "lint": "eslint web/static/js/"
+  },
+  "devDependencies": {
+    "eslint": "10.10.0",
+    "globals": "17.12.0"
+  }
+}

@@ -112,7 +112,7 @@ async function saveNewTimerManual() {
     const res = await fetch('/api/timers', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ label, duration_seconds: secs, user_id: _currentUserId })
+        body: JSON.stringify({ label, duration_seconds: secs, user_id: activeUserId || 'alessio' })
     });
     if (res.ok) {
         closeModal();
@@ -219,7 +219,7 @@ async function caricaProssimiScatti() {
         if (!risposta.ok) return;
         const dati = await risposta.json();
         disegnaProssimiScatti(dati.regole || []);
-    } catch (e) {
+    } catch {
         contenitore.innerHTML = '<div class="text-[11px] text-slate-500 text-center py-2">Non riesco a leggere il calendario della casa.</div>';
     }
 }
