@@ -352,7 +352,13 @@ def test_il_microfono_si_spegne_davvero_dopo_la_registrazione():
     testo = _frontend()
 
     corpo = testo[testo.index("registratore.onstop") :][:1200]
-    assert "getTracks().forEach(t => t.stop())" in corpo, "il flusso del microfono non viene chiuso"
+    # Senza fissare la spaziatura: da quando Prettier e' in CI, `t => t.stop()`
+    # e `(t) => t.stop()` sono la stessa riga scritta due volte, e una guardia
+    # che sceglie fra le due fallisce al primo riallineamento invece che al
+    # primo microfono lasciato acceso.
+    assert re.search(
+        r"getTracks\(\)\.forEach\(\s*\(?\s*\w+\s*\)?\s*=>\s*\w+\.stop\(\)", corpo
+    ), "il flusso del microfono non viene chiuso"
 
 
 def test_la_simulazione_la_chiede_al_server():
@@ -452,7 +458,11 @@ def test_le_automazioni_hanno_una_schermata():
     assert ramo, "aprendola non carica niente"
     for carico in ("loadRegole()", "loadModes()"):
         assert carico in ramo.group(1), f"aprendola non chiama {carico}: mezza schermata resta vuota"
-    assert "'automazioni': 'block'," in testo, "la scheda non comparirebbe mai"
+    # La chiave, comunque sia scritta: Prettier toglie gli apici a quelle che
+    # non ne hanno bisogno, e la guardia non deve avere un'opinione in merito.
+    assert re.search(
+        r"['\"]?automazioni['\"]?\s*:\s*['\"]block['\"]", testo
+    ), "la scheda non comparirebbe mai"
     assert 'id="regole-lista"' in testo, "l'elenco delle automazioni non c'e' piu'"
 
 
@@ -505,7 +515,9 @@ def test_di_una_regola_generata_non_si_offre_la_cancellazione():
     ), "non si distingue una regola generata da una scritta a mano"
     # Il ternario dei pulsanti, non quello dell'etichetta: e' quello scritto
     # su piu' righe. Il ramo vero comincia per `?`, il falso per `:`.
-    scelta = corpo[corpo.index("${dalGrafo\n") :]
+    # Prettier rientra la condizione sulla riga dopo `${`, quindi si cerca
+    # l'apertura e poi la prima riga che porta `dalGrafo` da sola.
+    scelta = corpo[re.search(r"\$\{\s*\n\s*dalGrafo\b", corpo).start() :]
     righe = scelta[: scelta.index("</div>")].splitlines()
     ramo_generata = next(r for r in righe if r.strip().startswith("?"))
     ramo_a_mano = next(r for r in righe if r.strip().startswith(":"))
@@ -2455,3 +2467,50 @@ def test_le_regole_di_eslint_sono_accese_davvero():
             check=False,
         )
         assert regola in esito.stdout, f"`{regola}` non e' accesa: ESLint non dice niente su:\n{sorgente}"
+
+
+def test_i_copioni_passano_anche_da_prettier():
+    """La formattazione a mano di un file da cinquemila righe era un costo a
+    ogni modifica: due righe vicine scritte da due mani diverse, rientri che
+    non tornano, e una diff che mescola cio' che cambia con cio' che si e'
+    solo spostato.
+
+    Prettier non trova guasti — quello e' ESLint. Toglie di mezzo la
+    discussione.
+
+    Riferimento: issue #34.
+    """
+    ci = FLUSSO_CI.read_text(encoding="utf-8")
+    assert "prettier --check" in ci, "la CI non controlla la formattazione del frontend"
+
+    pacchetto = json.loads(_testo(PACCHETTO))
+    fissata = pacchetto["devDependencies"]["prettier"]
+    assert re.fullmatch(r"\d+\.\d+\.\d+", fissata), f"la versione di Prettier non e' fissata: {fissata}"
+
+    eseguibile = RADICE / "node_modules" / ".bin" / "prettier"
+    if not eseguibile.exists():
+        pytest.skip("Prettier non installato: `npm install` per averlo. In CI c'e'")
+
+    esito = subprocess.run(
+        [str(eseguibile), "--check", "web/static/"],
+        cwd=RADICE,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert esito.returncode == 0, f"da riformattare:\n{esito.stdout}\n{esito.stderr}"
+
+
+def test_prettier_non_tocca_il_python():
+    """Due formattatori sullo stesso file litigherebbero a ogni giro di CI,
+    e il perdente sarebbe sempre chi ha fatto l'ultimo commit.
+
+    Del Python decide black. Prettier sta sotto `web/static/` e basta.
+    """
+    ignorati = _testo(RADICE / ".prettierignore")
+    for cartella in ("src/", "tests/", "scripts/", "docs/", "node_modules/"):
+        assert cartella in ignorati, f"Prettier potrebbe mettere mano a {cartella}"
+
+    ci = FLUSSO_CI.read_text(encoding="utf-8")
+    comando = next(r for r in ci.splitlines() if "prettier --check" in r)
+    assert "web/static/" in comando, f"Prettier in CI non e' limitato al frontend: {comando.strip()}"

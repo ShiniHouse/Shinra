@@ -35,7 +35,9 @@ async function leggiStatoVoce() {
     try {
         const res = await fetch('/api/voce/stato', { headers: getAuthHeaders() });
         if (res.ok) statoVoce = await res.json();
-    } catch (e) { console.warn('stato voce:', e); }
+    } catch (e) {
+        console.warn('stato voce:', e);
+    }
     return statoVoce;
 }
 
@@ -51,13 +53,15 @@ async function toggleSpeechRecognition() {
 
 async function toggleTrascrizioneLocale(stato) {
     if (isRecording && registratore) {
-        try { registratore.stop(); } catch {}
+        try {
+            registratore.stop();
+        } catch {}
         return;
     }
     if (!stato.pronto) {
         // Meglio dirlo prima di registrare: chi preme e poi scopre che
         // non serviva a niente ha gia' parlato.
-        alert(stato.spiegazione || 'Il riconoscimento vocale non e\' disponibile.');
+        alert(stato.spiegazione || "Il riconoscimento vocale non e' disponibile.");
         return;
     }
     if (!stato.modello_caricato) {
@@ -69,11 +73,14 @@ async function toggleTrascrizioneLocale(stato) {
         // Il messaggio arriva dal server e non e' scritto qui, perche'
         // «sto preparando» e «ci ho provato e non ci sono riuscito»
         // sono due cose diverse e solo il server sa quale delle due.
-        alert(stato.spiegazione_modello || 'Sto ancora preparando il modello di riconoscimento. Riprova fra un minuto.');
+        alert(
+            stato.spiegazione_modello ||
+                'Sto ancora preparando il modello di riconoscimento. Riprova fra un minuto.',
+        );
         return;
     }
     if (!navigator.mediaDevices || !window.MediaRecorder) {
-        alert("Questo browser non sa registrare audio. Puoi digitare il tuo messaggio.");
+        alert('Questo browser non sa registrare audio. Puoi digitare il tuo messaggio.');
         return;
     }
 
@@ -81,14 +88,16 @@ async function toggleTrascrizioneLocale(stato) {
     try {
         flusso = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-        alert("Accesso al microfono non consentito. Controlla i permessi del browser.");
+        alert('Accesso al microfono non consentito. Controlla i permessi del browser.');
         return;
     }
 
     const pezzi = [];
     registratore = new MediaRecorder(flusso);
 
-    registratore.ondataavailable = e => { if (e.data && e.data.size) pezzi.push(e.data); };
+    registratore.ondataavailable = (e) => {
+        if (e.data && e.data.size) pezzi.push(e.data);
+    };
 
     registratore.onstart = () => {
         isRecording = true;
@@ -96,7 +105,8 @@ async function toggleTrascrizioneLocale(stato) {
         if (btn) btn.classList.add('bg-rose-600', 'text-white', 'mic-active');
         const st = document.getElementById('recording-status');
         if (st) {
-            st.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> 🎙️ In ascolto... parla pure!';
+            st.innerHTML =
+                '<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> 🎙️ In ascolto... parla pure!';
             st.classList.remove('hidden');
         }
         updateLivingCoreState('listening');
@@ -107,7 +117,7 @@ async function toggleTrascrizioneLocale(stato) {
         // registrazione del browser resta accesa dopo che si e' finito
         // di parlare, e non c'e' modo peggiore di far credere a
         // qualcuno che lo stai ascoltando sempre.
-        flusso.getTracks().forEach(t => t.stop());
+        flusso.getTracks().forEach((t) => t.stop());
         stopRecording();
 
         const registrazione = new Blob(pezzi, { type: registratore.mimeType || 'audio/webm' });
@@ -115,7 +125,8 @@ async function toggleTrascrizioneLocale(stato) {
 
         const st = document.getElementById('recording-status');
         if (st) {
-            st.innerHTML = '<span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Trascrivo...';
+            st.innerHTML =
+                '<span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Trascrivo...';
             st.classList.remove('hidden');
         }
 
@@ -125,19 +136,29 @@ async function toggleTrascrizioneLocale(stato) {
             modulo.append('tipo', registratore.mimeType || 'audio/webm');
 
             const res = await fetch('/api/voce/trascrivi', {
-                method: 'POST', headers: intestazioniPerModulo(), body: modulo
+                method: 'POST',
+                headers: intestazioniPerModulo(),
+                body: modulo,
             });
-            if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+            if (!res.ok) {
+                alert(await _dettaglioErrore(res));
+                return;
+            }
 
             const esito = await res.json();
             if (esito.vuota) {
                 if (st) st.innerHTML = 'Non ho sentito niente.';
-                setTimeout(() => { if (st) st.classList.add('hidden'); }, 2000);
+                setTimeout(() => {
+                    if (st) st.classList.add('hidden');
+                }, 2000);
                 return;
             }
 
             const input = document.getElementById('user-input');
-            if (input) { input.value = esito.testo; handleSend(); }
+            if (input) {
+                input.value = esito.testo;
+                handleSend();
+            }
         } catch (e) {
             alert('Non sono riuscito a trascrivere: ' + ((e && e.message) || e));
         } finally {
@@ -151,12 +172,16 @@ async function toggleTrascrizioneLocale(stato) {
 async function toggleWebSpeech() {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRec) {
-        alert("Il riconoscimento vocale non è supportato in questa versione del browser. Puoi digitare il tuo messaggio.");
+        alert(
+            'Il riconoscimento vocale non è supportato in questa versione del browser. Puoi digitare il tuo messaggio.',
+        );
         return;
     }
 
     if (isRecording && activeRecognition) {
-        try { activeRecognition.stop(); } catch {}
+        try {
+            activeRecognition.stop();
+        } catch {}
         stopRecording();
         return;
     }
@@ -165,10 +190,12 @@ async function toggleWebSpeech() {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach(t => t.stop());
+            stream.getTracks().forEach((t) => t.stop());
         } catch (micErr) {
             console.warn('Permesso microfono non concesso da iOS:', micErr);
-            alert("Accesso al microfono non consentito da iOS. Vai in Impostazioni iPhone ➔ Safari ➔ Microfono e seleziona 'Consenti'.");
+            alert(
+                "Accesso al microfono non consentito da iOS. Vai in Impostazioni iPhone ➔ Safari ➔ Microfono e seleziona 'Consenti'.",
+            );
             return;
         }
     }
@@ -188,7 +215,8 @@ async function toggleWebSpeech() {
             if (btn) btn.classList.add('bg-rose-600', 'text-white', 'mic-active');
             const st = document.getElementById('recording-status');
             if (st) {
-                st.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> 🎙️ In ascolto... parla pure!';
+                st.innerHTML =
+                    '<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> 🎙️ In ascolto... parla pure!';
                 st.classList.remove('hidden');
             }
             updateLivingCoreState('listening');
@@ -215,7 +243,7 @@ async function toggleWebSpeech() {
             console.warn('SpeechRecognition error:', event.error);
             stopRecording();
             if (event.error === 'not-allowed') {
-                alert("Permesso microfono non autorizzato su iOS. Controlla le impostazioni di Safari.");
+                alert('Permesso microfono non autorizzato su iOS. Controlla le impostazioni di Safari.');
             }
         };
 
@@ -261,10 +289,10 @@ function populateVoiceSelect() {
     const select = document.getElementById('cfg-browser-voice');
     if (!select) return;
 
-    const itVoices = availableVoices.filter(v => v.lang.startsWith('it') || v.lang.startsWith('IT'));
+    const itVoices = availableVoices.filter((v) => v.lang.startsWith('it') || v.lang.startsWith('IT'));
     select.innerHTML = '<option value="auto">✨ Selezione Automatica Migliore (Naturale)</option>';
 
-    itVoices.forEach(v => {
+    itVoices.forEach((v) => {
         const opt = document.createElement('option');
         opt.value = v.voiceURI;
         opt.textContent = `${v.name} (${v.lang})`;
@@ -337,7 +365,7 @@ function setVoicePitch(p) {
 }
 
 function cleanTextForSpeech(text) {
-    if (!text) return "";
+    if (!text) return '';
     let clean = text
         .replace(/```[\s\S]*?```/g, '')
         .replace(/`.*?`/g, '')
@@ -372,8 +400,8 @@ async function speakText(text) {
                 headers: getAuthHeaders(),
                 body: JSON.stringify({
                     text: clean,
-                    voice: neuralVoice
-                })
+                    voice: neuralVoice,
+                }),
             });
             if (res.ok) {
                 const blob = await res.blob();
@@ -381,7 +409,7 @@ async function speakText(text) {
                 currentAudioPlayer = new Audio(audioUrl);
                 currentAudioPlayer.onended = () => updateLivingCoreState('idle');
                 currentAudioPlayer.onerror = () => updateLivingCoreState('idle');
-                currentAudioPlayer.play().catch(e => {
+                currentAudioPlayer.play().catch((e) => {
                     console.warn('Audio playback block/error:', e);
                     updateLivingCoreState('idle');
                 });
@@ -398,7 +426,9 @@ async function speakText(text) {
         const utterance = new SpeechSynthesisUtterance(clean);
         utterance.lang = 'it-IT';
         if (selectedVoiceURI && selectedVoiceURI !== 'auto') {
-            const specific = availableVoices.find(v => v.voiceURI === selectedVoiceURI || v.name === selectedVoiceURI);
+            const specific = availableVoices.find(
+                (v) => v.voiceURI === selectedVoiceURI || v.name === selectedVoiceURI,
+            );
             if (specific) utterance.voice = specific;
         }
         utterance.pitch = voicePitch;
@@ -412,9 +442,10 @@ async function speakText(text) {
 }
 
 async function testVoicePreview() {
-    const previewText = neuralVoice.includes('Diego') || neuralVoice.includes('Giuseppe')
-        ? "Sistemi operativi. Voce neurale ad alta definizione calibrata e pronta."
-        : "Ciao, sono Shinra. La mia voce neurale ad alta definizione è pronta.";
+    const previewText =
+        neuralVoice.includes('Diego') || neuralVoice.includes('Giuseppe')
+            ? 'Sistemi operativi. Voce neurale ad alta definizione calibrata e pronta.'
+            : 'Ciao, sono Shinra. La mia voce neurale ad alta definizione è pronta.';
 
     const wasMuted = voiceMuted;
     voiceMuted = false;

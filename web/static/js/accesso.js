@@ -61,28 +61,33 @@ function mostraRifiuto(stato) {
     if (!barra) {
         barra = document.createElement('div');
         barra.id = 'barra-rifiuto';
-        barra.className = 'fixed top-0 left-0 right-0 z-[1000] px-4 py-2.5 bg-rose-600 text-white text-xs font-semibold flex items-center justify-center gap-3 shadow-lg';
+        barra.className =
+            'fixed top-0 left-0 right-0 z-[1000] px-4 py-2.5 bg-rose-600 text-white text-xs font-semibold flex items-center justify-center gap-3 shadow-lg';
         document.body.appendChild(barra);
     }
     // Il secondo periodo e' il punto di tutta la correzione: dice che
     // le schermate vuote potrebbero non esserlo.
-    const messaggio = stato === 403
-        ? 'Non hai il permesso di vedere questa parte. Quello che manca non e\' assente: e\' riservato.'
-        : 'La sessione e\' scaduta. Le schermate che vedi vuote potrebbero non esserlo: rientra per saperlo.';
+    const messaggio =
+        stato === 403
+            ? "Non hai il permesso di vedere questa parte. Quello che manca non e' assente: e' riservato."
+            : "La sessione e' scaduta. Le schermate che vedi vuote potrebbero non esserlo: rientra per saperlo.";
     barra.innerHTML = `<span>${messaggio}</span>`;
     if (stato !== 403) {
         const entra = document.createElement('button');
         entra.type = 'button';
         entra.className = 'px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 transition font-bold';
         entra.textContent = 'Rientra';
-        entra.onclick = () => { nascondiRifiuto(); lockSession(); };
+        entra.onclick = () => {
+            nascondiRifiuto();
+            lockSession();
+        };
         barra.appendChild(entra);
     }
     const chiudi = document.createElement('button');
     chiudi.type = 'button';
     chiudi.className = 'px-2 py-1 rounded-lg hover:bg-white/20 transition';
     chiudi.textContent = '✕';
-    chiudi.title = 'Nascondi l\'avviso';
+    chiudi.title = "Nascondi l'avviso";
     chiudi.onclick = nascondiRifiuto;
     barra.appendChild(chiudi);
     barra.classList.remove('hidden');
@@ -96,7 +101,7 @@ function nascondiRifiuto() {
 async function checkAuthStatus() {
     try {
         const res = await fetch('/api/auth/status', {
-            headers: getAuthHeaders()
+            headers: getAuthHeaders(),
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -130,7 +135,7 @@ async function caricaProfiliAccesso() {
     try {
         const res = await fetch('/api/auth/profili');
         if (!res.ok) return;
-        const profili = (await res.json()).filter(p => p.ha_pin);
+        const profili = (await res.json()).filter((p) => p.ha_pin);
 
         if (profili.length === 0) {
             box.innerHTML = `<div class="col-span-2 text-xs text-slate-400 p-3 rounded-xl bg-slate-950 border border-slate-800">
@@ -146,14 +151,18 @@ async function caricaProfiliAccesso() {
         }
 
         box.classList.remove('hidden');
-        box.innerHTML = profili.map(p => `
+        box.innerHTML = profili
+            .map(
+                (p) => `
             <button type="button" onclick="scegliProfiloAccesso('${p.id}', '${(p.name || '').replace(/'/g, "\\'")}')"
                 class="p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-indigo-500 hover:bg-slate-900 transition text-left flex items-center gap-2.5">
                 <span class="w-8 h-8 rounded-xl bg-indigo-600/25 text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0">
                     ${(p.name || '?').charAt(0).toUpperCase()}
                 </span>
                 <span class="text-sm font-semibold text-slate-200 truncate">${p.name || p.id}</span>
-            </button>`).join('');
+            </button>`,
+            )
+            .join('');
     } catch (e) {
         console.warn('Impossibile caricare i profili di accesso:', e);
     }
@@ -195,8 +204,8 @@ async function handleUnlockSubmit(e) {
     try {
         const res = await fetch('/api/auth/login', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ pin: pin, user_id: _profiloDaAccedere })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin: pin, user_id: _profiloDaAccedere }),
         });
 
         if (res.ok) {
@@ -206,7 +215,9 @@ async function handleUnlockSubmit(e) {
             // ha appena dimostrato di essere se stesso con il PIN.
             if (data.utente && data.utente.id) {
                 activeUserId = data.utente.id;
-                try { localStorage.setItem('shinra_active_user', data.utente.id); } catch {}
+                try {
+                    localStorage.setItem('shinra_active_user', data.utente.id);
+                } catch {}
                 if (typeof updateActiveUserBanner === 'function') updateActiveUserBanner();
                 if (typeof loadUsersDropdown === 'function') loadUsersDropdown();
             }
@@ -248,7 +259,7 @@ async function lockSession() {
     try {
         await fetch('/api/auth/logout', {
             method: 'POST',
-            headers: getAuthHeaders()
+            headers: getAuthHeaders(),
         });
     } catch {}
     sessionStorage.removeItem('shinra_auth_token');
@@ -275,17 +286,22 @@ function resetInactivityTimer() {
     const lockModal = document.getElementById('lock-screen-modal');
     if (lockModal && lockModal.style.display === 'flex') return;
 
-    inactivityTimer = setTimeout(async () => {
-        const isAuthEnabled = document.getElementById('cfg-sec-auth-enabled')?.checked;
-        const token = sessionStorage.getItem('shinra_auth_token');
-        if (isAuthEnabled || token) {
-            console.log(`[Shinra Security] Auto-lock attivato dopo ${inactivityTimeoutMinutes} min di inattività.`);
-            await lockSession();
-        }
-    }, inactivityTimeoutMinutes * 60 * 1000);
+    inactivityTimer = setTimeout(
+        async () => {
+            const isAuthEnabled = document.getElementById('cfg-sec-auth-enabled')?.checked;
+            const token = sessionStorage.getItem('shinra_auth_token');
+            if (isAuthEnabled || token) {
+                console.log(
+                    `[Shinra Security] Auto-lock attivato dopo ${inactivityTimeoutMinutes} min di inattività.`,
+                );
+                await lockSession();
+            }
+        },
+        inactivityTimeoutMinutes * 60 * 1000,
+    );
 }
 
-['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
+['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach((evt) => {
     window.addEventListener(evt, resetInactivityTimer, { passive: true });
 });
 
@@ -318,7 +334,10 @@ function updateEmpatheticGreeting() {
     const el = document.getElementById('empathetic-greeting');
     if (!el) return;
     const hour = new Date().getHours();
-    const userName = (typeof activeUserId !== 'undefined' && activeUserId) ? (activeUserId.charAt(0).toUpperCase() + activeUserId.slice(1)) : 'Alessio';
+    const userName =
+        typeof activeUserId !== 'undefined' && activeUserId
+            ? activeUserId.charAt(0).toUpperCase() + activeUserId.slice(1)
+            : 'Alessio';
 
     let greeting = '';
     if (hour >= 5 && hour < 12) {

@@ -71,6 +71,12 @@ jobs:
       - name: ESLint
         run: npx eslint --max-warnings 0 --format stylish web/static/js/
 
+      # Prettier non trova guasti: toglie di mezzo la discussione su dove va
+      # una parentesi, che su un file da cinquemila righe scritto a mano era
+      # diventata un costo vero a ogni modifica.
+      - name: Prettier
+        run: npx prettier --check web/static/
+
   ganci:
     name: Ganci pre-commit
     runs-on: ubuntu-latest

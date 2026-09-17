@@ -1,40 +1,148 @@
 // ==================== SOURCES CATALOG & BULK CONTROLS ====================
 const SOURCES_CATALOG = [
-    { category: '📰 Notizie Italia', items: [
-        { id: 'corriere', name: 'Corriere della Sera', cat: 'italia', url: 'https://www.corriere.it/rss/homepage.xml' },
-        { id: 'repubblica', name: 'La Repubblica', cat: 'italia', url: 'https://www.repubblica.it/rss/homepage/rss2.0.xml' },
-        { id: 'skytg24', name: 'Sky TG24', cat: 'italia', url: 'https://tg24.sky.it/feed/rss' },
-        { id: 'lastampa', name: 'La Stampa', cat: 'italia', url: 'https://www.lastampa.it/rss.xml' },
-        { id: 'ilmessaggero', name: 'Il Messaggero', cat: 'italia', url: 'https://www.ilmessaggero.it/rss/home.xml' },
-    ]},
-    { category: '💹 Economia & Finanza', items: [
-        { id: 'sole24ore', name: 'Il Sole 24 Ore', cat: 'economia', url: 'https://www.ilsole24ore.com/rss/home.xml' },
-        { id: 'milanofinanza', name: 'Milano Finanza', cat: 'economia', url: 'https://www.milanofinanza.it/rss' },
-        { id: 'reuters_biz', name: 'Reuters Business', cat: 'economia', url: 'https://feeds.reuters.com/reuters/businessNews' },
-    ]},
-    { category: '🖥️ Tecnologia & AI', items: [
-        { id: 'wired_it', name: 'Wired Italia', cat: 'tecnologia', url: 'https://www.wired.it/feed/rss' },
-        { id: 'tomshw', name: "Tom's Hardware Italia", cat: 'tecnologia', url: 'https://www.tomshw.it/feed' },
-        { id: 'hwupgrade', name: 'Hardware Upgrade', cat: 'tecnologia', url: 'https://www.hwupgrade.it/rss/news.xml' },
-        { id: 'techcrunch', name: 'TechCrunch', cat: 'tecnologia', url: 'https://techcrunch.com/feed/' },
-        { id: 'theverge', name: 'The Verge', cat: 'tecnologia', url: 'https://www.theverge.com/rss/index.xml' },
-        { id: 'hn', name: 'Hacker News Top', cat: 'tecnologia', url: 'https://hnrss.org/frontpage' },
-    ]},
-    { category: '🌍 Notizie Internazionali', items: [
-        { id: 'bbc_world', name: 'BBC World News', cat: 'mondo', url: 'http://feeds.bbci.co.uk/news/world/rss.xml' },
-        { id: 'guardian', name: 'The Guardian', cat: 'mondo', url: 'https://www.theguardian.com/world/rss' },
-        { id: 'reuters_top', name: 'Reuters Top News', cat: 'mondo', url: 'https://feeds.reuters.com/reuters/topNews' },
-    ]},
-    { category: '🔬 Scienza & Spazio', items: [
-        { id: 'nasa', name: 'NASA Breaking News', cat: 'scienza', url: 'https://www.nasa.gov/rss/dyn/breaking_news.rss' },
-        { id: 'lescienze', name: 'Le Scienze', cat: 'scienza', url: 'https://www.lescienze.it/rss/rss.xml' },
-        { id: 'natgeo', name: 'National Geographic IT', cat: 'scienza', url: 'https://www.nationalgeographic.it/feed' },
-        { id: 'sciencedaily', name: 'Science Daily', cat: 'scienza', url: 'https://www.sciencedaily.com/rss/top.xml' },
-    ]},
-    { category: '🏠 Smart Home & Domotica', items: [
-        { id: 'smarthome_it', name: 'Domotica Plus', cat: 'domotica', url: 'https://www.domoticaplus.it/feed/' },
-        { id: 'ha_blog', name: 'Home Assistant Blog', cat: 'domotica', url: 'https://www.home-assistant.io/atom.xml' },
-    ]},
+    {
+        category: '📰 Notizie Italia',
+        items: [
+            {
+                id: 'corriere',
+                name: 'Corriere della Sera',
+                cat: 'italia',
+                url: 'https://www.corriere.it/rss/homepage.xml',
+            },
+            {
+                id: 'repubblica',
+                name: 'La Repubblica',
+                cat: 'italia',
+                url: 'https://www.repubblica.it/rss/homepage/rss2.0.xml',
+            },
+            { id: 'skytg24', name: 'Sky TG24', cat: 'italia', url: 'https://tg24.sky.it/feed/rss' },
+            { id: 'lastampa', name: 'La Stampa', cat: 'italia', url: 'https://www.lastampa.it/rss.xml' },
+            {
+                id: 'ilmessaggero',
+                name: 'Il Messaggero',
+                cat: 'italia',
+                url: 'https://www.ilmessaggero.it/rss/home.xml',
+            },
+        ],
+    },
+    {
+        category: '💹 Economia & Finanza',
+        items: [
+            {
+                id: 'sole24ore',
+                name: 'Il Sole 24 Ore',
+                cat: 'economia',
+                url: 'https://www.ilsole24ore.com/rss/home.xml',
+            },
+            {
+                id: 'milanofinanza',
+                name: 'Milano Finanza',
+                cat: 'economia',
+                url: 'https://www.milanofinanza.it/rss',
+            },
+            {
+                id: 'reuters_biz',
+                name: 'Reuters Business',
+                cat: 'economia',
+                url: 'https://feeds.reuters.com/reuters/businessNews',
+            },
+        ],
+    },
+    {
+        category: '🖥️ Tecnologia & AI',
+        items: [
+            { id: 'wired_it', name: 'Wired Italia', cat: 'tecnologia', url: 'https://www.wired.it/feed/rss' },
+            {
+                id: 'tomshw',
+                name: "Tom's Hardware Italia",
+                cat: 'tecnologia',
+                url: 'https://www.tomshw.it/feed',
+            },
+            {
+                id: 'hwupgrade',
+                name: 'Hardware Upgrade',
+                cat: 'tecnologia',
+                url: 'https://www.hwupgrade.it/rss/news.xml',
+            },
+            { id: 'techcrunch', name: 'TechCrunch', cat: 'tecnologia', url: 'https://techcrunch.com/feed/' },
+            {
+                id: 'theverge',
+                name: 'The Verge',
+                cat: 'tecnologia',
+                url: 'https://www.theverge.com/rss/index.xml',
+            },
+            { id: 'hn', name: 'Hacker News Top', cat: 'tecnologia', url: 'https://hnrss.org/frontpage' },
+        ],
+    },
+    {
+        category: '🌍 Notizie Internazionali',
+        items: [
+            {
+                id: 'bbc_world',
+                name: 'BBC World News',
+                cat: 'mondo',
+                url: 'http://feeds.bbci.co.uk/news/world/rss.xml',
+            },
+            {
+                id: 'guardian',
+                name: 'The Guardian',
+                cat: 'mondo',
+                url: 'https://www.theguardian.com/world/rss',
+            },
+            {
+                id: 'reuters_top',
+                name: 'Reuters Top News',
+                cat: 'mondo',
+                url: 'https://feeds.reuters.com/reuters/topNews',
+            },
+        ],
+    },
+    {
+        category: '🔬 Scienza & Spazio',
+        items: [
+            {
+                id: 'nasa',
+                name: 'NASA Breaking News',
+                cat: 'scienza',
+                url: 'https://www.nasa.gov/rss/dyn/breaking_news.rss',
+            },
+            {
+                id: 'lescienze',
+                name: 'Le Scienze',
+                cat: 'scienza',
+                url: 'https://www.lescienze.it/rss/rss.xml',
+            },
+            {
+                id: 'natgeo',
+                name: 'National Geographic IT',
+                cat: 'scienza',
+                url: 'https://www.nationalgeographic.it/feed',
+            },
+            {
+                id: 'sciencedaily',
+                name: 'Science Daily',
+                cat: 'scienza',
+                url: 'https://www.sciencedaily.com/rss/top.xml',
+            },
+        ],
+    },
+    {
+        category: '🏠 Smart Home & Domotica',
+        items: [
+            {
+                id: 'smarthome_it',
+                name: 'Domotica Plus',
+                cat: 'domotica',
+                url: 'https://www.domoticaplus.it/feed/',
+            },
+            {
+                id: 'ha_blog',
+                name: 'Home Assistant Blog',
+                cat: 'domotica',
+                url: 'https://www.home-assistant.io/atom.xml',
+            },
+        ],
+    },
 ];
 
 async function bulkToggleSources(enable) {
@@ -42,12 +150,14 @@ async function bulkToggleSources(enable) {
         const res = await fetch('/api/sources/bulk-toggle', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ enabled: enable })
+            body: JSON.stringify({ enabled: enable }),
         });
         if (res.ok) {
             await loadSources();
         }
-    } catch (e) { console.error('bulkToggleSources error:', e); }
+    } catch (e) {
+        console.error('bulkToggleSources error:', e);
+    }
 }
 
 async function loadSources() {
@@ -59,9 +169,10 @@ async function loadSources() {
         if (!items.length) {
             container.innerHTML = `<p class="text-xs text-slate-500 col-span-2 py-3 text-center">Nessuna fonte attiva. Aggiungine dal catalogo qui sotto o clicca "Attiva Tutte".</p>`;
         } else {
-            container.innerHTML = items.map(s => {
-                const isEnabled = s.enabled !== false;
-                return `
+            container.innerHTML = items
+                .map((s) => {
+                    const isEnabled = s.enabled !== false;
+                    return `
                 <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex justify-between items-start gap-2 group hover:border-slate-700 transition">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
@@ -80,26 +191,29 @@ async function loadSources() {
                         </button>
                     </div>
                 </div>`;
-            }).join('');
+                })
+                .join('');
         }
         safeCreateIcons();
 
         // Rende il catalogo con stato e fisarmonica
-        const activeUrls = new Set(items.filter(s => s.enabled !== false).map(s => s.url));
+        const activeUrls = new Set(items.filter((s) => s.enabled !== false).map((s) => s.url));
         renderSourcesCatalog(activeUrls);
-    } catch(e) { console.error('loadSources:', e); }
+    } catch (e) {
+        console.error('loadSources:', e);
+    }
 }
 
 async function toggleSingleSource(sourceId, enable) {
     const res = await fetch('/api/sources', { headers: getAuthHeaders() });
     const items = await res.json();
-    const source = items.find(s => s.id === sourceId);
+    const source = items.find((s) => s.id === sourceId);
     if (source) {
         source.enabled = enable;
         await fetch('/api/sources', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify(source)
+            body: JSON.stringify(source),
         });
         await loadSources();
     }
@@ -120,9 +234,9 @@ function renderSourcesCatalog(activeUrls) {
     if (!container) return;
 
     container.innerHTML = SOURCES_CATALOG.map((group, idx) => {
-        const activeCount = group.items.filter(s => activeUrls.has(s.url)).length;
+        const activeCount = group.items.filter((s) => activeUrls.has(s.url)).length;
         const total = group.items.length;
-        if (_sourcesAccordionState[idx] === undefined) _sourcesAccordionState[idx] = (idx === 0);
+        if (_sourcesAccordionState[idx] === undefined) _sourcesAccordionState[idx] = idx === 0;
         const isOpen = Boolean(_sourcesAccordionState[idx]);
 
         return `
@@ -135,23 +249,26 @@ function renderSourcesCatalog(activeUrls) {
                 <i data-lucide="chevron-down" id="src-cat-chevron-${idx}" class="w-4 h-4 text-slate-400 transition-transform duration-200" style="transform: ${isOpen ? 'rotate(180deg)' : 'rotate(0deg)'}"></i>
             </button>
             <div id="src-cat-content-${idx}" class="${isOpen ? '' : 'hidden'} divide-y divide-slate-800/60">
-                ${group.items.map(src => {
-                    const added = activeUrls.has(src.url);
-                    return `
+                ${group.items
+                    .map((src) => {
+                        const added = activeUrls.has(src.url);
+                        return `
                     <div class="flex items-center justify-between px-4 py-2.5 hover:bg-slate-800/20 transition">
                         <div class="flex-1 min-w-0">
                             <span class="text-xs font-medium text-slate-200">${src.name}</span>
-                            <span class="text-[11px] text-slate-500 ml-2 font-mono hidden sm:inline">${src.url.replace('https://','').split('/')[0]}</span>
+                            <span class="text-[11px] text-slate-500 ml-2 font-mono hidden sm:inline">${src.url.replace('https://', '').split('/')[0]}</span>
                         </div>
-                        ${added
-                            ? `<span class="text-[11px] text-emerald-400 font-semibold px-2.5 py-1 bg-emerald-950/40 border border-emerald-800 rounded-full flex items-center gap-1">✓ Attiva</span>`
-                            : `<button onclick="addCatalogSource('${src.id}','${src.name.replace(/'/g,"\\'")}','${src.cat}','${src.url}')"
+                        ${
+                            added
+                                ? `<span class="text-[11px] text-emerald-400 font-semibold px-2.5 py-1 bg-emerald-950/40 border border-emerald-800 rounded-full flex items-center gap-1">✓ Attiva</span>`
+                                : `<button onclick="addCatalogSource('${src.id}','${src.name.replace(/'/g, "\\'")}','${src.cat}','${src.url}')"
                                 class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-indigo-600/20 border border-indigo-600/40 text-indigo-300 hover:bg-indigo-600 hover:text-white transition">
                                 + Aggiungi
                                </button>`
                         }
                     </div>`;
-                }).join('')}
+                    })
+                    .join('')}
             </div>
         </div>`;
     }).join('');
@@ -162,7 +279,7 @@ async function addCatalogSource(id, name, category, url) {
     await fetch('/api/sources', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ id, name, category, url, enabled: true })
+        body: JSON.stringify({ id, name, category, url, enabled: true }),
     });
     loadSources();
 }
@@ -193,7 +310,7 @@ async function saveNewSource() {
     await fetch('/api/sources', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ name, category, url, enabled: true })
+        body: JSON.stringify({ name, category, url, enabled: true }),
     });
     closeModal();
     loadSources();

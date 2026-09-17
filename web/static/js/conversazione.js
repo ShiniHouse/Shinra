@@ -19,7 +19,7 @@ function appendAssistantMessage(text, actions = []) {
     if (actions && actions.length > 0) {
         actionsHtml = `
             <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex flex-wrap gap-1.5">
-                ${actions.map(a => `<span class="px-2 py-0.5 rounded bg-indigo-950/70 border border-indigo-700/50 text-indigo-300 text-xs font-mono">⚡ ${a.tool}</span>`).join('')}
+                ${actions.map((a) => `<span class="px-2 py-0.5 rounded bg-indigo-950/70 border border-indigo-700/50 text-indigo-300 text-xs font-mono">⚡ ${a.tool}</span>`).join('')}
             </div>
         `;
     }
@@ -63,16 +63,14 @@ function logAction(tool, args, result) {
         tool: tool,
         argomenti: args,
         risultato: result,
-        quando: new Date().toLocaleTimeString()
+        quando: new Date().toLocaleTimeString(),
     });
     // La memoria di una pagina aperta da giorni non cresce all'infinito.
     if (_toolInvocati.length > 50) _toolInvocati.length = 50;
 
     const conta = document.getElementById('conta-tool');
     if (conta) {
-        conta.innerText = _toolInvocati.length === 1
-            ? '1 azione'
-            : _toolInvocati.length + ' azioni';
+        conta.innerText = _toolInvocati.length === 1 ? '1 azione' : _toolInvocati.length + ' azioni';
     }
     // Se la finestra e' aperta adesso, si aggiorna sotto gli occhi.
     if (document.getElementById('tool-logs')) _disegnaToolInvocati();
@@ -82,10 +80,13 @@ function _disegnaToolInvocati() {
     const contenitore = document.getElementById('tool-logs');
     if (!contenitore) return;
     if (!_toolInvocati.length) {
-        contenitore.innerHTML = '<div class="text-slate-600">Shinra non ha ancora toccato niente. Qui finiscono gli strumenti che usa quando gli parli: accendere una luce, leggere il meteo, avviare un timer.</div>';
+        contenitore.innerHTML =
+            '<div class="text-slate-600">Shinra non ha ancora toccato niente. Qui finiscono gli strumenti che usa quando gli parli: accendere una luce, leggere il meteo, avviare un timer.</div>';
         return;
     }
-    contenitore.innerHTML = _toolInvocati.map(voce => `
+    contenitore.innerHTML = _toolInvocati
+        .map(
+            (voce) => `
         <div class="p-2 rounded bg-slate-900 border border-slate-800">
             <div class="text-indigo-400 font-bold flex items-center justify-between">
                 <span>▶ Tool: ${_testoSicuro(voce.tool)}</span>
@@ -94,7 +95,9 @@ function _disegnaToolInvocati() {
             <div class="text-slate-400 mt-0.5">Argomenti: <span class="text-slate-300">${_testoSicuro(JSON.stringify(voce.argomenti))}</span></div>
             <div class="text-emerald-400 mt-0.5 truncate">Risultato: ${_testoSicuro(JSON.stringify(voce.risultato))}</div>
         </div>
-    `).join('');
+    `,
+        )
+        .join('');
 }
 
 function apriFinestraTool() {
@@ -168,19 +171,21 @@ async function handleSend(e) {
                 // sempre, anche scrivendo: chi scrive dalla cucina
                 // intende la luce della cucina esattamente come chi
                 // parla.
-                satellite: satelliteDiQuestoDispositivo()
-            })
+                satellite: satelliteDiQuestoDispositivo(),
+            }),
         });
         hideTypingIndicator();
         if (!res.ok) {
             const errData = await res.json().catch(() => ({ detail: res.statusText }));
-            appendAssistantMessage(`Errore dal server (${res.status}): ${errData.detail || 'Impossibile elaborare il messaggio'}`);
+            appendAssistantMessage(
+                `Errore dal server (${res.status}): ${errData.detail || 'Impossibile elaborare il messaggio'}`,
+            );
             updateLivingCoreState('idle');
             return;
         }
         const data = await res.json();
         appendAssistantMessage(data.response, data.actions);
-        if (data.actions) data.actions.forEach(a => logAction(a.tool, a.args, a.result));
+        if (data.actions) data.actions.forEach((a) => logAction(a.tool, a.args, a.result));
     } catch (err) {
         hideTypingIndicator();
         appendAssistantMessage(`Errore di comunicazione: ${err.message || 'Server non raggiungibile'}`);
@@ -243,8 +248,8 @@ async function annunciaQuestoDispositivo() {
             body: JSON.stringify({
                 id,
                 nome: 'Questo dispositivo',
-                stanza: stanzaDiQuestoDispositivo()
-            })
+                stanza: stanzaDiQuestoDispositivo(),
+            }),
         });
     } catch {
         // Non poter dire dove si è non impedisce di parlare.
@@ -283,8 +288,11 @@ async function riempiStanzeNote() {
     try {
         const res = await fetch('/api/aliases', { headers: getAuthHeaders() });
         const alias = await res.json();
-        const stanze = [...new Set((alias || []).map(a => (a.room || '').trim()).filter(Boolean))];
-        elenco.innerHTML = stanze.sort().map(s => `<option value="${s}"></option>`).join('');
+        const stanze = [...new Set((alias || []).map((a) => (a.room || '').trim()).filter(Boolean))];
+        elenco.innerHTML = stanze
+            .sort()
+            .map((s) => `<option value="${s}"></option>`)
+            .join('');
     } catch {
         // Senza suggerimenti la stanza si scrive a mano, e va bene.
     }

@@ -4,7 +4,7 @@ let _selectedAvatarType = 'male_adult';
 function selectUserAvatar(type) {
     _selectedAvatarType = type;
     const types = ['male_adult', 'female_adult', 'male_child', 'female_child', 'neutral', 'guest'];
-    types.forEach(t => {
+    types.forEach((t) => {
         const btn = document.getElementById(`av-btn-${t}`);
         if (btn) {
             btn.classList.toggle('ring-2', t === type);
@@ -39,9 +39,10 @@ async function loadUsers() {
         const container = document.getElementById('users-list');
         if (!container) return;
 
-        container.innerHTML = items.map(u => {
-            const av = getUserAvatarInfo(u);
-            return `
+        container.innerHTML = items
+            .map((u) => {
+                const av = getUserAvatarInfo(u);
+                return `
             <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3 hover:border-slate-700 transition group shadow-sm">
                 <div class="flex justify-between items-start">
                     <div class="flex items-center gap-3">
@@ -57,21 +58,34 @@ async function loadUsers() {
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5">
-                        ${amministra ? `
+                        ${
+                            amministra
+                                ? `
                         <button onclick="openEditUserModal('${u.id}')" class="px-2.5 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition" title="Modifica profilo e avatar">
                             <i data-lucide="edit-3" class="w-3 h-3"></i> Modifica
-                        </button>` : ''}
-                        ${amministra && u.id !== 'alessio' ? `
+                        </button>`
+                                : ''
+                        }
+                        ${
+                            amministra && u.id !== 'alessio'
+                                ? `
                         <button onclick="deleteUser('${u.id}')" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition" title="Elimina profilo">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                        </button>` : (u.id === 'alessio' ? `<span class="text-[10px] text-indigo-400/80 font-mono px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-900/50">Admin</span>` : '')}
+                        </button>`
+                                : u.id === 'alessio'
+                                  ? `<span class="text-[10px] text-indigo-400/80 font-mono px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-900/50">Admin</span>`
+                                  : ''
+                        }
                     </div>
                 </div>
                 <p class="text-[11px] text-slate-400 leading-relaxed">${u.notes || 'Nessuna nota o preferenza specifica.'}</p>
             </div>`;
-        }).join('');
+            })
+            .join('');
         safeCreateIcons();
-    } catch (e) { console.error('loadUsers error:', e); }
+    } catch (e) {
+        console.error('loadUsers error:', e);
+    }
 
     await loadRuoli();
     await loadDispositivi();
@@ -90,26 +104,36 @@ function openEditUserModal(userId) {
 }
 
 function openUserModal(userId = null) {
-    const user = userId ? usersData.find(u => u.id === userId) : null;
+    const user = userId ? usersData.find((u) => u.id === userId) : null;
     const isEdit = Boolean(user);
-    _selectedAvatarType = (user && user.avatar_type) ? user.avatar_type : 'male_adult';
+    _selectedAvatarType = user && user.avatar_type ? user.avatar_type : 'male_adult';
 
     const defaultName = user ? user.name : '';
-    const defaultAge = user ? (user.age_group || 'adult') : 'adult';
-    const defaultNotes = user ? (user.notes || '') : '';
+    const defaultAge = user ? user.age_group || 'adult' : 'adult';
+    const defaultNotes = user ? user.notes || '' : '';
     // Il ruolo si sceglie. Prima veniva dedotto da avatar e fascia
     // d'eta', e un ragazzo finiva con il ruolo `adult`: cioe' con le
     // serrature. La deduzione resta solo come proposta iniziale per un
     // profilo nuovo, e si puo' cambiare.
-    const ruoloProposto = _selectedAvatarType === 'guest' ? 'guest'
-        : (defaultAge === 'child' ? 'child' : (defaultAge === 'teen' ? 'teen' : 'adult'));
-    const ruoloAttuale = user ? (user.role || ruoloProposto) : ruoloProposto;
+    const ruoloProposto =
+        _selectedAvatarType === 'guest'
+            ? 'guest'
+            : defaultAge === 'child'
+              ? 'child'
+              : defaultAge === 'teen'
+                ? 'teen'
+                : 'adult';
+    const ruoloAttuale = user ? user.role || ruoloProposto : ruoloProposto;
     const elencoRuoli = ruoliData.length ? ruoliData : [{ id: ruoloAttuale, nome: ruoloAttuale }];
-    const opzioniRuolo = elencoRuoli.map(r =>
-        `<option value="${_testoSicuro(r.id)}" ${r.id === ruoloAttuale ? 'selected' : ''}>${_testoSicuro(r.nome)}</option>`
-    ).join('');
+    const opzioniRuolo = elencoRuoli
+        .map(
+            (r) =>
+                `<option value="${_testoSicuro(r.id)}" ${r.id === ruoloAttuale ? 'selected' : ''}>${_testoSicuro(r.nome)}</option>`,
+        )
+        .join('');
 
-    showModal(`
+    showModal(
+        `
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
             <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
                 <i data-lucide="${isEdit ? 'user-cog' : 'user-plus'}" class="w-4 h-4 text-indigo-400"></i>
@@ -185,7 +209,9 @@ function openUserModal(userId = null) {
                 <i data-lucide="check" class="w-3.5 h-3.5"></i> ${isEdit ? 'Salva Modifiche' : 'Crea Profilo'}
             </button>
         </div>
-    `, false);
+    `,
+        false,
+    );
 
     selectUserAvatar(_selectedAvatarType);
 }
@@ -201,10 +227,12 @@ async function saveUserForm(existingUserId = '') {
     if (_selectedAvatarType.startsWith('male')) gender = 'male';
     else if (_selectedAvatarType.startsWith('female')) gender = 'female';
 
-    const userToUpdate = existingUserId ? usersData.find(u => u.id === existingUserId) : null;
-    const preferred_news_categories = userToUpdate ? (userToUpdate.preferred_news_categories || ["generale"]) : ["generale"];
+    const userToUpdate = existingUserId ? usersData.find((u) => u.id === existingUserId) : null;
+    const preferred_news_categories = userToUpdate
+        ? userToUpdate.preferred_news_categories || ['generale']
+        : ['generale'];
     const campoRuolo = document.getElementById('new-u-role');
-    const role = campoRuolo ? campoRuolo.value : (userToUpdate ? userToUpdate.role : 'guest');
+    const role = campoRuolo ? campoRuolo.value : userToUpdate ? userToUpdate.role : 'guest';
 
     const res = await fetch('/api/users', {
         method: 'POST',
@@ -217,13 +245,16 @@ async function saveUserForm(existingUserId = '') {
             gender,
             avatar_type: _selectedAvatarType,
             preferred_news_categories,
-            notes
-        })
+            notes,
+        }),
     });
     // Declassare l'ultimo amministratore e' l'errore che chiude fuori
     // di casa: il server lo rifiuta e dice perche'. Ignorarlo, come si
     // faceva prima, faceva sembrare il salvataggio riuscito.
-    if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+    if (!res.ok) {
+        alert(await _dettaglioErrore(res));
+        return;
+    }
 
     closeModal();
     await loadUsers();
@@ -231,9 +262,13 @@ async function saveUserForm(existingUserId = '') {
 }
 
 async function deleteUser(id) {
-    if (!confirm('Rimuovere questo profilo famiglia?\n\nAnche i suoi dispositivi fidati verranno revocati.')) return;
+    if (!confirm('Rimuovere questo profilo famiglia?\n\nAnche i suoi dispositivi fidati verranno revocati.'))
+        return;
     const res = await fetch(`/api/users/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
-    if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+    if (!res.ok) {
+        alert(await _dettaglioErrore(res));
+        return;
+    }
     await loadUsers();
     await loadUsersDropdown();
 }

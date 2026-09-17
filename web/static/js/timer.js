@@ -25,7 +25,9 @@ function playChimeAlert() {
         gain2.connect(ctx.destination);
         osc2.start(now + 0.12);
         osc2.stop(now + 0.7);
-    } catch (e) { console.warn('Audio Context non supportato:', e); }
+    } catch (e) {
+        console.warn('Audio Context non supportato:', e);
+    }
 }
 
 let _activeTimers = [];
@@ -36,26 +38,33 @@ async function loadTimers() {
         const res = await fetch('/api/timers', { headers: getAuthHeaders() });
         _activeTimers = await res.json();
         renderTimers();
-    } catch (e) { console.error('Errore loadTimers:', e); }
+    } catch (e) {
+        console.error('Errore loadTimers:', e);
+    }
 }
 
 function renderTimers() {
     const container = document.getElementById('active-timers-list');
     if (!container) return;
     if (!_activeTimers || _activeTimers.length === 0) {
-        container.innerHTML = '<div class="text-[11px] text-slate-500 text-center py-2">Nessun timer attivo. Prova a dire "Timer pasta 9 minuti".</div>';
+        container.innerHTML =
+            '<div class="text-[11px] text-slate-500 text-center py-2">Nessun timer attivo. Prova a dire "Timer pasta 9 minuti".</div>';
         return;
     }
 
-    container.innerHTML = _activeTimers.map(t => {
-        const rem = t.remaining_seconds || 0;
-        const m = Math.floor(rem / 60);
-        const s = rem % 60;
-        const timeStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        const pct = t.duration_seconds > 0 ? Math.min(100, Math.max(0, ((t.duration_seconds - rem) / t.duration_seconds) * 100)) : 0;
-        const isFinished = rem <= 0;
+    container.innerHTML = _activeTimers
+        .map((t) => {
+            const rem = t.remaining_seconds || 0;
+            const m = Math.floor(rem / 60);
+            const s = rem % 60;
+            const timeStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            const pct =
+                t.duration_seconds > 0
+                    ? Math.min(100, Math.max(0, ((t.duration_seconds - rem) / t.duration_seconds) * 100))
+                    : 0;
+            const isFinished = rem <= 0;
 
-        return `
+            return `
             <div class="p-2.5 rounded-xl bg-slate-950/80 border ${isFinished ? 'border-amber-500/80 bg-amber-950/30 animate-pulse' : 'border-slate-800'} flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                     <div class="w-7 h-7 rounded-lg ${isFinished ? 'bg-amber-500 text-slate-950' : 'bg-amber-600/30 text-amber-300'} flex items-center justify-center font-bold text-xs">
@@ -76,13 +85,14 @@ function renderTimers() {
                 </button>
             </div>
         `;
-    }).join('');
+        })
+        .join('');
     safeCreateIcons();
 }
 
 async function deleteTimer(id) {
     await fetch(`/api/timers/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
-    _activeTimers = _activeTimers.filter(t => t.id !== id);
+    _activeTimers = _activeTimers.filter((t) => t.id !== id);
     renderTimers();
 }
 
@@ -112,7 +122,7 @@ async function saveNewTimerManual() {
     const res = await fetch('/api/timers', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ label, duration_seconds: secs, user_id: activeUserId || 'alessio' })
+        body: JSON.stringify({ label, duration_seconds: secs, user_id: activeUserId || 'alessio' }),
     });
     if (res.ok) {
         closeModal();
@@ -154,9 +164,11 @@ async function loadReminders() {
     try {
         const res = await fetch('/api/reminders', { headers: getAuthHeaders() });
         if (!res.ok) return;
-        _promemoria = (await res.json()).filter(r => !r.completed);
+        _promemoria = (await res.json()).filter((r) => !r.completed);
         renderReminders();
-    } catch (e) { console.error('Errore loadReminders:', e); }
+    } catch (e) {
+        console.error('Errore loadReminders:', e);
+    }
 }
 
 function _quandoLeggibile(iso) {
@@ -165,7 +177,9 @@ function _quandoLeggibile(iso) {
     const oggi = new Date();
     const stessoGiorno = d.toDateString() === oggi.toDateString();
     const ora = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-    return stessoGiorno ? `oggi alle ${ora}` : `${d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })} alle ${ora}`;
+    return stessoGiorno
+        ? `oggi alle ${ora}`
+        : `${d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })} alle ${ora}`;
 }
 
 function renderReminders() {
@@ -175,7 +189,9 @@ function renderReminders() {
         container.innerHTML = '';
         return;
     }
-    container.innerHTML = _promemoria.map(r => `
+    container.innerHTML = _promemoria
+        .map(
+            (r) => `
         <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
             <div class="flex items-center gap-2.5">
                 <div class="w-7 h-7 rounded-lg bg-sky-600/30 text-sky-300 flex items-center justify-center font-bold text-xs">🔔</div>
@@ -188,7 +204,9 @@ function renderReminders() {
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
-    `).join('');
+    `,
+        )
+        .join('');
     safeCreateIcons();
 }
 
@@ -202,7 +220,7 @@ function _testoSicuro(testo) {
 
 async function deleteReminder(id) {
     await fetch(`/api/reminders/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
-    _promemoria = _promemoria.filter(r => r.id !== id);
+    _promemoria = _promemoria.filter((r) => r.id !== id);
     renderReminders();
 }
 
@@ -220,7 +238,8 @@ async function caricaProssimiScatti() {
         const dati = await risposta.json();
         disegnaProssimiScatti(dati.regole || []);
     } catch {
-        contenitore.innerHTML = '<div class="text-[11px] text-slate-500 text-center py-2">Non riesco a leggere il calendario della casa.</div>';
+        contenitore.innerHTML =
+            '<div class="text-[11px] text-slate-500 text-center py-2">Non riesco a leggere il calendario della casa.</div>';
     }
 }
 
@@ -231,17 +250,20 @@ function disegnaProssimiScatti(regole) {
     // Una regola zittita non scattera'; una su evento non ha un orario.
     // Qui si guarda solo cio' che ha una data e sta per arrivare.
     const attese = (regole || [])
-        .filter(r => r.attiva && r.prossimo && !isNaN(new Date(r.prossimo)))
+        .filter((r) => r.attiva && r.prossimo && !isNaN(new Date(r.prossimo)))
         .sort((a, b) => new Date(a.prossimo) - new Date(b.prossimo))
         .slice(0, 4);
 
     // L'etichetta sta dentro cio' che si disegna, non sopra il
     // pannello: un titolo fisso in piu' era esattamente il peso che
     // questa colonna doveva smettere di avere.
-    const etichetta = '<p class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Fra poco, da sola</p>';
+    const etichetta =
+        '<p class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Fra poco, da sola</p>';
 
     if (!attese.length) {
-        contenitore.innerHTML = etichetta + `
+        contenitore.innerHTML =
+            etichetta +
+            `
             <div class="text-[11px] text-slate-500 py-1 leading-relaxed">
                 Niente in programma: nelle prossime ore la casa aspetta te.
                 <button type="button" onclick="switchTab('automazioni')" class="text-indigo-400 hover:text-indigo-300 font-semibold underline decoration-dotted">Vedi le automazioni</button>
@@ -249,7 +271,11 @@ function disegnaProssimiScatti(regole) {
         return;
     }
 
-    contenitore.innerHTML = etichetta + attese.map(r => `
+    contenitore.innerHTML =
+        etichetta +
+        attese
+            .map(
+                (r) => `
         <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-2.5">
             <div class="flex items-center gap-2.5 min-w-0">
                 <div class="w-7 h-7 rounded-lg bg-emerald-600/25 text-emerald-300 flex items-center justify-center shrink-0">
@@ -261,6 +287,8 @@ function disegnaProssimiScatti(regole) {
                 </div>
             </div>
         </div>
-    `).join('');
+    `,
+            )
+            .join('');
     safeCreateIcons();
 }
