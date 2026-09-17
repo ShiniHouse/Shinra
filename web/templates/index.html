@@ -56,10 +56,13 @@
             document.write('<script src="https://unpkg.com/lucide@latest"><\/script>');
         }
     </script>
-    <!-- Il foglio di stile sta in un file suo dalla #34: la pagina era
-         un unico file di settemila righe, e ogni modifica costava piu'
-         del dovuto perche' l'ambito di qualunque cosa era tutto. -->
-    <link rel="stylesheet" href="/static/css/shinra.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
+    <!-- Il foglio di stile sta in file suoi dalla #34, uno per area.
+         L'ordine conta: le atmosfere definiscono le variabili che il
+         tema chiaro poi sovrascrive. -->
+    <link rel="stylesheet" href="/static/css/tela.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
+    <link rel="stylesheet" href="/static/css/atmosfere.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
+    <link rel="stylesheet" href="/static/css/tema-chiaro.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
+    <link rel="stylesheet" href="/static/css/avatar.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
 </head>
 <body class="min-h-screen flex flex-col font-sans antialiased ambient-mesh selection:bg-amber-500 selection:text-white">
 
@@ -1223,10 +1226,29 @@
     </div>
 
     <!-- Script Logico Dashboard -->
-    <!-- Il copione sta in un file suo dalla #34. Il prossimo passo e'
-         spezzarlo per area; questo si limita a spostarlo, riga per riga
-         identico, perche' un cambiamento di comportamento nascosto in un
-         trasloco da cinquemila righe non lo troverebbe nessuno. -->
-    <script src="/static/js/shinra.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <!-- Il copione sta in file suoi dalla #34, uno per area. Restano
+         copioni normali, non moduli: le funzioni devono stare nello
+         spazio globale perche' la pagina le chiama dagli onclick.
+         L'ordine e' quello del file unico da cui vengono: avvio.js
+         per primo, impostazioni.js per ultimo. -->
+    <script src="/static/js/avvio.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/accesso.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/navigazione.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/voce.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/conversazione.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/conoscenza.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/istruisci.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/fonti.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/dispositivi.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/timer.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/eventi.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/routine.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/tela.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/tela_nodi.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/regole.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/utenti.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/ruoli.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/passkey.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <script src="/static/js/impostazioni.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
 </body>
 </html>
