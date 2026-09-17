@@ -3146,3 +3146,62 @@ console.log(JSON.stringify(esito));
     # E l'intestazione deve restare la maniglia: una guardia che spegne
     # tutto sarebbe verde e avrebbe rotto lo spostamento dei nodi.
     assert trascina["intestazione"], "il nodo non si puo' piu' spostare prendendolo per l'intestazione"
+
+
+def test_la_crocetta_che_stacca_un_cavo_si_puo_premere():
+    """Il difetto che ha visto la casa: i cavi non si staccavano.
+
+    La tela ha due piani sovrapposti. Sotto i cavi, disegnati in SVG:
+    il piano non prende i clic (`pointer-events-none`), tranne le
+    crocette che staccano un cavo, che li prendono. Sopra, il piano dei
+    nodi, che copre **tutta** la tela con `inset-0`.
+
+    Se quel piano prende gli eventi del mouse li prende dappertutto,
+    anche dove non c'e' nessun nodo — e li' sotto c'e' la crocetta.
+    Il clic si fermava sul telaio e non arrivava mai al cavo. Misurato
+    con un browser vero: `elementFromPoint` sul centro della crocetta
+    restituiva il `div` del telaio, e `deleteCanvasEdge` non veniva
+    chiamata nemmeno una volta.
+
+    Il telaio ora fa il telaio: a ricevere i clic sono i nodi.
+
+    **Cosa non vede questa guardia.** Legge le classi, non lo schermo.
+    Un elemento puo' coprirne un altro in mille modi che qui non si
+    vedono: uno `z-index` cambiato, un margine, un `transform`. Il
+    difetto e' stato trovato in un browser e li' andrebbe difeso — vedi
+    l'issue sui gesti dell'interfaccia. Questa tiene la porta che si e'
+    aperta oggi.
+
+    Riferimento: segnalato dalla casa durante la #34.
+    """
+    tela = _senza_commenti_html(_testo(CARTELLA_JS / "tela.js"))
+    nodi = _senza_commenti_html(_testo(CARTELLA_JS / "tela_disegno.js"))
+
+    telaio = re.search(r'id="flow-nodes-container" class="([^"]+)"', tela)
+    assert telaio, "il piano dei nodi non c'e' piu'"
+    classi = telaio.group(1).split()
+    assert "inset-0" in classi, "il piano dei nodi non copre piu' tutta la tela: rileggi questa guardia"
+    assert "pointer-events-none" in classi, (
+        "il piano dei nodi prende i clic su tutta la tela, crocette dei cavi comprese: "
+        f"classi = {telaio.group(1)}"
+    )
+
+    nodo = re.search(r'id="c-node-\$\{node\.id\}" class="([^"]+)"', nodi)
+    assert nodo, "il nodo non c'e' piu'"
+    assert "pointer-events-auto" in nodo.group(1).split(), (
+        "col telaio trasparente, un nodo che non riprende gli eventi non risponde piu' a niente: "
+        f"classi = {nodo.group(1)}"
+    )
+
+    piano_cavi = re.search(r'id="flow-svg-layer" class="([^"]+)"', tela)
+    assert piano_cavi and "pointer-events-none" in piano_cavi.group(
+        1
+    ), "il piano dei cavi prende i clic: i cavi passano sopra i nodi e li coprirebbero"
+
+    crocetta = re.search(
+        r"<circle[^>]*onclick=\"deleteCanvasEdge", _senza_commenti_html(_testo(CARTELLA_JS / "tela_nodi.js"))
+    )
+    assert crocetta, "la crocetta che stacca un cavo non c'e' piu'"
+    assert "pointer-events-auto" in crocetta.group(
+        0
+    ), "la crocetta non riprende gli eventi: il piano dei cavi non ne fa passare nessuno"

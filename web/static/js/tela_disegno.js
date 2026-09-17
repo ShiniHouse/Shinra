@@ -228,7 +228,7 @@ function renderCanvasElements() {
         const isCondizione = node.type === 'condizione';
 
         return _html`
-            <div id="c-node-${node.id}" class="flow-node absolute w-60 rounded-xl bg-slate-950/90 border border-slate-700 shadow-xl backdrop-blur" style="left: ${node.x}px; top: ${node.y}px;">
+            <div id="c-node-${node.id}" class="flow-node absolute w-60 pointer-events-auto rounded-xl bg-slate-950/90 border border-slate-700 shadow-xl backdrop-blur" style="left: ${node.x}px; top: ${node.y}px;">
                 <!-- Input Pin (Left) -->
                 ${hasInputPin ? _html`<div onmouseup="onPinMouseUp('${node.id}', event)" class="port-pin port-pin-in" title="Collega qui il cavo in ingresso"></div>` : ''}
 
