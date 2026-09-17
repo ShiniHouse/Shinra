@@ -10,14 +10,20 @@ function setQuickDelay(nodeId, secs) {
     renderCanvasElements();
 }
 
+// Cosa non e' «prendere il nodo per spostarlo»: i comandi che stanno
+// dentro il nodo. Si guarda l'antenato, non il bersaglio.
+//
+// Il bersaglio di un clic sull'icona di un pulsante non e' il pulsante:
+// e' l'icona. E lucide sostituisce ogni `<i data-lucide>` con un `<svg>`,
+// quindi il bersaglio e' un `<svg>` — o una `<path>` dentro di esso — e
+// `e.target.tagName === 'BUTTON'` era sempre falso. Premendo la × del
+// nodo partiva il trascinamento: con un mouse fermo il clic arrivava lo
+// stesso, con un trackpad o un dito il browser leggeva il gesto come uno
+// spostamento e il clic non arrivava mai. Il pulsante sembrava morto.
+const COMANDI_DENTRO_AL_NODO = 'button, input, select, textarea, a, option';
+
 function startDragNode(nodeId, e) {
-    if (
-        e.target.tagName === 'INPUT' ||
-        e.target.tagName === 'SELECT' ||
-        e.target.tagName === 'TEXTAREA' ||
-        e.target.tagName === 'BUTTON'
-    )
-        return;
+    if (e.target.closest && e.target.closest(COMANDI_DENTRO_AL_NODO)) return;
     const node = _canvasState.nodes.find((n) => n.id === nodeId);
     if (!node) return;
     const canvas = document.getElementById('flow-canvas');

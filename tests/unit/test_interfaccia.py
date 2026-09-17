@@ -667,6 +667,17 @@ def _funzione_javascript(testo: str, nome: str) -> str:
     return resto[: chiusura + len("\n}")]
 
 
+def _riga_javascript(testo: str, inizio: str) -> str:
+    """La riga che comincia cosi'. Serve a portarsi dietro una costante
+    quando si esegue una funzione che la legge: riscriverla qui vorrebbe
+    dire provare una copia, che resta giusta anche quando l'originale non
+    lo e' piu'."""
+    for riga in testo.splitlines():
+        if riga.strip().startswith(inizio):
+            return riga.strip()
+    raise AssertionError(f"riga che comincia con {inizio!r} non trovata")
+
+
 def test_una_fetch_con_un_modulo_non_si_porta_dietro_un_content_type_json():
     """Il difetto per cui il microfono non ha mai trascritto niente.
 
@@ -3050,3 +3061,88 @@ def test_grezzo_si_usa_solo_su_markup_scritto_da_noi():
         + "\n".join(colpevoli)
         + "\nSe il valore viene dal server, toglilo: `_html` lo ripulisce da solo."
     )
+
+
+def test_premere_la_x_di_un_nodo_non_lo_trascina():
+    """Il pulsante che sembrava morto.
+
+    L'editor a nodi ha una crocetta per togliere un blocco. Premendola
+    partiva invece il trascinamento del nodo, perche' la guardia di
+    `startDragNode` chiedeva `e.target.tagName === 'BUTTON'` — e il
+    bersaglio di un clic sull'icona di un pulsante non e' il pulsante: e'
+    l'icona. Lucide sostituisce ogni `<i data-lucide>` con un `<svg>`,
+    quindi il confronto era sempre falso.
+
+    Con un mouse fermo il clic arrivava lo stesso e non se ne accorgeva
+    nessuno. Con un trackpad o un dito il gesto si legge come uno
+    spostamento e il clic non arriva: il pulsante non fa niente, e non
+    dice perche'.
+
+    La guardia **esegue** `startDragNode` con bersagli veri — l'`<svg>`
+    dell'icona, la `<path>` dentro l'`<svg>`, il campo di testo, e
+    l'intestazione nuda — invece di cercare `closest` nel sorgente: una
+    riga cosi' sopravvive intatta dentro un `if (false)`.
+
+    Riferimento: issue #34, segnalato dalla casa.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    prova = (
+        """
+const _canvasState = { nodes: [{ id: 'n1', x: 10, y: 10 }], isDraggingNode: null, dragOffset: null };
+function finto(tag, dentro) {
+    const nodo = {
+        tagName: tag.toUpperCase(),
+        _dentro: dentro,
+        closest(selettore) {
+            const nomi = selettore.split(',').map((s) => s.trim().toUpperCase());
+            if (nomi.includes(this.tagName)) return this;
+            return this._dentro ? this._dentro.closest(selettore) : null;
+        },
+    };
+    return nodo;
+}
+const document = { getElementById: () => ({ getBoundingClientRect: () => ({ left: 0, top: 0 }) }) };
+"""
+        # L'elenco dei comandi viene dal file, non riscritto qui: se qualcuno
+        # ne toglie uno, questa guardia deve accorgersene invece di provare
+        # una copia sua rimasta giusta.
+        + _riga_javascript(_testo(CARTELLA_JS / "tela_nodi.js"), "const COMANDI_DENTRO_AL_NODO")
+        + "\n"
+        + _funzione_javascript(_testo(CARTELLA_JS / "tela_nodi.js"), "startDragNode")
+        + """
+const bottone = finto('button', null);
+const casi = {
+    // Quello che succede davvero: lucide ha messo un <svg> dentro il pulsante.
+    svgDentroIlPulsante: finto('svg', bottone),
+    // Un clic un pixel piu' in la': la <path> dentro l'<svg>.
+    pathDentroIlPulsante: finto('path', finto('svg', bottone)),
+    // Il pulsante nudo, che gia' funzionava.
+    pulsante: finto('button', null),
+    // I campi del nodo: scrivere non deve spostare il nodo.
+    campoDiTesto: finto('input', null),
+    menuATendina: finto('select', null),
+    // L'intestazione: prenderla per spostare il nodo deve funzionare.
+    intestazione: finto('div', null),
+};
+const esito = {};
+for (const [nome, bersaglio] of Object.entries(casi)) {
+    _canvasState.isDraggingNode = null;
+    startDragNode('n1', { target: bersaglio, clientX: 100, clientY: 100 });
+    esito[nome] = _canvasState.isDraggingNode !== null;
+}
+console.log(JSON.stringify(esito));
+"""
+    )
+
+    esito = _esegui_con_node(prova)
+    assert esito.returncode == 0, esito.stderr
+    trascina = json.loads(esito.stdout.strip())
+
+    for nome in ("svgDentroIlPulsante", "pathDentroIlPulsante", "pulsante", "campoDiTesto", "menuATendina"):
+        assert not trascina[nome], f"premendo {nome} parte il trascinamento del nodo: il comando non risponde"
+
+    # E l'intestazione deve restare la maniglia: una guardia che spegne
+    # tutto sarebbe verde e avrebbe rotto lo spostamento dei nodi.
+    assert trascina["intestazione"], "il nodo non si puo' piu' spostare prendendolo per l'intestazione"
