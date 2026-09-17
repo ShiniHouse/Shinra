@@ -218,7 +218,7 @@ function satelliteDiQuestoDispositivo() {
             localStorage.setItem(CHIAVE_SATELLITE, id);
         }
         return id;
-    } catch (e) {
+    } catch {
         // Navigazione privata, o memoria del sito bloccata: si resta
         // un dispositivo senza stanza, che è come funzionava prima.
         return null;
@@ -228,7 +228,7 @@ function satelliteDiQuestoDispositivo() {
 function stanzaDiQuestoDispositivo() {
     try {
         return localStorage.getItem(CHIAVE_STANZA) || '';
-    } catch (e) {
+    } catch {
         return '';
     }
 }
@@ -246,7 +246,7 @@ async function annunciaQuestoDispositivo() {
                 stanza: stanzaDiQuestoDispositivo()
             })
         });
-    } catch (e) {
+    } catch {
         // Non poter dire dove si è non impedisce di parlare.
     }
     mostraStanzaScelta();
@@ -255,7 +255,7 @@ async function annunciaQuestoDispositivo() {
 async function scegliStanza(stanza) {
     try {
         localStorage.setItem(CHIAVE_STANZA, stanza || '');
-    } catch (e) {
+    } catch {
         alert('Il browser non mi lascia ricordare la stanza su questo dispositivo.');
         return;
     }
@@ -285,7 +285,7 @@ async function riempiStanzeNote() {
         const alias = await res.json();
         const stanze = [...new Set((alias || []).map(a => (a.room || '').trim()).filter(Boolean))];
         elenco.innerHTML = stanze.sort().map(s => `<option value="${s}"></option>`).join('');
-    } catch (e) {
+    } catch {
         // Senza suggerimenti la stanza si scrive a mano, e va bene.
     }
 }

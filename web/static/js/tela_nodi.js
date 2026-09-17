@@ -249,7 +249,7 @@ async function simulateCanvasFlow() {
         });
         if (!res.ok) throw new Error('simulazione rifiutata');
         esito = await res.json();
-    } catch (e) {
+    } catch {
         if (btn) btn.innerHTML = testoPulsante;
         alert('Non riesco a simulare adesso: il server non ha risposto.');
         return;

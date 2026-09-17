@@ -31,7 +31,7 @@ async function _dettaglioErrore(res) {
     try {
         const corpo = await res.json();
         return _testoDelDettaglio(corpo.detail || corpo.message, res.status);
-    } catch (e) {
+    } catch {
         return `Errore ${res.status}`;
     }
 }

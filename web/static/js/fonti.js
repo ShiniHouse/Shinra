@@ -59,7 +59,6 @@ async function loadSources() {
         if (!items.length) {
             container.innerHTML = `<p class="text-xs text-slate-500 col-span-2 py-3 text-center">Nessuna fonte attiva. Aggiungine dal catalogo qui sotto o clicca "Attiva Tutte".</p>`;
         } else {
-            const activeCount = items.filter(s => s.enabled !== false).length;
             container.innerHTML = items.map(s => {
                 const isEnabled = s.enabled !== false;
                 return `

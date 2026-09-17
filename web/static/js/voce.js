@@ -51,7 +51,7 @@ async function toggleSpeechRecognition() {
 
 async function toggleTrascrizioneLocale(stato) {
     if (isRecording && registratore) {
-        try { registratore.stop(); } catch (e) {}
+        try { registratore.stop(); } catch {}
         return;
     }
     if (!stato.pronto) {
@@ -80,7 +80,7 @@ async function toggleTrascrizioneLocale(stato) {
     let flusso;
     try {
         flusso = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
+    } catch {
         alert("Accesso al microfono non consentito. Controlla i permessi del browser.");
         return;
     }
@@ -156,7 +156,7 @@ async function toggleWebSpeech() {
     }
 
     if (isRecording && activeRecognition) {
-        try { activeRecognition.stop(); } catch(e) {}
+        try { activeRecognition.stop(); } catch {}
         stopRecording();
         return;
     }

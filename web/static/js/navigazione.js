@@ -160,13 +160,13 @@ function _ricordaSezione(nome) {
         } else {
             window.localStorage.removeItem(MEMORIA_SEZIONE);
         }
-    } catch (e) { /* senza memoria si vive */ }
+    } catch { /* senza memoria si vive */ }
 }
 
 function _sezioneRicordata() {
     try {
         return window.localStorage.getItem(MEMORIA_SEZIONE);
-    } catch (e) {
+    } catch {
         return null;
     }
 }

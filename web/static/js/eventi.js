@@ -29,7 +29,7 @@ function collegaEventi() {
 
     _eventiSocket.onmessage = (msg) => {
         let evento;
-        try { evento = JSON.parse(msg.data); } catch (e) { return; }
+        try { evento = JSON.parse(msg.data); } catch { return; }
         gestisciEvento(evento);
     };
 
@@ -41,7 +41,7 @@ function collegaEventi() {
         _attesaRiconnessione = Math.min(_attesaRiconnessione * 2, 30000);
     };
 
-    _eventiSocket.onerror = () => { try { _eventiSocket.close(); } catch (e) {} };
+    _eventiSocket.onerror = () => { try { _eventiSocket.close(); } catch {} };
 }
 
 function gestisciEvento(evento) {

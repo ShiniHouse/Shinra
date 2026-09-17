@@ -50,6 +50,27 @@ jobs:
         run: mypy src/shinra/api src/shinra/channels
         continue-on-error: true
 
+  frontend:
+    name: Frontend — ESLint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      # I copioni della dashboard non passavano da nessun controllo: un nome
+      # sbagliato non e' un errore di sintassi, e' un ReferenceError che
+      # scatta al clic. Il primo giro di ESLint ne ha trovato uno che era in
+      # produzione — il pulsante «+ Timer» non creava niente.
+      - name: ESLint
+        run: npx eslint --max-warnings 0 --format stylish web/static/js/
+
   ganci:
     name: Ganci pre-commit
     runs-on: ubuntu-latest

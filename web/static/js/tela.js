@@ -206,9 +206,6 @@ function renderCanvasElements() {
     const container = document.getElementById('flow-nodes-container');
     if (!container) return;
 
-    // Costruisce opzioni dispositivi per select
-    const aliases = (typeof data_store !== 'undefined' ? [] : (_haEntitiesCache ? Object.values(_haEntitiesCache.groups).flat() : []));
-
     container.innerHTML = _canvasState.nodes.map(node => {
         let headerBg = 'from-indigo-600 to-violet-600';
         let icon = 'workflow';
