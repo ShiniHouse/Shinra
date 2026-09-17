@@ -16,17 +16,15 @@ async function loadOllamaModels(selectedModel = null) {
         const data = await res.json();
         if (data.success && data.models && data.models.length > 0) {
             const current = selectedModel || data.active_model || select.value;
-            select.innerHTML = data.models
-                .map((m) => {
-                    const isSel = m.name === current ? 'selected' : '';
-                    const sizeInfo = m.size_gb ? ` — ${m.size_gb}` : '';
-                    const paramInfo = m.parameter_size ? ` (${m.parameter_size})` : '';
-                    return `<option value="${m.name}" ${isSel}>🧠 ${m.name}${paramInfo}${sizeInfo}</option>`;
-                })
-                .join('');
+            select.innerHTML = _html`${data.models.map((m) => {
+                const isSel = m.name === current ? _grezzo('selected') : '';
+                const sizeInfo = m.size_gb ? ` — ${m.size_gb}` : '';
+                const paramInfo = m.parameter_size ? ` (${m.parameter_size})` : '';
+                return _html`<option value="${m.name}" ${isSel}>🧠 ${m.name}${paramInfo}${sizeInfo}</option>`;
+            })}`;
         } else {
             const current = selectedModel || 'qwen2.5:3b';
-            select.innerHTML = `<option value="${current}">${current}</option>`;
+            select.innerHTML = _html`<option value="${current}">${current}</option>`;
         }
     } catch (e) {
         console.warn('Impossibile caricare lista modelli Ollama:', e);
@@ -203,7 +201,7 @@ function copyAlexaSkillJson() {
             const btn = document.getElementById('copy-alexa-json-btn');
             if (btn) {
                 const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i> Copiato! ✓';
+                btn.innerHTML = _html`<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i> Copiato! ✓`;
                 safeCreateIcons();
                 setTimeout(() => {
                     btn.innerHTML = originalHtml;
@@ -268,8 +266,7 @@ async function testHaConnection() {
         'text-yellow-300',
     );
     resultBox.classList.add('bg-slate-800', 'text-slate-300');
-    resultBox.innerHTML =
-        '<span class="animate-pulse">Test di connessione a Home Assistant in corso...</span>';
+    resultBox.innerHTML = _html`<span class="animate-pulse">Test di connessione a Home Assistant in corso...</span>`;
 
     // Prima salviamo le credenziali inserite
     const res = await fetch('/api/settings', { headers: getAuthHeaders() });
@@ -290,17 +287,17 @@ async function testHaConnection() {
     resultBox.classList.remove('bg-slate-800', 'text-slate-300');
     if (ha.status === 'ok') {
         resultBox.classList.add('bg-emerald-950', 'text-emerald-300', 'border', 'border-emerald-800');
-        resultBox.innerHTML = `✅ <strong>Connessione riuscita!</strong> Home Assistant risponde correttamente su ${ha.url || ''}.`;
+        resultBox.innerHTML = _html`✅ <strong>Connessione riuscita!</strong> Home Assistant risponde correttamente su ${ha.url || ''}.`;
     } else if (ha.status === 'unauthorized') {
         resultBox.classList.add('bg-rose-950', 'text-rose-300', 'border', 'border-rose-800');
-        resultBox.innerHTML = `❌ <strong>Token non valido (401 Unauthorized):</strong> Genera un nuovo Long-Lived Token dal tuo profilo Home Assistant e incollalo qui.`;
+        resultBox.innerHTML = _html`❌ <strong>Token non valido (401 Unauthorized):</strong> Genera un nuovo Long-Lived Token dal tuo profilo Home Assistant e incollalo qui.`;
     } else if (ha.status === 'unconfigured') {
         resultBox.classList.add('bg-yellow-950', 'text-yellow-300', 'border', 'border-yellow-800');
-        resultBox.innerHTML = `⚠️ <strong>Token non inserito:</strong> Incolla il tuo Long-Lived Token.`;
+        resultBox.innerHTML = _html`⚠️ <strong>Token non inserito:</strong> Incolla il tuo Long-Lived Token.`;
     } else {
         resultBox.classList.add('bg-rose-950', 'text-rose-300', 'border', 'border-rose-800');
         const errMsg = ha.message || "Verifica l'indirizzo IP e la porta 8123";
-        resultBox.innerHTML = `❌ <strong>Home Assistant non raggiungibile:</strong> ${errMsg}.`;
+        resultBox.innerHTML = _html`❌ <strong>Home Assistant non raggiungibile:</strong> ${errMsg}.`;
     }
     await checkSystemHealth();
 }
@@ -337,20 +334,20 @@ async function checkSystemHealth() {
 
         const ollamaBadge = document.getElementById('ollama-status');
         if (data.ollama && data.ollama.status === 'online') {
-            ollamaBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Ollama: Online</span>`;
+            ollamaBadge.innerHTML = _html`<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Ollama: Online</span>`;
             ollamaBadge.style.cssText =
                 'display:flex; align-items:center; gap:0.375rem; padding:0.25rem 0.625rem; border-radius:9999px; font-size:11px; font-weight:500; background:rgba(6,46,37,0.7); border:1px solid #065f46; color:#6ee7b7';
             const badge = document.getElementById('model-name-badge');
             if (badge) badge.innerText = data.ollama.active_model || data.ollama.current_model || 'online';
         } else {
-            ollamaBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span><span>Ollama: Offline</span>`;
+            ollamaBadge.innerHTML = _html`<span class="w-2 h-2 rounded-full bg-rose-500"></span><span>Ollama: Offline</span>`;
             ollamaBadge.style.cssText =
                 'display:flex; align-items:center; gap:0.375rem; padding:0.25rem 0.625rem; border-radius:9999px; font-size:11px; font-weight:500; background:rgba(69,10,10,0.7); border:1px solid #7f1d1d; color:#fca5a5';
         }
 
         const haBadge = document.getElementById('ha-status');
         if (data.home_assistant && data.home_assistant.status === 'ok') {
-            haBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>HA: Connesso</span>`;
+            haBadge.innerHTML = _html`<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>HA: Connesso</span>`;
             haBadge.style.cssText =
                 'display:flex; align-items:center; gap:0.375rem; padding:0.25rem 0.625rem; border-radius:9999px; font-size:11px; font-weight:500; background:rgba(6,46,37,0.7); border:1px solid #065f46; color:#6ee7b7';
         } else {
@@ -358,7 +355,7 @@ async function checkSystemHealth() {
                 data.home_assistant && data.home_assistant.message
                     ? data.home_assistant.message
                     : 'Non configurato';
-            haBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-400"></span><span>HA: ${msg}</span>`;
+            haBadge.innerHTML = _html`<span class="w-2 h-2 rounded-full bg-yellow-400"></span><span>HA: ${msg}</span>`;
             haBadge.style.cssText =
                 'display:flex; align-items:center; gap:0.375rem; padding:0.25rem 0.625rem; border-radius:9999px; font-size:11px; font-weight:500; background:rgba(66,32,6,0.7); border:1px solid #92400e; color:#fde68a';
         }
@@ -382,7 +379,7 @@ async function installPwa() {
         const { outcome } = await _deferredPwaPrompt.userChoice;
         if (outcome === 'accepted') {
             const btn = document.getElementById('pwa-settings-install-btn');
-            if (btn) btn.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i> App Installata';
+            if (btn) btn.innerHTML = _html`<i data-lucide="check" class="w-3.5 h-3.5"></i> App Installata`;
         }
         _deferredPwaPrompt = null;
     } else {

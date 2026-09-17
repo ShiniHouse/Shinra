@@ -17,7 +17,7 @@ async function startLearningModal() {
     document.getElementById('learning-answer-input').value = '';
     document.getElementById('learning-question-text').innerText = 'Inizializzazione intervista in corso...';
     document.getElementById('learning-topic-title').innerHTML =
-        `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Avvio...`;
+        _html`<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Avvio...`;
     safeCreateIcons();
 
     try {
@@ -56,11 +56,11 @@ function renderLearningStep(data) {
     if (data.is_complete) {
         stepBadge.innerText = 'Completata! 🎉';
         progBar.style.width = '100%';
-        topicTitle.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Apprendimento Concluso`;
+        topicTitle.innerHTML = _html`<i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Apprendimento Concluso`;
         qText.innerText = data.message;
         hintText.innerText = 'Tutti i fatti e le preferenze sono stati registrati nella tua Conoscenza Casa.';
         answerInput.parentElement.classList.add('hidden');
-        submitBtn.parentElement.innerHTML = `
+        submitBtn.parentElement.innerHTML = _html`
             <button type="button" onclick="closeLearningModal()" class="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-indigo-600 hover:from-emerald-400 text-white rounded-xl text-xs font-bold transition shadow-lg">
                 Chiudi e Visualizza Conoscenza
             </button>
@@ -78,7 +78,7 @@ function renderLearningStep(data) {
 
     stepBadge.innerText = `Fase ${currentIdx} di ${total}`;
     progBar.style.width = `${pct}%`;
-    topicTitle.innerHTML = `<i data-lucide="help-circle" class="w-3.5 h-3.5"></i> ${step.title || 'Domanda'}`;
+    topicTitle.innerHTML = _html`<i data-lucide="help-circle" class="w-3.5 h-3.5"></i> ${step.title || 'Domanda'}`;
     qText.innerText = step.question || data.message;
     lastLearningQuestion = step.question || data.message;
     hintText.innerText = step.hint ? `💡 ${step.hint}` : '';
@@ -138,7 +138,7 @@ async function submitLearningAnswer() {
     const submitBtn = document.getElementById('learning-submit-btn');
     const originalBtnText = submitBtn.innerHTML;
     submitBtn.disabled = true;
-    submitBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> <span>Salvataggio...</span>`;
+    submitBtn.innerHTML = _html`<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> <span>Salvataggio...</span>`;
     safeCreateIcons();
 
     try {
@@ -168,7 +168,7 @@ async function acceptProposedRoutine() {
     if (!currentProposedRoutine) return;
     const btn = document.getElementById('learning-routine-confirm-btn');
     btn.disabled = true;
-    btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Creazione in corso...`;
+    btn.innerHTML = _html`<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Creazione in corso...`;
     safeCreateIcons();
 
     try {
@@ -181,7 +181,7 @@ async function acceptProposedRoutine() {
         if (data.success) {
             btn.className =
                 'px-3 py-1.5 bg-slate-800 text-emerald-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-emerald-500/40';
-            btn.innerHTML = `<i data-lucide="check-check" class="w-3.5 h-3.5"></i> Routine Creata con Successo!`;
+            btn.innerHTML = _html`<i data-lucide="check-check" class="w-3.5 h-3.5"></i> Routine Creata con Successo!`;
             safeCreateIcons();
             if (typeof loadModes === 'function') loadModes();
         } else {

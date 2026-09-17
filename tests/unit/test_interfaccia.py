@@ -2532,18 +2532,7 @@ def test_prettier_non_tocca_il_python():
 # Le aree ancora da convertire a `_html`. L'elenco si accorcia, mai il
 # contrario: `test_la_lista_dei_non_convertiti_non_si_allunga` lo impedisce.
 # Un file nuovo nasce fuori da qui, quindi nasce gia' protetto.
-NON_ANCORA_CONVERTITI = {
-    "accesso.js",
-    "avvio.js",
-    "impostazioni.js",
-    "istruisci.js",
-    "navigazione.js",
-    "routine.js",
-    "tela.js",
-    "tela_disegno.js",
-    "tela_nodi.js",
-    "voce.js",
-}
+NON_ANCORA_CONVERTITI: set[str] = set()
 
 
 # Un tag vero: `<` seguito da un nome e poi da spazio, `>` o `/`. Serve a
@@ -2586,6 +2575,11 @@ def _aperture_di_template(sorgente: str) -> list[tuple[int, str]]:
                 i += 2
                 continue
             if c == "$" and sorgente[i : i + 2] == "${":
+                # Un segnaposto al posto dell'espressione: serve a
+                # distinguere un template vuoto da un involucro — cioe' da
+                # uno fatto di soli `${...}` — che fuori di qui sono due
+                # cose molto diverse.
+                aperti[-1][1].append("\x00")
                 pila.append(["expr", 0])
                 i += 2
                 continue
@@ -2667,6 +2661,125 @@ def _aperture_di_markup(sorgente: str) -> list[int]:
     return [i for i, contenuto in _aperture_di_template(sorgente) if TAG.search(contenuto)]
 
 
+# I tre sbocchi: qui una stringa smette di essere una stringa e diventa la
+# pagina. `showModal` e' `innerHTML` con un altro nome.
+SBOCCO = re.compile(r"(?:\.innerHTML\s*=|\.insertAdjacentHTML\s*\([^`]*,|\bshowModal\s*\()\s*$", re.S)
+
+
+def _template_da_marcare(sorgente: str) -> list[tuple[int, str]]:
+    """I template che devono passare da `_html`, e per quale dei tre motivi.
+
+    **markup** — fra gli apici c'e' un tag. E' il caso ovvio.
+
+    **sbocco** — sta subito dopo un `innerHTML =`, o dentro uno
+    `showModal(`. Qui il tag puo' non esserci: in
+    `innerHTML = \u0060${voci.map(...)}\u0060` fra gli apici non c'e' niente,
+    eppure e' markup — quello vero sta nei pezzi che l'elenco produce.
+    Senza `_html` l'elenco diventa `String(array)`, cioe' i pezzi separati
+    da virgole.
+
+    **involucro** — fra gli apici c'e' **un solo** `${...}` e nient'altro,
+    neppure uno spazio. E' la stessa cosa di sopra quando il risultato
+    passa per una variabile prima di finire nella pagina. Un involucro
+    senza `_html` non fa niente che `String(...)` non faccia gia', quindi
+    chiederglielo non costa nulla.
+
+    Lo spazio conta davvero: `\u0060${nome} ${cognome}\u0060` non e' un
+    involucro, e' una frase che si costruisce. La prima versione di questa
+    regola non li distingueva e accusava tre punti innocenti.
+
+    I primi tentativi di questa guardia avevano solo il primo motivo, e
+    cinque mutazioni su dodici non mordevano — tutte e cinque di questa
+    forma.
+    """
+    da_marcare = []
+    for i, contenuto in _aperture_di_template(sorgente):
+        if TAG.search(contenuto):
+            da_marcare.append((i, "markup"))
+        elif SBOCCO.search(sorgente[:i]):
+            da_marcare.append((i, "sbocco"))
+        elif contenuto and set(contenuto) == {"\x00"}:
+            da_marcare.append((i, "involucro"))
+    return da_marcare
+
+
+# I tre sbocchi: qui una stringa smette di essere una stringa e diventa
+# la pagina. `showModal` e' `innerHTML` con un altro nome.
+SBOCCHI = re.compile(r"\.innerHTML\s*=\s*|\.insertAdjacentHTML\s*\(|\bshowModal\s*\(")
+
+
+def _fine_istruzione(sorgente: str, inizio: int) -> int:
+    """Dove finisce l'istruzione che comincia a `inizio`.
+
+    Il primo `;` o fine riga a parentesi chiuse, saltando stringhe,
+    template e commenti — dove un `;` non conta.
+    """
+    i, n = inizio, len(sorgente)
+    profondita = 0
+    while i < n:
+        c = sorgente[i]
+        if c in "'\"":
+            i += 1
+            while i < n and sorgente[i] != c:
+                i += 1 + (sorgente[i] == "\\")
+            i += 1
+            continue
+        if c == "`":
+            # Salta il template intero, annidati compresi.
+            interni = [a for a, _ in _aperture_di_template(sorgente[i:]) if a == 0]
+            livello, j = 0, i
+            while j < n:
+                if sorgente[j] == "\\":
+                    j += 2
+                    continue
+                if sorgente[j] == "`":
+                    livello += 1 if livello == 0 else 0
+                    j += 1
+                    if livello:
+                        # cerca la chiusura contando i `${`
+                        graffe = 0
+                        while j < n:
+                            if sorgente[j] == "\\":
+                                j += 2
+                                continue
+                            if sorgente[j : j + 2] == "${":
+                                graffe += 1
+                                j += 2
+                                continue
+                            if graffe and sorgente[j] == "}":
+                                graffe -= 1
+                            elif not graffe and sorgente[j] == "`":
+                                j += 1
+                                break
+                            elif graffe and sorgente[j] == "`":
+                                # template annidato dentro l'espressione
+                                k = _fine_istruzione(sorgente, j)
+                                j = max(k, j + 1)
+                                continue
+                            j += 1
+                        break
+                    continue
+                j += 1
+            i = j
+            del interni
+            continue
+        if sorgente[i : i + 2] == "//":
+            i = sorgente.find("\n", i)
+            if i < 0:
+                return n
+            continue
+        if c in "([{":
+            profondita += 1
+        elif c in ")]}":
+            profondita -= 1
+            if profondita < 0:
+                return i
+        elif c == ";" and profondita <= 0:
+            return i
+        i += 1
+    return n
+
+
 def test_il_markup_con_valori_dentro_passa_da_html():
     """Costruire markup attaccando stringhe e' come costruire SQL attaccando
     stringhe, e per la stessa ragione.
@@ -2698,10 +2811,10 @@ def test_il_markup_con_valori_dentro_passa_da_html():
         # scoperto perche' una mutazione su `fonti.js` non mordeva.
         # I commenti veri li salta gia' lo scanner, che sa dove guardare.
         testo = _testo(percorso)
-        for i in _aperture_di_markup(testo):
+        for i, perche in _template_da_marcare(testo):
             if not testo[:i].rstrip().endswith("_html"):
                 riga = testo.count("\n", 0, i) + 1
-                colpevoli.append(f"{percorso.name}:{riga} -> {testo[i : i + 70]!r}")
+                colpevoli.append(f"{percorso.name}:{riga} ({perche}) -> {testo[i : i + 60]!r}")
 
     assert not colpevoli, "markup costruito attaccando stringhe, senza passare da `_html`:\n" + "\n".join(
         colpevoli
@@ -2748,7 +2861,16 @@ def test_la_guardia_riconosce_il_markup_da_un_confronto():
     # E il contenuto di un template annidato non finisce in quello esterno:
     # se cosi' fosse, ogni esterno risulterebbe markup per colpa di dentro.
     esterni = _aperture_di_template("`fuori ${`<p>dentro</p>`} ancora`")
-    assert esterni[0][1] == "fuori  ancora", esterni
+    assert esterni[0][1] == "fuori \x00 ancora", esterni
+
+    # Un involucro — un solo `${...}` e nient'altro — va marcato anche
+    # senza tag dentro: quello vero sta nei pezzi che l'espressione
+    # produce. Una frase costruita a pezzi, invece, no.
+    assert _template_da_marcare("const a = `${voci.map(f)}`;") == [(10, "involucro")]
+    assert _template_da_marcare("const a = `${nome} ${cognome}`;") == []
+    assert _template_da_marcare("x.innerHTML = `${voci}`;") == [(14, "sbocco")]
+    assert _template_da_marcare("showModal(`${voci}`);") == [(10, "sbocco")]
+    assert _template_da_marcare("const a = `ciao ${nome}`;") == []
 
 
 def test_la_lista_dei_non_convertiti_non_si_allunga():
@@ -2767,13 +2889,12 @@ def test_la_lista_dei_non_convertiti_non_si_allunga():
 
     # Il numero scende a ogni passo. Alzarlo vuol dire aver aggiunto
     # un'eccezione invece di toglierne una.
-    # Uguale, non «al massimo»: con `<=` bastava alzare il tetto per
-    # aggiungere un'eccezione senza che si vedesse. Cosi' il numero va
-    # cambiato apposta, e il cambiamento sta nella diff accanto al nome
-    # dell'area che entra o esce.
-    assert len(NON_ANCORA_CONVERTITI) == 10, (
-        f"le aree non convertite sono {len(NON_ANCORA_CONVERTITI)}, non 10: "
-        "se ne hai convertita una, aggiorna il numero; se ne hai aggiunta una, non farlo"
+    # L'elenco e' vuoto: ogni area passa da `_html`. Resta la costante, e
+    # resta questa guardia, perche' la strada facile per far passare un
+    # copione nuovo che concatena e' aggiungerlo qui invece di sistemarlo.
+    assert not NON_ANCORA_CONVERTITI, (
+        f"l'elenco e' tornato a contenere qualcosa: {sorted(NON_ANCORA_CONVERTITI)}. "
+        "Era vuoto: se un'area nuova concatena, si sistema l'area, non l'elenco"
     )
 
 

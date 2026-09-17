@@ -181,7 +181,10 @@ function renderCanvasWires(draftPos = null) {
     const svg = document.getElementById('flow-svg-layer');
     if (!svg) return;
 
-    let pathsHtml = '';
+    // Un elenco di pezzi gia' marcati, non una stringa che cresce:
+    // attaccarli con `+=` li ridurrebbe a testo, e l'`_html` esterno poi
+    // li ripulirebbe — i cavi sparirebbero e nessuno saprebbe perche'.
+    const cavi = [];
 
     _canvasState.edges.forEach((edge, idx) => {
         const fromNode = _canvasState.nodes.find((n) => n.id === edge.from);
@@ -198,7 +201,7 @@ function renderCanvasWires(draftPos = null) {
             const midX = (x1 + x2) / 2;
             const midY = (y1 + y2) / 2;
 
-            pathsHtml += `
+            cavi.push(_html`
                 <g class="wire-group">
                     <!-- Glow shadow -->
                     <path d="${pathD}" stroke="rgba(99, 102, 241, 0.2)" stroke-width="8" fill="none" />
@@ -208,7 +211,7 @@ function renderCanvasWires(draftPos = null) {
                     <circle cx="${midX}" cy="${midY}" r="7" fill="#0f172a" stroke="#6366f1" stroke-width="1.5" class="pointer-events-auto cursor-pointer hover:fill-rose-600" onclick="deleteCanvasEdge(${idx})" />
                     <text x="${midX}" y="${midY + 3}" fill="#cbd5e1" font-size="9" text-anchor="middle" font-weight="bold" class="pointer-events-none">×</text>
                 </g>
-            `;
+            `);
         }
     });
 
@@ -222,18 +225,20 @@ function renderCanvasWires(draftPos = null) {
             const y2 = draftPos.y;
             const dx = Math.max(40, Math.abs(x2 - x1) * 0.5);
             const pathD = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
-            pathsHtml += `<path d="${pathD}" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="4 4" fill="none" />`;
+            cavi.push(
+                _html`<path d="${pathD}" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="4 4" fill="none" />`,
+            );
         }
     }
 
-    svg.innerHTML = `
+    svg.innerHTML = _html`
         <defs>
             <linearGradient id="wireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stop-color="#6366f1" />
                 <stop offset="100%" stop-color="#a855f7" />
             </linearGradient>
         </defs>
-        ${pathsHtml}
+        ${cavi}
     `;
 }
 
@@ -250,7 +255,7 @@ async function simulateCanvasFlow() {
     const btn = document.getElementById('btn-sim-canvas');
     const testoPulsante = '▶️ Prova il flusso';
     if (!_canvasState.nodes.length) return;
-    if (btn) btn.innerHTML = '<span class="animate-spin">⏳</span> Simulazione...';
+    if (btn) btn.innerHTML = _html`<span class="animate-spin">⏳</span> Simulazione...`;
 
     let esito;
     try {
@@ -262,7 +267,7 @@ async function simulateCanvasFlow() {
         if (!res.ok) throw new Error('simulazione rifiutata');
         esito = await res.json();
     } catch {
-        if (btn) btn.innerHTML = testoPulsante;
+        if (btn) btn.innerText = testoPulsante;
         alert('Non riesco a simulare adesso: il server non ha risposto.');
         return;
     }
@@ -307,7 +312,7 @@ async function simulateCanvasFlow() {
         await new Promise((r) => setTimeout(r, 400));
     }
 
-    if (btn) btn.innerHTML = testoPulsante;
+    if (btn) btn.innerText = testoPulsante;
 }
 
 function spegniLaSimulazione() {

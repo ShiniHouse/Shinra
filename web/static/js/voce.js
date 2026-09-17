@@ -105,8 +105,7 @@ async function toggleTrascrizioneLocale(stato) {
         if (btn) btn.classList.add('bg-rose-600', 'text-white', 'mic-active');
         const st = document.getElementById('recording-status');
         if (st) {
-            st.innerHTML =
-                '<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> 🎙️ In ascolto... parla pure!';
+            st.innerHTML = _html`<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> 🎙️ In ascolto... parla pure!`;
             st.classList.remove('hidden');
         }
         updateLivingCoreState('listening');
@@ -125,8 +124,7 @@ async function toggleTrascrizioneLocale(stato) {
 
         const st = document.getElementById('recording-status');
         if (st) {
-            st.innerHTML =
-                '<span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Trascrivo...';
+            st.innerHTML = _html`<span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Trascrivo...`;
             st.classList.remove('hidden');
         }
 
@@ -147,7 +145,7 @@ async function toggleTrascrizioneLocale(stato) {
 
             const esito = await res.json();
             if (esito.vuota) {
-                if (st) st.innerHTML = 'Non ho sentito niente.';
+                if (st) st.innerText = 'Non ho sentito niente.';
                 setTimeout(() => {
                     if (st) st.classList.add('hidden');
                 }, 2000);
@@ -215,8 +213,7 @@ async function toggleWebSpeech() {
             if (btn) btn.classList.add('bg-rose-600', 'text-white', 'mic-active');
             const st = document.getElementById('recording-status');
             if (st) {
-                st.innerHTML =
-                    '<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> 🎙️ In ascolto... parla pure!';
+                st.innerHTML = _html`<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> 🎙️ In ascolto... parla pure!`;
                 st.classList.remove('hidden');
             }
             updateLivingCoreState('listening');
@@ -290,7 +287,7 @@ function populateVoiceSelect() {
     if (!select) return;
 
     const itVoices = availableVoices.filter((v) => v.lang.startsWith('it') || v.lang.startsWith('IT'));
-    select.innerHTML = '<option value="auto">✨ Selezione Automatica Migliore (Naturale)</option>';
+    select.innerHTML = _html`<option value="auto">✨ Selezione Automatica Migliore (Naturale)</option>`;
 
     itVoices.forEach((v) => {
         const opt = document.createElement('option');

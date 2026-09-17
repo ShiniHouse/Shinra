@@ -313,15 +313,13 @@ async function loadUsersDropdown() {
         usersData = await res.json();
         const select = document.getElementById('user-select');
         const mobileSelect = document.getElementById('mobile-user-select');
-        const optionsHtml = usersData
-            .map((u) => {
-                const av = getUserAvatarInfo(u);
-                return `<option value="${u.id}" ${u.id === activeUserId ? 'selected' : ''}>${av.emoji} ${u.name} (${u.role})</option>`;
-            })
-            .join('');
+        const opzioni = _html`${usersData.map((u) => {
+            const av = getUserAvatarInfo(u);
+            return _html`<option value="${u.id}" ${u.id === activeUserId ? _grezzo('selected') : ''}>${av.emoji} ${u.name} (${u.role})</option>`;
+        })}`;
 
-        if (select) select.innerHTML = optionsHtml;
-        if (mobileSelect) mobileSelect.innerHTML = optionsHtml;
+        if (select) select.innerHTML = opzioni;
+        if (mobileSelect) mobileSelect.innerHTML = opzioni;
         updateActiveUserBanner();
     } catch (e) {
         console.error(e);
@@ -346,6 +344,6 @@ function updateActiveUserBanner() {
     const av = getUserAvatarInfo(user);
     const nameEl = document.getElementById('banner-user-name');
     const roleEl = document.getElementById('banner-user-role');
-    if (nameEl) nameEl.innerHTML = `${av.emoji} ${user.name}`;
+    if (nameEl) nameEl.innerText = `${av.emoji} ${user.name}`;
     if (roleEl) roleEl.innerText = `${user.role} • ${av.label}`;
 }

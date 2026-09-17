@@ -94,16 +94,16 @@ function updateThemeUI(effectiveTheme) {
 
     if (currentThemeSetting === 'auto') {
         const isDay = effectiveTheme === 'light';
-        icon.innerHTML = `<i data-lucide="${isDay ? 'sun-medium' : 'moon'}" class="w-3.5 h-3.5 ${isDay ? 'text-amber-500' : 'text-indigo-400'}"></i>`;
-        label.innerHTML = `Auto <span class="text-[10px] opacity-75 font-normal">(${isDay ? 'Giorno' : 'Notte'})</span>`;
+        icon.innerHTML = _html`<i data-lucide="${isDay ? 'sun-medium' : 'moon'}" class="w-3.5 h-3.5 ${isDay ? 'text-amber-500' : 'text-indigo-400'}"></i>`;
+        label.innerHTML = _html`Auto <span class="text-[10px] opacity-75 font-normal">(${isDay ? 'Giorno' : 'Notte'})</span>`;
         if (btn)
             btn.title = `Modalità Automatica attiva (${isDay ? 'Luce Solare fino alle 19:30' : 'Modalità Notturna fino alle 07:00'}). Clicca per forzare Giorno.`;
     } else if (currentThemeSetting === 'light') {
-        icon.innerHTML = `<i data-lucide="sun" class="w-3.5 h-3.5 text-amber-500"></i>`;
+        icon.innerHTML = _html`<i data-lucide="sun" class="w-3.5 h-3.5 text-amber-500"></i>`;
         label.innerText = 'Giorno';
         if (btn) btn.title = 'Modalità Giorno forzata. Clicca per passare a Notte.';
     } else {
-        icon.innerHTML = `<i data-lucide="moon" class="w-3.5 h-3.5 text-indigo-400"></i>`;
+        icon.innerHTML = _html`<i data-lucide="moon" class="w-3.5 h-3.5 text-indigo-400"></i>`;
         label.innerText = 'Notte';
         if (btn) btn.title = 'Modalità Notte forzata. Clicca per tornare in Auto.';
     }
