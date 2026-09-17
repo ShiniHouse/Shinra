@@ -8,7 +8,9 @@ function _segnalaStatoEventi(collegato) {
     const spia = document.getElementById('stato-eventi');
     if (spia) {
         spia.className = `w-2 h-2 rounded-full ${collegato ? 'bg-emerald-500' : 'bg-slate-600'}`;
-        spia.title = collegato ? 'Eventi del server collegati' : 'Eventi del server non collegati: gli avvisi arrivano solo da questa scheda';
+        spia.title = collegato
+            ? 'Eventi del server collegati'
+            : 'Eventi del server non collegati: gli avvisi arrivano solo da questa scheda';
     }
 }
 
@@ -29,7 +31,11 @@ function collegaEventi() {
 
     _eventiSocket.onmessage = (msg) => {
         let evento;
-        try { evento = JSON.parse(msg.data); } catch { return; }
+        try {
+            evento = JSON.parse(msg.data);
+        } catch {
+            return;
+        }
         gestisciEvento(evento);
     };
 
@@ -41,13 +47,20 @@ function collegaEventi() {
         _attesaRiconnessione = Math.min(_attesaRiconnessione * 2, 30000);
     };
 
-    _eventiSocket.onerror = () => { try { _eventiSocket.close(); } catch {} };
+    _eventiSocket.onerror = () => {
+        try {
+            _eventiSocket.close();
+        } catch {}
+    };
 }
 
 function gestisciEvento(evento) {
     if (evento.tipo === 'timer.scaduto') {
-        const t = _activeTimers.find(x => x.id === evento.dati.id);
-        if (t) { t.remaining_seconds = 0; t._notified = true; }
+        const t = _activeTimers.find((x) => x.id === evento.dati.id);
+        if (t) {
+            t.remaining_seconds = 0;
+            t._notified = true;
+        }
         playChimeAlert();
         speakText(evento.frase || 'Il timer è scaduto.');
         loadTimers();
@@ -91,14 +104,17 @@ async function caricaPresenza() {
 
         if (punto) punto.className = `w-2 h-2 rounded-full ${p.abitata ? 'bg-emerald-400' : 'bg-slate-500'}`;
         if (testo) {
-            testo.textContent = quanti === 0 ? 'Casa vuota'
-                : quanti === 1 ? '1 in casa'
-                : `${quanti} in casa`;
+            testo.textContent =
+                quanti === 0 ? 'Casa vuota' : quanti === 1 ? '1 in casa' : `${quanti} in casa`;
         }
         pill.title = [
-            (p.presenti || []).map(e => e.split('.').pop()).join(', ') || 'nessuno in casa',
-            attesa ? `in attesa di conferma: ${(p.in_attesa || []).map(e => e.split('.').pop()).join(', ')}` : ''
-        ].filter(Boolean).join(' — ');
+            (p.presenti || []).map((e) => e.split('.').pop()).join(', ') || 'nessuno in casa',
+            attesa
+                ? `in attesa di conferma: ${(p.in_attesa || []).map((e) => e.split('.').pop()).join(', ')}`
+                : '',
+        ]
+            .filter(Boolean)
+            .join(' — ');
     } catch (e) {
         console.warn('Presenza non disponibile:', e);
     }
@@ -140,8 +156,5 @@ function aggiornaStatoCasa(dati) {
     // Un lampo breve: senza, un cambiamento che arriva mentre si
     // guarda altrove passa inosservato e sembra che non sia successo
     // niente.
-    el.animate(
-        [{ opacity: 0.35 }, { opacity: 1 }],
-        { duration: 400, easing: 'ease-out' }
-    );
+    el.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 400, easing: 'ease-out' });
 }

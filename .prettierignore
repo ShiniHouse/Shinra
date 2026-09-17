@@ -1,0 +1,16 @@
+# Prettier tocca solo il frontend: il resto del progetto e' Python, e la
+# formattazione la decide black. Gli script di package.json puntano gia' a
+# `web/static/`; questo elenco serve a chi scrive `prettier .` a mano e non
+# se lo aspetta.
+node_modules/
+.venv/
+src/
+tests/
+scripts/
+docs/
+data/
+config/
+deploy/
+migrazioni/
+web/templates/
+package-lock.json

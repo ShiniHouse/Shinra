@@ -8,8 +8,8 @@
 
 function _daBase64url(testo) {
     const normale = testo.replace(/-/g, '+').replace(/_/g, '/');
-    const grezzo = atob(normale + '='.repeat((4 - normale.length % 4) % 4));
-    return Uint8Array.from(grezzo, c => c.charCodeAt(0));
+    const grezzo = atob(normale + '='.repeat((4 - (normale.length % 4)) % 4));
+    return Uint8Array.from(grezzo, (c) => c.charCodeAt(0));
 }
 
 function _aBase64url(buffer) {
@@ -26,7 +26,9 @@ async function loadPasskey() {
     try {
         const res = await fetch('/api/auth/passkey/stato', { headers: getAuthHeaders() });
         if (res.ok) stato = await res.json();
-    } catch (e) { console.error('stato passkey:', e); }
+    } catch (e) {
+        console.error('stato passkey:', e);
+    }
 
     const puo = stato.disponibile && !!window.PublicKeyCredential;
     const bottone = document.getElementById('btn-aggiungi-passkey');
@@ -36,13 +38,15 @@ async function loadPasskey() {
     // La spiegazione del server dice *perche'* non si puo' e cosa
     // fare: un pulsante assente senza motivo sembra una funzione
     // rotta, non una funzione non disponibile qui.
-    if (nota) nota.textContent = puo ? '' : (stato.spiegazione || 'Non disponibili su questo dispositivo.');
+    if (nota) nota.textContent = puo ? '' : stato.spiegazione || 'Non disponibili su questo dispositivo.';
 
     let elenco = [];
     try {
         const res = await fetch('/api/auth/passkey', { headers: getAuthHeaders() });
         if (res.ok) elenco = await res.json();
-    } catch (e) { console.error('loadPasskey:', e); }
+    } catch (e) {
+        console.error('loadPasskey:', e);
+    }
 
     if (!elenco.length) {
         container.innerHTML = `<div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
@@ -51,7 +55,9 @@ async function loadPasskey() {
         return;
     }
 
-    container.innerHTML = elenco.map(p => `
+    container.innerHTML = elenco
+        .map(
+            (p) => `
         <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between gap-3">
             <div class="flex items-center gap-3 min-w-0">
                 <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
@@ -67,7 +73,9 @@ async function loadPasskey() {
             <button onclick="revocaPasskey('${encodeURIComponent(p.id)}', '${_testoSicuro(p.nome).replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold shrink-0 transition">
                 Revoca
             </button>
-        </div>`).join('');
+        </div>`,
+        )
+        .join('');
     safeCreateIcons();
 }
 
@@ -85,14 +93,18 @@ function _nomeDispositivo() {
 async function aggiungiPasskey() {
     try {
         const avvio = await fetch('/api/auth/passkey/registrazione/inizio', {
-            method: 'POST', headers: getAuthHeaders()
+            method: 'POST',
+            headers: getAuthHeaders(),
         });
-        if (!avvio.ok) { alert(await _dettaglioErrore(avvio)); return; }
+        if (!avvio.ok) {
+            alert(await _dettaglioErrore(avvio));
+            return;
+        }
         const { sfida_id, opzioni } = await avvio.json();
 
         opzioni.challenge = _daBase64url(opzioni.challenge);
         opzioni.user.id = _daBase64url(opzioni.user.id);
-        for (const c of (opzioni.excludeCredentials || [])) c.id = _daBase64url(c.id);
+        for (const c of opzioni.excludeCredentials || []) c.id = _daBase64url(c.id);
 
         const credenziale = await navigator.credentials.create({ publicKey: opzioni });
         if (!credenziale) return;
@@ -109,17 +121,20 @@ async function aggiungiPasskey() {
                     type: credenziale.type,
                     response: {
                         clientDataJSON: _aBase64url(credenziale.response.clientDataJSON),
-                        attestationObject: _aBase64url(credenziale.response.attestationObject)
-                    }
-                }
-            })
+                        attestationObject: _aBase64url(credenziale.response.attestationObject),
+                    },
+                },
+            }),
         });
-        if (!fine.ok) { alert(await _dettaglioErrore(fine)); return; }
+        if (!fine.ok) {
+            alert(await _dettaglioErrore(fine));
+            return;
+        }
     } catch (e) {
         // Chi annulla il riconoscimento non ha sbagliato niente.
         if (e && (e.name === 'NotAllowedError' || e.name === 'AbortError')) return;
         if (e && e.name === 'InvalidStateError') {
-            alert('Questo dispositivo ha gia\' una passkey per il tuo profilo.');
+            alert("Questo dispositivo ha gia' una passkey per il tuo profilo.");
             return;
         }
         alert('Non sono riuscito ad aggiungere la passkey: ' + ((e && e.message) || e));
@@ -132,9 +147,13 @@ async function revocaPasskey(identificativo, nome) {
     if (!confirm(`Revocare «${nome}»?\n\nQuel dispositivo tornera' a chiedere il PIN.`)) return;
 
     const res = await fetch(`/api/auth/passkey/${identificativo}`, {
-        method: 'DELETE', headers: getAuthHeaders()
+        method: 'DELETE',
+        headers: getAuthHeaders(),
     });
-    if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+    if (!res.ok) {
+        alert(await _dettaglioErrore(res));
+        return;
+    }
     await loadPasskey();
 }
 
@@ -167,13 +186,18 @@ async function loadVoci() {
     }
 
     const puoAssociare = posso('utenti.gestisci');
-    const opzioni = utente => usersData.map(u =>
-        `<option value="${_testoSicuro(u.id)}"${u.id === utente ? ' selected' : ''}>${_testoSicuro(u.name)}</option>`
-    ).join('');
+    const opzioni = (utente) =>
+        usersData
+            .map(
+                (u) =>
+                    `<option value="${_testoSicuro(u.id)}"${u.id === utente ? ' selected' : ''}>${_testoSicuro(u.name)}</option>`,
+            )
+            .join('');
 
-    container.innerHTML = elenco.map(v => {
-        const noto = !!v.user_id;
-        return `
+    container.innerHTML = elenco
+        .map((v) => {
+            const noto = !!v.user_id;
+            return `
         <div class="p-3.5 rounded-2xl bg-slate-900/60 border ${noto ? 'border-slate-800' : 'border-amber-700/50'} flex items-center justify-between gap-3">
             <div class="flex items-center gap-3 min-w-0">
                 <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
@@ -188,7 +212,9 @@ async function loadVoci() {
                     </p>
                 </div>
             </div>
-            ${puoAssociare ? `
+            ${
+                puoAssociare
+                    ? `
             <div class="flex items-center gap-1.5 shrink-0">
                 <select onchange="associaVoce('${encodeURIComponent(v.person_id)}', this.value)" class="px-2 py-1 rounded-xl bg-slate-800 border border-slate-700 text-[11px] text-slate-200">
                     <option value=""${noto ? '' : ' selected'}>— nessuno —</option>
@@ -197,9 +223,12 @@ async function loadVoci() {
                 <button onclick="dimenticaVoce('${encodeURIComponent(v.person_id)}')" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold transition">
                     Dimentica
                 </button>
-            </div>` : ''}
+            </div>`
+                    : ''
+            }
         </div>`;
-    }).join('');
+        })
+        .join('');
     safeCreateIcons();
 }
 
@@ -207,9 +236,11 @@ async function associaVoce(personId, userId) {
     const res = await fetch('/api/voci/associa', {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ person_id: decodeURIComponent(personId), user_id: userId || null })
+        body: JSON.stringify({ person_id: decodeURIComponent(personId), user_id: userId || null }),
     });
-    if (!res.ok) { alert(await _dettaglioErrore(res)); }
+    if (!res.ok) {
+        alert(await _dettaglioErrore(res));
+    }
     await loadVoci();
 }
 
@@ -220,8 +251,11 @@ async function dimenticaVoce(personId) {
 
     const res = await fetch(`/api/voci/${personId}`, {
         method: 'DELETE',
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
     });
-    if (!res.ok) { alert(await _dettaglioErrore(res)); return; }
+    if (!res.ok) {
+        alert(await _dettaglioErrore(res));
+        return;
+    }
     await loadVoci();
 }

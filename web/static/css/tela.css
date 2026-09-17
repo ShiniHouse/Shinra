@@ -9,25 +9,53 @@
    tabella delle routine, quindi il disegno spariva comunque al
    salvataggio. Riferimento: issue #28. */
 .port-pin {
-    position: absolute;
-    width: 14px; height: 14px;
-    border-radius: 9999px;
-    background: #1e293b;
-    border: 2px solid #64748b;
-    cursor: crosshair;
-    z-index: 30;
-    transition: transform .12s, border-color .12s, background .12s;
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #1e293b;
+  border: 2px solid #64748b;
+  cursor: crosshair;
+  z-index: 30;
+  transition:
+    transform 0.12s,
+    border-color 0.12s,
+    background 0.12s;
 }
-.port-pin:hover { transform: scale(1.35); border-color: #818cf8; background: #312e81; }
-.port-pin-in  { left: -8px;  top: 14px; }
-.port-pin-out { right: -8px; top: 14px; }
+.port-pin:hover {
+  transform: scale(1.35);
+  border-color: #818cf8;
+  background: #312e81;
+}
+.port-pin-in {
+  left: -8px;
+  top: 14px;
+}
+.port-pin-out {
+  right: -8px;
+  top: 14px;
+}
 /* Le due uscite di una condizione. Il colore e' l'unica cosa che dice
    quale ramo si sta collegando mentre lo si trascina, e sbagliare
    ramo si scopre altrimenti solo eseguendo. */
-.port-pin-vero  { top: 8px;  border-color: #10b981; background: #064e3b; }
-.port-pin-falso { top: 34px; border-color: #f43f5e; background: #4c0519; }
-.port-pin-vero:hover  { border-color: #34d399; background: #065f46; }
-.port-pin-falso:hover { border-color: #fb7185; background: #881337; }
+.port-pin-vero {
+  top: 8px;
+  border-color: #10b981;
+  background: #064e3b;
+}
+.port-pin-falso {
+  top: 34px;
+  border-color: #f43f5e;
+  background: #4c0519;
+}
+.port-pin-vero:hover {
+  border-color: #34d399;
+  background: #065f46;
+}
+.port-pin-falso:hover {
+  border-color: #fb7185;
+  background: #881337;
+}
 
 /* La tela dell'editor a nodi.
 
@@ -36,27 +64,47 @@
    notturna anche a mezzogiorno, con tutto il resto passato al bianco.
    Da qui segue il tema come ogni altra. */
 .tela-flusso {
-    background-color: #030712;
-    background-image: radial-gradient(rgba(99, 102, 241, 0.25) 1.5px, transparent 1.5px);
-    background-size: 24px 24px;
+  background-color: #030712;
+  background-image: radial-gradient(rgba(99, 102, 241, 0.25) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
 }
 html.light .tela-flusso {
-    background-color: #f8fafc;
-    background-image: radial-gradient(rgba(79, 70, 229, 0.22) 1.5px, transparent 1.5px);
+  background-color: #f8fafc;
+  background-image: radial-gradient(rgba(79, 70, 229, 0.22) 1.5px, transparent 1.5px);
 }
 
 /* I pin, di giorno: chiari sul chiaro, col bordo a fare il lavoro.
    Un pallino quasi nero su una tela bianca si vede benissimo, ma
    sembra un buco nel foglio, non una presa da cui tirare un cavo. */
-html.light .port-pin { background: #e2e8f0; border-color: #475569; }
-html.light .port-pin:hover { background: #c7d2fe; border-color: #4f46e5; }
-html.light .port-pin-vero  { background: #d1fae5; border-color: #059669; }
-html.light .port-pin-falso { background: #ffe4e6; border-color: #e11d48; }
-html.light .port-pin-vero:hover  { background: #a7f3d0; border-color: #047857; }
-html.light .port-pin-falso:hover { background: #fecdd3; border-color: #be123c; }
+html.light .port-pin {
+  background: #e2e8f0;
+  border-color: #475569;
+}
+html.light .port-pin:hover {
+  background: #c7d2fe;
+  border-color: #4f46e5;
+}
+html.light .port-pin-vero {
+  background: #d1fae5;
+  border-color: #059669;
+}
+html.light .port-pin-falso {
+  background: #ffe4e6;
+  border-color: #e11d48;
+}
+html.light .port-pin-vero:hover {
+  background: #a7f3d0;
+  border-color: #047857;
+}
+html.light .port-pin-falso:hover {
+  background: #fecdd3;
+  border-color: #be123c;
+}
 
 /* Un nodo che il server ha segnalato al salvataggio. */
 .nodo-in-errore {
-    border-color: #f43f5e !important;
-    box-shadow: 0 0 0 2px rgba(244, 63, 94, .35), 0 12px 30px -12px rgba(244, 63, 94, .8);
+  border-color: #f43f5e !important;
+  box-shadow:
+    0 0 0 2px rgba(244, 63, 94, 0.35),
+    0 12px 30px -12px rgba(244, 63, 94, 0.8);
 }

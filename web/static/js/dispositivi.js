@@ -8,7 +8,9 @@ async function loadAliases() {
             container.innerHTML = `<p class="text-xs text-slate-500 col-span-3 py-4 text-center">Nessun alias configurato. Clicca "Scopri Dispositivi HA" per iniziare.</p>`;
             return;
         }
-        container.innerHTML = items.map(a => `
+        container.innerHTML = items
+            .map(
+                (a) => `
             <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5 group">
                 <div class="flex justify-between items-start">
                     <span class="font-bold text-xs text-indigo-300">"${a.alias}"</span>
@@ -20,10 +22,14 @@ async function loadAliases() {
                     ${a.room ? `<span class="text-[10px] text-slate-500">📍 ${a.room}</span>` : ''}
                 </div>
             </div>
-        `).join('');
+        `,
+            )
+            .join('');
         safeCreateIcons();
         caricaStatiIniziali();
-    } catch(e) { console.error('loadAliases:', e); }
+    } catch (e) {
+        console.error('loadAliases:', e);
+    }
 }
 
 // Gli stati di partenza. Senza, le schede restano vuote finche' in casa
@@ -36,12 +42,14 @@ async function caricaStatiIniziali() {
         if (!res.ok) return;
         const dati = await res.json();
         if (dati.error) return;
-        Object.values(dati.groups || {}).forEach(gruppo => {
-            gruppo.forEach(e => aggiornaStatoCasa({
-                entity_id: e.entity_id,
-                stato: e.state,
-                nome: e.friendly_name,
-            }));
+        Object.values(dati.groups || {}).forEach((gruppo) => {
+            gruppo.forEach((e) =>
+                aggiornaStatoCasa({
+                    entity_id: e.entity_id,
+                    stato: e.state,
+                    nome: e.friendly_name,
+                }),
+            );
         });
     } catch (e) {
         console.warn('Stati iniziali non disponibili:', e);
@@ -81,12 +89,12 @@ async function discoverHAEntities() {
         document.getElementById('alias-filter-row').style.display = 'flex';
         document.getElementById('alias-filter-count').textContent = `${data.total} dispositivi trovati`;
         document.getElementById('ha-entities-section').style.display = 'block';
-
-    } catch(e) {
+    } catch (e) {
         btn.disabled = false;
         btn.innerHTML = `<i data-lucide="scan-search" class="w-4 h-4"></i> Scopri Dispositivi HA`;
         safeCreateIcons();
-        document.getElementById('ha-entities-groups').innerHTML = `<div class="text-xs text-rose-400">Errore: ${e.message}</div>`;
+        document.getElementById('ha-entities-groups').innerHTML =
+            `<div class="text-xs text-rose-400">Errore: ${e.message}</div>`;
         document.getElementById('ha-entities-section').style.display = 'block';
     }
 }
@@ -99,11 +107,14 @@ function renderHAEntities(data, filterText = '') {
     let visibleCount = 0;
 
     for (const entities of Object.values(data.groups)) {
-        const filtered = filterText ? entities.filter(e =>
-            e.friendly_name.toLowerCase().includes(lc) ||
-            e.entity_id.toLowerCase().includes(lc) ||
-            (e.alias || '').toLowerCase().includes(lc)
-        ) : entities;
+        const filtered = filterText
+            ? entities.filter(
+                  (e) =>
+                      e.friendly_name.toLowerCase().includes(lc) ||
+                      e.entity_id.toLowerCase().includes(lc) ||
+                      (e.alias || '').toLowerCase().includes(lc),
+              )
+            : entities;
 
         if (!filtered.length) continue;
         visibleCount += filtered.length;
@@ -115,7 +126,9 @@ function renderHAEntities(data, filterText = '') {
                     <span class="text-slate-500">${filtered.length} dispositivi</span>
                 </div>
                 <div class="divide-y divide-slate-800/60">
-                    ${filtered.map(e => `
+                    ${filtered
+                        .map(
+                            (e) => `
                         <div class="flex items-center justify-between px-4 py-2.5 hover:bg-slate-800/30 transition group">
                             <div class="flex-1 min-w-0">
                                 <div class="text-xs font-medium text-slate-200 truncate">${e.friendly_name}</div>
@@ -123,26 +136,35 @@ function renderHAEntities(data, filterText = '') {
                             </div>
                             <div class="flex items-center gap-2 ml-3 shrink-0">
                                 <span class="text-[10px] px-2 py-0.5 rounded-full ${getStateClass(e.state)}">${e.state}</span>
-                                ${e.alias
-                                    ? `<span class="text-[10px] text-indigo-400 font-semibold bg-indigo-950/60 border border-indigo-800 px-2 py-0.5 rounded-full">"${e.alias}"</span>`
-                                    : ''}
-                                ${e.controllable
-                                    ? `<button onclick="openAliasModalForEntity('${e.entity_id}', '${e.friendly_name.replace(/'/g,"\\'")}', '${e.alias || ''}')"
+                                ${
+                                    e.alias
+                                        ? `<span class="text-[10px] text-indigo-400 font-semibold bg-indigo-950/60 border border-indigo-800 px-2 py-0.5 rounded-full">"${e.alias}"</span>`
+                                        : ''
+                                }
+                                ${
+                                    e.controllable
+                                        ? `<button onclick="openAliasModalForEntity('${e.entity_id}', '${e.friendly_name.replace(/'/g, "\\'")}', '${e.alias || ''}')"
                                         class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border
-                                        ${e.alias
-                                            ? 'bg-slate-800 border-slate-700 text-slate-400 hover:border-indigo-500 hover:text-indigo-300'
-                                            : 'bg-indigo-600/20 border-indigo-600/40 text-indigo-300 hover:bg-indigo-600 hover:text-white'}">
+                                        ${
+                                            e.alias
+                                                ? 'bg-slate-800 border-slate-700 text-slate-400 hover:border-indigo-500 hover:text-indigo-300'
+                                                : 'bg-indigo-600/20 border-indigo-600/40 text-indigo-300 hover:bg-indigo-600 hover:text-white'
+                                        }">
                                         ${e.alias ? '✏️ Modifica' : '+ Alias'}
                                       </button>`
-                                    : '<span class="text-[10px] text-slate-600">sola lettura</span>'}
+                                        : '<span class="text-[10px] text-slate-600">sola lettura</span>'
+                                }
                             </div>
                         </div>
-                    `).join('')}
+                    `,
+                        )
+                        .join('')}
                 </div>
             </div>`;
     }
 
-    container.innerHTML = html || `<p class="text-xs text-slate-500 text-center py-4">Nessun risultato per "${filterText}"</p>`;
+    container.innerHTML =
+        html || `<p class="text-xs text-slate-500 text-center py-4">Nessun risultato per "${filterText}"</p>`;
     if (filterText) {
         document.getElementById('alias-filter-count').textContent = `${visibleCount} trovati`;
     }
@@ -208,14 +230,14 @@ async function saveNewAlias() {
     await fetch('/api/aliases', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ alias, entity_id, room })
+        body: JSON.stringify({ alias, entity_id, room }),
     });
     closeModal();
     loadAliases();
     // Aggiorna il badge dell'entità nella lista HA senza ricaricare tutto
     if (_haEntitiesCache) {
         for (const entities of Object.values(_haEntitiesCache.groups)) {
-            const e = entities.find(x => x.entity_id === entity_id);
+            const e = entities.find((x) => x.entity_id === entity_id);
             if (e) e.alias = alias;
         }
         renderHAEntities(_haEntitiesCache, document.getElementById('alias-filter-input')?.value || '');

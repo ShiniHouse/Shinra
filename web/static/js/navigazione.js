@@ -1,16 +1,15 @@
-let activeUserId = "alessio";
+let activeUserId = 'alessio';
 let usersData = [];
-
 
 // Store del display originale per ogni tab
 const tabDisplayMap = {
-    'console':     'grid',
-    'knowledge':   'block',
-    'sources':     'block',
-    'aliases':     'block',
-    'automazioni': 'block',
-    'users':       'block',
-    'settings':    'block',
+    console: 'grid',
+    knowledge: 'block',
+    sources: 'block',
+    aliases: 'block',
+    automazioni: 'block',
+    users: 'block',
+    settings: 'block',
 };
 
 // Le destinazioni di prima che adesso sono la stessa schermata.
@@ -19,8 +18,8 @@ const tabDisplayMap = {
 // — deve continuare a portare dove serve, non in una scheda che non
 // esiste piu'. Riferimento: #128.
 const SCHEDE_UNITE = {
-    'modes':  'automazioni',
-    'regole': 'automazioni',
+    modes: 'automazioni',
+    regole: 'automazioni',
 };
 
 // Le quattro che stanno dietro «Configurazione». Il pulsante di primo
@@ -70,7 +69,10 @@ function alternaMenuConfigurazione(evento) {
     const menu = document.getElementById('menu-configurazione');
     const bottone = document.getElementById('tab-btn-configurazione');
     if (!menu) return;
-    if (_menuConfigurazioneAperto) { chiudiMenuConfigurazione(); return; }
+    if (_menuConfigurazioneAperto) {
+        chiudiMenuConfigurazione();
+        return;
+    }
     menu.classList.remove('hidden');
     if (bottone) bottone.setAttribute('aria-expanded', 'true');
     _menuConfigurazioneAperto = true;
@@ -98,13 +100,13 @@ function switchTab(tabId) {
     tabId = SCHEDE_UNITE[tabId] || tabId;
 
     // Nasconde tutti i tab
-    Object.keys(tabDisplayMap).forEach(id => {
+    Object.keys(tabDisplayMap).forEach((id) => {
         const el = document.getElementById(`tab-${id}`);
         if (el) el.style.display = 'none';
     });
 
     // Resetta tutti i pulsanti desktop
-    document.querySelectorAll('.tab-btn').forEach(el => {
+    document.querySelectorAll('.tab-btn').forEach((el) => {
         el.classList.remove('bg-indigo-600/30', 'text-indigo-300', 'border-indigo-500/40', 'border');
         el.classList.add('text-slate-400');
     });
@@ -116,10 +118,9 @@ function switchTab(tabId) {
     // Attiva il pulsante selezionato. Le quattro schede dietro
     // «Configurazione» non hanno un pulsante proprio: si accende il
     // loro ingresso, che e' da dove ci si e' passati.
-    const btn = document.getElementById(`tab-btn-${tabId}`)
-        || (SCHEDE_DI_CONFIGURAZIONE.includes(tabId)
-            ? document.getElementById('tab-btn-configurazione')
-            : null);
+    const btn =
+        document.getElementById(`tab-btn-${tabId}`) ||
+        (SCHEDE_DI_CONFIGURAZIONE.includes(tabId) ? document.getElementById('tab-btn-configurazione') : null);
     if (btn) {
         btn.classList.add('bg-indigo-600/30', 'text-indigo-300', 'border-indigo-500/40', 'border');
         btn.classList.remove('text-slate-400');
@@ -134,9 +135,16 @@ function switchTab(tabId) {
     // Una scheda sola, due elenchi: le automazioni e le routine da cui
     // nascono. Caricarne uno solo lascerebbe meta' schermata vuota
     // senza che niente lo spieghi.
-    if (tabId === 'automazioni') { loadRegole(); loadModes(); disegnaScorciatoia(); }
+    if (tabId === 'automazioni') {
+        loadRegole();
+        loadModes();
+        disegnaScorciatoia();
+    }
     if (tabId === 'users') loadUsers();
-    if (tabId === 'settings') { loadSettings(); preparaSezioniImpostazioni(); }
+    if (tabId === 'settings') {
+        loadSettings();
+        preparaSezioniImpostazioni();
+    }
 }
 
 // ============ SEZIONI DELLE IMPOSTAZIONI (issue #124) ============
@@ -160,7 +168,9 @@ function _ricordaSezione(nome) {
         } else {
             window.localStorage.removeItem(MEMORIA_SEZIONE);
         }
-    } catch { /* senza memoria si vive */ }
+    } catch {
+        /* senza memoria si vive */
+    }
 }
 
 function _sezioneRicordata() {
@@ -178,7 +188,7 @@ function preparaSezioniImpostazioni() {
     const ricordata = _sezioneRicordata();
     if (ricordata) {
         let trovata = false;
-        sezioni.forEach(sezione => {
+        sezioni.forEach((sezione) => {
             const sua = sezione.getAttribute('data-sezione') === ricordata;
             sezione.open = sua;
             trovata = trovata || sua;
@@ -191,7 +201,7 @@ function preparaSezioniImpostazioni() {
         }
     }
 
-    sezioni.forEach(sezione => {
+    sezioni.forEach((sezione) => {
         if (sezione.dataset.ascolta === 'si') return;
         sezione.dataset.ascolta = 'si';
         sezione.addEventListener('toggle', () => {
@@ -206,7 +216,7 @@ function preparaSezioniImpostazioni() {
             // Una sola aperta per volta: e' il punto della scheda —
             // trovare un'impostazione dev'essere un clic, non uno
             // scorrimento lungo un muro.
-            sezioni.forEach(altra => {
+            sezioni.forEach((altra) => {
                 if (altra !== sezione) altra.open = false;
             });
             _ricordaSezione(sezione.getAttribute('data-sezione'));
@@ -217,7 +227,7 @@ function preparaSezioniImpostazioni() {
 
 // Inizializzazione del layout tab all'avvio
 function initTabs() {
-    Object.keys(tabDisplayMap).forEach(id => {
+    Object.keys(tabDisplayMap).forEach((id) => {
         const el = document.getElementById(`tab-${id}`);
         if (el) el.style.display = id === 'console' ? tabDisplayMap['console'] : 'none';
     });
@@ -231,21 +241,69 @@ function getUserAvatarInfo(u) {
     const avatarType = u.avatar_type || '';
 
     if (role === 'guest' || u.id === 'guest' || avatarType === 'guest') {
-        return { emoji: '🤖', label: 'Ospite', color: 'slate', badge: 'Ospite', border: 'border-slate-700', bg: 'bg-slate-800/80', text: 'text-slate-300' };
+        return {
+            emoji: '🤖',
+            label: 'Ospite',
+            color: 'slate',
+            badge: 'Ospite',
+            border: 'border-slate-700',
+            bg: 'bg-slate-800/80',
+            text: 'text-slate-300',
+        };
     }
     if (avatarType === 'female_child' || (age === 'child' && gender === 'female')) {
-        return { emoji: '👧', label: 'Bimba', color: 'pink', badge: 'Junior 👧', border: 'border-pink-500/50', bg: 'bg-pink-500/20', text: 'text-pink-300' };
+        return {
+            emoji: '👧',
+            label: 'Bimba',
+            color: 'pink',
+            badge: 'Junior 👧',
+            border: 'border-pink-500/50',
+            bg: 'bg-pink-500/20',
+            text: 'text-pink-300',
+        };
     }
     if (avatarType === 'male_child' || (age === 'child' && gender === 'male')) {
-        return { emoji: '👦', label: 'Bimbo', color: 'cyan', badge: 'Junior 👦', border: 'border-cyan-500/50', bg: 'bg-cyan-500/20', text: 'text-cyan-300' };
+        return {
+            emoji: '👦',
+            label: 'Bimbo',
+            color: 'cyan',
+            badge: 'Junior 👦',
+            border: 'border-cyan-500/50',
+            bg: 'bg-cyan-500/20',
+            text: 'text-cyan-300',
+        };
     }
     if (avatarType === 'female_adult' || (age !== 'child' && gender === 'female')) {
-        return { emoji: '👩', label: 'Donna', color: 'rose', badge: 'Famiglia', border: 'border-rose-500/50', bg: 'bg-rose-500/20', text: 'text-rose-300' };
+        return {
+            emoji: '👩',
+            label: 'Donna',
+            color: 'rose',
+            badge: 'Famiglia',
+            border: 'border-rose-500/50',
+            bg: 'bg-rose-500/20',
+            text: 'text-rose-300',
+        };
     }
     if (avatarType === 'male_adult' || (age !== 'child' && gender === 'male')) {
-        return { emoji: '👨', label: 'Uomo', color: 'indigo', badge: 'Famiglia', border: 'border-indigo-500/50', bg: 'bg-indigo-500/20', text: 'text-indigo-300' };
+        return {
+            emoji: '👨',
+            label: 'Uomo',
+            color: 'indigo',
+            badge: 'Famiglia',
+            border: 'border-indigo-500/50',
+            bg: 'bg-indigo-500/20',
+            text: 'text-indigo-300',
+        };
     }
-    return { emoji: '🧑', label: 'Membro', color: 'amber', badge: 'Membro', border: 'border-amber-500/50', bg: 'bg-amber-500/20', text: 'text-amber-300' };
+    return {
+        emoji: '🧑',
+        label: 'Membro',
+        color: 'amber',
+        badge: 'Membro',
+        border: 'border-amber-500/50',
+        bg: 'bg-amber-500/20',
+        text: 'text-amber-300',
+    };
 }
 
 // Active User Management
@@ -255,15 +313,19 @@ async function loadUsersDropdown() {
         usersData = await res.json();
         const select = document.getElementById('user-select');
         const mobileSelect = document.getElementById('mobile-user-select');
-        const optionsHtml = usersData.map(u => {
-            const av = getUserAvatarInfo(u);
-            return `<option value="${u.id}" ${u.id === activeUserId ? 'selected' : ''}>${av.emoji} ${u.name} (${u.role})</option>`;
-        }).join('');
+        const optionsHtml = usersData
+            .map((u) => {
+                const av = getUserAvatarInfo(u);
+                return `<option value="${u.id}" ${u.id === activeUserId ? 'selected' : ''}>${av.emoji} ${u.name} (${u.role})</option>`;
+            })
+            .join('');
 
         if (select) select.innerHTML = optionsHtml;
         if (mobileSelect) mobileSelect.innerHTML = optionsHtml;
         updateActiveUserBanner();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 function changeActiveUser(userId) {
@@ -276,7 +338,11 @@ function changeActiveUser(userId) {
 }
 
 function updateActiveUserBanner() {
-    const user = usersData.find(u => u.id === activeUserId) || { name: 'Utente', role: 'adult', age_group: 'adult' };
+    const user = usersData.find((u) => u.id === activeUserId) || {
+        name: 'Utente',
+        role: 'adult',
+        age_group: 'adult',
+    };
     const av = getUserAvatarInfo(user);
     const nameEl = document.getElementById('banner-user-name');
     const roleEl = document.getElementById('banner-user-role');

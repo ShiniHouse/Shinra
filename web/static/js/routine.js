@@ -23,36 +23,44 @@ async function loadModes() {
         if (!container) return;
 
         if (!_allModesCache || _allModesCache.length === 0) {
-            container.innerHTML = '<div class="col-span-2 text-center py-8 text-slate-500 text-xs">Nessuna routine configurata. Clicca "+ Nuova Routine Modulare" per crearne una.</div>';
+            container.innerHTML =
+                '<div class="col-span-2 text-center py-8 text-slate-500 text-xs">Nessuna routine configurata. Clicca "+ Nuova Routine Modulare" per crearne una.</div>';
             return;
         }
 
-        container.innerHTML = _allModesCache.map(m => {
-            const triggers = (m.trigger_phrases || []).map(t => `<span class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] text-slate-300 font-mono">"${t}"</span>`).join(' ');
-            const actions = m.actions || [];
-            const isOpen = Boolean(_modeAccordionState[m.id]);
+        container.innerHTML = _allModesCache
+            .map((m) => {
+                const triggers = (m.trigger_phrases || [])
+                    .map(
+                        (t) =>
+                            `<span class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] text-slate-300 font-mono">"${t}"</span>`,
+                    )
+                    .join(' ');
+                const actions = m.actions || [];
+                const isOpen = Boolean(_modeAccordionState[m.id]);
 
-            const stepsHtml = actions.map((act, idx) => {
-                let title = 'Azione';
-                let desc = '';
-                let badge = '';
+                const stepsHtml = actions
+                    .map((act, idx) => {
+                        let title = 'Azione';
+                        let desc = '';
+                        let badge = '';
 
-                if (act.type === 'ha_device' || act.type === 'ha_service') {
-                    title = act.entity_id || act.data?.entity_id || 'Dispositivo HA';
-                    const cmd = act.action || act.service || 'turn_on';
-                    desc = cmd === 'turn_on' ? 'Accendi' : cmd === 'turn_off' ? 'Spegni' : cmd;
-                    badge = `<span class="text-[10px] text-indigo-400 bg-indigo-950/80 px-1.5 py-0.5 rounded border border-indigo-800">💡 HA</span>`;
-                } else if (act.type === 'delay') {
-                    title = `Pausa ${act.seconds || act.delay_seconds || 1}s`;
-                    desc = 'Attesa prima del prossimo step';
-                    badge = `<span class="text-[10px] text-amber-400 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800">⏱️ Pausa</span>`;
-                } else if (act.type === 'tts') {
-                    title = 'Annuncio Vocale';
-                    desc = `"${act.message || ''}"`;
-                    badge = `<span class="text-[10px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800">🗣️ Parla</span>`;
-                }
+                        if (act.type === 'ha_device' || act.type === 'ha_service') {
+                            title = act.entity_id || act.data?.entity_id || 'Dispositivo HA';
+                            const cmd = act.action || act.service || 'turn_on';
+                            desc = cmd === 'turn_on' ? 'Accendi' : cmd === 'turn_off' ? 'Spegni' : cmd;
+                            badge = `<span class="text-[10px] text-indigo-400 bg-indigo-950/80 px-1.5 py-0.5 rounded border border-indigo-800">💡 HA</span>`;
+                        } else if (act.type === 'delay') {
+                            title = `Pausa ${act.seconds || act.delay_seconds || 1}s`;
+                            desc = 'Attesa prima del prossimo step';
+                            badge = `<span class="text-[10px] text-amber-400 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800">⏱️ Pausa</span>`;
+                        } else if (act.type === 'tts') {
+                            title = 'Annuncio Vocale';
+                            desc = `"${act.message || ''}"`;
+                            badge = `<span class="text-[10px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800">🗣️ Parla</span>`;
+                        }
 
-                return `
+                        return `
                     <div class="relative flex items-center gap-3 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 ${idx < actions.length - 1 ? 'mb-2' : ''}">
                         <div class="w-6 h-6 rounded-lg bg-indigo-600/30 text-indigo-300 flex items-center justify-center text-xs shrink-0 font-bold">
                             ${idx + 1}
@@ -66,9 +74,10 @@ async function loadModes() {
                         </div>
                     </div>
                 `;
-            }).join('');
+                    })
+                    .join('');
 
-            return `
+                return `
                 <div id="mode-card-${m.id}" class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-3 shadow-sm hover:border-slate-700 transition group">
                     <div>
                         <!-- Header Routine -->
@@ -121,9 +130,12 @@ async function loadModes() {
                     </div>
                 </div>
             `;
-        }).join('');
+            })
+            .join('');
         safeCreateIcons();
-    } catch (e) { console.error('loadModes error:', e); }
+    } catch (e) {
+        console.error('loadModes error:', e);
+    }
 }
 
 async function triggerModularMode(name, modeId) {
@@ -133,10 +145,15 @@ async function triggerModularMode(name, modeId) {
     if (card) card.classList.add('border-indigo-500', 'ring-1', 'ring-indigo-500/50');
 
     try {
-        const res = await fetch(`/api/modes/${encodeURIComponent(name)}/activate`, { headers: getAuthHeaders(), method: 'POST' });
+        const res = await fetch(`/api/modes/${encodeURIComponent(name)}/activate`, {
+            headers: getAuthHeaders(),
+            method: 'POST',
+        });
         const data = await res.json();
         if (data.messaggio) speakText(data.messaggio);
-    } catch (e) { console.error('Errore attivazione modalità:', e); }
+    } catch (e) {
+        console.error('Errore attivazione modalità:', e);
+    }
 
     setTimeout(() => {
         if (btn) btn.innerHTML = '<i data-lucide="play" class="w-3.5 h-3.5"></i> ▶️ Esegui Test';

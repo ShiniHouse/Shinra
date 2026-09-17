@@ -3,7 +3,9 @@ function safeCreateIcons() {
         if (typeof lucide !== 'undefined' && lucide.createIcons) {
             lucide.createIcons();
         }
-    } catch (e) { console.warn('Lucide icon render:', e); }
+    } catch (e) {
+        console.warn('Lucide icon render:', e);
+    }
 }
 
 // ==================== PALETTE MANAGER (3 DESIGN ATMOSPHERES) ====================
@@ -21,7 +23,7 @@ function setPalette(name) {
     document.documentElement.setAttribute('data-palette', name);
 
     // Update UI Selection Badges & Border Highlights
-    ['aurora', 'sandstone', 'stealth'].forEach(p => {
+    ['aurora', 'sandstone', 'stealth'].forEach((p) => {
         const card = document.getElementById(`palette-card-${p}`);
         const badge = document.getElementById(`badge-palette-${p}`);
         if (card) {
@@ -45,9 +47,9 @@ let currentThemeSetting = localStorage.getItem('shinra_theme_mode') || 'auto';
 
 function getSolarTheme() {
     const now = new Date();
-    const hour = now.getHours() + (now.getMinutes() / 60);
+    const hour = now.getHours() + now.getMinutes() / 60;
     // Giorno Solare: dalle 07:00 alle 19:30, Notte: dalle 19:30 alle 07:00
-    return (hour >= 7.0 && hour < 19.5) ? 'light' : 'dark';
+    return hour >= 7.0 && hour < 19.5 ? 'light' : 'dark';
 }
 
 function initTheme() {
@@ -91,10 +93,11 @@ function updateThemeUI(effectiveTheme) {
     if (!icon || !label) return;
 
     if (currentThemeSetting === 'auto') {
-        const isDay = (effectiveTheme === 'light');
+        const isDay = effectiveTheme === 'light';
         icon.innerHTML = `<i data-lucide="${isDay ? 'sun-medium' : 'moon'}" class="w-3.5 h-3.5 ${isDay ? 'text-amber-500' : 'text-indigo-400'}"></i>`;
         label.innerHTML = `Auto <span class="text-[10px] opacity-75 font-normal">(${isDay ? 'Giorno' : 'Notte'})</span>`;
-        if (btn) btn.title = `Modalità Automatica attiva (${isDay ? 'Luce Solare fino alle 19:30' : 'Modalità Notturna fino alle 07:00'}). Clicca per forzare Giorno.`;
+        if (btn)
+            btn.title = `Modalità Automatica attiva (${isDay ? 'Luce Solare fino alle 19:30' : 'Modalità Notturna fino alle 07:00'}). Clicca per forzare Giorno.`;
     } else if (currentThemeSetting === 'light') {
         icon.innerHTML = `<i data-lucide="sun" class="w-3.5 h-3.5 text-amber-500"></i>`;
         label.innerText = 'Giorno';

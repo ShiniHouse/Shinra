@@ -17,7 +17,7 @@ async function loadRegole() {
         // niente. E' la domanda da cui e' nata la issue #127.
         const [risposta, risposteModi] = await Promise.all([
             fetch('/api/regole', { headers: getAuthHeaders() }),
-            fetch('/api/modes', { headers: getAuthHeaders() })
+            fetch('/api/modes', { headers: getAuthHeaders() }),
         ]);
         const dati = await risposta.json();
         const modi = risposteModi.ok ? await risposteModi.json() : [];
@@ -27,7 +27,8 @@ async function loadRegole() {
         // non al prossimo giro del minuto.
         disegnaProssimiScatti(dati.regole || []);
     } catch {
-        contenitore.innerHTML = '<p class="text-xs text-rose-400 p-4">Non riesco a leggere le automazioni: il server non ha risposto.</p>';
+        contenitore.innerHTML =
+            '<p class="text-xs text-rose-400 p-4">Non riesco a leggere le automazioni: il server non ha risposto.</p>';
     }
 }
 
@@ -43,7 +44,6 @@ function vaiAlleRoutine() {
         elenco.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
-
 
 // ============ LA SCORCIATOIA (issue #126) ============
 // `POST /api/regole` c'era dalla v0.3.0 e nessuno la chiamava da qui.
@@ -78,9 +78,12 @@ function _campiCosaScorciatoia(tipo) {
     if (tipo === 'modalita') {
         // Le routine gia' disegnate: la scorciatoia non le duplica, le
         // fa partire. E' l'aggancio fra le due meta' di questa scheda.
-        const routine = (_allModesCache || []).map(m =>
-            `<option value="${_testoSicuro(m.name || m.id)}">${_testoSicuro(m.name || m.id)}</option>`
-        ).join('');
+        const routine = (_allModesCache || [])
+            .map(
+                (m) =>
+                    `<option value="${_testoSicuro(m.name || m.id)}">${_testoSicuro(m.name || m.id)}</option>`,
+            )
+            .join('');
         if (!routine) {
             return `<p class="text-[11px] text-amber-400 leading-snug">Non hai ancora routine da far partire. Disegnane una qui sotto, oppure scegli un'altra azione.</p>`;
         }
@@ -124,7 +127,7 @@ function inniescoDallaScorciatoia() {
             tipo: 'stato',
             entity_id: leggi('scorciatoia-entita', ''),
             confronto: leggi('scorciatoia-confronto', 'attraversa_sotto'),
-            valore: leggi('scorciatoia-valore', '')
+            valore: leggi('scorciatoia-valore', ''),
         };
     }
     return { tipo: 'evento', evento: leggi('scorciatoia-evento', '') };
@@ -142,7 +145,7 @@ function _azioneDallaScorciatoia() {
         return {
             tipo: 'dispositivo',
             entity_id: leggi('scorciatoia-dispositivo', ''),
-            servizio: leggi('scorciatoia-servizio', 'turn_off')
+            servizio: leggi('scorciatoia-servizio', 'turn_off'),
         };
     }
     return { tipo: 'avviso', testo: leggi('scorciatoia-testo', '') };
@@ -151,19 +154,21 @@ function _azioneDallaScorciatoia() {
 // Un nome scritto da noi e' meglio di «Nuova regola 3»: dice cosa fa,
 // e chi la ritrova fra sei mesi non deve aprirla per ricordarselo.
 function nomeDallaScorciatoia(innesco, azione) {
-    const quando = {
-        orario: `Alle ${innesco.ora || ''}`,
-        alba: "All'alba",
-        tramonto: 'Al tramonto',
-        stato: `Quando ${innesco.entity_id || 'qualcosa'} cambia`,
-        evento: `Su ${innesco.evento || 'un evento'}`
-    }[innesco.tipo] || 'Automazione';
+    const quando =
+        {
+            orario: `Alle ${innesco.ora || ''}`,
+            alba: "All'alba",
+            tramonto: 'Al tramonto',
+            stato: `Quando ${innesco.entity_id || 'qualcosa'} cambia`,
+            evento: `Su ${innesco.evento || 'un evento'}`,
+        }[innesco.tipo] || 'Automazione';
 
-    const cosa = {
-        modalita: `avvia «${azione.modalita || ''}»`,
-        dispositivo: `${azione.servizio === 'turn_on' ? 'accendi' : 'spegni'} ${azione.entity_id || ''}`,
-        avviso: 'mandami un avviso'
-    }[azione.tipo] || 'fai qualcosa';
+    const cosa =
+        {
+            modalita: `avvia «${azione.modalita || ''}»`,
+            dispositivo: `${azione.servizio === 'turn_on' ? 'accendi' : 'spegni'} ${azione.entity_id || ''}`,
+            avviso: 'mandami un avviso',
+        }[azione.tipo] || 'fai qualcosa';
 
     return `${quando}, ${cosa}`.trim();
 }
@@ -198,8 +203,8 @@ async function creaScorciatoia() {
                 nome: scritto.trim() || nomeDallaScorciatoia(innesco, azione),
                 trigger: innesco,
                 condizioni: [],
-                azioni: [azione]
-            })
+                azioni: [azione],
+            }),
         });
 
         const dati = await risposta.json().catch(() => ({}));
@@ -218,7 +223,7 @@ async function creaScorciatoia() {
         if (nome) nome.value = '';
         loadRegole();
     } catch {
-        _mostraEsitoScorciatoia('Il server non ha risposto: l\'automazione non e\' stata creata.', false);
+        _mostraEsitoScorciatoia("Il server non ha risposto: l'automazione non e' stata creata.", false);
     } finally {
         if (bottone) bottone.disabled = false;
     }
@@ -231,7 +236,7 @@ function apriEditorDallaScorciatoia() {
     const innesco = inniescoDallaScorciatoia();
     openModularModeBuilder();
 
-    const nodo = (_canvasState.nodes || []).find(n => n.type === 'trigger');
+    const nodo = (_canvasState.nodes || []).find((n) => n.type === 'trigger');
     if (nodo) {
         nodo.data = nodo.data || {};
         nodo.data.trigger = innesco;
@@ -251,8 +256,10 @@ function quandoScatta(regola) {
     if (regola.prossimo) {
         const quando = new Date(regola.prossimo);
         return {
-            testo: 'prossima volta ' + quando.toLocaleString('it-IT', { weekday: 'short', hour: '2-digit', minute: '2-digit' }),
-            colore: 'text-emerald-400'
+            testo:
+                'prossima volta ' +
+                quando.toLocaleString('it-IT', { weekday: 'short', hour: '2-digit', minute: '2-digit' }),
+            colore: 'text-emerald-400',
         };
     }
     if (regola.aspetta_un_evento) return { testo: 'aspetta che succeda qualcosa', colore: 'text-sky-400' };
@@ -265,11 +272,11 @@ function quandoScatta(regola) {
 function routineSoloVocali(regole, modi) {
     const automatizzate = new Set(
         regole
-            .map(r => String(r.origine || ''))
-            .filter(o => o.startsWith('grafo:'))
-            .map(o => o.slice('grafo:'.length))
+            .map((r) => String(r.origine || ''))
+            .filter((o) => o.startsWith('grafo:'))
+            .map((o) => o.slice('grafo:'.length)),
     );
-    return (modi || []).filter(m => !automatizzate.has(String(m.id)));
+    return (modi || []).filter((m) => !automatizzate.has(String(m.id)));
 }
 
 function renderRegole(regole, modi) {
@@ -294,11 +301,20 @@ function renderRegole(regole, modi) {
             </div>`);
     }
 
-    pezzi.push(regole.map(r => {
-        const stato = quandoScatta(r);
-        const dalGrafo = String(r.origine || '').startsWith('grafo:');
-        const ultimo = r.ultimo_scatto ? new Date(r.ultimo_scatto).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : null;
-        return `
+    pezzi.push(
+        regole
+            .map((r) => {
+                const stato = quandoScatta(r);
+                const dalGrafo = String(r.origine || '').startsWith('grafo:');
+                const ultimo = r.ultimo_scatto
+                    ? new Date(r.ultimo_scatto).toLocaleString('it-IT', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                      })
+                    : null;
+                return `
             <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 ${r.attiva ? '' : 'opacity-60'}">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
@@ -319,12 +335,16 @@ function renderRegole(regole, modi) {
                     <button type="button" onclick="alternaRegola('${r.id}', ${!r.attiva})" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold ${r.attiva ? 'bg-amber-600/20 text-amber-300 hover:bg-amber-600/30' : 'bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30'}">
                         ${r.attiva ? 'Zittisci' : 'Riattiva'}
                     </button>
-                    ${dalGrafo
-                        ? '<span class="text-[10px] text-slate-600 max-w-[7rem] leading-tight">Per toglierla, togli l\'innesco dalla routine</span>'
-                        : `<button type="button" onclick="cancellaRegola('${r.id}')" class="p-1.5 text-slate-500 hover:text-rose-400" title="Elimina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`}
+                    ${
+                        dalGrafo
+                            ? '<span class="text-[10px] text-slate-600 max-w-[7rem] leading-tight">Per toglierla, togli l\'innesco dalla routine</span>'
+                            : `<button type="button" onclick="cancellaRegola('${r.id}')" class="p-1.5 text-slate-500 hover:text-rose-400" title="Elimina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`
+                    }
                 </div>
             </div>`;
-    }).join(''));
+            })
+            .join(''),
+    );
 
     // Le routine che partono solo se le chiami. Esistono, e chi le ha
     // disegnate se le ricorda: non vederle qui fa credere di non aver
@@ -342,18 +362,24 @@ function renderRegole(regole, modi) {
                     partire da sole, apri la routine e cambia l'innesco del primo blocco.
                 </p>
                 <div class="space-y-1.5">
-                    ${vocali.map(m => `
+                    ${vocali
+                        .map(
+                            (m) => `
                         <div class="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-slate-950/60 border border-slate-800">
                             <div class="min-w-0">
                                 <span class="text-xs font-semibold text-slate-200">${m.name || m.id}</span>
-                                ${(m.trigger_phrases || []).length
-                                    ? `<span class="text-[10px] text-slate-500 font-mono ml-2 truncate">"${(m.trigger_phrases || [])[0]}"</span>`
-                                    : '<span class="text-[10px] text-amber-400 ml-2">senza frasi: non la puoi nemmeno chiamare</span>'}
+                                ${
+                                    (m.trigger_phrases || []).length
+                                        ? `<span class="text-[10px] text-slate-500 font-mono ml-2 truncate">"${(m.trigger_phrases || [])[0]}"</span>`
+                                        : '<span class="text-[10px] text-amber-400 ml-2">senza frasi: non la puoi nemmeno chiamare</span>'
+                                }
                             </div>
                             <button type="button" onclick="openModularModeBuilder('${m.id}')" class="shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold" title="Apre il disegno di questa routine">
                                 Apri
                             </button>
-                        </div>`).join('')}
+                        </div>`,
+                        )
+                        .join('')}
                 </div>
             </div>`);
     }
@@ -366,7 +392,7 @@ async function alternaRegola(id, attiva) {
     await fetch(`/api/regole/${id}`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ attiva })
+        body: JSON.stringify({ attiva }),
     });
     loadRegole();
 }

@@ -3,7 +3,7 @@ let currentLearningSession = null;
 let learningRecognition = null;
 let isLearningListening = false;
 let currentProposedRoutine = null;
-let lastLearningQuestion = "";
+let lastLearningQuestion = '';
 
 async function startLearningModal() {
     const modal = document.getElementById('learning-interview-modal');
@@ -16,14 +16,15 @@ async function startLearningModal() {
     document.getElementById('learning-routine-box').classList.add('hidden');
     document.getElementById('learning-answer-input').value = '';
     document.getElementById('learning-question-text').innerText = 'Inizializzazione intervista in corso...';
-    document.getElementById('learning-topic-title').innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Avvio...`;
+    document.getElementById('learning-topic-title').innerHTML =
+        `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Avvio...`;
     safeCreateIcons();
 
     try {
         const res = await fetch('/api/learning/start', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ user_id: activeUserId || 'alessio' })
+            body: JSON.stringify({ user_id: activeUserId || 'alessio' }),
         });
         if (!res.ok) throw new Error('Errore avvio sessione');
         const data = await res.json();
@@ -31,7 +32,8 @@ async function startLearningModal() {
         renderLearningStep(data);
     } catch (err) {
         console.error('startLearningModal:', err);
-        document.getElementById('learning-question-text').innerText = 'Impossibile avviare la sessione di apprendimento. Verifica la connessione.';
+        document.getElementById('learning-question-text').innerText =
+            'Impossibile avviare la sessione di apprendimento. Verifica la connessione.';
     }
 }
 
@@ -84,7 +86,8 @@ function renderLearningStep(data) {
     // Routine Proposal
     if (data.proposed_routine && data.proposed_routine.name) {
         currentProposedRoutine = data.proposed_routine;
-        document.getElementById('learning-routine-desc').innerText = `Ho notato una possibile routine "${data.proposed_routine.name}": ${data.proposed_routine.description || 'Automazione personalizzata'}.`;
+        document.getElementById('learning-routine-desc').innerText =
+            `Ho notato una possibile routine "${data.proposed_routine.name}": ${data.proposed_routine.description || 'Automazione personalizzata'}.`;
         routineBox.classList.remove('hidden');
     } else {
         routineBox.classList.add('hidden');
@@ -94,9 +97,10 @@ function renderLearningStep(data) {
     // Facts list
     if (data.new_facts && data.new_facts.length > 0) {
         factsContainer.classList.remove('hidden');
-        data.new_facts.forEach(f => {
+        data.new_facts.forEach((f) => {
             const badge = document.createElement('span');
-            badge.className = 'px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-700/60 text-emerald-300 text-[11px]';
+            badge.className =
+                'px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-700/60 text-emerald-300 text-[11px]';
             badge.innerText = `✓ ${f.text}`;
             factsList.appendChild(badge);
         });
@@ -143,8 +147,8 @@ async function submitLearningAnswer() {
             headers: getAuthHeaders(),
             body: JSON.stringify({
                 user_id: activeUserId || 'alessio',
-                answer: text
-            })
+                answer: text,
+            }),
         });
         if (!res.ok) throw new Error('Errore durante il salvataggio');
         const data = await res.json();
@@ -152,7 +156,7 @@ async function submitLearningAnswer() {
         loadKnowledge();
     } catch (err) {
         console.error('submitLearningAnswer:', err);
-        alert('Errore durante l\'elaborazione della risposta: ' + err.message);
+        alert("Errore durante l'elaborazione della risposta: " + err.message);
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnText;
@@ -171,11 +175,12 @@ async function acceptProposedRoutine() {
         const res = await fetch('/api/learning/confirm-routine', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ routine: currentProposedRoutine })
+            body: JSON.stringify({ routine: currentProposedRoutine }),
         });
         const data = await res.json();
         if (data.success) {
-            btn.className = 'px-3 py-1.5 bg-slate-800 text-emerald-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-emerald-500/40';
+            btn.className =
+                'px-3 py-1.5 bg-slate-800 text-emerald-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-emerald-500/40';
             btn.innerHTML = `<i data-lucide="check-check" class="w-3.5 h-3.5"></i> Routine Creata con Successo!`;
             safeCreateIcons();
             if (typeof loadModes === 'function') loadModes();
@@ -196,12 +201,16 @@ async function toggleLearningMic() {
 
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRec) {
-        alert('Riconoscimento vocale non supportato dal browser. Puoi digitare la risposta nella casella di testo.');
+        alert(
+            'Riconoscimento vocale non supportato dal browser. Puoi digitare la risposta nella casella di testo.',
+        );
         return;
     }
 
     if (isLearningListening && learningRecognition) {
-        try { learningRecognition.stop(); } catch {}
+        try {
+            learningRecognition.stop();
+        } catch {}
         isLearningListening = false;
         if (statusLabel) statusLabel.classList.add('hidden');
         if (micBtn) {
@@ -215,10 +224,12 @@ async function toggleLearningMic() {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach(t => t.stop());
+            stream.getTracks().forEach((t) => t.stop());
         } catch (micErr) {
             console.warn('Permesso microfono non concesso da iOS:', micErr);
-            alert("Accesso al microfono non consentito da iOS. Vai in Impostazioni iPhone ➔ Safari ➔ Microfono e seleziona 'Consenti'.");
+            alert(
+                "Accesso al microfono non consentito da iOS. Vai in Impostazioni iPhone ➔ Safari ➔ Microfono e seleziona 'Consenti'.",
+            );
             return;
         }
     }
@@ -269,7 +280,7 @@ async function toggleLearningMic() {
                 micBtn.classList.add('bg-slate-800', 'text-slate-300');
             }
             if (event.error === 'not-allowed') {
-                alert("Permesso microfono non autorizzato su iOS. Controlla le impostazioni di Safari.");
+                alert('Permesso microfono non autorizzato su iOS. Controlla le impostazioni di Safari.');
             }
         };
 
@@ -305,13 +316,12 @@ async function closeLearningModal() {
         await fetch('/api/learning/stop', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ user_id: activeUserId || 'alessio' })
+            body: JSON.stringify({ user_id: activeUserId || 'alessio' }),
         });
     } catch {}
 
     await loadKnowledge();
 }
-
 
 async function saveNewKnowledge() {
     const text = document.getElementById('new-k-text').value.trim();
@@ -320,7 +330,7 @@ async function saveNewKnowledge() {
     await fetch('/api/knowledge', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ text, category, enabled: true })
+        body: JSON.stringify({ text, category, enabled: true }),
     });
     closeModal();
     loadKnowledge();
