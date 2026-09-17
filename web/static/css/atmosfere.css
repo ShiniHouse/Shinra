@@ -1,0 +1,123 @@
+/* ==================== 3 ATMOSPHERIC DESIGN PALETTES ==================== */
+/* 1. Aurora (Default - Apple Intelligence & Linear) */
+:root, html[data-palette="aurora"].dark, html:not([data-palette]).dark {
+    --bg-base: #060913;
+    --text-main: #f8fafc;
+    --text-secondary: #94a3b8;
+    --mesh-1: rgba(245, 158, 11, 0.08);
+    --mesh-2: rgba(139, 92, 246, 0.09);
+    --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #8b5cf6 50%, #4f46e5 100%);
+    --accent-halo: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+    --accent-glow: rgba(245, 158, 11, 0.35);
+}
+html[data-palette="aurora"].light, html:not([data-palette]).light {
+    --bg-base: #f1f5f9;
+    --text-main: #0f172a;
+    --text-secondary: #475569;
+    --mesh-1: rgba(245, 158, 11, 0.06);
+    --mesh-2: rgba(99, 102, 241, 0.06);
+    --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #8b5cf6 50%, #4f46e5 100%);
+    --accent-halo: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+    --accent-glow: rgba(245, 158, 11, 0.25);
+}
+
+/* 2. Sandstone (Claude / Anthropic Warm Terracotta & Espresso) */
+html[data-palette="sandstone"].dark {
+    --bg-base: #12100e;
+    --text-main: #fafaf9;
+    --text-secondary: #a8a29e;
+    --mesh-1: rgba(217, 119, 6, 0.09);
+    --mesh-2: rgba(194, 65, 12, 0.08);
+    --accent-gradient: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #9a3412 100%);
+    --accent-halo: linear-gradient(135deg, #d97706, #f97316, #ea580c);
+    --accent-glow: rgba(217, 119, 6, 0.35);
+}
+html[data-palette="sandstone"].light {
+    --bg-base: #faf8f5;
+    --text-main: #1c1917;
+    --text-secondary: #57534e;
+    --mesh-1: rgba(217, 119, 6, 0.08);
+    --mesh-2: rgba(180, 83, 9, 0.06);
+    --accent-gradient: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #9a3412 100%);
+    --accent-halo: linear-gradient(135deg, #d97706, #f97316, #ea580c);
+    --accent-glow: rgba(217, 119, 6, 0.2);
+}
+html[data-palette="sandstone"].dark .bg-slate-900\/60,
+html[data-palette="sandstone"].dark .bg-slate-900\/70,
+html[data-palette="sandstone"].dark .bg-slate-900\/80 {
+    background-color: rgba(28, 25, 23, 0.78) !important;
+    border-color: rgba(68, 64, 60, 0.6) !important;
+}
+
+/* 3. Stealth (Vercel / Teenage Engineering Cyber Carbon & Cyan) */
+html[data-palette="stealth"].dark {
+    --bg-base: #09090b;
+    --text-main: #fafafa;
+    --text-secondary: #a1a1aa;
+    --mesh-1: rgba(6, 182, 212, 0.08);
+    --mesh-2: rgba(16, 185, 129, 0.08);
+    --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #10b981 50%, #0ea5e9 100%);
+    --accent-halo: linear-gradient(135deg, #06b6d4, #10b981, #3b82f6);
+    --accent-glow: rgba(6, 182, 212, 0.35);
+}
+html[data-palette="stealth"].light {
+    --bg-base: #f4f4f5;
+    --text-main: #09090b;
+    --text-secondary: #52525b;
+    --mesh-1: rgba(6, 182, 212, 0.06);
+    --mesh-2: rgba(16, 185, 129, 0.06);
+    --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #10b981 50%, #0ea5e9 100%);
+    --accent-halo: linear-gradient(135deg, #06b6d4, #10b981, #3b82f6);
+    --accent-glow: rgba(6, 182, 212, 0.2);
+}
+html[data-palette="stealth"].dark .bg-slate-900\/60,
+html[data-palette="stealth"].dark .bg-slate-900\/70,
+html[data-palette="stealth"].dark .bg-slate-900\/80 {
+    background-color: rgba(24, 24, 27, 0.8) !important;
+    border-color: rgba(63, 63, 70, 0.6) !important;
+}
+
+html.dark {
+    color-scheme: dark;
+}
+
+html.light {
+    color-scheme: light;
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Ambient Mesh Glows */
+.ambient-mesh {
+    background-image:
+        radial-gradient(at 0% 0%, var(--mesh-1) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, var(--mesh-2) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, var(--mesh-1) 0px, transparent 60%);
+}
+
+/* ==================== GLASSMORPHISM 2.0 & AMBIENT SATIN ==================== */
+.bg-slate-900\/60,
+.bg-slate-900\/70,
+.bg-slate-900\/80 {
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+html.dark .bg-slate-900\/60,
+html.dark .bg-slate-900\/70,
+html.dark .bg-slate-900\/80 {
+    background-color: rgba(11, 17, 32, 0.75) !important;
+    border-color: rgba(51, 65, 85, 0.5) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+html.dark .bg-slate-950,
+html.dark .bg-slate-950\/60,
+html.dark .bg-slate-950\/80 {
+    background-color: rgba(2, 6, 23, 0.7) !important;
+    border-color: rgba(30, 41, 59, 0.7) !important;
+}

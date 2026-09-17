@@ -29,9 +29,20 @@ import pytest
 RADICE = Path(__file__).resolve().parent.parent.parent
 PAGINA = RADICE / "web" / "templates" / "index.html"
 ACCESSO = RADICE / "web" / "templates" / "accesso.html"
-# Dalla #34 il foglio di stile e il copione stanno in file propri.
-FOGLIO = RADICE / "web" / "static" / "css" / "shinra.css"
-COPIONE = RADICE / "web" / "static" / "js" / "shinra.js"
+# Dalla #34 il foglio di stile e il copione stanno in file propri, uno per
+# area. Le guardie non ne conoscono i nomi a memoria: li leggono dalla
+# cartella, cosi' un pezzo nuovo entra nelle guardie il giorno che nasce
+# invece del giorno che qualcuno si ricorda di aggiungerlo qui.
+CARTELLA_CSS = RADICE / "web" / "static" / "css"
+CARTELLA_JS = RADICE / "web" / "static" / "js"
+
+
+def _fogli() -> list[Path]:
+    return sorted(CARTELLA_CSS.glob("*.css"))
+
+
+def _copioni() -> list[Path]:
+    return sorted(CARTELLA_JS.glob("*.js"))
 
 
 def _testo(percorso: Path) -> str:
@@ -64,19 +75,26 @@ def _senza_commenti_html(testo: str) -> str:
 def _frontend() -> str:
     """Markup, foglio di stile e copione insieme.
 
-    Dalla #34 vivono in tre file (issue #34). Una guardia che chiede «questa
-    cosa esiste nel frontend?» guarda qui; una che dice **dove** deve stare
-    guarda il file preciso — `_frontend()` per il markup, `_stile()` per
-    i colori, `_testo(COPIONE)` per il comportamento.
+    Dalla #34 vivono in file separati, uno per area. Una guardia che chiede
+    «questa cosa esiste nel frontend?» guarda qui; una che dice **dove** deve
+    stare guarda i file precisi — `_testo(PAGINA)` per il markup, `_stile()`
+    per i colori, `_comportamento()` per il codice.
     """
-    return "\n".join(_testo(p) for p in (PAGINA, FOGLIO, COPIONE))
+    return "\n".join(_testo(p) for p in [PAGINA, *_fogli(), *_copioni()])
 
 
 def _stile() -> str:
-    """Il foglio di stile. Era dentro la pagina, dalla #34 e' un file suo."""
-    foglio = _testo(FOGLIO)
+    """I fogli di stile, tutti insieme. Erano dentro la pagina fino alla #34."""
+    foglio = "\n".join(_testo(p) for p in _fogli())
     assert len(foglio) > 5000, "il foglio di stile e' quasi vuoto: il test non guarda piu' niente"
     return foglio
+
+
+def _comportamento() -> str:
+    """I copioni, tutti insieme. Erano dentro la pagina fino alla #34."""
+    copione = "\n".join(_testo(p) for p in _copioni())
+    assert len(copione) > 50000, "il copione e' quasi vuoto: il test non guarda piu' niente"
+    return copione
 
 
 def _script_inline(testo: str) -> list[str]:
@@ -96,14 +114,27 @@ def test_il_copione_e_sintatticamente_valido():
     500, da' una pagina morta — niente schede, niente console, niente — e il
     server continua a rispondere 200.
 
+    Ogni pezzo va controllato da solo: il browser li carica come copioni
+    separati, quindi uno rotto ferma se stesso e basta — gli altri girano, e
+    la dashboard resta viva a meta'. E' un guasto peggiore di una pagina
+    morta, perche' sembra funzionare.
+
     Riferimento: issue #34.
     """
     if shutil.which("node") is None:
         pytest.skip("node non disponibile: in CI c'e'")
 
-    esito = subprocess.run(["node", "--check", str(COPIONE)], capture_output=True, text=True, check=False)
+    copioni = _copioni()
+    assert len(copioni) > 10, f"copioni trovati: {[p.name for p in copioni]}"
 
-    assert esito.returncode == 0, f"il copione non si compila:\n{esito.stderr}"
+    for percorso in copioni:
+        esito = subprocess.run(
+            ["node", "--check", str(percorso)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert esito.returncode == 0, f"{percorso.name} non si compila:\n{esito.stderr}"
 
 
 @pytest.mark.parametrize("percorso", [PAGINA, ACCESSO], ids=lambda p: p.name)
@@ -2077,17 +2108,91 @@ def test_la_pagina_non_porta_piu_dentro_il_copione_e_il_foglio():
         assert len(blocco) < 2000, "un copione in linea e' cresciuto: va in un file suo"
 
     assert (
-        len(pagina.splitlines()) < 2000
+        len(pagina.splitlines()) < 1400
     ), f"la pagina e' {len(pagina.splitlines())} righe: era 7.438 e deve scendere, non risalire"
 
 
-def test_il_foglio_e_il_copione_esistono_e_non_sono_vuoti():
+def test_i_fogli_e_i_copioni_esistono_e_non_sono_vuoti():
     """Una guardia che controllasse solo l'assenza dalla pagina sarebbe verde
-    anche il giorno che qualcuno cancella i due file invece di collegarli."""
-    for percorso, minimo in ((FOGLIO, 400), (COPIONE, 4000)):
-        assert percorso.exists(), f"{percorso.name} non esiste"
+    anche il giorno che qualcuno cancella i file invece di collegarli."""
+    fogli, copioni = _fogli(), _copioni()
+
+    assert len(fogli) >= 4, f"fogli di stile trovati: {[p.name for p in fogli]}"
+    assert len(copioni) >= 15, f"copioni trovati: {[p.name for p in copioni]}"
+
+    for percorso in [*fogli, *copioni]:
         righe = len(_testo(percorso).splitlines())
-        assert righe > minimo, f"{percorso.name} ha {righe} righe: ne mancano"
+        assert righe > 30, f"{percorso.name} ha {righe} righe: o e' vuoto, o non doveva nascere"
+
+    assert len(_stile().splitlines()) > 700, "il foglio di stile complessivo si e' svuotato"
+    assert len(_comportamento().splitlines()) > 5000, "il copione complessivo si e' svuotato"
+
+
+def test_nessun_pezzo_del_frontend_supera_le_cinquecento_righe():
+    """Il criterio di accettazione della #34, scritto come guardia.
+
+    Il numero non e' magico: e' la soglia oltre la quale un file smette di
+    entrare in testa tutto insieme, e si torna a modificarlo cercando col
+    trova invece di leggerlo. La pagina unica ne aveva 7.438.
+
+    Riferimento: issue #34.
+    """
+    lunghi = {}
+    for percorso in [PAGINA, ACCESSO, *_fogli(), *_copioni()]:
+        righe = len(_testo(percorso).splitlines())
+        if righe > 500:
+            lunghi[percorso.name] = righe
+
+    # `index.html` e' l'unico ancora sopra: e' markup, e va spezzato in
+    # template inclusi, non in moduli. Finche' non succede resta segnato qui,
+    # cosi' la guardia morde su tutto il resto invece di essere spenta.
+    lunghi.pop("index.html", None)
+
+    assert not lunghi, f"file oltre le cinquecento righe: {lunghi}"
+
+
+def _collegamenti(pagina: str) -> list[str]:
+    """Gli indirizzi statici che la pagina collega, nell'ordine in cui stanno."""
+    return re.findall(r'(?:href|src)="(/static/(?:css|js)/[^"?]+)', _senza_commenti_html(pagina))
+
+
+def test_la_pagina_collega_tutti_i_pezzi_e_nessun_altro():
+    """Un pezzo nuovo che nessuno collega e' codice morto; un pezzo tolto e
+    lasciato collegato e' un 404 a ogni apertura.
+
+    Il modo di sbagliare e' sempre lo stesso: si spezza un file, si scrive il
+    pezzo nuovo, e ci si dimentica della riga nel `<head>`. Il sintomo e' una
+    meta' della dashboard che smette di rispondere ai clic, senza un errore
+    in console che lo dica.
+
+    Riferimento: issue #34.
+    """
+    collegati = _collegamenti(_testo(PAGINA))
+    sul_disco = [f"/static/css/{p.name}" for p in _fogli()] + [f"/static/js/{p.name}" for p in _copioni()]
+
+    assert sorted(collegati) == sorted(sul_disco), (
+        f"scollegati (esistono ma la pagina non li carica): {sorted(set(sul_disco) - set(collegati))}\n"
+        f"fantasmi (collegati ma non esistono): {sorted(set(collegati) - set(sul_disco))}"
+    )
+
+
+def test_i_copioni_si_caricano_nell_ordine_in_cui_furono_scritti():
+    """L'ordine non e' un dettaglio estetico.
+
+    Sono copioni normali, non moduli: il codice in cima a ognuno gira quando
+    il file arriva. `avvio.js` legge la palette e la applica prima che il
+    resto esista; `impostazioni.js` in coda registra l'ascolto del `load`.
+    Invertirli non da' un errore di sintassi — da' una pagina che si disegna
+    col tema sbagliato per un istante, o che non si disegna affatto.
+    """
+    ordine = [p.split("/")[-1] for p in _collegamenti(_testo(PAGINA)) if p.endswith(".js")]
+
+    assert ordine[0] == "avvio.js", f"il primo copione e' {ordine[0]}"
+    assert ordine[-1] == "impostazioni.js", f"l'ultimo copione e' {ordine[-1]}"
+    assert ordine.index("navigazione.js") < ordine.index("tela.js"), (
+        "navigazione.js dichiara le costanti delle schede che gli altri leggono: " "deve arrivare prima"
+    )
+    assert len(ordine) == len(set(ordine)), f"un copione e' collegato due volte: {ordine}"
 
 
 def test_la_pagina_li_collega_con_la_versione_attaccata():
@@ -2102,9 +2207,10 @@ def test_la_pagina_li_collega_con_la_versione_attaccata():
     La versione cambia a ogni commit: attaccarla all'indirizzo basta.
     """
     pagina = _testo(PAGINA)
+    indirizzi = _collegamenti(pagina)
+    assert len(indirizzi) > 15, f"collegamenti trovati: {indirizzi}"
 
-    for indirizzo in ("/static/css/shinra.css", "/static/js/shinra.js"):
-        assert indirizzo in pagina, f"la pagina non collega {indirizzo}"
+    for indirizzo in indirizzi:
         collegamento = re.search(rf'{re.escape(indirizzo)}\?v=([^"]+)"', pagina)
         assert collegamento, f"{indirizzo} e' collegato senza la versione attaccata"
         assert "versione" in collegamento.group(1), (
@@ -2125,12 +2231,13 @@ def test_il_server_serve_davvero_il_foglio_e_il_copione(cliente_autenticato):
     assert pagina.status_code == 200
 
     indirizzi = re.findall(r'(?:href|src)="(/static/(?:css|js)/[^"]+)"', pagina.text)
-    assert len(indirizzi) == 2, f"collegamenti trovati: {indirizzi}"
+    attesi = len(_fogli()) + len(_copioni())
+    assert len(indirizzi) == attesi, f"collegamenti trovati: {len(indirizzi)}, file sul disco: {attesi}"
 
     for indirizzo in indirizzi:
         risposta = cliente_autenticato.get(indirizzo)
         assert risposta.status_code == 200, f"{indirizzo} risponde {risposta.status_code}"
-        assert len(risposta.content) > 1000, f"{indirizzo} e' quasi vuoto"
+        assert len(risposta.content) > 500, f"{indirizzo} e' quasi vuoto"
 
         # E la versione attaccata deve essere quella vera: se il template non
         # venisse riempito, l'indirizzo non cambierebbe mai e il browser
