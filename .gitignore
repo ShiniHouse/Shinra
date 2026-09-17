@@ -78,3 +78,9 @@ _corpi_pr/
 # Gli attrezzi del frontend (ESLint). Il package-lock.json invece si versiona:
 # e' quello che rende ripetibile il controllo in CI.
 node_modules/
+
+# Il banco dei gesti: la copia statica servita al browser, e cio' che
+# Playwright lascia quando un gesto fallisce.
+.anteprima/
+test-results/
+playwright-report/
