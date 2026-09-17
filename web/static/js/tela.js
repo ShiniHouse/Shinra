@@ -161,7 +161,13 @@ function renderFlowCanvasModal() {
                 </svg>
 
                 <!-- DOM Nodes Layer -->
-                <div id="flow-nodes-container" class="absolute inset-0 z-20 pointer-events-auto">
+                <!-- Il piano dei nodi copre tutta la tela e sta sopra ai cavi.
+                     Se prende gli eventi del mouse, li prende anche dove
+                     non c'e' nessun nodo — e li' sotto c'e' la
+                     crocetta che stacca un cavo, che quindi non si poteva
+                     premere. Il piano fa da telaio e basta: a ricevere i
+                     clic sono i nodi, uno per uno. -->
+                <div id="flow-nodes-container" class="absolute inset-0 z-20 pointer-events-none">
                     <!-- Nodi generati dinamicamente -->
                 </div>
             </div>
