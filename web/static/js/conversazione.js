@@ -5,7 +5,7 @@ function appendUserMessage(text) {
     const container = document.getElementById('messages-container');
     const div = document.createElement('div');
     div.className = 'flex justify-end gap-3';
-    div.innerHTML = `<div class="bg-indigo-600 dark:bg-indigo-600 light:bg-indigo-600 text-white rounded-2xl rounded-tr-none p-3.5 text-sm max-w-xl shadow-md">${text}</div>`;
+    div.innerHTML = _html`<div class="bg-indigo-600 dark:bg-indigo-600 light:bg-indigo-600 text-white rounded-2xl rounded-tr-none p-3.5 text-sm max-w-xl shadow-md">${text}</div>`;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
 }
@@ -15,16 +15,19 @@ function appendAssistantMessage(text, actions = []) {
     const div = document.createElement('div');
     div.className = 'flex gap-3 max-w-2xl';
 
-    let actionsHtml = '';
+    let azioni = _grezzo('');
     if (actions && actions.length > 0) {
-        actionsHtml = `
+        azioni = _html`
             <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex flex-wrap gap-1.5">
-                ${actions.map((a) => `<span class="px-2 py-0.5 rounded bg-indigo-950/70 border border-indigo-700/50 text-indigo-300 text-xs font-mono">⚡ ${a.tool}</span>`).join('')}
+                ${actions.map(
+                    (a) =>
+                        _html`<span class="px-2 py-0.5 rounded bg-indigo-950/70 border border-indigo-700/50 text-indigo-300 text-xs font-mono">⚡ ${a.tool}</span>`,
+                )}
             </div>
         `;
     }
 
-    div.innerHTML = `
+    div.innerHTML = _html`
         <div class="living-core !w-8 !h-8 !rounded-lg shrink-0">
             <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
         </div>
@@ -38,12 +41,12 @@ function appendAssistantMessage(text, actions = []) {
                         <span class="soundwave-bar" style="animation-delay: 0.4s"></span>
                     </span>
                 </p>
-                <button onclick="speakText('${text.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-amber-400 p-1 transition" title="Riascolta">
+                <button onclick="speakText(${_grezzo(_perAttributoJs(text))})" class="text-slate-400 hover:text-amber-400 p-1 transition" title="Riascolta">
                     <i data-lucide="volume-2" class="w-4 h-4"></i>
                 </button>
             </div>
             <p class="whitespace-pre-line">${text}</p>
-            ${actionsHtml}
+            ${azioni}
         </div>
     `;
     container.appendChild(div);
@@ -84,24 +87,22 @@ function _disegnaToolInvocati() {
             '<div class="text-slate-600">Shinra non ha ancora toccato niente. Qui finiscono gli strumenti che usa quando gli parli: accendere una luce, leggere il meteo, avviare un timer.</div>';
         return;
     }
-    contenitore.innerHTML = _toolInvocati
-        .map(
-            (voce) => `
+    contenitore.innerHTML = _html`${_toolInvocati.map(
+        (voce) => _html`
         <div class="p-2 rounded bg-slate-900 border border-slate-800">
             <div class="text-indigo-400 font-bold flex items-center justify-between">
-                <span>▶ Tool: ${_testoSicuro(voce.tool)}</span>
+                <span>▶ Tool: ${voce.tool}</span>
                 <span class="text-[10px] text-slate-500">${voce.quando}</span>
             </div>
-            <div class="text-slate-400 mt-0.5">Argomenti: <span class="text-slate-300">${_testoSicuro(JSON.stringify(voce.argomenti))}</span></div>
-            <div class="text-emerald-400 mt-0.5 truncate">Risultato: ${_testoSicuro(JSON.stringify(voce.risultato))}</div>
+            <div class="text-slate-400 mt-0.5">Argomenti: <span class="text-slate-300">${JSON.stringify(voce.argomenti)}</span></div>
+            <div class="text-emerald-400 mt-0.5 truncate">Risultato: ${JSON.stringify(voce.risultato)}</div>
         </div>
     `,
-        )
-        .join('');
+    )}`;
 }
 
 function apriFinestraTool() {
-    showModal(`
+    showModal(_html`
         <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
             <i data-lucide="cpu" class="w-4 h-4 text-violet-400"></i> Cosa ha fatto Shinra
         </h3>
@@ -122,7 +123,7 @@ function showTypingIndicator() {
     const div = document.createElement('div');
     div.id = 'typing-indicator';
     div.className = 'flex gap-3 max-w-2xl items-center';
-    div.innerHTML = `
+    div.innerHTML = _html`
         <div class="living-core !w-8 !h-8 !rounded-lg shrink-0 thinking">
             <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
         </div>
@@ -178,7 +179,7 @@ async function handleSend(e) {
         if (!res.ok) {
             const errData = await res.json().catch(() => ({ detail: res.statusText }));
             appendAssistantMessage(
-                `Errore dal server (${res.status}): ${errData.detail || 'Impossibile elaborare il messaggio'}`,
+                `Errore dal server (${res.status}): ${_testoDelDettaglio(errData.detail, res.status)}`,
             );
             updateLivingCoreState('idle');
             return;
@@ -289,10 +290,7 @@ async function riempiStanzeNote() {
         const res = await fetch('/api/aliases', { headers: getAuthHeaders() });
         const alias = await res.json();
         const stanze = [...new Set((alias || []).map((a) => (a.room || '').trim()).filter(Boolean))];
-        elenco.innerHTML = stanze
-            .sort()
-            .map((s) => `<option value="${s}"></option>`)
-            .join('');
+        elenco.innerHTML = _html`${stanze.sort().map((s) => _html`<option value="${s}"></option>`)}`;
     } catch {
         // Senza suggerimenti la stanza si scrive a mano, e va bene.
     }

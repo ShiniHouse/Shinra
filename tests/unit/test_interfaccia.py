@@ -2210,7 +2210,11 @@ def test_i_copioni_si_caricano_nell_ordine_in_cui_furono_scritti():
     """
     ordine = [p.split("/")[-1] for p in _collegamenti(_testo(PAGINA)) if p.endswith(".js")]
 
-    assert ordine[0] == "avvio.js", f"il primo copione e' {ordine[0]}"
+    # `sicurezza.js` sta davanti a tutti: dichiara `_html`, che ogni altra
+    # area usa per disegnare. Non esegue niente al caricamento, quindi
+    # anticiparlo non cambia nulla se non l'ordine di dichiarazione.
+    assert ordine[0] == "sicurezza.js", f"il primo copione e' {ordine[0]}"
+    assert ordine[1] == "avvio.js", f"il secondo copione e' {ordine[1]}"
     assert ordine[-1] == "impostazioni.js", f"l'ultimo copione e' {ordine[-1]}"
     assert ordine.index("navigazione.js") < ordine.index("tela.js"), (
         "navigazione.js dichiara le costanti delle schede che gli altri leggono: " "deve arrivare prima"
@@ -2514,3 +2518,212 @@ def test_prettier_non_tocca_il_python():
     ci = FLUSSO_CI.read_text(encoding="utf-8")
     comando = next(r for r in ci.splitlines() if "prettier --check" in r)
     assert "web/static/" in comando, f"Prettier in CI non e' limitato al frontend: {comando.strip()}"
+
+
+# ------------------------------------------- HTML costruito attaccando stringhe
+
+# Le aree ancora da convertire a `_html`. L'elenco si accorcia, mai il
+# contrario: `test_la_lista_dei_non_convertiti_non_si_allunga` lo impedisce.
+# Un file nuovo nasce fuori da qui, quindi nasce gia' protetto.
+NON_ANCORA_CONVERTITI = {
+    "accesso.js",
+    "avvio.js",
+    "conoscenza.js",
+    "dispositivi.js",
+    "fonti.js",
+    "impostazioni.js",
+    "istruisci.js",
+    "navigazione.js",
+    "passkey.js",
+    "regole.js",
+    "routine.js",
+    "ruoli.js",
+    "tela.js",
+    "tela_disegno.js",
+    "tela_nodi.js",
+    "timer.js",
+    "utenti.js",
+    "voce.js",
+}
+
+
+def _valori_interpolati(riga: str) -> bool:
+    return "${" in riga
+
+
+def _blocchi_che_disegnano(testo: str) -> list[tuple[int, str]]:
+    """I punti in cui una stringa diventa markup, col loro contenuto.
+
+    Sono i tre sbocchi: `innerHTML = ...`, `insertAdjacentHTML(...)` e
+    `showModal(...)`, che e' `innerHTML` con un altro nome.
+    """
+    trovati = []
+    for aggancio in (r"\.innerHTML\s*=\s*", r"\.insertAdjacentHTML\([^,]+,\s*", r"\bshowModal\("):
+        for m in re.finditer(aggancio, testo):
+            inizio = m.end()
+            # Fino alla fine dell'istruzione: `;` seguito da fine riga.
+            fine = testo.find(";\n", inizio)
+            trovati.append(
+                (testo.count("\n", 0, inizio) + 1, testo[inizio : fine if fine > 0 else inizio + 4000])
+            )
+    return trovati
+
+
+def test_il_markup_con_valori_dentro_passa_da_html():
+    """Costruire markup attaccando stringhe e' come costruire SQL attaccando
+    stringhe, e per la stessa ragione.
+
+        div.innerHTML = `<p>${testo}</p>`;
+
+    Se `testo` viene dal server, dall'utente o dal modello, quello che entra
+    fra i tag non e' testo: e' markup. Shinra legge notizie, cerca sul web e
+    riassume pagine, e quello che riassume finisce nella finestra della chat
+    — in una pagina che ha in mano la sessione dell'amministratore e il
+    token di Home Assistant. Chi scrive il titolo di una notizia non e' di
+    casa.
+
+    `_html` ripulisce ogni valore interpolato, e un pezzo che e' davvero
+    markup si dichiara con `_grezzo`. Il difetto e' rovesciato: prima
+    bisognava ricordarsi di ripulire, e non ci si ricordava — `_testoSicuro`
+    esisteva ed era usato in dieci punti su novanta.
+
+    Riferimento: issue #34.
+    """
+    colpevoli = []
+    for percorso in _copioni():
+        if percorso.name in NON_ANCORA_CONVERTITI or percorso.name == "sicurezza.js":
+            continue
+        testo = _senza_commenti(_testo(percorso))
+        for riga, blocco in _blocchi_che_disegnano(testo):
+            if not _valori_interpolati(blocco):
+                continue
+            if not re.match(r"_html`|_grezzo\(|\(?\s*_html`", blocco.strip()):
+                colpevoli.append(f"{percorso.name}:{riga} -> {blocco.strip()[:80]}")
+
+    assert not colpevoli, "markup con valori dentro, costruito attaccando stringhe:\n" + "\n".join(colpevoli)
+
+
+def test_la_lista_dei_non_convertiti_non_si_allunga():
+    """L'elenco e' un debito dichiarato, non un permesso.
+
+    Serve perche' convertire novanta punti in una volta sola darebbe una
+    modifica che nessuno puo' rivedere. Ma un elenco di eccezioni che
+    qualcuno puo' allungare non e' un debito: e' una porta. Questa guardia
+    la tiene aperta in una direzione sola.
+
+    Un copione nuovo non e' nell'elenco, quindi nasce gia' protetto.
+    """
+    esistenti = {p.name for p in _copioni()}
+    fantasmi = NON_ANCORA_CONVERTITI - esistenti
+    assert not fantasmi, f"nell'elenco ci sono file che non esistono piu': {fantasmi}"
+
+    # Il numero scende a ogni passo. Alzarlo vuol dire aver aggiunto
+    # un'eccezione invece di toglierne una.
+    assert len(NON_ANCORA_CONVERTITI) <= 18, (
+        f"le aree non convertite sono {len(NON_ANCORA_CONVERTITI)}: erano 18 e devono "
+        "scendere, non risalire"
+    )
+
+
+def test_una_notizia_ostile_non_diventa_codice_nella_chat():
+    """La dimostrazione, eseguita.
+
+    Prima di questa modifica, dando in pasto alla chat una risposta che
+    contiene `<img src=x onerror=...>` — cosa che basta a ottenere mettendo
+    quel testo nel titolo di una notizia che Shinra riassume — il tag
+    finiva nella pagina intatto, e l'`onerror` girava con la sessione
+    dell'amministratore aperta.
+
+    Finiva in **due** punti: fra i tag, e dentro l'attributo `onclick` del
+    pulsante «Riascolta», dove una sola apice chiusa bastava.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    ostile = 'Notizie: <img src=x onerror=\\"rubo()\\"> e un\'apice'
+
+    prova = (
+        _testo(CARTELLA_JS / "sicurezza.js")
+        + """
+let activeAssistantName = 'Kyra';
+let disegnato = '';
+const container = { appendChild() {}, scrollTop: 0, scrollHeight: 0 };
+const document = {
+    getElementById: () => container,
+    createElement: () => ({ set innerHTML(v) { disegnato = String(v); }, className: '' }),
+};
+function safeCreateIcons() {}
+function speakText() {}
+"""
+        + _funzione_javascript(_testo(CARTELLA_JS / "conversazione.js"), "appendAssistantMessage")
+        + f"""
+appendAssistantMessage("{ostile}");
+console.log(JSON.stringify({{
+    intatto: disegnato.includes('<img src=x'),
+    scappato: disegnato.includes('&lt;img src=x'),
+    apiceNudaNellAttributo: /onclick="speakText\\([^"]*'[^"]*\\)"/.test(disegnato),
+}}));
+"""
+    )
+
+    esito = _esegui_con_node(prova)
+    assert esito.returncode == 0, esito.stderr
+    visto = json.loads(esito.stdout.strip())
+
+    assert not visto["intatto"], "il tag arriva nella pagina intatto: e' esecuzione di codice altrui"
+    assert visto["scappato"], "il testo non compare affatto: la guardia non sta guardando niente"
+    assert not visto[
+        "apiceNudaNellAttributo"
+    ], "un apice chiude la stringa dentro l'onclick e ne apre un'altra"
+
+
+def test_html_ripulisce_anche_cio_che_finisce_in_un_attributo():
+    """`_testoSicuro`, che c'era prima, passava da `textContent`: ripuliva
+    `& < >` e lasciava passare apici e virgolette.
+
+    Basta per un valore fra i tag. Non basta per `value="${x}"`, dove una
+    virgoletta chiude l'attributo e ne apre un altro — ed e' esattamente
+    quello che faceva l'elenco delle stanze note.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    prova = _testo(CARTELLA_JS / "sicurezza.js") + r"""
+const casi = {
+    tag: String(_html`<p>${'<b>ciao</b>'}</p>`),
+    virgolette: String(_html`<input value="${'" onfocus="rubo()'}">`),
+    apici: String(_html`<input value='${"' onfocus='rubo()"}'>`),
+    backtick: String(_html`<p>${'`${rubo()}`'}</p>`),
+    vuoto: String(_html`<p>${null}${undefined}</p>`),
+    numero: String(_html`<p>${42}</p>`),
+    grezzo: String(_html`<p>${_grezzo('<b>voluto</b>')}</p>`),
+    annidato: String(_html`<ul>${['a<b', 'c&d'].map((v) => _html`<li>${v}</li>`)}</ul>`),
+    perAttributoJs: String(_html`<b onclick="fai(${_grezzo(_perAttributoJs("un'apice \" e virgolette"))})"></b>`),
+};
+console.log(JSON.stringify(casi));
+"""
+
+    esito = _esegui_con_node(prova)
+    assert esito.returncode == 0, esito.stderr
+    visto = json.loads(esito.stdout.strip())
+
+    assert visto["tag"] == "<p>&lt;b&gt;ciao&lt;/b&gt;</p>"
+    # Non che la parola «onfocus» sparisca — resta, ed e' giusto che resti:
+    # e' testo dentro il valore. Che non ci sia piu' una virgoletta **nuda**
+    # capace di chiudere l'attributo e aprirne un altro. Nel risultato le
+    # sole virgolette vere sono le due che delimitano il valore.
+    assert visto["virgolette"].count('"') == 2, f"attributo iniettato: {visto['virgolette']}"
+    assert "&quot;" in visto["virgolette"], "le virgolette del valore non sono state ripulite"
+    assert visto["apici"].count("'") == 2, f"attributo iniettato: {visto['apici']}"
+    assert "&#39;" in visto["apici"], "gli apici del valore non sono stati ripuliti"
+    assert "`" not in visto["backtick"], f"il backtick passa: {visto['backtick']}"
+    assert visto["vuoto"] == "<p></p>", f"null e undefined finiscono scritti: {visto['vuoto']}"
+    assert visto["numero"] == "<p>42</p>"
+    assert visto["grezzo"] == "<p><b>voluto</b></p>", "`_grezzo` non lascia passare il markup voluto"
+    assert visto["annidato"] == "<ul><li>a&lt;b</li><li>c&amp;d</li></ul>", (
+        "un `_html` dentro un altro va ripulito due volte, o non ci entra affatto: " f"{visto['annidato']}"
+    )
+    assert (
+        "'" not in visto["perAttributoJs"]
+        and '"' not in visto["perAttributoJs"].split("fai(")[1].split(")")[0]
+    )
