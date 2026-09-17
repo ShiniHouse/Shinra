@@ -89,7 +89,7 @@ function renderFlowCanvasModal() {
     const triggersStr = _canvasState.trigger_phrases.join(', ');
 
     showModal(
-        `
+        _html`
         <!-- La chiusura sta fuori dalla finestra, nell'angolo.
              Stava in fila dopo «Salva», e una X accanto a un pulsante
              di salvataggio non e' una terza azione fra cui scegliere:

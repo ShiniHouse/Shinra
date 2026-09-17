@@ -71,7 +71,7 @@ function mostraRifiuto(stato) {
         stato === 403
             ? "Non hai il permesso di vedere questa parte. Quello che manca non e' assente: e' riservato."
             : "La sessione e' scaduta. Le schermate che vedi vuote potrebbero non esserlo: rientra per saperlo.";
-    barra.innerHTML = `<span>${messaggio}</span>`;
+    barra.innerHTML = _html`<span>${messaggio}</span>`;
     if (stato !== 403) {
         const entra = document.createElement('button');
         entra.type = 'button';
@@ -138,7 +138,7 @@ async function caricaProfiliAccesso() {
         const profili = (await res.json()).filter((p) => p.ha_pin);
 
         if (profili.length === 0) {
-            box.innerHTML = `<div class="col-span-2 text-xs text-slate-400 p-3 rounded-xl bg-slate-950 border border-slate-800">
+            box.innerHTML = _html`<div class="col-span-2 text-xs text-slate-400 p-3 rounded-xl bg-slate-950 border border-slate-800">
                 Nessun profilo ha ancora un PIN. Il PIN del primo accesso e' nel log del server.</div>`;
             return;
         }
@@ -151,18 +151,16 @@ async function caricaProfiliAccesso() {
         }
 
         box.classList.remove('hidden');
-        box.innerHTML = profili
-            .map(
-                (p) => `
-            <button type="button" onclick="scegliProfiloAccesso('${p.id}', '${(p.name || '').replace(/'/g, "\\'")}')"
+        box.innerHTML = _html`${profili.map(
+            (p) => _html`
+            <button type="button" onclick="scegliProfiloAccesso(${_grezzo(_perAttributoJs(p.id))}, ${_grezzo(_perAttributoJs(p.name || ''))})"
                 class="p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-indigo-500 hover:bg-slate-900 transition text-left flex items-center gap-2.5">
                 <span class="w-8 h-8 rounded-xl bg-indigo-600/25 text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0">
                     ${(p.name || '?').charAt(0).toUpperCase()}
                 </span>
                 <span class="text-sm font-semibold text-slate-200 truncate">${p.name || p.id}</span>
             </button>`,
-            )
-            .join('');
+        )}`;
     } catch (e) {
         console.warn('Impossibile caricare i profili di accesso:', e);
     }
