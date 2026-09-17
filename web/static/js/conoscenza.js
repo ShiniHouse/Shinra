@@ -175,7 +175,7 @@ async function loadKnowledge() {
         const container = document.getElementById('knowledge-list');
 
         if (!items.length) {
-            container.innerHTML = `<p class="text-xs text-slate-500 col-span-2 py-3 text-center">Nessun fatto memorizzato. Compila una categoria qui sopra o aggiungi un fatto libero.</p>`;
+            container.innerHTML = _html`<p class="text-xs text-slate-500 col-span-2 py-3 text-center">Nessun fatto memorizzato. Compila una categoria qui sopra o aggiungi un fatto libero.</p>`;
         } else {
             const catColors = {
                 casa: 'indigo',
@@ -188,22 +188,20 @@ async function loadKnowledge() {
                 note_libere: 'slate',
                 generale: 'slate',
             };
-            container.innerHTML = items
-                .map((k) => {
-                    const cat = k.category || 'generale';
-                    const col = catColors[cat] || 'slate';
-                    return `
+            container.innerHTML = _html`${items.map((k) => {
+                const cat = k.category || 'generale';
+                const col = catColors[cat] || 'slate';
+                return _html`
                 <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex justify-between items-start gap-3 group hover:border-slate-700 transition">
                     <div class="flex-1 min-w-0">
                         <span class="px-2 py-0.5 rounded bg-${col}-950/60 border border-${col}-800 text-[10px] text-${col}-300 font-mono uppercase">${cat}</span>
                         <p class="text-xs text-slate-200 mt-1.5 leading-relaxed">${k.text}</p>
                     </div>
-                    <button onclick="deleteKnowledge('${k.id}')" class="text-slate-600 hover:text-rose-400 transition p-1 opacity-0 group-hover:opacity-100 shrink-0" title="Elimina fatto">
+                    <button onclick="deleteKnowledge(${_grezzo(_perAttributoJs(k.id))})" class="text-slate-600 hover:text-rose-400 transition p-1 opacity-0 group-hover:opacity-100 shrink-0" title="Elimina fatto">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>`;
-                })
-                .join('');
+            })}`;
         }
         safeCreateIcons();
         renderKnowledgeTemplates(items);
@@ -222,31 +220,30 @@ function renderKnowledgeTemplates(existingItems) {
         if (k._key) savedMap[k._key] = k.text.replace(/^[^:]+:\s*/, '');
     });
 
-    container.innerHTML = KNOWLEDGE_TEMPLATES.map((section) => {
+    container.innerHTML = _html`${KNOWLEDGE_TEMPLATES.map((section) => {
         const filledCount = section.fields.filter((f) => savedMap[`${section.id}.${f.key}`]).length;
         const totalCount = section.fields.length;
         const isComplete = filledCount === totalCount;
 
-        let badgeHtml = '';
+        let riquadro;
         if (filledCount === 0) {
-            badgeHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700">Da compilare</span>`;
+            riquadro = _html`<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700">Da compilare</span>`;
         } else if (isComplete) {
-            badgeHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-800 flex items-center gap-1">✓ ${filledCount}/${totalCount}</span>`;
+            riquadro = _html`<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-800 flex items-center gap-1">✓ ${filledCount}/${totalCount}</span>`;
         } else {
-            badgeHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-950/60 text-indigo-300 border border-indigo-800">${filledCount}/${totalCount} compilati</span>`;
+            riquadro = _html`<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-950/60 text-indigo-300 border border-indigo-800">${filledCount}/${totalCount} compilati</span>`;
         }
 
         // Genera chip di anteprima dei valori inseriti
-        const filledChips = section.fields
+        const anteprime = section.fields
             .filter((f) => savedMap[`${section.id}.${f.key}`])
             .map(
                 (f) =>
-                    `<span class="px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-[10px] text-slate-300 truncate max-w-[140px]" title="${f.label}: ${savedMap[`${section.id}.${f.key}`]}">${f.label}: ${savedMap[`${section.id}.${f.key}`]}</span>`,
+                    _html`<span class="px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-[10px] text-slate-300 truncate max-w-[140px]" title="${f.label}: ${savedMap[`${section.id}.${f.key}`]}">${f.label}: ${savedMap[`${section.id}.${f.key}`]}</span>`,
             )
-            .slice(0, 3)
-            .join('');
+            .slice(0, 3);
 
-        return `
+        return _html`
         <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 hover:border-slate-700 transition flex flex-col justify-between space-y-3 group shadow-sm">
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
@@ -259,21 +256,27 @@ function renderKnowledgeTemplates(existingItems) {
                             <span class="text-[10px] text-slate-500">${totalCount} parametri</span>
                         </div>
                     </div>
-                    ${badgeHtml}
+                    ${riquadro}
                 </div>
                 <div class="flex flex-wrap gap-1 min-h-[22px] pt-1">
-                    ${filledChips || '<span class="text-[10px] text-slate-600 italic">Nessun dato inserito.</span>'}
-                    ${filledCount > 3 ? `<span class="text-[10px] text-slate-500 font-semibold self-center">+${filledCount - 3} altri</span>` : ''}
+                    ${
+                        anteprime.length
+                            ? anteprime
+                            : _grezzo(
+                                  '<span class="text-[10px] text-slate-600 italic">Nessun dato inserito.</span>',
+                              )
+                    }
+                    ${filledCount > 3 ? _html`<span class="text-[10px] text-slate-500 font-semibold self-center">+${filledCount - 3} altri</span>` : ''}
                 </div>
             </div>
             <div class="pt-2 border-t border-slate-800/80 flex justify-end">
-                <button onclick="openKnowledgeCategoryModal('${section.id}')" class="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                <button onclick="openKnowledgeCategoryModal(${_grezzo(_perAttributoJs(section.id))})" class="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition">
                     <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> ${filledCount > 0 ? 'Modifica Dati' : 'Compila Categoria'}
                 </button>
             </div>
         </div>
         `;
-    }).join('');
+    })}`;
     safeCreateIcons();
 }
 
@@ -290,7 +293,7 @@ function openKnowledgeCategoryModal(sectionId) {
     });
 
     showModal(
-        `
+        _html`
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
             <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
                 <span class="text-xl">${section.icon}</span> ${section.label}
@@ -299,24 +302,22 @@ function openKnowledgeCategoryModal(sectionId) {
         </div>
         <p class="text-xs text-slate-400 mt-2">Compila o modifica i dettagli per Shinra. Lascia vuoti i campi che non vuoi memorizzare.</p>
         <div class="space-y-3 mt-4 max-h-[60vh] overflow-y-auto pr-1">
-            ${section.fields
-                .map((f) => {
-                    const val = existingMap[f.key] || '';
-                    return `
+            ${section.fields.map((f) => {
+                const val = existingMap[f.key] || '';
+                return _html`
                 <div>
                     <label class="text-[11px] font-semibold text-slate-300 block mb-1">${f.label}</label>
                     <input type="text" id="modal-kt-${section.id}-${f.key}"
-                        value="${val.replace(/"/g, '&quot;')}"
+                        value="${val}"
                         placeholder="${f.placeholder}"
                         class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
                 </div>
                 `;
-                })
-                .join('')}
+            })}
         </div>
         <div class="flex justify-end gap-2 pt-4 border-t border-slate-800 mt-4">
             <button onclick="closeModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 transition">Annulla</button>
-            <button onclick="saveKnowledgeCategory('${section.id}')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/30">
+            <button onclick="saveKnowledgeCategory(${_grezzo(_perAttributoJs(section.id))})" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/30">
                 <i data-lucide="check" class="w-3.5 h-3.5"></i> Salva Informazioni
             </button>
         </div>
@@ -351,7 +352,7 @@ async function saveKnowledgeCategory(sectionId) {
 }
 
 function openAddKnowledgeModal() {
-    showModal(`
+    showModal(_html`
         <h3 class="font-bold text-sm text-slate-100 mb-1">Aggiungi Fatto Libero</h3>
         <p class="text-xs text-slate-400 mb-4">Scrivi qualsiasi informazione in forma di frase naturale.</p>
         <label class="text-xs text-slate-400 block mb-1">Fatto / Informazione</label>

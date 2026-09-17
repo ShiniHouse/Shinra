@@ -52,19 +52,18 @@ function renderTimers() {
         return;
     }
 
-    container.innerHTML = _activeTimers
-        .map((t) => {
-            const rem = t.remaining_seconds || 0;
-            const m = Math.floor(rem / 60);
-            const s = rem % 60;
-            const timeStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            const pct =
-                t.duration_seconds > 0
-                    ? Math.min(100, Math.max(0, ((t.duration_seconds - rem) / t.duration_seconds) * 100))
-                    : 0;
-            const isFinished = rem <= 0;
+    container.innerHTML = _html`${_activeTimers.map((t) => {
+        const rem = t.remaining_seconds || 0;
+        const m = Math.floor(rem / 60);
+        const s = rem % 60;
+        const timeStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        const pct =
+            t.duration_seconds > 0
+                ? Math.min(100, Math.max(0, ((t.duration_seconds - rem) / t.duration_seconds) * 100))
+                : 0;
+        const isFinished = rem <= 0;
 
-            return `
+        return _html`
             <div class="p-2.5 rounded-xl bg-slate-950/80 border ${isFinished ? 'border-amber-500/80 bg-amber-950/30 animate-pulse' : 'border-slate-800'} flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                     <div class="w-7 h-7 rounded-lg ${isFinished ? 'bg-amber-500 text-slate-950' : 'bg-amber-600/30 text-amber-300'} flex items-center justify-center font-bold text-xs">
@@ -80,13 +79,12 @@ function renderTimers() {
                         </div>
                     </div>
                 </div>
-                <button onclick="deleteTimer('${t.id}')" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Cancella timer">
+                <button onclick="deleteTimer(${_grezzo(_perAttributoJs(t.id))})" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Cancella timer">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
         `;
-        })
-        .join('');
+    })}`;
     safeCreateIcons();
 }
 
@@ -97,7 +95,7 @@ async function deleteTimer(id) {
 }
 
 function openAddTimerModal() {
-    showModal(`
+    showModal(_html`
         <h3 class="font-bold text-sm text-slate-100 mb-3 flex items-center gap-2">
             <i data-lucide="timer" class="w-4 h-4 text-amber-400"></i> Imposta Nuovo Timer
         </h3>
@@ -189,33 +187,23 @@ function renderReminders() {
         container.innerHTML = '';
         return;
     }
-    container.innerHTML = _promemoria
-        .map(
-            (r) => `
+    container.innerHTML = _html`${_promemoria.map(
+        (r) => _html`
         <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
             <div class="flex items-center gap-2.5">
                 <div class="w-7 h-7 rounded-lg bg-sky-600/30 text-sky-300 flex items-center justify-center font-bold text-xs">🔔</div>
                 <div>
-                    <h4 class="font-bold text-xs text-slate-200">${_testoSicuro(r.text)}</h4>
+                    <h4 class="font-bold text-xs text-slate-200">${r.text}</h4>
                     <span class="text-[11px] text-slate-400">${_quandoLeggibile(r.remind_at)}</span>
                 </div>
             </div>
-            <button onclick="deleteReminder('${r.id}')" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Cancella promemoria">
+            <button onclick="deleteReminder(${_grezzo(_perAttributoJs(r.id))})" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Cancella promemoria">
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
     `,
-        )
-        .join('');
+    )}`;
     safeCreateIcons();
-}
-
-// Il testo di un promemoria arriva da cio' che l'utente ha detto: non
-// finisce mai nell'HTML senza essere neutralizzato.
-function _testoSicuro(testo) {
-    const d = document.createElement('div');
-    d.textContent = testo || '';
-    return d.innerHTML;
 }
 
 async function deleteReminder(id) {
@@ -257,13 +245,12 @@ function disegnaProssimiScatti(regole) {
     // L'etichetta sta dentro cio' che si disegna, non sopra il
     // pannello: un titolo fisso in piu' era esattamente il peso che
     // questa colonna doveva smettere di avere.
-    const etichetta =
-        '<p class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Fra poco, da sola</p>';
+    const etichetta = _grezzo(
+        '<p class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Fra poco, da sola</p>',
+    );
 
     if (!attese.length) {
-        contenitore.innerHTML =
-            etichetta +
-            `
+        contenitore.innerHTML = _html`${etichetta}
             <div class="text-[11px] text-slate-500 py-1 leading-relaxed">
                 Niente in programma: nelle prossime ore la casa aspetta te.
                 <button type="button" onclick="switchTab('automazioni')" class="text-indigo-400 hover:text-indigo-300 font-semibold underline decoration-dotted">Vedi le automazioni</button>
@@ -271,24 +258,20 @@ function disegnaProssimiScatti(regole) {
         return;
     }
 
-    contenitore.innerHTML =
-        etichetta +
-        attese
-            .map(
-                (r) => `
+    contenitore.innerHTML = _html`${etichetta}${attese.map(
+        (r) => _html`
         <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-2.5">
             <div class="flex items-center gap-2.5 min-w-0">
                 <div class="w-7 h-7 rounded-lg bg-emerald-600/25 text-emerald-300 flex items-center justify-center shrink-0">
                     <i data-lucide="zap" class="w-3.5 h-3.5"></i>
                 </div>
                 <div class="min-w-0">
-                    <h4 class="font-bold text-xs text-slate-200 truncate">${_testoSicuro(r.nome || 'Automazione')}</h4>
+                    <h4 class="font-bold text-xs text-slate-200 truncate">${r.nome || 'Automazione'}</h4>
                     <span class="text-[11px] text-emerald-400">${_quandoLeggibile(r.prossimo)}</span>
                 </div>
             </div>
         </div>
     `,
-            )
-            .join('');
+    )}`;
     safeCreateIcons();
 }

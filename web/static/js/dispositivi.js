@@ -5,26 +5,24 @@ async function loadAliases() {
         const items = await res.json();
         const container = document.getElementById('aliases-list');
         if (!items.length) {
-            container.innerHTML = `<p class="text-xs text-slate-500 col-span-3 py-4 text-center">Nessun alias configurato. Clicca "Scopri Dispositivi HA" per iniziare.</p>`;
+            container.innerHTML = _html`<p class="text-xs text-slate-500 col-span-3 py-4 text-center">Nessun alias configurato. Clicca "Scopri Dispositivi HA" per iniziare.</p>`;
             return;
         }
-        container.innerHTML = items
-            .map(
-                (a) => `
+        container.innerHTML = _html`${items.map(
+            (a) => _html`
             <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5 group">
                 <div class="flex justify-between items-start">
                     <span class="font-bold text-xs text-indigo-300">"${a.alias}"</span>
-                    <button onclick="deleteAlias('${a.id}')" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    <button onclick="deleteAlias(${_grezzo(_perAttributoJs(a.id))})" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                 </div>
                 <div class="text-[11px] text-slate-400 font-mono truncate">→ ${a.entity_id}</div>
                 <div class="flex items-center gap-2">
                     <span id="stato-${_chiaveStato(a.entity_id)}" class="text-[10px] font-semibold text-slate-500">${_testoStato(a.entity_id)}</span>
-                    ${a.room ? `<span class="text-[10px] text-slate-500">📍 ${a.room}</span>` : ''}
+                    ${a.room ? _html`<span class="text-[10px] text-slate-500">📍 ${a.room}</span>` : ''}
                 </div>
             </div>
         `,
-            )
-            .join('');
+        )}`;
         safeCreateIcons();
         caricaStatiIniziali();
     } catch (e) {
@@ -62,7 +60,7 @@ let _haEntitiesCache = null;
 async function discoverHAEntities() {
     const btn = document.getElementById('btn-discover');
     btn.disabled = true;
-    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Caricamento...`;
+    btn.innerHTML = _html`<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Caricamento...`;
     safeCreateIcons();
 
     try {
@@ -70,11 +68,11 @@ async function discoverHAEntities() {
         const data = await res.json();
 
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i> Aggiorna`;
+        btn.innerHTML = _html`<i data-lucide="refresh-cw" class="w-4 h-4"></i> Aggiorna`;
         safeCreateIcons();
 
         if (data.error) {
-            document.getElementById('ha-entities-groups').innerHTML = `
+            document.getElementById('ha-entities-groups').innerHTML = _html`
                 <div class="p-4 rounded-xl bg-rose-950/40 border border-rose-800 text-rose-300 text-xs">
                     ❌ <strong>Home Assistant non raggiungibile</strong><br>${data.message || 'Verifica le impostazioni nella tab ⚙️'}
                 </div>`;
@@ -91,10 +89,10 @@ async function discoverHAEntities() {
         document.getElementById('ha-entities-section').style.display = 'block';
     } catch (e) {
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="scan-search" class="w-4 h-4"></i> Scopri Dispositivi HA`;
+        btn.innerHTML = _html`<i data-lucide="scan-search" class="w-4 h-4"></i> Scopri Dispositivi HA`;
         safeCreateIcons();
         document.getElementById('ha-entities-groups').innerHTML =
-            `<div class="text-xs text-rose-400">Errore: ${e.message}</div>`;
+            _html`<div class="text-xs text-rose-400">Errore: ${e.message}</div>`;
         document.getElementById('ha-entities-section').style.display = 'block';
     }
 }
@@ -103,7 +101,10 @@ function renderHAEntities(data, filterText = '') {
     const container = document.getElementById('ha-entities-groups');
     const lc = filterText.toLowerCase();
 
-    let html = '';
+    // Un elenco di pezzi gia' marcati invece di una stringa che cresce:
+    // attaccare `Sicuro` con `+=` li ridurrebbe a testo e perderebbe la
+    // marcatura.
+    const pezzi = [];
     let visibleCount = 0;
 
     for (const entities of Object.values(data.groups)) {
@@ -119,16 +120,15 @@ function renderHAEntities(data, filterText = '') {
         if (!filtered.length) continue;
         visibleCount += filtered.length;
 
-        html += `
+        pezzi.push(_html`
             <div class="rounded-xl border border-slate-800 overflow-hidden">
                 <div class="bg-slate-800/60 px-4 py-2 text-xs font-semibold text-slate-300 flex items-center justify-between">
                     <span>${entities[0].domain_label}</span>
                     <span class="text-slate-500">${filtered.length} dispositivi</span>
                 </div>
                 <div class="divide-y divide-slate-800/60">
-                    ${filtered
-                        .map(
-                            (e) => `
+                    ${filtered.map(
+                        (e) => _html`
                         <div class="flex items-center justify-between px-4 py-2.5 hover:bg-slate-800/30 transition group">
                             <div class="flex-1 min-w-0">
                                 <div class="text-xs font-medium text-slate-200 truncate">${e.friendly_name}</div>
@@ -138,12 +138,12 @@ function renderHAEntities(data, filterText = '') {
                                 <span class="text-[10px] px-2 py-0.5 rounded-full ${getStateClass(e.state)}">${e.state}</span>
                                 ${
                                     e.alias
-                                        ? `<span class="text-[10px] text-indigo-400 font-semibold bg-indigo-950/60 border border-indigo-800 px-2 py-0.5 rounded-full">"${e.alias}"</span>`
+                                        ? _html`<span class="text-[10px] text-indigo-400 font-semibold bg-indigo-950/60 border border-indigo-800 px-2 py-0.5 rounded-full">"${e.alias}"</span>`
                                         : ''
                                 }
                                 ${
                                     e.controllable
-                                        ? `<button onclick="openAliasModalForEntity('${e.entity_id}', '${e.friendly_name.replace(/'/g, "\\'")}', '${e.alias || ''}')"
+                                        ? _html`<button onclick="openAliasModalForEntity(${_grezzo(_perAttributoJs(e.entity_id))}, ${_grezzo(_perAttributoJs(e.friendly_name))}, ${_grezzo(_perAttributoJs(e.alias || ''))})"
                                         class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border
                                         ${
                                             e.alias
@@ -152,19 +152,21 @@ function renderHAEntities(data, filterText = '') {
                                         }">
                                         ${e.alias ? '✏️ Modifica' : '+ Alias'}
                                       </button>`
-                                        : '<span class="text-[10px] text-slate-600">sola lettura</span>'
+                                        : _grezzo(
+                                              '<span class="text-[10px] text-slate-600">sola lettura</span>',
+                                          )
                                 }
                             </div>
                         </div>
                     `,
-                        )
-                        .join('')}
+                    )}
                 </div>
-            </div>`;
+            </div>`);
     }
 
-    container.innerHTML =
-        html || `<p class="text-xs text-slate-500 text-center py-4">Nessun risultato per "${filterText}"</p>`;
+    container.innerHTML = pezzi.length
+        ? _html`${pezzi}`
+        : _html`<p class="text-xs text-slate-500 text-center py-4">Nessun risultato per "${filterText}"</p>`;
     if (filterText) {
         document.getElementById('alias-filter-count').textContent = `${visibleCount} trovati`;
     }
@@ -185,7 +187,7 @@ function filterEntities(text) {
 }
 
 function openAliasModalForEntity(entityId, friendlyName, currentAlias) {
-    showModal(`
+    showModal(_html`
         <h3 class="font-bold text-sm text-slate-100 mb-1">Assegna Nome Naturale</h3>
         <p class="text-xs text-slate-400 mb-4">Assegna un nome che Shinra riconoscerà nei comandi vocali.</p>
 
