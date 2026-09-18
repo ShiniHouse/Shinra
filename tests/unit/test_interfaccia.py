@@ -3333,3 +3333,146 @@ def test_un_server_irraggiungibile_si_ritenta_ancora_e_in_silenzio():
 """
     esito = _esegui_con_node(prova)
     assert esito.returncode == 0, esito.stderr or esito.stdout
+
+
+# --------------------------- una destinazione sconosciuta non svuota la pagina
+
+
+def _banco_della_navigazione() -> str:
+    """`switchTab` vera, dentro una pagina finta di cui si sa tutto.
+
+    La pagina finta e' minima apposta: schede, pulsanti, e niente altro. Se un
+    giorno `switchTab` cominciasse a toccare qualcos'altro, il banco lo dice
+    con un errore invece di far finta di niente.
+    """
+    sorgente = _testo(CARTELLA_JS / "navigazione.js")
+    dichiarazione = sorgente[sorgente.index("const tabDisplayMap = {") :]
+    dichiarazione = dichiarazione[: dichiarazione.index("};") + 2]
+    unite = sorgente[sorgente.index("const SCHEDE_UNITE = {") :]
+    unite = unite[: unite.index("};") + 2]
+
+    return "\n".join(
+        [
+            dichiarazione,
+            unite,
+            _riga_javascript(sorgente, "const SCHEDA_DI_RIPIEGO"),
+            _riga_javascript(sorgente, "const SCHEDE_DI_CONFIGURAZIONE"),
+            _funzione_javascript(sorgente, "switchTab"),
+            """
+// -------------------------------------------------------- pagina finta
+const avvisi = [];
+console.warn = (m) => avvisi.push(m);
+
+function elemento(id) {
+    return {
+        id,
+        style: { display: '' },
+        classList: { add() {}, remove() {}, contains: () => false },
+    };
+}
+
+let pagina = {};
+function costruisci(schede) {
+    pagina = {};
+    for (const nome of schede) pagina[`tab-${nome}`] = elemento(`tab-${nome}`);
+}
+
+globalThis.document = {
+    getElementById: (id) => pagina[id] || null,
+    querySelectorAll: () => [],
+};
+globalThis.chiudiMenuConfigurazione = () => {};
+for (const caricatore of ['loadKnowledge', 'loadSources', 'loadAliases', 'loadRegole',
+                          'loadModes', 'disegnaScorciatoia', 'loadUsers', 'loadSettings',
+                          'preparaSezioniImpostazioni']) {
+    globalThis[caricatore] = () => {};
+}
+
+function visibili() {
+    return Object.values(pagina)
+        .filter((e) => e.style.display && e.style.display !== 'none')
+        .map((e) => e.id);
+}
+
+function esigi(condizione, messaggio) {
+    if (!condizione) { console.error(messaggio); process.exit(1); }
+}
+
+const TUTTE = Object.keys(tabDisplayMap);
+""",
+        ]
+    )
+
+
+def test_una_scheda_che_non_esiste_riporta_alla_console():
+    """Issue #153.
+
+    `switchTab` nasconde tutte le schede e poi accende quella giusta. Con un
+    identificativo sconosciuto la seconda meta' non faceva niente: restava la
+    barra in alto e il vuoto sotto. Nessun errore, nessun 500 — un guasto
+    muto, che sembra un guasto del codice.
+
+    L'ho incontrato scrivendo `devices` invece di `aliases` in un harness, e
+    la schermata bianca mi ha mandato a cercare dalla parte sbagliata.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    prova = _banco_della_navigazione() + """
+costruisci(TUTTE);
+switchTab('devices');
+esigi(visibili().length === 1, 'la pagina resta vuota con una scheda che non esiste');
+esigi(visibili()[0] === 'tab-console', 'non si torna alla console: si finisce su ' + visibili());
+esigi(avvisi.length === 1, 'la pagina si e\\' sistemata da sola senza dirlo a nessuno');
+esigi(avvisi[0].includes('devices'), 'l\\'avviso non dice quale scheda mancava');
+"""
+    esito = _esegui_con_node(prova)
+    assert esito.returncode == 0, esito.stderr or esito.stdout
+
+
+def test_il_ripiego_non_ruba_il_posto_alle_schede_che_esistono():
+    """Il gemello, perche' la riparazione non diventi «si va sempre in console».
+
+    E l'ultimo caso e' quello che una chiamata ricorsiva avrebbe mancato: su
+    una pagina senza nemmeno la console non c'e' dove ripiegare, e allora si
+    lascia tutto com'e'. Una schermata vecchia e' sempre meglio di una bianca.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    prova = _banco_della_navigazione() + """
+for (const nome of TUTTE) {
+    costruisci(TUTTE);
+    avvisi.length = 0;
+    switchTab(nome);
+    esigi(visibili().length === 1, `${nome}: schede accese ` + visibili());
+    esigi(visibili()[0] === `tab-${nome}`, `${nome} porta invece a ` + visibili());
+    esigi(avvisi.length === 0, `${nome} esiste e viene trattata come sconosciuta`);
+}
+
+// E i nomi di prima continuano ad arrivare dove devono, senza avviso:
+// non sono sconosciuti, sono tradotti.
+for (const vecchio of Object.keys(SCHEDE_UNITE)) {
+    costruisci(TUTTE);
+    avvisi.length = 0;
+    switchTab(vecchio);
+    esigi(visibili()[0] === `tab-${SCHEDE_UNITE[vecchio]}`,
+          `${vecchio} non porta piu' a ${SCHEDE_UNITE[vecchio]}`);
+    esigi(avvisi.length === 0, `${vecchio} viene trattata come sconosciuta invece che tradotta`);
+}
+
+// E il caso che una chiamata ricorsiva avrebbe girato a vuoto: una pagina
+// che ha delle schede ma **non** la console. Non c'e' dove ripiegare, e
+// allora non si tocca niente — invece di nascondere tutto e lasciare il
+// bianco, che e' esattamente il difetto da cui si e' partiti.
+costruisci(['aliases', 'users']);
+switchTab('aliases');
+esigi(visibili()[0] === 'tab-aliases', 'il banco non parte da una scheda accesa');
+avvisi.length = 0;
+switchTab('devices');
+esigi(avvisi.length === 1, 'la scheda sconosciuta passa senza un avviso');
+esigi(visibili().length === 1 && visibili()[0] === 'tab-aliases',
+      'senza console si spegne tutto lo stesso: la pagina resta bianca');
+"""
+    esito = _esegui_con_node(prova)
+    assert esito.returncode == 0, esito.stderr or esito.stdout
