@@ -137,13 +137,15 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | 124 | Impostazioni a sezioni, aperta solo quella che serve | fatta (#138) |
 | 126 | Una scorciatoia per «a quest'ora fai questo» | fatta (#140) |
 | 139 | Un nome di icona sbagliato non da' errore, da' un buco | fatta (#142) |
-| 118 | Lo spegnimento del servizio si pianta: 90 secondi e poi SIGKILL | da fare |
+| 118 | Lo spegnimento del servizio si pianta: 90 secondi e poi SIGKILL | fatta (#157) |
 | 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` | da fare |
-| 34 | Scomporre `index.html` (7.438 righe) in moduli ES | da fare |
+| 34 | Scomporre `index.html` (7.438 righe) in moduli ES | in corso (#144-#151) |
 | 35 | Backup e restore della configurazione, con versione di schema | da fare |
 | 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | da fare |
 | 37 | Immagine Docker e add-on per Home Assistant OS | da fare |
 | 38 | Documentazione utente e guida all'installazione verificata | da fare |
+| 152 | Il fondo ambientale resta scuro in tema chiaro su quattro schede | da fare |
+| 153 | `switchTab` con una scheda che non esiste lascia la pagina vuota | da fare |
 
 ### L'interfaccia, prima della 1.0.0 — fatta
 
@@ -191,9 +193,48 @@ Due difetti sono invece emersi **provando a rompere il codice apposta**: il
 server accettava un'azione che non diceva su cosa agire (#126), e tre test
 prendevano meta' del tempo dal calendario vero e meta' da una costante (#136).
 
-La **#34** (frontend modulare) resta la sorella maggiore di tutte: `index.html`
+La **#34** (frontend modulare) era la sorella maggiore di tutte: `index.html`
 e' passato da 6.600 a **7.438 righe** proprio facendo queste sei. Su un file
-cosi' ogni modifica all'interfaccia costa piu' del dovuto.
+cosi' ogni modifica all'interfaccia costa piu' del dovuto. E' per questo che e'
+stata la prima cosa affrontata dopo — ed e' a meta' strada.
+
+### Il frontend scomposto — a meta' strada
+
+Otto PR unite (#144, #145, #146, #147, #148, #149, #150, #151) hanno tolto CSS
+e JavaScript da `index.html` e li hanno divisi per area.
+
+| | prima | dopo |
+| :--- | :-- | :-- |
+| `web/templates/index.html` | 7.438 righe | **1.257** |
+| File JavaScript | 1, dentro l'HTML | 21, il piu' lungo di **451** righe |
+| File CSS | 1, dentro l'HTML | 5 |
+| ESLint e Prettier | non esistevano | in CI, obbligatori |
+| HTML costruito concatenando stringhe | ovunque | **zero**, con guardia |
+
+Il pezzo piu' importante non e' la divisione, e' il modello `_html`: ogni
+valore che finisce nella pagina viene scappato, e l'unico modo per disattivarlo
+e' un marcatore esplicito su cui c'e' una guardia a parte. Prima bastava un
+dispositivo chiamato `<img onerror=...>` in Home Assistant.
+
+ESLint, al primo giro, ha trovato un difetto vero gia' in produzione: il
+pulsante «+ Timer» chiamava un nome che non e' mai esistito.
+
+Restano i **moduli ES veri** e il **contenitore unico dello stato**: i ventuno
+file sono ancora copioni classici caricati in ordine. Vedi la scheda della #34.
+
+La scomposizione ha prodotto **due regressioni**, tutte e due trovate in casa e
+chiuse (#154, #155). Da li' e' nata la **#156**: sette gesti dell'editor a nodi
+girano in CI con un browser vero, perche' una guardia che legge il sorgente non
+puo' sapere se un clic arriva o se se lo mangia un antenato.
+
+### Lo spegnimento — fatto
+
+La **#118** e' chiusa dalla #157. Il servizio aspettava all'infinito su una
+websocket aperta e si fermava solo col SIGKILL di systemd, novanta secondi
+dopo. Ora la lettura e la coda si aspettano insieme, e c'e' un tetto di dieci
+secondi. Il test spegne un uvicorn vero con una websocket aperta e cronometra,
+**senza** la rete di sicurezza: con la rete il difetto costava dieci secondi e
+il test sarebbe restato verde lo stesso.
 
 ---
 

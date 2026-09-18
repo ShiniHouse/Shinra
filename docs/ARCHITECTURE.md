@@ -46,7 +46,9 @@ Shinra/
 │   ├── skills/          Le capacita' invocabili dal modello
 │   ├── channels/alexa/  Adattatore per l'Echo
 │   └── api/             FastAPI: app, rotte, sicurezza, dispositivi
-├── web/             Interfaccia: un unico index.html
+├── web/             Interfaccia
+│   ├── templates/       index.html: solo markup
+│   └── static/          js/ un file per area, css/ i fogli
 ├── migrazioni/      Alembic
 ├── data/            Stato runtime (database e file JSON)
 └── tests/           Suite di test
@@ -144,6 +146,6 @@ da PWA e da Alexa, perche' i canali non sanno nulla delle singole capacita'.
 | Nessuno scheduler | Timer e promemoria non funzionano senza browser | v0.2.0 |
 | Memoria globale condivisa | Il contesto di un utente entra in quello di un altro | v0.2.0 |
 | Fast-path dentro `process_user_input` (~200 righe) | Non testabile, difficile da estendere | v0.2.0 |
-| `index.html` monolitico (4.657 righe) | Ogni modifica al frontend e' rischiosa | v0.5.0 |
+| `index.html` monolitico (4.657 righe) | Ogni modifica al frontend e' rischiosa | v0.5.0 — **in parte**: CSS e JavaScript sono fuori, in ventisei file; restano i moduli ES e lo stato in un posto solo |
 | Polling REST verso Home Assistant | Nessun evento, nessuna reattivita' | v0.3.0 |
 | Stringhe italiane intrecciate alla logica | Impossibile tradurre | v0.5.0 |
