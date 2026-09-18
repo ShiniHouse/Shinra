@@ -3205,3 +3205,131 @@ def test_la_crocetta_che_stacca_un_cavo_si_puo_premere():
     assert "pointer-events-auto" in crocetta.group(
         0
     ), "la crocetta non riprende gli eventi: il piano dei cavi non ne fa passare nessuno"
+
+
+# ------------------------------- una caduta si capisce prima di ritentarla
+
+
+def _banco_del_canale_eventi() -> str:
+    """Il codice vero di `eventi.js` piu' un mondo finto in cui farlo girare.
+
+    Si porta dentro le funzioni reali — non una copia, che resterebbe giusta
+    anche dopo che l'originale ha smesso di esserlo — e finge tutto il resto:
+    la websocket, `fetch`, la pagina, e `setTimeout`, che qui non fa passare
+    il tempo ma segna soltanto se qualcuno ha chiesto di ritentare.
+    """
+    sorgente = _testo(CARTELLA_JS / "eventi.js")
+    return "\n".join(
+        [
+            _riga_javascript(sorgente, "let _eventiSocket"),
+            _riga_javascript(sorgente, "let _eventiCollegati"),
+            _riga_javascript(sorgente, "let _attesaRiconnessione"),
+            _funzione_javascript(sorgente, "_segnalaStatoEventi"),
+            _funzione_javascript(sorgente, "collegaEventi"),
+            _funzione_javascript(sorgente, "_laSessioneEFinita"),
+            _funzione_javascript(sorgente, "_sessioneScaduta"),
+            """
+// ----------------------------------------------------------- mondo finto
+const registro = { ritentativi: [], barre: [] };
+let _ultimoSocket = null;
+
+globalThis.location = { protocol: 'https:', host: 'casa' };
+globalThis.document = { getElementById: () => null };
+globalThis.getAuthHeaders = () => ({});
+globalThis.mostraRifiuto = (stato) => registro.barre.push(stato);
+globalThis.setTimeout = (_funzione, attesa) => registro.ritentativi.push(attesa);
+globalThis.gestisciEvento = () => {};
+globalThis.WebSocket = class {
+    constructor() {
+        this.readyState = 1;
+        _ultimoSocket = this;
+    }
+};
+
+function esigi(condizione, messaggio) {
+    if (!condizione) { console.error(messaggio); process.exit(1); }
+}
+
+async function cade(rispostaDiStato) {
+    _eventiSocket = null;
+    _attesaRiconnessione = 1000;
+    registro.ritentativi = [];
+    registro.barre = [];
+    globalThis.fetch = rispostaDiStato;
+    collegaEventi();
+    await _ultimoSocket.onclose();
+}
+
+const dentro = async () => ({ ok: true, json: async () => ({ auth_enabled: true, authenticated: true }) });
+const fuori = async () => ({ ok: true, json: async () => ({ auth_enabled: true, authenticated: false }) });
+const serverGiu = async () => { throw new Error('connessione rifiutata'); };
+// La forma esatta che `/api/auth/status` manda a casa con l'autenticazione
+// spenta. Provare una forma che il server non produce sarebbe teatro.
+const senzaAutenticazione = async () => ({ ok: true, json: async () => ({ auth_enabled: false, authenticated: true }) });
+""",
+        ]
+    )
+
+
+def test_una_sessione_scaduta_smette_di_ritentare_e_lo_dice():
+    """Issue #161.
+
+    Un 403 sull'handshake arriva a JavaScript come una chiusura 1006: la
+    stessa che si prende a server spento. Il ciclo ritentava per entrambi, e
+    a sessione morta ha ritentato per ore — riempiendo il journal e non
+    dicendo niente a chi guardava lo schermo. La casa aveva smesso di
+    avvisare e la dashboard sembrava a posto.
+
+    Si esegue il codice vero con `node`: una guardia che cercasse
+    `mostraRifiuto` nel sorgente resterebbe verde con la riga svuotata, o
+    peggio con la chiamata finita dentro un ramo che non viene mai preso.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    prova = _banco_del_canale_eventi() + """
+(async () => {
+    await cade(fuori);
+    esigi(registro.barre.length === 1, 'la sessione e\\' scaduta e nessuno lo dice');
+    esigi(registro.barre[0] === 401, 'l\\'avviso non parla di sessione scaduta');
+    esigi(registro.ritentativi.length === 0,
+          'si continua a ritentare con la sessione morta: e\\' il difetto della #161');
+})();
+"""
+    esito = _esegui_con_node(prova)
+    assert esito.returncode == 0, esito.stderr or esito.stdout
+
+
+def test_un_server_irraggiungibile_si_ritenta_ancora_e_in_silenzio():
+    """Il gemello, perche' la riparazione non diventi «non si ritenta mai».
+
+    Se il server non risponde affatto, ritentare e' esattamente la cosa
+    giusta — ed e' il caso di ogni riavvio del servizio, che dura pochi
+    secondi. Mostrare li' «la sessione e' scaduta» sarebbe una bugia, e
+    manderebbe a rifare il PIN senza motivo.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    prova = _banco_del_canale_eventi() + """
+(async () => {
+    await cade(serverGiu);
+    esigi(registro.barre.length === 0,
+          'il server e\\' irraggiungibile e si accusa la sessione');
+    esigi(registro.ritentativi.length === 1, 'non si ritenta piu\\' a server spento');
+    esigi(registro.ritentativi[0] === 1000, 'il primo ritentativo non e\\' immediato');
+    esigi(_attesaRiconnessione === 2000, 'l\\'attesa non cresce piu\\'');
+
+    // E chi e' dentro davvero: la caduta e' un'altra cosa, si ritenta.
+    await cade(dentro);
+    esigi(registro.barre.length === 0, 'si accusa la sessione di chi e\\' autenticato');
+    esigi(registro.ritentativi.length === 1, 'chi e\\' dentro non si ricollega piu\\'');
+
+    // E in una casa senza autenticazione non esiste sessione da perdere.
+    await cade(senzaAutenticazione);
+    esigi(registro.barre.length === 0, 'si parla di sessione dove l\\'autenticazione e\\' spenta');
+    esigi(registro.ritentativi.length === 1, 'senza autenticazione non ci si ricollega piu\\'');
+})();
+"""
+    esito = _esegui_con_node(prova)
+    assert esito.returncode == 0, esito.stderr or esito.stdout

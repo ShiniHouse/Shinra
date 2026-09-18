@@ -389,6 +389,34 @@ def autenticazione_attiva() -> bool:
     return any(e_cifrato(u.pin) for u in user_manager.get_users())
 
 
+def motivo_senza_sessione(connessione: HTTPConnection) -> str:
+    """Perche' questa connessione non ha una sessione, in una riga leggibile.
+
+    Serve al canale degli eventi, che rifiuta chiudendo con 1008: uvicorn lo
+    registra come un 403 e basta. Per giorni il journal ha ripetuto
+
+        INFO: 10.10.1.252:51338 - "WebSocket /ws/eventi" 403
+
+    ogni trenta secondi senza dire perche', e non si poteva distinguere una
+    sessione scaduta da un dispositivo revocato guardando il log (issue #161).
+
+    Si nominano i cookie, **mai** i loro valori: sono credenziali, e un log
+    finisce in un incolla dentro una chat molto piu' spesso di quanto si
+    creda.
+    """
+    from shinra.api import dispositivi
+
+    aveva_sessione = NOME_COOKIE in connessione.cookies
+    aveva_dispositivo = dispositivi.NOME_COOKIE in connessione.cookies
+    if aveva_sessione and aveva_dispositivo:
+        return "sessione scaduta e dispositivo non piu' riconosciuto"
+    if aveva_sessione:
+        return "sessione scaduta o sconosciuta, e nessun dispositivo fidato"
+    if aveva_dispositivo:
+        return "dispositivo non riconosciuto: revocato, o fermo da troppo tempo"
+    return "nessun cookie: questa scheda non e' mai entrata, o e' di un'altra origine"
+
+
 def utente_corrente(request: Request) -> Optional[UserProfile]:
     """Il profilo della sessione, o None. Non solleva eccezioni."""
     if not autenticazione_attiva():

@@ -538,3 +538,32 @@ def test_il_canale_eventi_non_legge_i_cookie_per_conto_suo():
                 "la rotta degli eventi legge i cookie da sola. I cookie li "
                 "legge `sicurezza`, che sa che sono due e quale vale quando."
             )
+
+
+def test_ad_autenticazione_spenta_lo_stato_dice_che_sei_dentro():
+    """Una promessa di `/api/auth/status` su cui il frontend si appoggia.
+
+    `_laSessioneEFinita()` in `eventi.js` decide se smettere di ritentare il
+    canale degli eventi guardando solo `authenticated`. Puo' farlo perche' in
+    una casa senza autenticazione questa rotta risponde `true`: non c'e'
+    nessuna sessione da perdere.
+
+    Se un giorno rispondesse `false` — che a prima vista sembrerebbe persino
+    piu' onesto — ogni dashboard di ogni casa senza PIN comincerebbe a
+    mostrare «la sessione e' scaduta» e a smettere di ricollegarsi, senza che
+    nessuno abbia toccato il frontend.
+    """
+    era_attiva = settings.security.auth_enabled
+    settings.security.auth_enabled = False
+    try:
+        with TestClient(app) as c:
+            stato = c.get("/api/auth/status").json()
+    finally:
+        settings.security.auth_enabled = era_attiva
+
+    assert stato["auth_enabled"] is False
+    assert stato["authenticated"] is True, (
+        "ad autenticazione spenta lo stato dice che non sei dentro: "
+        "`eventi.js` lo legge come «sessione scaduta» e smette di ricollegarsi "
+        "in ogni casa senza PIN."
+    )

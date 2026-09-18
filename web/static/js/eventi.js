@@ -1,4 +1,24 @@
 // ============ EVENTI IN TEMPO REALE (/ws/eventi) ============
+//
+// PERCHE' UNA CADUTA VA CAPITA PRIMA DI ESSERE RITENTATA — issue #161
+//
+// Il browser non ci dice perche' l'handshake e' stato rifiutato: un 403 sul
+// protocollo HTTP arriva a JavaScript come una chiusura 1006, la stessa che
+// si prende quando il server e' spento. Codice alla mano, «non sei entrato» e
+// «il server non c'e'» sono indistinguibili.
+//
+// Ritentare andava bene per il secondo caso e non per il primo. Con la
+// sessione morta il ciclo ha ritentato per ore — 1, 2, 4, 8, 16, 30 secondi,
+// poi ogni trenta — riempiendo il journal di 403 e non dicendo niente a chi
+// guardava lo schermo. L'unico segnale era la spia che da verde diventava
+// grigia. Nel frattempo la casa non avvisava piu': timer scaduti, promemoria,
+// allarme intrusione, tutto zitto, con la dashboard che sembrava a posto.
+//
+// Allora glielo si chiede. `/api/auth/status` risponde 200 anche agli
+// sconosciuti e dice `authenticated`, quindi separa i tre casi da sola:
+// la chiamata fallisce -> il server non c'e', si ritenta; risponde «non sei
+// autenticato» -> si smette e lo si dice; risponde «sei dentro» -> la caduta
+// e' un'altra cosa, si ritenta.
 let _eventiSocket = null;
 let _eventiCollegati = false;
 let _attesaRiconnessione = 1000;
@@ -39,8 +59,14 @@ function collegaEventi() {
         gestisciEvento(evento);
     };
 
-    _eventiSocket.onclose = () => {
+    _eventiSocket.onclose = async () => {
         _segnalaStatoEventi(false);
+        // Prima di ritentare, si chiede perche' e' caduta. Le due ragioni
+        // vogliono due comportamenti opposti, e fin qui ne avevano uno solo.
+        if (await _laSessioneEFinita()) {
+            _sessioneScaduta();
+            return;
+        }
         // Riconnessione con attesa crescente, al massimo mezzo minuto:
         // un server riavviato non deve subire una raffica di tentativi.
         setTimeout(collegaEventi, _attesaRiconnessione);
@@ -52,6 +78,45 @@ function collegaEventi() {
             _eventiSocket.close();
         } catch {}
     };
+}
+
+// Ritentare a vuoto non e' innocuo: fa credere che manchi la rete, e
+// nasconde l'unica cosa da fare, cioe' rientrare.
+async function _laSessioneEFinita() {
+    let risposta;
+    try {
+        risposta = await fetch('/api/auth/status', { headers: getAuthHeaders() });
+    } catch {
+        // Il server non risponde affatto: non e' un problema di sessione, e
+        // ritentare e' esattamente la cosa giusta.
+        return false;
+    }
+    if (!risposta.ok) return false;
+    let stato;
+    try {
+        stato = await risposta.json();
+    } catch {
+        return false;
+    }
+    // `authenticated` basta da solo: a casa con l'autenticazione spenta
+    // `/api/auth/status` risponde `true`, perche' li' non c'e' nessuna
+    // sessione da perdere. E' una promessa di quella rotta, non un caso, e
+    // `test_ad_autenticazione_spenta_lo_stato_dice_che_sei_dentro` la tiene
+    // ferma: se cambiasse, questa riga comincerebbe a dire a tutta la casa
+    // che la sessione e' scaduta.
+    return !stato.authenticated;
+}
+
+// `/api/auth/status` e' fra le rotte che `sorvegliaIRifiuti` lascia passare
+// apposta — risponde 200 agli sconosciuti, non 401 — quindi la barra non
+// compare da sola e va chiesta qui.
+function _sessioneScaduta() {
+    _attesaRiconnessione = 1000;
+    if (typeof mostraRifiuto === 'function') mostraRifiuto(401);
+    const spia = document.getElementById('stato-eventi');
+    if (spia) {
+        spia.title = "La sessione e' scaduta: gli avvisi della casa non arrivano piu'. Rientra per riaverli.";
+    }
 }
 
 function gestisciEvento(evento) {

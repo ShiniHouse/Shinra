@@ -595,6 +595,9 @@ async def eventi_websocket(websocket: WebSocket):
     # restava aperta e funzionante e non riceveva piu' un solo evento: niente
     # timer scaduti, niente promemoria, niente allarme intrusione (issue #159).
     if sicurezza.autenticazione_attiva() and sicurezza.sessione_dalla_richiesta(websocket) is None:
+        # Un rifiuto muto e' costato un'indagine intera: nel journal si vedeva
+        # un 403 ogni trenta secondi e nient'altro (issue #161).
+        logger.info("Canale eventi rifiutato: %s", sicurezza.motivo_senza_sessione(websocket))
         await websocket.close(code=1008)
         return
 
