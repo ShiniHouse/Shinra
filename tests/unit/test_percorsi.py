@@ -69,10 +69,14 @@ def test_senza_variabile_si_risale_fino_al_segnale(monkeypatch):
 # ------------------------------------------- e nessun altro se la ricalcola
 
 
-# Questi tre trovano la radice *per poterla mettere in `sys.path`*: devono
-# farlo prima di poter importare qualunque cosa del progetto, quindi non
-# possono chiedere a `shinra.percorsi`. E' un avvio, non un percorso di dati.
+# Questi trovano la radice *per poterla mettere in `sys.path`*: devono farlo
+# prima di poter importare qualunque cosa del progetto, quindi non possono
+# chiedere a `shinra.percorsi`. E' un avvio, non un percorso di dati.
 # Dopo la #16 il pacchetto sara' installato e spariranno anche loro.
+#
+# L'elenco e' chiuso apposta: un modulo che non e' un avvio e si calcola la
+# radice da solo apre la porta a due idee diverse di «dove sta il progetto»,
+# ed e' il difetto che la #16 ha passato una giornata a togliere.
 AVVIO = {
     "src/shinra/percorsi.py",
     "migrazioni/env.py",
@@ -80,6 +84,7 @@ AVVIO = {
     "scripts/imposta_pin.py",
     "scripts/import_backlog.py",
     "scripts/migra_da_json.py",
+    "scripts/salvataggio.py",
 }
 
 CATENA = re.compile(r"Path\(__file__\)\.resolve\(\)(?:\.parent)+")
