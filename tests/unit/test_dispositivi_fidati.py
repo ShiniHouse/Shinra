@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from shinra.api import dispositivi, sicurezza
 from shinra.api.app import app
@@ -320,3 +321,69 @@ def test_le_date_dell_elenco_dichiarano_il_fuso(casa_chiusa):
         assert istante.utcoffset() == timedelta(0), f"{campo} non e' in UTC"
         # E resta l'istante giusto, non uno spostato di due ore.
         assert abs((datetime.now(timezone.utc) - istante).total_seconds()) < 60
+
+
+# ------------------------------------------------- il canale degli eventi
+
+
+def test_dopo_un_riavvio_il_dispositivo_fidato_apre_anche_il_canale_eventi(casa_chiusa):
+    """Issue #159, e il motivo per cui e' passata inosservata.
+
+    Le sessioni stanno in memoria: un riavvio del servizio le cancella tutte.
+    Da quel momento il browser presenta un cookie di sessione morto e un
+    cookie di dispositivo ancora buono.
+
+    Le rotte HTTP guardavano tutti e due e coniavano una sessione nuova. La
+    rotta degli eventi guardava solo il primo e chiudeva con 1008 — cioe' un
+    403 sull'handshake — a ogni tentativo. La dashboard restava aperta, le
+    chiamate HTTP continuavano a funzionare, e nessun evento arrivava piu':
+    ne' un timer scaduto, ne' un promemoria, ne' l'allarme intrusione.
+
+    In produzione e' andata avanti cosi' per giorni, con il browser che
+    ritentava ogni trenta secondi e veniva respinto ogni volta.
+    """
+    with TestClient(app) as client:
+        assert _entra(client, ricorda=True).status_code == 200
+        assert client.cookies.get(dispositivi.NOME_COOKIE)
+
+        # Il riavvio del servizio.
+        sicurezza.azzera_stato()
+
+        # Via HTTP entra: e' questo che rendeva il difetto invisibile.
+        assert client.get("/api/modes").status_code == 200
+
+        # E ora deve entrare anche il canale degli eventi.
+        with client.websocket_connect("/ws/eventi") as ws:
+            assert ws is not None
+
+
+def test_senza_dispositivo_fidato_il_riavvio_chiude_anche_il_canale_eventi(casa_chiusa):
+    """Il gemello, perche' la riparazione non diventi «entrano tutti».
+
+    Chi non ha scelto «ricordami» dopo un riavvio deve rifare l'accesso, e il
+    canale degli eventi deve rifiutarlo esattamente come lo rifiuta l'HTTP.
+    """
+    with TestClient(app) as client:
+        assert _entra(client, ricorda=False).status_code == 200
+        with client.websocket_connect("/ws/eventi") as ws:
+            assert ws is not None
+
+        sicurezza.azzera_stato()
+
+        assert client.get("/api/modes").status_code == 401
+        with pytest.raises(WebSocketDisconnect), client.websocket_connect("/ws/eventi"):
+            pass
+
+
+def test_un_dispositivo_revocato_non_apre_il_canale_eventi(casa_chiusa):
+    """Revocare un dispositivo deve chiudergli anche gli eventi, non solo
+    l'HTTP: il canale porta fuori i promemoria di famiglia e l'allarme."""
+    with TestClient(app) as client:
+        _entra(client, ricorda=True)
+        identificativo = dispositivi.elenco()[0]["id"]
+        dispositivi.revoca(identificativo)
+        sicurezza.azzera_stato()
+
+        assert client.get("/api/modes").status_code == 401
+        with pytest.raises(WebSocketDisconnect), client.websocket_connect("/ws/eventi"):
+            pass
