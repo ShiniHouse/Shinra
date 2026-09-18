@@ -14,6 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
+from shinra.api import app as app_modulo
 from shinra.api import dispositivi, sicurezza
 from shinra.api.app import app
 from shinra.infra.db import depositi
@@ -387,3 +388,72 @@ def test_un_dispositivo_revocato_non_apre_il_canale_eventi(casa_chiusa):
         assert client.get("/api/modes").status_code == 401
         with pytest.raises(WebSocketDisconnect), client.websocket_connect("/ws/eventi"):
             pass
+
+
+# --------------------------------------- un rifiuto che dice perche' (#161)
+
+
+def test_il_rifiuto_del_canale_eventi_dice_perche(casa_chiusa, monkeypatch):
+    """Per giorni il journal ha ripetuto solo questo, ogni trenta secondi:
+
+        INFO: 10.10.1.252:51338 - "WebSocket /ws/eventi" 403
+
+    Un 403 e basta. Da li' non si distingue una sessione scaduta da un
+    dispositivo revocato, e nemmeno da una scheda che non e' mai entrata —
+    che erano le tre ipotesi in campo mentre si cercava il difetto.
+
+    Il logger si sostituisce invece di leggere `caplog`, per la stessa ragione
+    scritta in `test_il_testo_detto_non_finisce_nel_log`: l'applicazione
+    installa i propri gestori. Scritto con `caplog` questo test passava da
+    solo e falliva nella suite intera, che e' il modo peggiore di sbagliare —
+    sembra un difetto del codice e invece e' il test che guarda altrove.
+    """
+    scritte: list[str] = []
+
+    class LoggerFinto:
+        def info(self, messaggio, *argomenti):
+            scritte.append(messaggio % argomenti if argomenti else messaggio)
+
+        def __getattr__(self, _nome):
+            return lambda *a, **k: None
+
+    monkeypatch.setattr(app_modulo, "logger", LoggerFinto())
+
+    with (
+        TestClient(app) as client,
+        pytest.raises(WebSocketDisconnect),
+        client.websocket_connect("/ws/eventi"),
+    ):
+        pass
+
+    detto = "\n".join(scritte)
+    assert "Canale eventi rifiutato" in detto, f"il rifiuto e' ancora muto: {scritte!r}"
+    assert "mai entrata" in detto, "non dice che quella scheda non ha proprio credenziali"
+
+
+def test_il_motivo_del_rifiuto_distingue_i_casi():
+    """I quattro casi vanno detti diversi, altrimenti la riga non serve.
+
+    E non deve contenere **valori**: un token o una credenziale finiti in un
+    log finiscono in un incolla dentro una chat molto piu' spesso di quanto
+    si creda. Qui si nominano i cookie, non si leggono.
+    """
+
+    class _FintaConnessione:
+        def __init__(self, **cookies):
+            self.cookies = cookies
+
+    segreto = "valore-che-non-deve-comparire"
+    casi = {
+        "nessuno": _FintaConnessione(),
+        "solo sessione": _FintaConnessione(**{sicurezza.NOME_COOKIE: segreto}),
+        "solo dispositivo": _FintaConnessione(**{dispositivi.NOME_COOKIE: segreto}),
+        "tutti e due": _FintaConnessione(
+            **{sicurezza.NOME_COOKIE: segreto, dispositivi.NOME_COOKIE: segreto}
+        ),
+    }
+    motivi = {nome: sicurezza.motivo_senza_sessione(c) for nome, c in casi.items()}
+
+    assert len(set(motivi.values())) == 4, f"due casi diversi si raccontano uguale: {motivi}"
+    for nome, motivo in motivi.items():
+        assert segreto not in motivo, f"il motivo di «{nome}» contiene il valore del cookie"
