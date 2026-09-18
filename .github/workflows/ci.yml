@@ -223,3 +223,86 @@ jobs:
             exit 1
           fi
           echo "Nessun token trovato."
+
+  immagine:
+    name: Immagine Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Si costruisce e si tiene qui: la pubblicazione e' un altro lavoro, e
+      # succede al tag. Questo serve a sapere che il Dockerfile costruisce
+      # **prima** di unire, non dopo.
+      - name: Costruisci
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: shinra:prova
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Costruire non basta: un'immagine che si costruisce e non parte e'
+      # esattamente il tipo di difetto che si scopre in casa di qualcun altro.
+      - name: Parte, e risponde
+        run: |
+          set -e
+          docker run -d --name prova -p 8000:8000 shinra:prova
+          for tentativo in $(seq 1 30); do
+            stato="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/api/auth/status || true)"
+            if [ "$stato" = "200" ]; then
+              echo "Risponde dopo $tentativo tentativi."
+              break
+            fi
+            sleep 2
+          done
+          if [ "$stato" != "200" ]; then
+            echo "::error::L'immagine parte ma /api/auth/status risponde $stato"
+            docker logs prova
+            exit 1
+          fi
+
+      - name: Il primo accesso e' possibile
+        run: |
+          set -e
+          # Senza questo, un'immagine che parte ma non crea il profilo
+          # amministratore passerebbe: la dashboard sarebbe raggiungibile e
+          # nessuno potrebbe entrarci.
+          if ! docker logs prova 2>&1 | grep -q "PRIMO ACCESSO"; then
+            echo "::error::Il PIN del primo accesso non compare nel log: nessuno puo' entrare."
+            docker logs prova
+            exit 1
+          fi
+          echo "Il PIN del primo accesso c'e'."
+
+      - name: Non gira da root
+        run: |
+          set -e
+          utente="$(docker exec prova id -un)"
+          if [ "$utente" = "root" ]; then
+            echo "::error::L'immagine gira da root."
+            exit 1
+          fi
+          echo "Gira da «$utente»."
+
+      - name: I dati stanno dove il compose li cerca
+        run: |
+          set -e
+          # `docker-compose.yml` monta i volumi su /app/data e /app/config.
+          # Se l'applicazione scrivesse altrove, il compose girerebbe e i dati
+          # sparirebbero al primo aggiornamento — senza che niente lo dica.
+          docker exec prova test -f /app/data/shinra.db \
+            || { echo "::error::Il database non e' in /app/data: i volumi del compose non lo conserverebbero."; docker exec prova ls -la /app; exit 1; }
+          docker exec prova test -f /app/config/config.example.yaml \
+            || { echo "::error::L'esempio di configurazione non e' stato messo nel volume."; exit 1; }
+          echo "Database e configurazione sono dove devono."
+
+      - name: Il compose e' valido e punta all'immagine giusta
+        run: docker compose config >/dev/null && echo "docker-compose.yml valido."
+
+      - name: Spegni
+        if: always()
+        run: docker rm -f prova || true
