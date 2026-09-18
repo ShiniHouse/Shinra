@@ -617,12 +617,41 @@ async def eventi_websocket(websocket: WebSocket):
             CASA_INTRUSIONE,
         )
     ]
+    # Questa rotta parlava e basta: restava ferma su `coda.get()` e non
+    # leggeva mai dal socket. Un canale che non ascolta non si accorge di
+    # niente — ne' del browser che chiude la scheda, ne' del server che
+    # sta spegnendosi.
+    #
+    # Il secondo caso costava novanta secondi a ogni riavvio. Uvicorn, per
+    # fermarsi, chiede a ogni connessione di chiudersi e **poi aspetta**
+    # che se ne vadano, senza scadenza. La chiusura arriva qui come un
+    # messaggio da leggere; nessuno lo leggeva, la connessione non se ne
+    # andava, e dopo novanta secondi systemd sparava un SIGKILL — che non
+    # e' una fermata, e' un'esecuzione: tutto cio' che sta dopo lo `yield`
+    # nel lifespan non veniva eseguito. Misurato: senza websocket il
+    # servizio muore in due decimi di secondo, con una aperta non muore.
+    #
+    # Riferimento: issue #118.
+    ascolto = asyncio.create_task(websocket.receive())
     try:
         while True:
-            await websocket.send_json(await coda.get())
+            prossimo = asyncio.create_task(coda.get())
+            finiti, _ = await asyncio.wait({prossimo, ascolto}, return_when=asyncio.FIRST_COMPLETED)
+
+            if ascolto in finiti:
+                prossimo.cancel()
+                if ascolto.result().get("type") == "websocket.disconnect":
+                    break
+                # La dashboard non manda niente, ma se un giorno lo
+                # facesse: si torna ad ascoltare invece di chiudere.
+                ascolto = asyncio.create_task(websocket.receive())
+                continue
+
+            await websocket.send_json(prossimo.result())
     except (WebSocketDisconnect, RuntimeError):
         pass
     finally:
+        ascolto.cancel()
         for a in annulla:
             a()
 
