@@ -18,4 +18,14 @@ fi
 # l'esempio. Crearlo vorrebbe dire che ogni aggiornamento dell'esempio
 # smette di arrivare a chi non l'ha mai toccato.
 
+# Gli esempi da cui nasce la prima casa. `assicura_dati_iniziali()` li cerca
+# in `data/examples/` e da li' crea il profilo amministratore: senza, non
+# c'e' nessun utente, il PIN del primo accesso non viene generato, e la
+# dashboard resta chiusa per sempre — con l'applicazione che risponde 200 e
+# sembra a posto.
+if [ ! -d /app/data/examples ]; then
+    mkdir -p /app/data/examples
+    cp /opt/shinra/esempi/* /app/data/examples/
+fi
+
 exec "$@"

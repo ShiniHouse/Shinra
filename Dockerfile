@@ -70,6 +70,16 @@ COPY scripts/ ./scripts/
 # e chi apre il contenitore non troverebbe il riferimento commentato. Ce lo
 # mette dentro l'avvio, se manca.
 COPY config/config.example.yaml /opt/shinra/config.example.yaml
+
+# Gli esempi da cui nasce la prima casa: profilo amministratore, alias,
+# modalita'. Stanno fuori da `/app/data` per la stessa ragione della
+# configurazione — quella cartella e' un volume — e ce li mette l'avvio.
+#
+# Senza di loro l'applicazione parte, risponde, e non ha nessun utente: il
+# PIN del primo accesso non viene generato e la dashboard resta chiusa per
+# sempre. Se ne e' accorto il lavoro «Immagine Docker» in CI, al primo giro.
+COPY data/examples/ /opt/shinra/esempi/
+
 COPY docker/avvio.sh /usr/local/bin/avvio.sh
 
 # Non si gira da root. I dati stanno in cartelle che appartengono a `shinra`,

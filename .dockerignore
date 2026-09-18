@@ -9,7 +9,14 @@
 .env
 .env.*
 config/config.yaml
+
+# I dati di casa no, ma gli esempi si': senza `data/examples/` un'installazione
+# nuova non crea nessun profilo, e nessuno puo' entrare. Il lavoro «Immagine
+# Docker» in CI l'ha scoperto al primo giro, perche' il PIN del primo accesso
+# non compariva nel log.
 data/
+!data/examples/
+!data/examples/**
 .anteprima/
 _corpi_pr/
 
