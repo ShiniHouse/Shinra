@@ -1,0 +1,57 @@
+# Shinra e il suo modello, con i dati che sopravvivono al contenitore.
+# Riferimento: issue #37.
+#
+#     docker compose up -d
+#     docker compose logs -f shinra     # qui compare il PIN del primo accesso
+#
+# Poi il modello, una volta sola:
+#
+#     docker compose exec ollama ollama pull qwen2.5:3b
+#
+# Home Assistant non sta qui dentro: quasi sempre gira gia' da un'altra parte.
+# Il token si mette in `.env` accanto a questo file — Compose lo legge da
+# solo — oppure si esporta nell'ambiente.
+
+services:
+  shinra:
+    build: .
+    image: ghcr.io/shinihouse/shinra:latest
+    container_name: shinra
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Ollama non e' su localhost: nella rete di Compose si chiama col nome
+      # del servizio. E' il primo punto in cui un'installazione in Docker si
+      # rompe se si copia la configurazione di una installata a mano.
+      SHINRA_OLLAMA_URL: "http://ollama:11434"
+      # I segreti arrivano dall'ambiente, che ha la precedenza su tutto:
+      # dentro un contenitore non serve nessun file `.env`.
+      SHINRA_HA_URL: "${SHINRA_HA_URL:-}"
+      SHINRA_HA_TOKEN: "${SHINRA_HA_TOKEN:-}"
+      SHINRA_ALEXA_SKILL_ID: "${SHINRA_ALEXA_SKILL_ID:-}"
+      SHINRA_SESSION_SECRET: "${SHINRA_SESSION_SECRET:-}"
+    volumes:
+      # Il database, i log e i salvataggi automatici.
+      - shinra-dati:/app/data
+      # La configurazione, per poterla leggere e modificare da fuori.
+      - shinra-configurazione:/app/config
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: shinra-ollama
+    restart: unless-stopped
+    # Non si espone 11434 all'esterno: serve solo a Shinra, e un modello
+    # raggiungibile dalla rete di casa e' una porta aperta in piu' senza
+    # nessuno che la sorvegli. Chi lo vuole, toglie il commento.
+    # ports:
+    #   - "11434:11434"
+    volumes:
+      - ollama-modelli:/root/.ollama
+
+volumes:
+  shinra-dati:
+  shinra-configurazione:
+  ollama-modelli:
