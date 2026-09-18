@@ -16,7 +16,7 @@ ha modo di metterle al sicuro ne' di spostarle su un'altra macchina.
 - [x] Esportazione completa in un unico archivio: configurazione, conoscenza, alias, modalita', utenti — **con i segreti esclusi**
 - [x] Importazione con validazione e anteprima di cosa verra' sovrascritto
 - [x] Versione di schema nell'esportazione, con migrazione automatica dalle versioni precedenti
-- [ ] Backup automatico programmato tramite lo scheduler, con rotazione
+- [x] Backup automatico programmato tramite lo scheduler, con rotazione
 - [x] Comando da riga di comando per backup e ripristino
 
 ## Criteri di accettazione
@@ -27,11 +27,7 @@ ha modo di metterle al sicuro ne' di spostarle su un'altra macchina.
 
 ## A che punto siamo
 
-Fatto tutto tranne il **backup automatico programmato**, che resta l'unica
-casella aperta e vale una PR sua: tocca lo scheduler e la rotazione, che sono
-un problema diverso da «scrivere e rileggere un archivio».
-
-Quello che c'e':
+Fatto tutto. Quello che c'e':
 
 - `src/shinra/services/salvataggio.py` — un archivio JSON unico, che dichiara
   di che schema e', da che Shinra viene e quando e' stato scritto.
@@ -55,3 +51,19 @@ Due cose trovate per strada:
 La guardia che tiene in piedi le altre e' `test_ogni_tabella_e_stata_decisa`:
 una tabella nuova non puo' finire nell'archivio — ne' restarne fuori — senza
 che qualcuno l'abbia scritto in `TABELLE` o in `FUORI`, col perche'.
+
+### Il salvataggio automatico
+
+Acceso per difetto, un archivio al giorno in `data/salvataggi/`, quattordici
+conservati. Un backup che bisogna ricordarsi di fare e' un backup che non
+esiste, e il costo qui e' un file JSON da qualche decina di kilobyte — la
+configurazione, non i dati.
+
+La rotazione e' la cosa piu' pericolosa del modulo, quindi e' la piu' stretta:
+guarda solo la cartella che le viene detta senza scendere nelle sottocartelle,
+tocca solo i nomi della forma `shinra-*.json` che scrive lei, ordina per
+**nome** e non per data di modifica — copiare la cartella altrove azzera le
+date tutte insieme — e con `da_conservare: 0` non cancella niente.
+
+Si salva **prima** e si fa spazio **dopo**: al contrario, un guasto nella
+scrittura lascerebbe una copia in meno e nessuna nuova.

@@ -267,10 +267,135 @@ def ripristina(archivio: dict[str, Any]) -> dict[str, int]:
     return scritte
 
 
+# Il nome che questo modulo da' ai suoi archivi. La rotazione cancella **solo**
+# quello che corrisponde a questa forma: e' l'unica cosa che le impedisce di
+# portarsi via un file che qualcuno aveva messo li' a mano.
+PREFISSO = "shinra-"
+SUFFISSO = ".json"
+FORMA = f"{PREFISSO}*{SUFFISSO}"
+
+
 def nome_predefinito(quando: Optional[datetime] = None) -> str:
     momento = (quando or datetime.now()).strftime("%Y%m%d-%H%M%S")
-    return f"shinra-{momento}.json"
+    return f"{PREFISSO}{momento}{SUFFISSO}"
 
 
 def cartella_predefinita() -> Path:
     return percorsi.DATI / "salvataggi"
+
+
+def suoi_archivi(cartella: Path) -> list[Path]:
+    """Gli archivi scritti da qui, dal piu' vecchio al piu' recente.
+
+    L'ordine e' quello del nome, non della data di modifica: il nome porta il
+    momento in cui l'archivio e' stato scritto, mentre la data di modifica la
+    cambia chiunque copi la cartella da qualche parte — e una rotazione che
+    sbaglia ordine cancella quello sbagliato.
+    """
+    if not cartella.is_dir():
+        return []
+    return sorted((f for f in cartella.glob(FORMA) if f.is_file()), key=lambda f: f.name)
+
+
+def ruota(cartella: Path, da_conservare: int) -> list[Path]:
+    """Toglie di mezzo gli archivi piu' vecchi. Restituisce quelli cancellati.
+
+    Cancellare file automaticamente e' la cosa piu' pericolosa che questo
+    modulo faccia, quindi e' la piu' stretta:
+
+    - guarda **solo** dentro la cartella che le viene detta, senza scendere
+      nelle sottocartelle;
+    - tocca solo i nomi della forma `shinra-*.json`, cioe' quelli che scrive
+      lei. Un `note.txt`, un `shinra.db`, un archivio rinominato a mano da
+      qualcuno per metterlo al sicuro restano dove sono;
+    - con `da_conservare` a zero o meno non cancella niente. Chi vuole
+      tenerle tutte lo dice, e non si ritrova senza per una svista.
+    """
+    if da_conservare <= 0:
+        return []
+    archivi = suoi_archivi(cartella)
+    da_togliere = archivi[: max(0, len(archivi) - da_conservare)]
+    for vecchio in da_togliere:
+        vecchio.unlink()
+    if da_togliere:
+        logger.info(
+            "Rotazione: tolti %d archivi vecchi, ne restano %d.",
+            len(da_togliere),
+            da_conservare,
+        )
+    return da_togliere
+
+
+def salva_e_ruota() -> Path:
+    """Scrive un archivio nella cartella di casa e poi fa spazio.
+
+    In quest'ordine apposta: se la rotazione girasse per prima, un guasto
+    nella scrittura lascerebbe una copia in meno e nessuna nuova.
+    """
+    cartella = cartella_predefinita()
+    percorso = cartella / nome_predefinito()
+    scrivi(percorso)
+    ruota(cartella, impostazioni.settings.salvataggio.da_conservare)
+    return percorso
+
+
+# --------------------------------------------------------------------------
+# Il salvataggio che si fa da solo
+# --------------------------------------------------------------------------
+
+JOB_SALVATAGGIO = "salvataggio_automatico"
+
+
+def _gira() -> None:
+    """Il giro programmato. Non solleva mai: un backup che fa cadere la casa
+    e' peggio di un backup che manca, e chi lo guarda e' il log."""
+    try:
+        percorso = salva_e_ruota()
+        logger.info("Salvataggio automatico in %s", percorso)
+    except Exception:
+        logger.exception("Il salvataggio automatico non e' riuscito")
+
+
+class ServizioSalvataggio:
+    """Un archivio al giorno, senza che nessuno debba ricordarsene.
+
+    Un backup che bisogna ricordarsi di fare e' un backup che non esiste. Qui
+    il costo e' un file JSON da qualche decina di kilobyte — la
+    configurazione, non i dati — quindi e' acceso per difetto.
+    """
+
+    def __init__(self) -> None:
+        self.attivo = False
+
+    def avvia(self) -> bool:
+        from shinra.infra.scheduler.motore import scheduler
+
+        configurazione = impostazioni.settings.salvataggio
+        if not impostazioni.settings.salvataggio.abilitato:
+            logger.info("Salvataggio automatico spento dalla configurazione.")
+            return False
+        if configurazione.ogni_ore <= 0:
+            logger.warning(
+                "salvataggio.ogni_ore e' %s: non e' un intervallo, il salvataggio "
+                "automatico resta spento.",
+                configurazione.ogni_ore,
+            )
+            return False
+        if not scheduler.programma_periodico(JOB_SALVATAGGIO, _gira, ore=configurazione.ogni_ore):
+            return False
+        self.attivo = True
+        logger.info(
+            "Salvataggio automatico ogni %g ore, ne conservo %d.",
+            configurazione.ogni_ore,
+            configurazione.da_conservare,
+        )
+        return True
+
+    def ferma(self) -> None:
+        from shinra.infra.scheduler.motore import scheduler
+
+        scheduler.annulla(JOB_SALVATAGGIO)
+        self.attivo = False
+
+
+servizio_salvataggio = ServizioSalvataggio()

@@ -175,6 +175,22 @@ class VoceConfig(BaseModel):
     lingua: str = "it"
 
 
+class SalvataggioConfig(BaseModel):
+    """Il salvataggio automatico della configurazione (issue #35).
+
+    Acceso per difetto. Un backup che bisogna ricordarsi di fare e' un backup
+    che non esiste, e il costo qui e' un file JSON da qualche decina di
+    kilobyte al giorno — non i dati, solo la configurazione.
+    """
+
+    abilitato: bool = True
+    ogni_ore: float = 24.0
+    # Quante copie tenere. Oltre, la piu' vecchia se ne va. Zero o meno
+    # significa «tienile tutte», ed e' una scelta che va detta, non un modo
+    # per disattivare la rotazione per sbaglio.
+    da_conservare: int = 14
+
+
 class AppConfig(BaseModel):
     server: ServerConfig = Field(default_factory=ServerConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
@@ -186,6 +202,7 @@ class AppConfig(BaseModel):
     presenza: PresenzaConfig = Field(default_factory=PresenzaConfig)
     energia: EnergiaConfig = Field(default_factory=EnergiaConfig)
     voce: VoceConfig = Field(default_factory=VoceConfig)
+    salvataggio: SalvataggioConfig = Field(default_factory=SalvataggioConfig)
 
 
 # --------------------------------------------------------------------------
