@@ -205,7 +205,7 @@ e JavaScript da `index.html` e li hanno divisi per area.
 
 | | prima | dopo |
 | :--- | :-- | :-- |
-| `web/templates/index.html` | 7.438 righe | **1.257** |
+| `web/templates/index.html` | 7.438 righe | **1.294** |
 | File JavaScript | 1, dentro l'HTML | 21, il piu' lungo di **451** righe |
 | File CSS | 1, dentro l'HTML | 5 |
 | ESLint e Prettier | non esistevano | in CI, obbligatori |

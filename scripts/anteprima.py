@@ -36,9 +36,28 @@ FUORI = percorsi.RADICE / ".anteprima"
 BLOCCHI = re.compile(r"\{%[^%]*%\}")
 ESPRESSIONI = re.compile(r"\{\{[^{}]*\}\}")
 
-# Solo per l'anteprima: `?scheda=automazioni` apre quella scheda e
-# `&editor=1` apre l'editor a nodi. Serve a fotografare e a guidare
-# schermate diverse dalla console. Non finisce in produzione: sta qui.
+# Solo per l'anteprima: `?scheda=automazioni` apre quella scheda,
+# `&editor=1` apre l'editor a nodi, `&tema=light` fotografa di giorno.
+# Serve a fotografare e a guidare schermate diverse dalla console. Non
+# finisce in produzione: sta qui.
+#
+# Il tema si scrive in `localStorage` **prima** che la pagina si disegni,
+# perche' e' li' che `avvio.js` va a leggerlo. Metterlo nel gancio in
+# fondo al corpo vorrebbe dire fotografare il tema sbagliato e accorgersi
+# del difetto di colore solo in casa — che e' come sono arrivate la #134,
+# la #139 e la #152.
+TEMA = """
+<script>
+(function () {
+    var q = new URLSearchParams(location.search);
+    var tema = q.get('tema');
+    if (tema) { try { localStorage.setItem('shinra_theme_mode', tema); } catch (e) {} }
+    var tavolozza = q.get('tavolozza');
+    if (tavolozza) { try { localStorage.setItem('shinra_palette', tavolozza); } catch (e) {} }
+})();
+</script>
+"""
+
 GANCIO = """
 <script>
 window.addEventListener('load', function () {
@@ -61,6 +80,9 @@ def prepara() -> None:
     pagina = ESPRESSIONI.sub("anteprima", pagina)
     if "</body>" not in pagina:
         raise SystemExit("la pagina non ha piu' un </body>: il gancio delle schede non sa dove andare")
+    if "<head>" not in pagina:
+        raise SystemExit("la pagina non ha piu' un <head>: il gancio del tema non sa dove andare")
+    pagina = pagina.replace("<head>", "<head>" + TEMA, 1)
     pagina = pagina.replace("</body>", GANCIO, 1)
     (FUORI / "index.html").write_text(pagina, encoding="utf-8")
 

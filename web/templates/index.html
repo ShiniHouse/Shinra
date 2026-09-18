@@ -2,6 +2,43 @@
 <html lang="it" class="dark">
 <head>
     <meta charset="UTF-8">
+    <!--
+      IL TEMA SI DECIDE QUI, PRIMA CHE LA PAGINA SI DISEGNI — issue #152
+
+      `<html>` nasce `dark` qui sopra, e fino alla #152 a correggerlo era
+      `initTheme()`, che gira dentro `window.addEventListener('load', ...)`:
+      cioe' dopo i ventuno copioni, Tailwind, lucide e i caratteri di
+      Google. Misurato in locale: **640 ms di schermata scura** a ogni
+      caricamento diurno, poi la dissolvenza al chiaro. In casa, con un CDN
+      lento, sono secondi; con un CDN che non risponde, e' per sempre.
+
+      E' cosi' che sono nati gli scatti da cui e' partita la #152: sei
+      schede su otto fotografate in quei millisecondi sembravano un difetto
+      del tema chiaro, e il tema chiaro non c'entrava niente.
+
+      Questo blocco e' in linea e sta in cima apposta: nessuna richiesta di
+      rete davanti, e la classe e' gia' giusta quando il browser dipinge il
+      primo pixel. `avvio.js` continua a decidere allo stesso modo da qui in
+      avanti — che le due regole restino la stessa e' quello che verifica
+      `test_il_tema_deciso_subito_e_quello_che_decide_avvio_js`.
+    -->
+    <script>
+        (function () {
+            try {
+                var scelta = localStorage.getItem('shinra_theme_mode') || 'auto';
+                var adesso = new Date();
+                var ora = adesso.getHours() + adesso.getMinutes() / 60;
+                var effettivo = scelta === 'auto' ? (ora >= 7.0 && ora < 19.5 ? 'light' : 'dark') : scelta;
+                var radice = document.documentElement;
+                radice.classList.remove('light', 'dark');
+                radice.classList.add(effettivo === 'light' ? 'light' : 'dark');
+                var tavolozza = localStorage.getItem('shinra_palette');
+                if (tavolozza) radice.setAttribute('data-palette', tavolozza);
+            } catch (e) {
+                /* Niente localStorage: resta il `dark` scritto sul tag. */
+            }
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shinra — Hub Domestico Intelligente</title>
     <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
