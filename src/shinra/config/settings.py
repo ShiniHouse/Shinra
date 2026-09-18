@@ -30,7 +30,17 @@ class ServerConfig(BaseModel):
 
 class LLMConfig(BaseModel):
     ollama_url: str = "http://localhost:11434"
-    model: str = "gemma2:9b"
+    # Il modello predefinito e' quello che il README dice di scaricare, e non
+    # e' una preferenza: `qwen2.5:3b` supporta i tool in modo nativo, e questo
+    # progetto vive di tool — accendere una luce, mettere un timer, leggere
+    # una scadenza sono tutte chiamate a strumenti.
+    #
+    # Fino alla #38 qui c'era `gemma2:9b`, mentre il README diceva in quattro
+    # punti di scaricare `qwen2.5:3b`. Chi seguiva le istruzioni scaricava un
+    # modello e ne configurava un altro: la chat non rispondeva, e il motivo
+    # non si vedeva da nessuna parte. `test_il_modello_del_readme_e_quello_che
+    # _si_configura` impedisce che tornino a divergere.
+    model: str = "qwen2.5:3b"
     # Il modello con cui si calcolano gli embedding della conoscenza di casa
     # (issue #32). Gira su Ollama, quindi in casa: un servizio nel cloud
     # sarebbe migliore e vorrebbe dire mandare a qualcun altro il nome del
