@@ -2132,17 +2132,24 @@ def test_la_pagina_non_porta_piu_dentro_il_copione_e_il_foglio():
     cosa e' tutto, e che ogni modifica all'interfaccia costa piu' del dovuto.
     E' il freno principale alle altre schede rimaste.
 
-    Restano in linea due copioni, e devono restarci: configurano Tailwind e
-    rimediano a lucide che non carica, tutti e due **prima** che la pagina si
-    disegni. Un file esterno arriverebbe troppo tardi.
+    Restano in linea tre copioni, e devono restarci: decidono il tema,
+    configurano Tailwind e rimediano a lucide che non carica — tutti e tre
+    **prima** che la pagina si disegni. Un file esterno arriverebbe troppo
+    tardi, ed e' esattamente il difetto della #152: il tema stava in un file,
+    veniva deciso su `load`, e per mezzo secondo la pagina era scura anche a
+    mezzogiorno.
+
+    Il numero e' fissato apposta. Ogni copione in linea in piu' e' codice che
+    nessun linter guarda e nessun file raccoglie: se ne serve un quarto, lo si
+    aggiunge qui con la sua ragione scritta, invece di lasciarlo crescere.
     """
     pagina = _testo(PAGINA)
 
     assert "<style>" not in pagina, "il foglio di stile e' tornato dentro la pagina"
 
     inline = _script_inline(pagina)
-    assert len(inline) == 2, (
-        f"i copioni in linea sono {len(inline)}: devono restare solo i due del "
+    assert len(inline) == 3, (
+        f"i copioni in linea sono {len(inline)}: devono restare solo i tre del "
         "`<head>`, che girano prima del disegno"
     )
     for blocco in inline:
@@ -3476,3 +3483,131 @@ esigi(visibili().length === 1 && visibili()[0] === 'tab-aliases',
 """
     esito = _esegui_con_node(prova)
     assert esito.returncode == 0, esito.stderr or esito.stdout
+
+
+# ------------------------------- il tema deciso prima del primo pixel (#152)
+
+
+def _copione_in_linea_del_tema() -> str:
+    """Il blocco che decide il tema in cima a `index.html`.
+
+    Si prende dal markup vero e si esegue: e' l'unico modo per sapere che
+    decide **la stessa cosa** di `avvio.js`, invece di sperarlo.
+    """
+    pagina = _testo(PAGINA)
+    apertura = pagina.index("var scelta = localStorage.getItem('shinra_theme_mode')")
+    inizio = pagina.rindex("(function () {", 0, apertura)
+    fine = pagina.index("})();", apertura)
+    # Si toglie la chiamata: nella pagina il blocco parte da solo, qui serve
+    # una funzione da poter chiamare a comando, con l'orologio che vogliamo.
+    return pagina[inizio:fine] + "})"
+
+
+def test_il_tema_deciso_subito_e_quello_che_decide_avvio_js():
+    """Issue #152: due regole per la stessa domanda, e devono dire lo stesso.
+
+    Il tema si decide due volte — una in linea nel `<head>`, prima che la
+    pagina si disegni, e una in `avvio.js` quando tutto e' caricato. Due
+    copie della stessa regola divergono: basta che qualcuno sposti l'alba
+    dalle 7:00 alle 6:30 in un posto solo, e la pagina cambia colore mezzo
+    secondo dopo essere apparsa.
+
+    Qui si eseguono **tutte e due**, ora per ora, e si pretende lo stesso
+    verdetto. Una guardia che confrontasse le stringhe `7.0` e `19.5` nei due
+    file resterebbe verde con la logica invertita.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    avvio = _testo(CARTELLA_JS / "avvio.js")
+
+    prova = (
+        _funzione_javascript(avvio, "getSolarTheme")
+        + """
+const inLinea = """
+        + _copione_in_linea_del_tema()
+        + """;
+
+let memoria = {};
+globalThis.localStorage = {
+    getItem: (k) => (k in memoria ? memoria[k] : null),
+    setItem: (k, v) => { memoria[k] = String(v); },
+};
+globalThis.document = {
+    documentElement: {
+        classi: new Set(['dark']),
+        classList: {
+            remove(...n) { for (const x of n) globalThis.document.documentElement.classi.delete(x); },
+            add(...n) { for (const x of n) globalThis.document.documentElement.classi.add(x); },
+        },
+        setAttribute() {},
+    },
+};
+
+const VeraData = Date;
+function fingiOra(ore, minuti) {
+    globalThis.Date = class extends VeraData {
+        getHours() { return ore; }
+        getMinutes() { return minuti; }
+    };
+}
+
+function esigi(condizione, messaggio) {
+    if (!condizione) { console.error(messaggio); process.exit(1); }
+}
+
+// A tutte le ore, in modalita' automatica, le due regole devono dire lo stesso.
+for (let ora = 0; ora < 24; ora++) {
+    for (const minuti of [0, 29, 30, 31, 59]) {
+        memoria = {};
+        fingiOra(ora, minuti);
+        document.documentElement.classi = new Set(['dark']);
+        inLinea();
+        const subito = document.documentElement.classi.has('light') ? 'light' : 'dark';
+        const dopo = getSolarTheme();
+        esigi(subito === dopo,
+              `alle ${ora}:${minuti} il tema in linea dice ${subito} e avvio.js dice ${dopo}`);
+    }
+}
+
+// E una scelta esplicita vince sull'orologio, in tutte e due i sensi.
+for (const scelta of ['light', 'dark']) {
+    memoria = { shinra_theme_mode: scelta };
+    fingiOra(scelta === 'light' ? 3 : 12, 0);   // l'ora dice il contrario
+    document.documentElement.classi = new Set([scelta === 'light' ? 'dark' : 'light']);
+    inLinea();
+    esigi(document.documentElement.classi.has(scelta),
+          `la scelta esplicita «${scelta}» viene ignorata dal tema in linea`);
+    esigi(!document.documentElement.classi.has(scelta === 'light' ? 'dark' : 'light'),
+          `restano tutte e due le classi: «${scelta}» e il suo contrario`);
+}
+
+// Senza localStorage non si esplode: resta il `dark` scritto sul tag.
+memoria = {};
+globalThis.localStorage = { getItem() { throw new Error('bloccato'); }, setItem() {} };
+document.documentElement.classi = new Set(['dark']);
+fingiOra(12, 0);
+inLinea();
+esigi(document.documentElement.classi.has('dark'),
+      'con localStorage bloccato il tema in linea lascia la pagina senza classe');
+"""
+    )
+
+    esito = _esegui_con_node(prova)
+    assert esito.returncode == 0, esito.stderr or esito.stdout
+
+
+def test_il_tema_si_decide_prima_dei_copioni():
+    """Il blocco sta in cima al `<head>`, davanti a ogni richiesta di rete.
+
+    Se qualcuno lo sposta dopo i `<link>` o dopo Tailwind, torna la finestra
+    di schermata scura — piu' corta, ma torna. E' l'unica cosa che il
+    posizionamento garantisce, quindi va guardata qui.
+    """
+    pagina = _testo(PAGINA)
+    tema = pagina.index("shinra_theme_mode")
+    for piu_lento in ('<link rel="stylesheet"', "cdn.tailwindcss.com", "fonts.googleapis.com", "<body"):
+        assert pagina.index(piu_lento) > tema, (
+            f"«{piu_lento}» viene prima della decisione sul tema: "
+            "la pagina si disegna scura e poi cambia colore."
+        )
