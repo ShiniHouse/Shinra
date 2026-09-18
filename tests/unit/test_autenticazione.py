@@ -12,11 +12,15 @@ problema non si ripresenti fra sei mesi.
 
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+
 import pytest
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
+from shinra.api import app as app_modulo
 from shinra.api import sicurezza
 from shinra.api.app import app
 from shinra.config.settings import settings
@@ -469,3 +473,68 @@ def test_dopo_l_accesso_il_websocket_degli_eventi_accetta(casa_chiusa) -> None:
         assert entrato.status_code == 200
         with c.websocket_connect("/ws/eventi") as ws:
             assert ws is not None
+
+
+# ------------------------- una sola risposta a «chi e' questa connessione»
+
+
+def _corpo_della_funzione(nome: str) -> ast.AST:
+    """Il nodo AST di una funzione di `api/app.py`, cercata per nome."""
+    sorgente = Path(app_modulo.__file__).read_text(encoding="utf-8")
+    for nodo in ast.walk(ast.parse(sorgente)):
+        if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef)) and nodo.name == nome:
+            return nodo
+    raise AssertionError(f"`{nome}` non esiste piu' in api/app.py: e' stata rinominata?")
+
+
+def _nomi_chiamati(nodo: ast.AST) -> set[str]:
+    nomi = set()
+    for figlio in ast.walk(nodo):
+        if isinstance(figlio, ast.Call):
+            funzione = figlio.func
+            if isinstance(funzione, ast.Attribute):
+                nomi.add(funzione.attr)
+            elif isinstance(funzione, ast.Name):
+                nomi.add(funzione.id)
+    return nomi
+
+
+def test_il_canale_eventi_chiede_chi_e_come_lo_chiede_tutto_il_resto():
+    """Issue #159.
+
+    La rotta si era scritta un controllo suo — il solo cookie di sessione —
+    mentre tutto il resto passava da `sessione_dalla_richiesta`, che conosce
+    anche l'intestazione e il cookie del dispositivo fidato. Due risposte
+    diverse alla stessa domanda, e quella piu' povera stava sull'unica rotta
+    che nessuno guarda mai, perche' quando smette di funzionare la pagina
+    resta in piedi lo stesso.
+
+    Si guarda l'albero sintattico e non il testo: un controllo citato in un
+    commento non deve poter far passare questo test.
+    """
+    chiamate = _nomi_chiamati(_corpo_della_funzione("eventi_websocket"))
+
+    assert "sessione_dalla_richiesta" in chiamate, (
+        "la rotta degli eventi non chiede piu' a `sessione_dalla_richiesta` "
+        "chi e' la connessione: chi ha «ricordami» attivo perde tutti gli "
+        "eventi al primo riavvio del servizio."
+    )
+    assert "sessione_valida" not in chiamate, (
+        "la rotta degli eventi e' tornata a guardare il solo token di "
+        "sessione. Quella domanda si fa in un posto solo, in "
+        "`sicurezza.sessione_dalla_richiesta`."
+    )
+
+
+def test_il_canale_eventi_non_legge_i_cookie_per_conto_suo():
+    """Il gemello del test sopra, dal lato del dato invece che della funzione.
+
+    Si puo' riscrivere lo stesso difetto senza chiamare `sessione_valida`:
+    basta ripescare un cookie a mano e deciderci sopra qualcosa.
+    """
+    for figlio in ast.walk(_corpo_della_funzione("eventi_websocket")):
+        if isinstance(figlio, ast.Attribute) and figlio.attr == "cookies":
+            raise AssertionError(
+                "la rotta degli eventi legge i cookie da sola. I cookie li "
+                "legge `sicurezza`, che sa che sono due e quale vale quando."
+            )

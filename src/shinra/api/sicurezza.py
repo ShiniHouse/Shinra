@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, Response, status
+from starlette.requests import HTTPConnection
 
 from shinra.config.settings import settings
 from shinra.services.user_manager import UserProfile, user_manager
@@ -174,14 +175,25 @@ def sessione_valida(token: Optional[str]) -> Optional[Sessione]:
     return sessione
 
 
-def sessione_dalla_richiesta(request: Request) -> Optional[Sessione]:
-    """La sessione di questa richiesta, anche quando arriva da un dispositivo fidato.
+def sessione_dalla_richiesta(request: HTTPConnection) -> Optional[Sessione]:
+    """La sessione di questa connessione, anche quando arriva da un dispositivo fidato.
 
     Il dispositivo non e' una scorciatoia parallela: la sua credenziale
     diventa una sessione normale, con lo stesso identificativo utente e gli
     stessi permessi. Cosi' tutto cio' che viene dopo — permessi, registro,
     chiusura delle sessioni al cambio di PIN — continua a funzionare senza
     sapere che esistono i dispositivi fidati.
+
+    Il tipo e' `HTTPConnection` e non `Request` apposta: una `Request` e una
+    `WebSocket` di Starlette derivano tutte e due da qui, ed espongono
+    `cookies`, `headers` e `client`, che e' tutto quello che serve. Prima era
+    ristretto a `Request`, e la rotta degli eventi — che una `Request` non ce
+    l'ha — si era scritta un controllo suo, piu' povero: guardava solo il
+    cookie di sessione e ignorava il dispositivo fidato. Risultato, issue
+    #159: dopo ogni riavvio del servizio la dashboard entrava via HTTP e si
+    vedeva rifiutare il canale degli eventi, in silenzio, per sempre.
+
+    Alla domanda «chi e' questa connessione» si risponde qui, una volta sola.
     """
     sessione = sessione_valida(token_dalla_richiesta(request))
     if sessione is not None:
@@ -340,7 +352,7 @@ def rimuovi_cookie_sessione(response: Response) -> None:
     response.delete_cookie(key=NOME_COOKIE, path="/")
 
 
-def token_dalla_richiesta(request: Request) -> Optional[str]:
+def token_dalla_richiesta(request: HTTPConnection) -> Optional[str]:
     """Cookie prima, intestazione poi.
 
     L'intestazione resta accettata perche' l'interfaccia attuale la usa e i

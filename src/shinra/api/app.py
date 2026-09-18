@@ -586,11 +586,17 @@ async def eventi_websocket(websocket: WebSocket):
     Sostituisce l'interrogazione periodica: la dashboard non chiede piu' «e'
     scaduto qualcosa?», riceve l'avviso nel momento in cui accade.
     """
-    if sicurezza.autenticazione_attiva():
-        token = websocket.cookies.get(sicurezza.NOME_COOKIE)
-        if sicurezza.sessione_valida(token) is None:
-            await websocket.close(code=1008)
-            return
+    # Si chiede a `sessione_dalla_richiesta` come fa tutto il resto, invece di
+    # guardare il solo cookie di sessione. Le sessioni stanno in memoria: dopo
+    # un riavvio del servizio il cookie di sessione del browser e' morto, ma
+    # quello del dispositivo fidato no. Le rotte HTTP lo sapevano e da li'
+    # coniavano una sessione nuova; questa rotta no, e chiudeva con 1008 —
+    # cioe' un 403 sull'handshake — a ogni tentativo, per sempre. La dashboard
+    # restava aperta e funzionante e non riceveva piu' un solo evento: niente
+    # timer scaduti, niente promemoria, niente allarme intrusione (issue #159).
+    if sicurezza.autenticazione_attiva() and sicurezza.sessione_dalla_richiesta(websocket) is None:
+        await websocket.close(code=1008)
+        return
 
     await websocket.accept()
     coda: asyncio.Queue = asyncio.Queue()
