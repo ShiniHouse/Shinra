@@ -261,3 +261,192 @@ def test_ogni_tabella_e_stata_decisa():
         "Aggiungile a TABELLE o a FUORI in services/salvataggio.py, con scritto perche'."
     )
     assert not (set(salvataggio.TABELLE) & set(salvataggio.FUORI)), "una tabella e' dentro e fuori"
+
+
+# ------------------------------------------- il salvataggio che si fa da solo
+
+
+def _archivi_finti(cartella, quanti: int) -> list:
+    """`quanti` archivi dai nomi in ordine, come li scriverebbe il servizio."""
+    fatti = []
+    for n in range(quanti):
+        percorso = cartella / f"{salvataggio.PREFISSO}2026010{n}-120000{salvataggio.SUFFISSO}"
+        percorso.write_text("{}", encoding="utf-8")
+        fatti.append(percorso)
+    return fatti
+
+
+def test_la_rotazione_tiene_i_piu_recenti_e_toglie_i_piu_vecchi(tmp_path):
+    archivi = _archivi_finti(tmp_path, 5)
+
+    tolti = salvataggio.ruota(tmp_path, da_conservare=2)
+
+    assert [f.name for f in tolti] == [f.name for f in archivi[:3]]
+    assert {f.name for f in tmp_path.iterdir()} == {archivi[3].name, archivi[4].name}
+
+
+def test_la_rotazione_non_tocca_niente_che_non_abbia_scritto_lei(tmp_path):
+    """La cosa piu' pericolosa che questo modulo faccia, e quindi la piu'
+    stretta. Nella cartella dei salvataggi puo' finire di tutto: un archivio
+    rinominato a mano per metterlo al sicuro, una nota, una copia del
+    database. Niente di tutto questo e' roba sua.
+    """
+    _archivi_finti(tmp_path, 4)
+    estranei = {
+        "note.txt": "cosa ho cambiato in casa",
+        "shinra.db": "non e' un archivio, e' il database",
+        "shinra-BUONO-non-cancellare.json.salvato": "rinominato a mano apposta",
+        "vecchio-shinra-20250101-120000.json": "non comincia col prefisso",
+        "shinra-20250101-120000.json.bak": "non finisce col suffisso",
+    }
+    for nome, contenuto in estranei.items():
+        (tmp_path / nome).write_text(contenuto, encoding="utf-8")
+    sottocartella = tmp_path / "vecchi"
+    sottocartella.mkdir()
+    (sottocartella / f"{salvataggio.PREFISSO}20240101-120000{salvataggio.SUFFISSO}").write_text(
+        "{}", encoding="utf-8"
+    )
+
+    salvataggio.ruota(tmp_path, da_conservare=1)
+
+    for nome in estranei:
+        assert (tmp_path / nome).exists(), f"la rotazione si e' portata via «{nome}»"
+    assert list(sottocartella.iterdir()), "la rotazione e' scesa in una sottocartella"
+
+
+def test_conservarle_tutte_si_dice_e_funziona(tmp_path):
+    """Zero non deve voler dire «cancellale tutte», che sarebbe il modo piu'
+    rapido di perdere ogni copia con una svista di configurazione."""
+    _archivi_finti(tmp_path, 4)
+
+    for valore in (0, -1):
+        assert salvataggio.ruota(tmp_path, da_conservare=valore) == []
+        assert len(salvataggio.suoi_archivi(tmp_path)) == 4
+
+
+def test_la_rotazione_ordina_per_nome_non_per_data_di_modifica(tmp_path):
+    """Copiare la cartella da qualche parte azzera le date di modifica tutte
+    insieme, o le rovescia. Il nome porta il momento in cui l'archivio e'
+    stato scritto, e quello resta vero."""
+    import os
+
+    archivi = _archivi_finti(tmp_path, 3)
+    # Il piu' vecchio per nome, toccato adesso: sembrerebbe il piu' recente.
+    os.utime(archivi[0], (10**9 * 2, 10**9 * 2))
+    os.utime(archivi[2], (1, 1))
+
+    tolti = salvataggio.ruota(tmp_path, da_conservare=1)
+
+    assert [f.name for f in tolti] == [archivi[0].name, archivi[1].name]
+    assert archivi[2].exists(), "e' rimasto l'archivio sbagliato"
+
+
+def test_una_cartella_che_non_esiste_non_e_un_guasto(tmp_path):
+    assert salvataggio.suoi_archivi(tmp_path / "mai-creata") == []
+    assert salvataggio.ruota(tmp_path / "mai-creata", da_conservare=3) == []
+
+
+def test_salvare_viene_prima_di_fare_spazio(casa_piena, tmp_path, monkeypatch):
+    """Se la rotazione girasse per prima, un guasto nella scrittura
+    lascerebbe una copia in meno e nessuna nuova."""
+    monkeypatch.setattr(salvataggio, "cartella_predefinita", lambda: tmp_path)
+    _archivi_finti(tmp_path, 3)
+    monkeypatch.setattr(impostazioni.settings.salvataggio, "da_conservare", 2)
+
+    percorso = salvataggio.salva_e_ruota()
+
+    rimasti = salvataggio.suoi_archivi(tmp_path)
+    assert percorso in rimasti, "l'archivio appena scritto e' stato cancellato dalla rotazione"
+    assert len(rimasti) == 2
+    assert json.loads(percorso.read_text(encoding="utf-8"))["shinra"]["schema"] == salvataggio.VERSIONE
+
+
+def test_un_guasto_nel_giro_automatico_non_ferma_la_casa(monkeypatch):
+    """Un backup che fa cadere la casa e' peggio di un backup che manca.
+
+    Il logger si sostituisce invece di leggere `caplog`, per la ragione gia'
+    scritta in `test_il_testo_detto_non_finisce_nel_log` e in
+    `test_il_rifiuto_del_canale_eventi_dice_perche`: l'applicazione installa i
+    propri gestori, e un `caplog` che non intercetta niente lascia passare
+    qualunque cosa.
+
+    Scritto con `caplog`, questo test passava da solo e falliva nella suite
+    intera. E' la terza volta che il progetto ci inciampa, e la terza volta
+    che si ripara allo stesso modo.
+    """
+    scritte: list[str] = []
+
+    class LoggerFinto:
+        def exception(self, messaggio, *argomenti):
+            scritte.append(messaggio % argomenti if argomenti else messaggio)
+
+        def __getattr__(self, _nome):
+            return lambda *a, **k: None
+
+    def esplode():
+        raise OSError("disco pieno")
+
+    monkeypatch.setattr(salvataggio, "salva_e_ruota", esplode)
+    monkeypatch.setattr(salvataggio, "logger", LoggerFinto())
+
+    salvataggio._gira()  # non deve sollevare
+
+    assert scritte, "il salvataggio automatico e' fallito in silenzio"
+    assert any("non e' riuscito" in riga for riga in scritte), scritte
+
+
+def test_il_servizio_non_parte_se_spento_o_mal_configurato(monkeypatch):
+    """Lo scheduler finto dice **sempre di si'**, apposta.
+
+    Scritto la prima volta senza, questo test passava anche togliendo i
+    controlli: nella suite lo scheduler non gira, `programma_periodico`
+    risponde `False`, e `avvia()` tornava `False` per quel motivo invece che
+    per il controllo in prova. Due mutazioni su dodici non mordevano, ed e' il
+    modo peggiore di essere verdi — sembra coperto e non lo e'.
+
+    Cosi' invece l'unica cosa che puo' far tornare `False` e' il controllo, e
+    si verifica anche che allo scheduler non sia stato chiesto niente.
+    """
+    from shinra.infra.scheduler import motore
+
+    chiesto = []
+    monkeypatch.setattr(
+        motore.scheduler,
+        "programma_periodico",
+        lambda identificativo, funzione, ore: chiesto.append(identificativo) or True,
+    )
+    servizio = salvataggio.ServizioSalvataggio()
+
+    monkeypatch.setattr(impostazioni.settings.salvataggio, "abilitato", False)
+    assert servizio.avvia() is False, "parte anche da spento"
+    assert servizio.attivo is False
+
+    monkeypatch.setattr(impostazioni.settings.salvataggio, "abilitato", True)
+    for intervallo in (0, -3):
+        monkeypatch.setattr(impostazioni.settings.salvataggio, "ogni_ore", intervallo)
+        assert servizio.avvia() is False, f"ogni_ore={intervallo} viene accettato come intervallo"
+        assert servizio.attivo is False
+
+    assert chiesto == [], f"allo scheduler e' stato chiesto un giro comunque: {chiesto}"
+
+
+def test_il_servizio_chiede_allo_scheduler_il_giro_giusto(monkeypatch):
+    from shinra.infra.scheduler import motore
+
+    chiamate = []
+    monkeypatch.setattr(
+        motore.scheduler,
+        "programma_periodico",
+        lambda identificativo, funzione, ore: chiamate.append((identificativo, funzione, ore)) or True,
+    )
+    monkeypatch.setattr(impostazioni.settings.salvataggio, "abilitato", True)
+    monkeypatch.setattr(impostazioni.settings.salvataggio, "ogni_ore", 6.0)
+
+    servizio = salvataggio.ServizioSalvataggio()
+    assert servizio.avvia() is True and servizio.attivo is True
+
+    assert len(chiamate) == 1
+    identificativo, funzione, ore = chiamate[0]
+    assert identificativo == salvataggio.JOB_SALVATAGGIO
+    assert funzione is salvataggio._gira, "lo scheduler chiamerebbe qualcos'altro"
+    assert ore == 6.0, "l'intervallo della configurazione non arriva allo scheduler"

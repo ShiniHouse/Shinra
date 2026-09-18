@@ -100,3 +100,16 @@ security:
   # fidarsi di nessuno. Fidarsi di tutti permetterebbe di aggirare la
   # limitazione dei tentativi cambiando un'intestazione.
   trusted_proxies: []
+
+# Salvataggio automatico della configurazione (issue #35).
+#
+# Scrive in `data/salvataggi/` un archivio JSON con chi abita la casa, cosa
+# sa, come si chiamano le cose e cosa fa da sola. Non i timer, non le letture
+# dell'energia, e **mai** i segreti: ne' il token di Home Assistant ne' i PIN.
+#
+# La rotazione cancella solo i file che ha scritto lei — `shinra-*.json` in
+# quella cartella e nient'altro. Metti `da_conservare: 0` per tenerle tutte.
+salvataggio:
+  abilitato: true
+  ogni_ore: 24.0
+  da_conservare: 14

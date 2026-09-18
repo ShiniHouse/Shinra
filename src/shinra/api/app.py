@@ -57,6 +57,7 @@ from shinra.services.manutenzione import servizio_manutenzione
 from shinra.services.notifiche import servizio_notifiche
 from shinra.services.presenza import presenza
 from shinra.services.regole import motore_regole
+from shinra.services.salvataggio import servizio_salvataggio
 from shinra.services.satelliti import registro_satelliti
 from shinra.services.simulazione import servizio_simulazione
 from shinra.services.timer_engine import timer_engine
@@ -248,6 +249,11 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # dimenticato (issue #25).
     servizio_manutenzione.avvia()
 
+    # Un archivio della configurazione al giorno, senza doversene ricordare:
+    # un backup che bisogna ricordarsi di fare e' un backup che non esiste
+    # (issue #35). Non i dati, solo cio' che costerebbe ore rifare.
+    servizio_salvataggio.avvia()
+
     # Il canale verso il telefono. Fino alla #29 `casa.intrusione` veniva
     # pubblicato e non lo ascoltava nessuno: un allarme che scatta mentre
     # nessuno guarda non ha avvisato nessuno.
@@ -321,6 +327,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     scheduler.ferma()
     motore_regole.ferma()
     servizio_notifiche.ferma()
+    servizio_salvataggio.ferma()
     servizio_manutenzione.ferma()
     servizio_energia.ferma()
     servizio_simulazione.ferma()
