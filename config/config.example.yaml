@@ -22,8 +22,10 @@ server:
 llm:
   # Sovrascrivibile con SHINRA_OLLAMA_URL
   ollama_url: "http://localhost:11434"
-  # es. qwen2.5:3b (veloce, supporta i tool), gemma2:9b, llama3.2:3b
-  model: "gemma2:9b"
+  # Predefinito: qwen2.5:3b, veloce e con supporto nativo ai tool — che e'
+  # cio' che serve per accendere una luce o mettere un timer.
+  # Alternative: gemma2:9b, llama3.2:3b, qwen2.5:7b.
+  model: "qwen2.5:3b"
   temperature: 0.4
   timeout_seconds: 60
   max_tokens: 150

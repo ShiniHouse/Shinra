@@ -221,36 +221,98 @@ voce:
 
 ## 📦 Installazione & Configurazione su Server Linux/Debian
 
-### 1. Clonazione e Setup Virtualenv
+> Questa procedura è stata **verificata da zero su una macchina pulita**
+> seguendo solo quello che è scritto qui: clone, dipendenze, configurazione,
+> primo avvio, primo accesso. Se un passaggio non funziona, è un difetto di
+> questa pagina — [aprine una issue](https://github.com/ShiniHouse/Shinra/issues).
+
+### 1. Quello che serve prima
+
+```bash
+sudo apt update
+sudo apt install -y git python3 python3-venv
+```
+
+Serve **Python 3.10 o più recente**: `python3 --version` lo dice.
+Su Debian `python3-venv` è un pacchetto a parte e senza non si crea
+l'ambiente virtuale — è il primo punto in cui ci si ferma.
+
+### 2. Clonazione e ambiente virtuale
 ```bash
 cd /opt
-git clone https://github.com/ShiniHouse/Shinra.git
+sudo git clone https://github.com/ShiniHouse/Shinra.git
 cd Shinra
 
-# Creazione ambiente virtuale Python 3.10+
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Installazione dipendenze (dichiarate in pyproject.toml)
 pip install --upgrade pip
 pip install -e .
 ```
 
-### 2. Configurazione Iniziale
-Copia il file di esempio e personalizza i tuoi parametri:
+### 3. Configurazione iniziale
 ```bash
 cp config/config.example.yaml config/config.yaml
 nano config/config.yaml
 ```
 
-### 3. Installazione e Download Modello Ollama
+Il file di esempio funziona così com'è: si può anche lasciarlo intatto al
+primo giro e sistemarlo dopo, dalle impostazioni della dashboard.
+
+**I segreti non vanno qui.** Il token di Home Assistant e gli altri si
+mettono in `.env`, che non è versionato:
+
 ```bash
-# Scarica il modello consigliato ad alta velocità
+echo 'SHINRA_HA_TOKEN=il-tuo-token-di-home-assistant' >> .env
+chmod 600 .env
+```
+
+Senza token Shinra parte lo stesso e lo dice nel log: la casa risponde, ma
+non controlla niente.
+
+**Il database non va preparato**: viene creato e migrato da solo al primo
+avvio. Non c'è nessun comando da lanciare.
+
+### 4. Ollama e il modello
+Ollama è un programma a parte e va installato per primo, seguendo le
+istruzioni ufficiali su [ollama.com](https://ollama.com/download). Deve
+restare in ascolto su `localhost:11434`, che è dove Shinra lo cerca.
+
+Poi il modello:
+```bash
 ollama pull qwen2.5:3b
 ```
 
-### 4. Configurazione Servizio di Sistema (`systemd`)
-Crea il file `/etc/systemd/system/shinra.service`:
+È lo stesso che `config.example.yaml` configura per difetto, e non è una
+preferenza: `qwen2.5:3b` supporta i **tool** in modo nativo, e qui i tool
+sono tutto — accendere una luce, mettere un timer, leggere una scadenza.
+Un modello senza tool risponde e non fa niente.
+
+Senza Ollama, Shinra parte e funziona per tutto ciò che non passa dal
+modello: timer, dispositivi, routine.
+
+### 5. Primo avvio e primo accesso
+
+```bash
+.venv/bin/python run.py
+```
+
+Apri **`http://INDIRIZZO-DEL-SERVER:8000`** dal browser.
+
+Troverai una schermata di accesso: **l'autenticazione è attiva per difetto**.
+Al primo avvio viene creato un profilo *Amministratore* con un PIN generato
+a caso, e quel PIN **compare una volta sola, nel log dell'avvio**:
+
+```
+=== PRIMO ACCESSO ===  PIN per Amministratore: 462783
+```
+
+Annotalo. Se è già scorso via, si reimposta con `python scripts/imposta_pin.py`.
+
+### 6. Servizio di sistema (`systemd`)
+Quando tutto funziona a mano, si mette in servizio. Crea
+`/etc/systemd/system/shinra.service`:
+
 ```ini
 [Unit]
 Description=Shinra AI Smart Home Hub
@@ -269,12 +331,29 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 ```
 
-Abilita e avvia il servizio:
 ```bash
 systemctl daemon-reload
 systemctl enable --now shinra
 systemctl status shinra
 ```
+
+Il PIN del primo accesso, se il primo avvio è avvenuto qui:
+```bash
+journalctl -u shinra --no-pager | grep "PRIMO ACCESSO"
+```
+
+### 7. Metti al sicuro la configurazione
+Le ore che passerai a insegnare alla casa i nomi delle luci e le routine
+valgono più del resto. Un archivio si scrive così:
+
+```bash
+.venv/bin/python scripts/salvataggio.py salva
+```
+
+Da lì in poi se ne scrive uno al giorno da solo, in `data/salvataggi/`.
+Non contiene segreti: né il token, né i PIN. Copiane uno ogni tanto fuori
+da questa macchina — un backup sullo stesso disco protegge dagli errori,
+non dai dischi che muoiono.
 
 ---
 
@@ -349,26 +428,44 @@ server:
   host: "0.0.0.0"
   port: 8000
 
-assistant:
-  name: "Shinra"
-  default_city: "Roma"
-
 llm:
-  provider: "ollama"
-  base_url: "http://localhost:11434"
+  ollama_url: "http://localhost:11434"   # o SHINRA_OLLAMA_URL
   model: "qwen2.5:3b"
-  temperature: 0.3
+  temperature: 0.4
   max_tokens: 150
 
 home_assistant:
   enabled: true
-  url: "http://homeassistant.local:8123"  # oppure http://192.168.1.50:8123
-  token: "INSERISCI_QUI_IL_TUO_LONG_LIVED_ACCESS_TOKEN"
+  url: "http://homeassistant.local:8123" # o SHINRA_HA_URL
+  # Il token NON si mette qui: va in .env come SHINRA_HA_TOKEN
 
-voice:
-  default_gender: "female"  # male / female
-  neural_voice: "it-IT-ElsaNeural"
+assistant:
+  name: "Kyra"                           # come si chiama quando le parli
+  default_city: "Roma"
+
+voce:
+  motore: "locale"                       # locale | browser
+  modello: "base"
+  lingua: "it"
+
+security:
+  auth_enabled: true
+
+salvataggio:
+  abilitato: true
+  ogni_ore: 24.0
+  da_conservare: 14
 ```
+
+Questo è un estratto: `config/config.example.yaml` è il riferimento completo,
+con il perché di ogni scelta accanto a ciascuna voce. I nomi qui sopra sono
+quelli veri — `test_il_readme_documenta_chiavi_che_esistono` fallisce se uno
+di loro smette di esserlo.
+
+**I segreti non stanno in `config.yaml`.** Token, PIN amministratore e segreto
+di sessione vivono in `.env` o nell'ambiente; se ne trova uno nel file di
+configurazione, al primo avvio viene spostato e cancellato da lì. Il motivo è
+che `config.yaml` è finito in un commit una volta, e basta una volta.
 
 ---
 

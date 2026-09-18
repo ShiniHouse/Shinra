@@ -244,3 +244,105 @@ def test_ogni_opzione_di_configurazione_ha_un_consumatore():
     assert orfani == [], (
         "queste opzioni sono esposte nella configurazione e nessuna riga di " f"codice le legge: {orfani}"
     )
+
+
+# ------------------------------------ e il README dice cose che sono ancora vere
+
+
+def _blocco_yaml_del_readme() -> str:
+    """Il blocco di configurazione mostrato nel README dei parametri."""
+    testo = (RADICE / "README.md").read_text(encoding="utf-8")
+    inizio = testo.index("## ⚙️ Parametri di Configurazione")
+    blocco = testo[inizio:]
+    apertura = blocco.index("```yaml") + len("```yaml")
+    return blocco[apertura : blocco.index("```", apertura)]
+
+
+def test_il_readme_documenta_chiavi_che_esistono():
+    """Il README mostrava una configurazione che non esisteva piu'.
+
+    Alla #38 quel blocco dichiarava `llm.provider` e `llm.base_url` — il primo
+    mai esistito, il secondo rinominato in `ollama_url` — e metteva il token di
+    Home Assistant dentro `config.yaml`, da dove la #7 lo aveva tolto apposta.
+    Chi copiava quel blocco si ritrovava chiavi ignorate in silenzio e un
+    segreto nel posto sbagliato.
+
+    Scrivendo la riparazione ho sbagliato a mia volta una chiave — `voce.
+    trascrizione` invece di `voce.motore` — che e' la ragione per cui questo
+    test esiste invece di una rilettura attenta.
+    """
+    import yaml
+
+    from shinra.config.settings import AppConfig
+
+    documentato = yaml.safe_load(_blocco_yaml_del_readme())
+    vero = AppConfig().model_dump()
+
+    sconosciute = []
+    for sezione, campi in documentato.items():
+        if sezione not in vero:
+            sconosciute.append(sezione)
+            continue
+        if not isinstance(campi, dict):
+            continue
+        for campo in campi:
+            if campo not in (vero[sezione] or {}):
+                sconosciute.append(f"{sezione}.{campo}")
+
+    assert not sconosciute, (
+        f"il README documenta chiavi che la configurazione non ha: {sconosciute}. "
+        "Chi le copia si ritrova impostazioni ignorate in silenzio."
+    )
+
+
+def test_il_readme_non_invita_a_mettere_segreti_nella_configurazione():
+    """Il blocco mostrava `token: \"INSERISCI_QUI_IL_TUO_...\"`.
+
+    I segreti vivono in `.env` dalla #7, e `migra_segreti_su_env()` li sposta
+    da `config.yaml` al primo avvio proprio perche' li' non devono stare. Un
+    README che invita a scriverceli rimette in circolo il difetto che quella
+    issue ha chiuso: `config.yaml` e' finito in un commit una volta.
+    """
+    from shinra.config import secrets as segreti
+    from shinra.config.settings import AppConfig
+
+    documentato = __import__("yaml").safe_load(_blocco_yaml_del_readme())
+    vero = AppConfig().model_dump()  # noqa: F841 — serve solo a far fallire prima se il README e' rotto
+
+    for sezione, campo in segreti.CAMPI_SEGRETI:
+        valore = (documentato.get(sezione) or {}).get(campo)
+        assert valore is None, (
+            f"il README mostra {sezione}.{campo} dentro config.yaml: " "e' un segreto e va in .env."
+        )
+
+
+def test_il_modello_del_readme_e_quello_che_si_configura():
+    """Il README diceva di scaricare un modello, il codice ne configurava un altro.
+
+    In quattro punti il README consiglia `qwen2.5:3b` — e lo fa con un
+    argomento tecnico, il supporto nativo ai tool, che per questo progetto e'
+    tutto. Il predefinito nel codice era `gemma2:9b`. Chi seguiva le
+    istruzioni scaricava un modello e ne configurava un altro: la chat non
+    rispondeva, e il motivo non compariva da nessuna parte.
+    """
+    import re
+
+    import yaml
+
+    from shinra.config.settings import AppConfig
+
+    testo = (RADICE / "README.md").read_text(encoding="utf-8")
+    scaricati = re.findall(r"ollama pull ([^\s`]+)", testo)
+    assert scaricati, "il README non dice piu' quale modello scaricare"
+
+    esempio = yaml.safe_load((RADICE / "config" / "config.example.yaml").read_text(encoding="utf-8"))
+    predefinito = AppConfig().llm.model
+
+    for modello in scaricati:
+        assert modello == predefinito, (
+            f"il README dice di scaricare «{modello}» ma il predefinito e' "
+            f"«{predefinito}»: chi segue le istruzioni configura un modello che non ha"
+        )
+    assert (
+        esempio["llm"]["model"] == predefinito
+    ), f"config.example.yaml dice «{esempio['llm']['model']}» e il codice «{predefinito}»"
