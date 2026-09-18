@@ -20,10 +20,30 @@ canale vocale.
 
 Due cose che quella release **non** dichiara risolte, e le dice: da un Echo
 l'audio va ad Amazon per costruzione, e nessuno ha ancora guardato una regola
-scattare in una casa vera. La `0.5.0` è in lavorazione: prodotto — parola di
-attivazione, frontend modulare, backup, distribuzione.
+scattare in una casa vera.
 
 Note complete: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.md).
+
+**La `0.5.0` è in lavorazione** — prodotto: quello che serve perché Shinra lo
+installi qualcuno che non sei tu. Quello che è già dentro il ramo principale:
+
+- **L'interfaccia rifatta** (#123–#128, #134, #139): da otto ingressi a tre,
+  impostazioni a sezioni, e la colonna di destra che racconta cosa sta per
+  succedere in casa invece della diagnostica.
+- **Il frontend scomposto** (#144–#151): `index.html` è passato da 7.438 righe
+  a **1.257**; il JavaScript sta in ventuno file, uno per area, il più lungo di
+  **451** righe; il CSS in cinque; ESLint e Prettier girano in CI. E ogni
+  valore che finisce nella pagina viene scappato: prima bastava un dispositivo
+  chiamato `<img onerror=...>` in Home Assistant.
+- **I gesti dell'editor a nodi in CI** (#156): sette gesti veri, con un
+  browser vero, perché un test che legge il sorgente non sa se un clic arriva
+  o se se lo mangia un antenato.
+- **Lo spegnimento** (#118): il servizio si ferma in pochi secondi invece di
+  aspettare il SIGKILL di systemd dopo novanta.
+
+Restano la parola di attivazione, i moduli ES veri con lo stato in un posto
+solo, backup e restore, l'internazionalizzazione e la distribuzione. Il quadro
+completo è nella [ROADMAP](docs/ROADMAP.md).
 
 | Documento | Cosa contiene |
 | :--- | :--- |
@@ -50,8 +70,10 @@ Note complete: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.md).
 ## 📸 Anteprima Dashboard
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="Shinra AI Hub Dashboard" width="100%">
+  <img src="docs/screenshots/dashboard.png" alt="La console vocale di Shinra: chat con l'assistente a sinistra, timer e prossimi scatti a destra" width="100%">
 </p>
+
+<p align="center"><sub>La console vocale sulla <code>0.5.0</code> in lavorazione, dopo la scomposizione del frontend.</sub></p>
 
 ---
 
