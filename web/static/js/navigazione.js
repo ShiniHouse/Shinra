@@ -22,6 +22,10 @@ const SCHEDE_UNITE = {
     regole: 'automazioni',
 };
 
+// Dove si finisce quando la destinazione non esiste. La console e' la
+// scheda che c'e' sempre, ed e' quella da cui si parla alla casa.
+const SCHEDA_DI_RIPIEGO = 'console';
+
 // Le quattro che stanno dietro «Configurazione». Il pulsante di primo
 // livello si accende per tutte e quattro: chi e' dentro deve vedere da
 // dove ci e' entrato, altrimenti la barra non dice piu' dov'e'.
@@ -98,6 +102,31 @@ function switchTab(tabId) {
     // Le vecchie destinazioni prima di tutto: da qui in giu' esiste
     // solo il nome nuovo.
     tabId = SCHEDE_UNITE[tabId] || tabId;
+
+    // UN NOME SCONOSCIUTO NON DEVE SVUOTARE LA PAGINA — issue #153
+    //
+    // Questa funzione nasconde tutte le schede e poi accende quella
+    // giusta. Se quella giusta non esiste, il controllo piu' in basso
+    // saltava e non riaccendeva niente: restava la barra in alto e il
+    // vuoto sotto, senza un errore, senza un 500, senza niente. Un
+    // guasto muto, che sembra un guasto del codice.
+    //
+    // `SCHEDE_UNITE` copre i nomi che **sapevamo** di aver cambiato.
+    // Questo copre gli altri: il rinominamento dimenticato dentro un
+    // `onclick`, il collegamento salvato nei preferiti con un frammento
+    // vecchio, l'errore di battitura.
+    //
+    // Il ripiego si decide **prima** di nascondere: cosi' non esiste
+    // nemmeno l'istante in cui la pagina e' vuota, e non serve una
+    // chiamata ricorsiva che su una pagina senza console girerebbe su
+    // se stessa.
+    if (!document.getElementById(`tab-${tabId}`)) {
+        console.warn(`switchTab: la scheda "${tabId}" non esiste, torno alla console`);
+        tabId = SCHEDA_DI_RIPIEGO;
+        // E se non c'e' nemmeno quella, si lascia la pagina com'e': una
+        // schermata vecchia e' sempre meglio di una bianca.
+        if (!document.getElementById(`tab-${tabId}`)) return;
+    }
 
     // Nasconde tutti i tab
     Object.keys(tabDisplayMap).forEach((id) => {
