@@ -200,10 +200,20 @@ async function handleUnlockSubmit(e) {
     if (!pin) return;
 
     try {
+        // `ricorda_dispositivo` va mandato anche da qui, non solo dalla
+        // pagina di accesso: e' in questo modale che si rientra dopo un
+        // riavvio del servizio, con la dashboard gia' aperta (issue #161).
+        // Senza, si rientrava ogni volta senza dispositivo fidato e al
+        // riavvio successivo si ricominciava da capo.
+        const ricorda = document.getElementById('unlock-ricorda');
         const res = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pin: pin, user_id: _profiloDaAccedere }),
+            body: JSON.stringify({
+                pin: pin,
+                user_id: _profiloDaAccedere,
+                ricorda_dispositivo: Boolean(ricorda && ricorda.checked),
+            }),
         });
 
         if (res.ok) {

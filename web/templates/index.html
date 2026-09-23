@@ -1165,6 +1165,18 @@
                 </div>
                 <input type="password" inputmode="numeric" id="unlock-pin-input" placeholder="••••" maxlength="12" autocomplete="current-password" class="w-full text-center text-2xl font-mono tracking-widest bg-slate-950 border border-slate-700 rounded-2xl p-3 text-amber-400 focus:outline-none focus:border-amber-500 transition">
                 <div id="unlock-error-msg" class="hidden text-xs text-rose-400 font-semibold animate-pulse">PIN non corretto. Riprova.</div>
+                <!--
+                  «Ricorda questo dispositivo» c'era solo sulla pagina di
+                  accesso, non qui (issue #161). Ma qui e' dove si finisce
+                  quando il servizio si riavvia con la dashboard aperta: si
+                  rimetteva il PIN e si rientrava **senza** dispositivo
+                  fidato, quindi al riavvio dopo si ricominciava — canale
+                  degli eventi compreso.
+                -->
+                <label class="flex items-center justify-center gap-2 text-[11px] text-slate-400 cursor-pointer select-none">
+                    <input type="checkbox" id="unlock-ricorda" class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-950 text-indigo-500 focus:ring-indigo-500 cursor-pointer">
+                    Ricorda questo dispositivo
+                </label>
                 <button type="submit" class="w-full py-3 bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-bold rounded-2xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
                     <i data-lucide="unlock" class="w-4 h-4"></i> Entra
                 </button>

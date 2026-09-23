@@ -3611,3 +3611,126 @@ def test_il_tema_si_decide_prima_dei_copioni():
             f"«{piu_lento}» viene prima della decisione sul tema: "
             "la pagina si disegna scura e poi cambia colore."
         )
+
+
+# --------------------- le due schermate del PIN fanno la stessa cosa (#161)
+
+
+def _corpo_inviato_da(sorgente: str, nome_funzione: str) -> str:
+    """Il `JSON.stringify({...})` che una funzione manda a `/api/auth/login`."""
+    funzione = _funzione_javascript(sorgente, nome_funzione)
+    apertura = funzione.index("JSON.stringify(")
+    testo = funzione[apertura:]
+    livello, fine = 0, None
+    for indice, carattere in enumerate(testo):
+        if carattere == "(":
+            livello += 1
+        elif carattere == ")":
+            livello -= 1
+            if livello == 0:
+                fine = indice + 1
+                break
+    assert fine, f"{nome_funzione}: la chiamata a JSON.stringify non si chiude"
+    return testo[:fine]
+
+
+def test_le_due_schermate_del_pin_mandano_gli_stessi_campi():
+    """Issue #161.
+
+    Il PIN si chiede da due posti: la pagina `accesso.html`, servita a chi non
+    e' entrato, e il modale dentro la dashboard, che compare quando la
+    sessione muore mentre la pagina e' aperta — cioe' a ogni riavvio del
+    servizio, perche' le sessioni stanno in memoria.
+
+    Chiamano la stessa rotta, ma il modale mandava solo `{pin, user_id}`:
+    `ricorda_dispositivo` non partiva proprio. Si rientrava senza dispositivo
+    fidato, e al riavvio successivo si ricominciava da capo — canale degli
+    eventi compreso (#159, #160).
+
+    Due schermate che fanno la stessa cosa in modo leggermente diverso sono
+    la premessa del prossimo difetto: qui si pretende che mandino gli stessi
+    campi, chiunque le tocchi.
+    """
+    import re
+
+    dal_modale = _corpo_inviato_da(_testo(CARTELLA_JS / "accesso.js"), "handleUnlockSubmit")
+
+    pagina_accesso = _testo(RADICE / "web" / "templates" / "accesso.html")
+    campi_pagina = set(re.findall(r"^\s*([a-z_]+):", pagina_accesso, re.M))
+    attesi = {"pin", "user_id", "ricorda_dispositivo"}
+    assert attesi <= campi_pagina, (
+        f"la pagina di accesso non manda piu' {attesi - campi_pagina}: "
+        "il confronto non ha piu' un riferimento"
+    )
+
+    for campo in attesi:
+        assert campo in dal_modale, (
+            f"il modale della dashboard non manda «{campo}», la pagina di accesso si'. "
+            f"Corpo inviato: {dal_modale}"
+        )
+
+
+def test_il_modale_manda_quello_che_la_casella_dice():
+    """Il campo parte, ma segue davvero la spunta?
+
+    Scritto come ricerca di nomi, questo test restava verde con
+    `ricorda_dispositivo: false` scritto fisso: il nome del campo c'era, la
+    casella veniva anche letta, e il suo valore non arrivava da nessuna
+    parte. L'ha detto una mutazione.
+
+    Qui la funzione si esegue davvero, due volte, e si guarda cosa parte.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    pagina = _testo(PAGINA)
+    modale = pagina[pagina.index('id="lock-screen-modal"') :][:4000]
+    assert 'id="unlock-ricorda"' in modale, "il modale non ha la casella «ricorda questo dispositivo»"
+    assert 'type="checkbox"' in modale, "la casella non e' una casella"
+
+    sorgente = _testo(CARTELLA_JS / "accesso.js")
+    prova = _funzione_javascript(sorgente, "handleUnlockSubmit") + """
+let _profiloDaAccedere = 'alessio';
+let spuntata = false;
+const inviati = [];
+
+const campi = {
+    'unlock-ricorda': { get checked() { return spuntata; } },
+    'unlock-pin-input': { value: '482913' },
+    'unlock-error-msg': { classList: { add() {}, remove() {} }, innerText: '' },
+    'lock-screen-modal': { style: {} },
+};
+globalThis.document = { getElementById: (id) => campi[id] || null };
+globalThis.fetch = async (indirizzo, opzioni) => {
+    inviati.push(JSON.parse(opzioni.body));
+    // Si fa fallire apposta: la strada del successo richiama mezza
+    // dashboard, e qui interessa solo cosa e' partito.
+    return { ok: false, json: async () => ({ detail: 'no' }) };
+};
+
+function esigi(condizione, messaggio) {
+    if (!condizione) { console.error(messaggio); process.exit(1); }
+}
+
+(async () => {
+    spuntata = false;
+    await handleUnlockSubmit(null);
+    // Dopo un rifiuto la funzione svuota il campo del PIN, e senza rimetterlo
+    // il secondo giro esce subito. Meglio saperlo qui che scoprirlo come
+    // «manda sempre false».
+    campi['unlock-pin-input'].value = '482913';
+    spuntata = true;
+    await handleUnlockSubmit(null);
+
+    esigi(inviati.length === 2, 'non sono partite due richieste: ' + inviati.length);
+    esigi(inviati[0].pin === '482913', 'il PIN non parte');
+    esigi(inviati[0].user_id === 'alessio', 'il profilo scelto non parte');
+    esigi(inviati[0].ricorda_dispositivo === false,
+          'senza spunta manda ' + JSON.stringify(inviati[0].ricorda_dispositivo));
+    esigi(inviati[1].ricorda_dispositivo === true,
+          'con la spunta manda ' + JSON.stringify(inviati[1].ricorda_dispositivo));
+})();
+"""
+
+    esito = _esegui_con_node(prova)
+    assert esito.returncode == 0, esito.stderr or esito.stdout

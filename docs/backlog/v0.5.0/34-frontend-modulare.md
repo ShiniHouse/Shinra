@@ -54,7 +54,7 @@ Misurato adesso:
 
 | | prima | dopo |
 | :--- | :-- | :-- |
-| `web/templates/index.html` | 7.438 righe | **1.294** |
+| `web/templates/index.html` | 7.438 righe | **1.306** |
 | File JavaScript | 1 (dentro l'HTML) | 21, il piu' lungo di **451** righe |
 | File CSS | 1 (dentro l'HTML) | 5 |
 | Concatenazioni di stringhe non protette | tutte | **zero**, con guardia |
