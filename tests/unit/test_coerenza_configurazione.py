@@ -346,3 +346,67 @@ def test_il_modello_del_readme_e_quello_che_si_configura():
     assert (
         esempio["llm"]["model"] == predefinito
     ), f"config.example.yaml dice «{esempio['llm']['model']}» e il codice «{predefinito}»"
+
+
+# ------------------------------------------------ e il nome dell'immagine e' uno
+
+
+def _nome_del_deposito() -> str:
+    """`ShiniHouse/Shinra`, preso da dove e' dichiarato una volta sola.
+
+    Si legge con un'espressione regolare e non con `tomllib`, che esiste solo
+    da Python 3.11: il progetto dichiara 3.10 e la CI lo prova davvero. Una
+    riga sola da cercare non vale una dipendenza in piu'.
+    """
+    import re
+
+    testo = (RADICE / "pyproject.toml").read_text(encoding="utf-8")
+    trovato = re.search(r'^Repository\s*=\s*"([^"]+)"', testo, re.M)
+    assert trovato, "pyproject.toml non dichiara piu' l'indirizzo del deposito"
+    return trovato.group(1).removeprefix("https://github.com/").strip("/")
+
+
+def test_l_immagine_pubblicata_e_quella_che_il_compose_scarica():
+    """Il workflow pubblica `ghcr.io/<deposito>`; il compose ne scarica una.
+
+    Devono essere la stessa, e nessuno se ne accorgerebbe se smettessero di
+    esserlo: `docker compose pull` fallirebbe con un «not found» in casa di
+    chi ha seguito il README, mentre qui tutto sarebbe verde.
+
+    Il workflow costruisce il nome da `github.repository`, che qui non si puo'
+    risolvere: si confronta allora con il deposito dichiarato in
+    `pyproject.toml`, che e' l'unico posto dove quel nome e' scritto a mano.
+    """
+    import re
+
+    deposito = _nome_del_deposito().lower()
+    atteso = f"ghcr.io/{deposito}"
+
+    trovati = []
+    for percorso in (RADICE / "docker-compose.yml", RADICE / "README.md"):
+        for riferimento in re.findall(r"ghcr\.io/[a-zA-Z0-9._/-]+", percorso.read_text(encoding="utf-8")):
+            # L'etichetta dopo i due punti non conta: qui si guarda il nome.
+            trovati.append((percorso.name, riferimento.split(":")[0].lower()))
+
+    assert trovati, "nessuno scarica piu' l'immagine pubblicata: il compose la nomina ancora?"
+    for dove, nome in trovati:
+        assert nome == atteso, f"{dove} punta a «{nome}», ma si pubblica «{atteso}»"
+
+
+def test_il_workflow_di_pubblicazione_costruisce_le_due_architetture():
+    """Il criterio di accettazione della #37 nomina il Raspberry Pi.
+
+    Un workflow che pubblica solo amd64 lascerebbe fuori ogni Pi e ogni Mac
+    con Apple Silicon, e lo farebbe in silenzio: `docker pull` su arm64
+    risponde «no matching manifest», che non dice a nessuno di cosa si tratta.
+    """
+    import yaml
+
+    workflow = yaml.safe_load((RADICE / ".github" / "workflows" / "pubblica.yml").read_text(encoding="utf-8"))
+    passi = workflow["jobs"]["pubblica"]["steps"]
+    spinta = [p for p in passi if "build-push-action" in str(p.get("uses", ""))]
+    assert len(spinta) == 1, "il passo che pubblica non e' piu' uno solo"
+
+    piattaforme = spinta[0]["with"]["platforms"]
+    for architettura in ("linux/amd64", "linux/arm64"):
+        assert architettura in piattaforme, f"{architettura} non viene piu' pubblicata: {piattaforme}"

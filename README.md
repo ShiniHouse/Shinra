@@ -80,6 +80,7 @@ completo è nella [ROADMAP](docs/ROADMAP.md).
 ## 🌟 Indice dei Contenuti
 - [✨ Funzionalità Principali](#-funzionalità-principali)
 - [🏗️ Architettura del Sistema](#️-architettura-del-sistema)
+- [🐳 Installazione con Docker](#-installazione-con-docker)
 - [📦 Installazione & Configurazione su Server Linux/Debian](#-installazione--configurazione-su-server-linuxdebian)
 - [🎛️ Canvas Visuale a Nodi per Routine (Visio Style)](#️-canvas-visuale-a-nodi-per-routine-visio-style)
 - [⏰ Timer & Promemoria Vocali Live](#-timer--promemoria-vocali-live)
@@ -216,6 +217,80 @@ voce:
         ├── Home Assistant Connector (:8123)
         └── Ollama LLM Connector (:11434 - qwen2.5:3b)
 ```
+
+---
+
+## 🐳 Installazione con Docker
+
+La strada piu' corta: nessun ambiente virtuale, nessun `systemd`, e
+l'aggiornamento e' una riga.
+
+```bash
+mkdir shinra && cd shinra
+curl -O https://raw.githubusercontent.com/ShiniHouse/Shinra/main/docker-compose.yml
+docker compose up -d
+```
+
+Il PIN del primo accesso compare nel log, **una volta sola**:
+
+```bash
+docker compose logs shinra | grep "PRIMO ACCESSO"
+```
+
+Poi la dashboard su **`http://INDIRIZZO-DEL-SERVER:8000`**, e il modello, una
+volta sola:
+
+```bash
+docker compose exec ollama ollama pull qwen2.5:3b
+```
+
+### Il token di Home Assistant
+
+Home Assistant non sta nel compose: quasi sempre gira gia' da un'altra parte.
+Il token si mette in un file `.env` accanto a `docker-compose.yml` — Compose
+lo legge da solo — e **non** dentro l'immagine:
+
+```bash
+cat > .env <<'EOF'
+SHINRA_HA_URL=http://homeassistant.local:8123
+SHINRA_HA_TOKEN=il-tuo-token
+EOF
+chmod 600 .env
+docker compose up -d
+```
+
+### Cosa sopravvive, e cosa no
+
+Tre volumi con nome: `shinra-dati` (database, log, salvataggi automatici),
+`shinra-configurazione` (`config.yaml`) e `ollama-modelli`. Un
+`docker compose down` non li tocca; `docker compose down -v` li cancella —
+e con loro tutta la casa.
+
+Il salvataggio della configurazione funziona anche qui:
+
+```bash
+docker compose exec shinra python scripts/salvataggio.py salva
+```
+
+### Aggiornare
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+Il database si migra da solo alla partenza.
+
+### Home Assistant OS: l'add-on non c'e' ancora
+
+Chi usa **Home Assistant OS** o **Supervised** si aspetterebbe un add-on da
+installare con un clic. Non c'e', ed e' una scelta dichiarata: scriverlo senza
+poterlo installare da nessuna parte vorrebbe dire consegnare qualcosa che
+nessuno ha mai visto funzionare. Serve anche un lavoro sul frontend — sotto
+l'ingress di Home Assistant i percorsi assoluti della dashboard si rompono
+tutti — che appartiene alla issue #34.
+
+Fino ad allora, anche su quelle installazioni Shinra si mette con Docker, qui
+sopra, e si collega a Home Assistant col token come tutti gli altri.
 
 ---
 

@@ -1,0 +1,104 @@
+# Pubblica l'immagine su GitHub Container Registry, al tag di release.
+# Riferimento: issue #37.
+#
+# Perche' un file a parte e non un lavoro dentro `ci.yml`: quello gira a ogni
+# PR e non deve poter pubblicare niente. Qui l'unico innesco e' un tag, e i
+# permessi di scrittura sui pacchetti vivono solo in questo file.
+#
+# Il tag comanda: `v0.5.0` produce `0.5.0`, `0.5` e `latest`. Un tag di prova
+# (`v0.5.0-rc1`) produce solo il suo nome — un candidato non deve diventare
+# `latest` per distrazione.
+
+name: Pubblica l'immagine
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      etichetta:
+        description: "Etichetta da dare all'immagine (per una prova a mano)"
+        required: true
+        default: "prova"
+
+concurrency:
+  group: pubblica-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRO: ghcr.io
+  IMMAGINE: ${{ github.repository }}
+
+jobs:
+  pubblica:
+    name: Costruisci e pubblica
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+      # Serve a firmare la provenienza: dice da quale commit e da quale
+      # workflow viene l'immagine. Chi la scarica puo' verificarlo.
+      id-token: write
+      attestations: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # arm64 si costruisce qui dentro con l'emulazione. E' lento — venti
+      # minuti buoni — ma e' l'unico modo senza un runner ARM, e succede solo
+      # al tag.
+      - name: Emulazione per le altre architetture
+        uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Entra nel registro
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRO }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Decidi i nomi
+        id: nomi
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRO }}/${{ env.IMMAGINE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ !contains(github.ref, '-') }}
+            type=raw,value=${{ inputs.etichetta }},enable=${{ github.event_name == 'workflow_dispatch' }}
+          labels: |
+            org.opencontainers.image.title=Shinra
+            org.opencontainers.image.description=Hub domotico con IA locale, Home Assistant e voce
+
+      - name: Costruisci e spingi
+        id: spinta
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.nomi.outputs.tags }}
+          labels: ${{ steps.nomi.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Firma la provenienza
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRO }}/${{ env.IMMAGINE }}
+          subject-digest: ${{ steps.spinta.outputs.digest }}
+          push-to-registry: true
+
+      - name: Dillo
+        run: |
+          echo "### Immagine pubblicata" >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo '${{ steps.nomi.outputs.tags }}' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Architetture: linux/amd64, linux/arm64' >> "$GITHUB_STEP_SUMMARY"
