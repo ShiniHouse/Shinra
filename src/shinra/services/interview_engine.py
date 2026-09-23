@@ -4,10 +4,54 @@ import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from shinra.config import settings as impostazioni
 from shinra.infra.data_store import data_store
 from shinra.infra.llm.ollama import OllamaClient
 
 logger = logging.getLogger("Shinra.Interview")
+
+
+def _riconoscimento(interpretato: bool, quanti: int) -> str:
+    """Cosa si risponde dopo una risposta dell'utente.
+
+    Fino alla #170 qui c'era una frase sola — «Ricevuto! Ho aggiunto N nuovi
+    dettagli» — e la diceva **anche quando il modello non aveva capito
+    niente**, perche' il ripiego che conserva la frase grezza produce un fatto
+    come tutti gli altri. Un guasto travestito da normalita'.
+
+    Adesso i tre casi si dicono diversi, e quello che e' andato storto lo
+    dice per primo: chi sta rispondendo deve poter smettere, invece di
+    consegnare altre cinque risposte a qualcosa che non le sta leggendo.
+    """
+    if not interpretato:
+        return (
+            "Ho conservato la tua risposta, ma non sono riuscita a ricavarne niente "
+            "di preciso: il modello non ha risposto come mi serve. Controlla quale "
+            "modello e' configurato — per capire una frase e riassumerla ne serve "
+            "uno da qualche miliardo di parametri. Intanto proseguo. "
+        )
+    if quanti:
+        return f"Ricevuto! Ho aggiunto {quanti} nuovi dettagli alla mia conoscenza. "
+    return (
+        "Ho letto, ma da questa risposta non ho ricavato niente da ricordare: "
+        "se ti va, piu' avanti riprendiamo con qualche dettaglio in piu'. "
+    )
+
+
+def _chiusura(imparati: int, non_interpretate: int) -> str:
+    """Il saluto finale, che non dice «ottimo lavoro» dopo sei fallimenti."""
+    if non_interpretate:
+        return (
+            f"Intervista finita. Ho memorizzato {imparati} fatti, ma {non_interpretate} "
+            "delle tue risposte non sono riuscita a interpretarle: le ho conservate "
+            "cosi' come le hai scritte. Con un modello piu' capace vale la pena "
+            "rifarla — imparerei molto di piu' dalle stesse risposte."
+        )
+    return (
+        f"Ottimo lavoro! Intervista completata. Ho memorizzato {imparati} fatti sulla "
+        "tua casa e calibrato le mie risposte per te e la tua famiglia."
+    )
+
 
 INTERVIEW_STEPS = [
     {
@@ -76,6 +120,10 @@ class LearningInterviewEngine:
             "answers": {},
             "learned_facts": [],
             "proposed_routines": [],
+            # Quante risposte il modello non e' riuscito a interpretare. Serve
+            # a non chiudere l'intervista dicendo «ottimo lavoro» dopo sei
+            # fallimenti di fila (#170).
+            "non_interpretate": 0,
             "started_at": datetime.now().isoformat(),
         }
         self._active_sessions[user_id] = session
@@ -104,6 +152,9 @@ class LearningInterviewEngine:
 
         # 1. Analisi ed estrazione automatica tramite LLM
         extracted_info = await self._extract_knowledge_and_routines(current_step, answer_text)
+        interpretato = bool(extracted_info.get("interpretato", True))
+        if not interpretato:
+            session["non_interpretate"] += 1
 
         # 2. Salvataggio immediato dei fatti nel data store
         new_facts = []
@@ -138,10 +189,7 @@ class LearningInterviewEngine:
             session["current_step_index"] = next_step_idx
             next_step = INTERVIEW_STEPS[next_step_idx]
 
-            ack = "Perfetto, ho memorizzato queste informazioni. "
-            if new_facts:
-                ack = f"Ricevuto! Ho aggiunto {len(new_facts)} nuovi dettagli alla mia conoscenza. "
-
+            ack = _riconoscimento(interpretato, len(new_facts))
             bot_msg = ack + next_step["question"] + routine_proposal_text
             return {
                 "is_active": True,
@@ -151,12 +199,13 @@ class LearningInterviewEngine:
                 "message": bot_msg,
                 "new_facts": new_facts,
                 "proposed_routine": proposed_routine,
+                "interpretato": interpretato,
                 "is_complete": False,
             }
         else:
             session["is_active"] = False
             total_learned = len(session["learned_facts"])
-            completion_msg = f"Ottimo lavoro! Intervista completata. Ho memorizzato {total_learned} fatti sulla tua casa e calibrato le mie risposte per te e la tua famiglia."
+            completion_msg = _chiusura(total_learned, session["non_interpretate"])
             return {
                 "is_active": False,
                 "step_index": next_step_idx,
@@ -164,6 +213,7 @@ class LearningInterviewEngine:
                 "message": completion_msg,
                 "new_facts": new_facts,
                 "proposed_routine": proposed_routine,
+                "interpretato": interpretato,
                 "is_complete": True,
                 "summary": {"total_facts": total_learned, "proposed_routines": session["proposed_routines"]},
             }
@@ -200,15 +250,31 @@ Rispondi ESCLUSIVAMENTE con un JSON:
             # Ollama spento, o risposta inutilizzabile. Si conserva comunque
             # cio' che l'utente ha detto: perdere la sua risposta sarebbe
             # peggio che conservarla non elaborata.
-            logger.warning("Estrazione non riuscita per '%s': conservo la risposta cosi' com'e'.", step["id"])
+            #
+            # Ma **si dichiara**. Fino alla #170 questo ripiego restituiva un
+            # fatto come tutti gli altri, e l'intervista rispondeva «Ricevuto!
+            # Ho aggiunto 1 nuovi dettagli alla mia conoscenza»: falliva e
+            # rassicurava. In casa, con un modello da un miliardo di
+            # parametri, e' successo per sei domande di fila senza che niente
+            # lo dicesse — e chi stava rispondendo ha creduto per tutto il
+            # tempo che la casa stesse imparando.
+            logger.warning(
+                "Estrazione non riuscita per '%s' con il modello «%s»: conservo la "
+                "risposta cosi' com'e'. Un modello che non produce JSON strutturato "
+                "non puo' imparare niente da un'intervista.",
+                step["id"],
+                impostazioni.settings.llm.model,
+            )
             return {
                 "facts": [{"text": user_answer.strip(), "category": step["category"]}],
                 "proposed_routine": None,
+                "interpretato": False,
             }
 
         return {
             "facts": self._fatti_validi(dati.get("facts"), step),
             "proposed_routine": self._routine_valida(dati.get("proposed_routine")),
+            "interpretato": True,
         }
 
     @staticmethod
