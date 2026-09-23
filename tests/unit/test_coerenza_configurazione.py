@@ -410,3 +410,47 @@ def test_il_workflow_di_pubblicazione_costruisce_le_due_architetture():
     piattaforme = spinta[0]["with"]["platforms"]
     for architettura in ("linux/amd64", "linux/arm64"):
         assert architettura in piattaforme, f"{architettura} non viene piu' pubblicata: {piattaforme}"
+
+
+def test_l_interfaccia_non_nomina_un_modello_che_non_e_il_predefinito():
+    """Il pannello si chiamava «Intelligenza Artificiale (Ollama / Gemma)».
+
+    Gemma era il predefinito fino alla #38, e quel nome e' rimasto scritto nel
+    titolo anche dopo. Non e' un difetto che rompe niente: e' un'etichetta che
+    dice una cosa non piu' vera, sulla schermata dove si sceglie il modello —
+    cioe' l'unico posto in cui quella parola viene letta come un consiglio.
+
+    E' lo stesso genere della #38 (il README che diceva di scaricare un
+    modello e il codice ne configurava un altro) e della guardia sulle righe
+    di `index.html`: un dato scritto a mano invecchia in silenzio.
+    """
+    import re
+
+    from shinra.config.settings import AppConfig
+
+    pagina = (RADICE / "web" / "templates" / "index.html").read_text(encoding="utf-8")
+    famiglia_predefinita = AppConfig().llm.model.split(":")[0].lower()
+
+    # I bordi di parola contano: scritta senza, questa guardia accusava
+    # `ollama-status`, perche' «ollama» contiene «llama». Un test che grida
+    # al lupo su un innocente viene disattivato dopo la seconda volta, e da
+    # quel momento non guarda piu' niente.
+    for famiglia in ("gemma", "llama", "mistral", "phi", "qwen"):
+        if famiglia == famiglia_predefinita:
+            continue
+        nominata = re.compile(rf"\b{famiglia}\b")
+        for riga in pagina.splitlines():
+            # Si salta solo l'elenco a tendina, che deve poter nominare tutti
+            # i modelli scaricati.
+            #
+            # Scritta la prima volta, questa riga saltava anche tutto cio' che
+            # conteneva `data-`: cioe' quasi ogni riga del markup, perche'
+            # ogni icona porta un `data-lucide`. Compresa la riga del titolo,
+            # che era proprio quella da guardare. La guardia passava e non
+            # guardava niente — l'ha detto una mutazione, non una rilettura.
+            if "<option" in riga:
+                continue
+            assert not nominata.search(riga.lower()), (
+                f"l'interfaccia nomina «{famiglia}» mentre il predefinito e' "
+                f"«{famiglia_predefinita}»: {riga.strip()[:90]}"
+            )
