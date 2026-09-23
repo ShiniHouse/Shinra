@@ -236,3 +236,154 @@ async def test_ollama_irraggiungibile_da_none(monkeypatch) -> None:
 
     monkeypatch.setattr(client, "chat", risposta)
     assert await client.genera_json("x") is None
+
+
+# ------------------------- quando non capisce, deve dirlo (issue #170)
+
+
+@pytest.mark.asyncio
+async def test_quando_il_modello_non_interpreta_l_intervista_lo_dice(archivio, monkeypatch) -> None:
+    """Il difetto della #170, ed e' peggio del silenzio.
+
+    Il ripiego che conserva la frase grezza produce un fatto come tutti gli
+    altri. Il messaggio contava i fatti e rispondeva «Ricevuto! Ho aggiunto 1
+    nuovi dettagli alla mia conoscenza»: falliva e **rassicurava**.
+
+    In casa e' successo per sei domande di fila, con un modello da un miliardo
+    di parametri, e chi stava rispondendo ha creduto per tutto il tempo che la
+    casa stesse imparando. Un guasto che si presenta come normalita' costa
+    piu' di un guasto che si vede.
+    """
+    import shinra.services.interview_engine as modulo
+
+    monkeypatch.setattr(modulo, "data_store", archivio)
+    motore = LearningInterviewEngine()
+
+    async def non_capisce(prompt, system="", temperature=0.1):
+        return None
+
+    monkeypatch.setattr(motore.ollama, "genera_json", non_capisce)
+
+    motore.start_session("prova")
+    esito = await motore.process_answer("prova", "Vivo ad Arezzo al secondo piano")
+
+    assert esito["interpretato"] is False, "l'esito non dichiara che l'estrazione e' fallita"
+    messaggio = esito["message"].lower()
+    assert "ricevuto" not in messaggio, "dice «ricevuto» dopo aver fallito"
+    assert "non sono riuscita" in messaggio, f"non dice che non ha capito: {esito['message']!r}"
+    assert "modello" in messaggio, "non dice dove guardare"
+
+    # E la risposta non va comunque persa: resta conservata cosi' com'e'.
+    assert any("Arezzo" in f["text"] for f in archivio.get_knowledge())
+
+
+@pytest.mark.asyncio
+async def test_sei_fallimenti_di_fila_non_si_chiudono_con_ottimo_lavoro(archivio, monkeypatch) -> None:
+    """La chiusura e' l'ultima occasione per dire che e' andata male."""
+    import shinra.services.interview_engine as modulo
+
+    monkeypatch.setattr(modulo, "data_store", archivio)
+    motore = LearningInterviewEngine()
+
+    async def non_capisce(prompt, system="", temperature=0.1):
+        return None
+
+    monkeypatch.setattr(motore.ollama, "genera_json", non_capisce)
+
+    motore.start_session("prova")
+    for _ in INTERVIEW_STEPS:
+        esito = await motore.process_answer("prova", "Una risposta abbastanza lunga da valere.")
+
+    assert esito["is_complete"] is True
+    messaggio = esito["message"].lower()
+    assert "ottimo lavoro" not in messaggio, "si congratula dopo sei fallimenti di fila"
+    assert str(len(INTERVIEW_STEPS)) in esito["message"], "non dice quante risposte ha mancato"
+    assert "non sono riuscita a interpretarle" in messaggio
+
+
+@pytest.mark.asyncio
+async def test_quando_capisce_davvero_lo_dice_come_prima(archivio, monkeypatch) -> None:
+    """Il gemello, perche' la riparazione non diventi «si scusa sempre»."""
+    import shinra.services.interview_engine as modulo
+
+    monkeypatch.setattr(modulo, "data_store", archivio)
+    motore = LearningInterviewEngine()
+
+    async def capisce(prompt, system="", temperature=0.1):
+        return {"facts": [{"text": "La casa e' ad Arezzo"}, {"text": "L'appartamento e' al secondo piano"}]}
+
+    monkeypatch.setattr(motore.ollama, "genera_json", capisce)
+
+    motore.start_session("prova")
+    esito = await motore.process_answer("prova", "Vivo ad Arezzo al secondo piano")
+
+    assert esito["interpretato"] is True
+    assert "Ricevuto" in esito["message"]
+    assert "2" in esito["message"], "non dice quanti dettagli ha imparato"
+    assert "non sono riuscita" not in esito["message"].lower()
+
+
+@pytest.mark.asyncio
+async def test_una_risposta_da_cui_non_c_e_niente_da_imparare_non_e_un_guasto(archivio, monkeypatch) -> None:
+    """Terzo caso, diverso dagli altri due: il modello ha capito benissimo, e
+    da «boh» non c'era niente da ricavare. Non va raccontato come un
+    fallimento del modello, o si manda a cercare dalla parte sbagliata."""
+    import shinra.services.interview_engine as modulo
+
+    monkeypatch.setattr(modulo, "data_store", archivio)
+    motore = LearningInterviewEngine()
+
+    async def niente_da_dire(prompt, system="", temperature=0.1):
+        return {"facts": []}
+
+    monkeypatch.setattr(motore.ollama, "genera_json", niente_da_dire)
+
+    motore.start_session("prova")
+    esito = await motore.process_answer("prova", "boh")
+
+    assert esito["interpretato"] is True, "una risposta vuota non e' un guasto del modello"
+    messaggio = esito["message"].lower()
+    assert "modello" not in messaggio, "accusa il modello per una risposta che non diceva niente"
+    assert "niente da ricordare" in messaggio
+
+
+@pytest.mark.asyncio
+async def test_l_avviso_nel_log_dice_quale_modello_ha_fallito(monkeypatch) -> None:
+    """Chi legge il journal deve sapere dove guardare.
+
+    In casa il difetto e' stato trovato cosi': cinque «Estrazione non
+    riuscita» nel journal. Ma quella riga non diceva **quale** modello stava
+    fallendo, e il modello era il difetto — `llama3.2:1b`, un miliardo di
+    parametri a cui si chiedeva di produrre JSON strutturato. Il nome nella
+    riga accorcia l'indagine da un'ora a un minuto.
+
+    Il logger si sostituisce invece di leggere `caplog`: l'applicazione
+    installa i propri gestori. E' la stessa trappola documentata in
+    `test_il_testo_detto_non_finisce_nel_log`, e ci sono gia' inciampato tre
+    volte.
+    """
+    import shinra.services.interview_engine as modulo
+
+    scritte: list[str] = []
+
+    class LoggerFinto:
+        def warning(self, messaggio, *argomenti):
+            scritte.append(messaggio % argomenti if argomenti else messaggio)
+
+        def __getattr__(self, _nome):
+            return lambda *a, **k: None
+
+    monkeypatch.setattr(modulo, "logger", LoggerFinto())
+    monkeypatch.setattr(modulo.impostazioni.settings.llm, "model", "modello-di-prova:1b")
+
+    motore = LearningInterviewEngine()
+
+    async def non_capisce(prompt, system="", temperature=0.1):
+        return None
+
+    monkeypatch.setattr(motore.ollama, "genera_json", non_capisce)
+    await motore._extract_knowledge_and_routines(INTERVIEW_STEPS[0], "Vivo ad Arezzo")
+
+    assert scritte, "il fallimento non finisce piu' nel log"
+    detto = "\n".join(scritte)
+    assert "modello-di-prova:1b" in detto, f"l'avviso non dice quale modello ha fallito: {detto!r}"
