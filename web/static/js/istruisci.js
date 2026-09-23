@@ -78,10 +78,21 @@ function renderLearningStep(data) {
 
     stepBadge.innerText = `Fase ${currentIdx} di ${total}`;
     progBar.style.width = `${pct}%`;
-    topicTitle.innerHTML = _html`<i data-lucide="help-circle" class="w-3.5 h-3.5"></i> ${step.title || 'Domanda'}`;
-    qText.innerText = step.question || data.message;
-    lastLearningQuestion = step.question || data.message;
-    hintText.innerText = step.hint ? `💡 ${step.hint}` : '';
+    const inConferma = data.fase === 'conferma';
+    topicTitle.innerHTML = inConferma
+        ? _html`<i data-lucide="list-checks" class="w-3.5 h-3.5 text-amber-400"></i> Ho capito bene?`
+        : _html`<i data-lucide="help-circle" class="w-3.5 h-3.5"></i> ${step.title || 'Domanda'}`;
+
+    // Il testo da mostrare e' quello che manda il server, non la domanda dello
+    // step. Fino alla #170 qui c'era `step.question || data.message`, e la
+    // domanda vinceva **sempre**: il riconoscimento — compreso «non sono
+    // riuscita a ricavarne niente», aggiunto apposta dalla #171 — finiva nel
+    // payload e non arrivava mai sullo schermo. Chi rispondeva vedeva solo la
+    // domanda successiva, e continuava a credere che la casa stesse imparando.
+    const daMostrare = data.message || step.question || '';
+    qText.innerText = daMostrare;
+    lastLearningQuestion = daMostrare;
+    hintText.innerText = data.suggerimento || (step.hint ? `💡 ${step.hint}` : '');
 
     // Routine Proposal
     if (data.proposed_routine && data.proposed_routine.name) {
@@ -108,10 +119,13 @@ function renderLearningStep(data) {
 
     answerInput.value = '';
     answerInput.parentElement.classList.remove('hidden');
+    answerInput.placeholder = inConferma
+        ? 'Rispondi «sì», «no», oppure riscrivi la frase come la diresti tu...'
+        : 'Parla al microfono o scrivi qui la tua risposta...';
     answerInput.focus();
 
     // Speak question
-    speakText(step.question || data.message);
+    speakText(daMostrare);
     safeCreateIcons();
 }
 

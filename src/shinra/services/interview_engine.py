@@ -53,6 +53,119 @@ def _chiusura(imparati: int, non_interpretate: int) -> str:
     )
 
 
+# Le due fasi di un passo. Fino alla #170 ce n'era una sola: si rispondeva e
+# l'intervista salvava. Adesso in mezzo c'e' la conferma.
+FASE_DOMANDA = "domanda"
+FASE_CONFERMA = "conferma"
+
+# Quante volte si accetta una correzione prima di salvare e proseguire. Senza
+# un limite, chi risponde con una frase che il modello continua a masticare
+# male resta fermo sullo stesso passo per sempre: ogni testo libero e' una
+# correzione, e ogni correzione riapre la conferma.
+LIMITE_CORREZIONI = 1
+
+AFFERMAZIONI = frozenset(
+    {
+        "si",
+        "sì",
+        "s",
+        "ok",
+        "okay",
+        "va bene",
+        "vabene",
+        "giusto",
+        "esatto",
+        "esattamente",
+        "corretto",
+        "perfetto",
+        "certo",
+        "confermo",
+        "conferma",
+        "yes",
+        "y",
+        "tutto giusto",
+        "e giusto",
+        "è giusto",
+        "sì esatto",
+        "si esatto",
+    }
+)
+
+NEGAZIONI = frozenset(
+    {
+        "no",
+        "n",
+        "nope",
+        "sbagliato",
+        "niente",
+        "annulla",
+        "salta",
+        "lascia perdere",
+        "no grazie",
+        "non e giusto",
+        "non è giusto",
+    }
+)
+
+SUGGERIMENTO_CONFERMA = (
+    "Rispondi «sì» per salvare, «no» per saltare, oppure riscrivi la frase come la diresti tu."
+)
+
+
+def _normalizza(testo: str) -> str:
+    """Toglie punteggiatura e maiuscole, per leggere «Sì!» come «si».
+
+    Si conservano le lettere accentate: in italiano «e» e «è» non sono la
+    stessa parola, e «no» non deve diventare un «n» che vale come «n» secco.
+    """
+    solo_lettere = re.sub(r"[^a-zà-ÿ]+", " ", (testo or "").lower())
+    return re.sub(r"\s+", " ", solo_lettere).strip()
+
+
+def _e_affermativa(testo: str) -> bool:
+    return _normalizza(testo) in AFFERMAZIONI
+
+
+def _e_negativa(testo: str) -> bool:
+    return _normalizza(testo) in NEGAZIONI
+
+
+def _riepilogo(fatti: List[Dict[str, str]]) -> str:
+    """Cosa si e' capito, **prima** di salvarlo.
+
+    Fino alla #170 l'intervista salvava e proseguiva: un'interpretazione
+    sbagliata diventava conoscenza permanente in silenzio, e si scopriva mesi
+    dopo da una risposta strana in cucina. Adesso passa da qui, mentre chi ha
+    risposto ha ancora in mente cosa intendeva dire.
+    """
+    elenco = "\n".join(f"• {f['text']}" for f in fatti)
+    return (
+        "Ho capito questo:\n"
+        f"{elenco}\n"
+        "È giusto? Rispondi «sì» e lo salvo. Se ho capito male, riscrivimelo come lo "
+        "diresti tu; se preferisci lasciar perdere, rispondi «no»."
+    )
+
+
+def _insistenza(step: Dict[str, Any], interpretato: bool) -> str:
+    """Si chiede di approfondire **una volta sola**, con un esempio concreto.
+
+    Prima una risposta di due parole veniva accettata e si passava oltre: la
+    domanda non tornava piu', e quel pezzo di casa restava ignoto per sempre.
+    Si insiste una volta e basta, perche' un'intervista che non accetta un
+    «boh» la si abbandona a meta' — e a quel punto non impara niente di
+    niente.
+    """
+    apertura = (
+        "Non sono riuscita a ricavarne niente di preciso."
+        if not interpretato
+        else "Da questa risposta non ho ricavato niente da ricordare."
+    )
+    esempio = re.sub(r"^es\.\s*", "", str(step.get("hint") or "")).strip()
+    coda = f"\nPer esempio: «{esempio}»" if esempio else ""
+    return f"{apertura} Ci riprovo una volta sola, poi passo oltre.\n{step['question']}{coda}"
+
+
 INTERVIEW_STEPS = [
     {
         "id": "casa_base",
@@ -124,6 +237,13 @@ class LearningInterviewEngine:
             # a non chiudere l'intervista dicendo «ottimo lavoro» dopo sei
             # fallimenti di fila (#170).
             "non_interpretate": 0,
+            # Dalla #170 un passo ha due fasi: si risponde, si guarda cosa ha
+            # capito, si conferma. Qui sta a che punto e' il passo corrente.
+            "fase": FASE_DOMANDA,
+            "in_attesa": [],
+            "routine_in_attesa": None,
+            "insistito": False,
+            "correzioni": 0,
             "started_at": datetime.now().isoformat(),
         }
         self._active_sessions[user_id] = session
@@ -138,7 +258,10 @@ class LearningInterviewEngine:
             "step_index": 0,
             "step": first_step,
             "total_steps": len(INTERVIEW_STEPS),
+            "fase": FASE_DOMANDA,
             "message": greeting,
+            "capiti": [],
+            "suggerimento": None,
             "is_complete": False,
         }
 
@@ -147,76 +270,204 @@ class LearningInterviewEngine:
         if not session or not session.get("is_active", False):
             return self.start_session(user_id)
 
-        step_idx = session["current_step_index"]
-        current_step = INTERVIEW_STEPS[step_idx]
+        current_step = INTERVIEW_STEPS[session["current_step_index"]]
+        if session.get("fase") == FASE_CONFERMA:
+            return await self._turno_conferma(session, current_step, answer_text)
+        return await self._turno_domanda(session, current_step, answer_text)
 
-        # 1. Analisi ed estrazione automatica tramite LLM
-        extracted_info = await self._extract_knowledge_and_routines(current_step, answer_text)
-        interpretato = bool(extracted_info.get("interpretato", True))
+    async def _turno_domanda(
+        self, session: Dict[str, Any], step: Dict[str, Any], answer_text: str
+    ) -> Dict[str, Any]:
+        """La risposta alla domanda del passo. Non salva ancora niente."""
+        session["answers"][step["id"]] = answer_text
+        estratto = await self._extract_knowledge_and_routines(step, answer_text)
+        interpretato = bool(estratto.get("interpretato", True))
+        fatti = estratto.get("facts") or []
+        routine = estratto.get("proposed_routine")
+
+        # Una risposta da cui non e' uscito niente — perche' era povera o
+        # perche' il modello non l'ha interpretata. Si chiede una volta sola.
+        if (not interpretato or not fatti) and not session["insistito"]:
+            session["insistito"] = True
+            return self._stesso_passo(session, step, _insistenza(step, interpretato), interpretato)
+
+        if not interpretato:
+            # La frase e' rimasta grezza: e' gia' sua parola per parola, e
+            # chiedergli «ho capito questo, e' giusto?» ripetendogli cio' che
+            # ha appena scritto sarebbe una presa in giro. Si salva e si dice
+            # che non si e' capito.
+            session["non_interpretate"] += 1
+            salvati = self._salva(session, step, fatti)
+            return self._avanza(session, _riconoscimento(False, len(salvati)), salvati, routine, False)
+
+        if not fatti:
+            return self._avanza(session, _riconoscimento(True, 0), [], routine, True)
+
+        return self._chiedi_conferma(session, step, fatti, routine)
+
+    async def _turno_conferma(
+        self, session: Dict[str, Any], step: Dict[str, Any], answer_text: str
+    ) -> Dict[str, Any]:
+        """La risposta al riepilogo: un «sì», un «no», o una correzione."""
+        if _e_affermativa(answer_text):
+            salvati = self._salva(session, step, session.get("in_attesa") or [])
+            return self._avanza(
+                session,
+                _riconoscimento(True, len(salvati)),
+                salvati,
+                session.get("routine_in_attesa"),
+                True,
+            )
+
+        if _e_negativa(answer_text):
+            return self._avanza(session, "Va bene, non salvo niente di questo passo. ", [], None, True)
+
+        # Tutto il resto e' una correzione: si riparte da cio' che ha scritto
+        # lui adesso, non da cio' che si era capito prima.
+        ancora = session["correzioni"] < LIMITE_CORREZIONI
+        session["correzioni"] += 1
+        session["answers"][step["id"]] = answer_text
+
+        estratto = await self._extract_knowledge_and_routines(step, answer_text)
+        interpretato = bool(estratto.get("interpretato", True))
+        fatti = estratto.get("facts") or []
+        routine = estratto.get("proposed_routine")
+
+        if interpretato and fatti and ancora:
+            return self._chiedi_conferma(session, step, fatti, routine)
+
         if not interpretato:
             session["non_interpretate"] += 1
+        salvati = self._salva(session, step, fatti)
+        prefisso = (
+            "Salvo così e proseguo, per non farti riscrivere all'infinito. "
+            if salvati and not ancora
+            else _riconoscimento(interpretato, len(salvati))
+        )
+        return self._avanza(session, prefisso, salvati, routine, interpretato)
 
-        # 2. Salvataggio immediato dei fatti nel data store
-        new_facts = []
-        for fact in extracted_info.get("facts", []):
-            if not fact.get("text"):
+    def _chiedi_conferma(
+        self,
+        session: Dict[str, Any],
+        step: Dict[str, Any],
+        fatti: List[Dict[str, str]],
+        routine: Optional[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        session["fase"] = FASE_CONFERMA
+        session["in_attesa"] = fatti
+        session["routine_in_attesa"] = routine
+        return self._stesso_passo(
+            session,
+            step,
+            _riepilogo(fatti),
+            True,
+            capiti=fatti,
+            suggerimento=SUGGERIMENTO_CONFERMA,
+        )
+
+    def _salva(
+        self, session: Dict[str, Any], step: Dict[str, Any], fatti: List[Dict[str, str]]
+    ) -> List[Dict[str, Any]]:
+        salvati: List[Dict[str, Any]] = []
+        for fatto in fatti:
+            if not fatto.get("text"):
                 continue
             try:
-                saved = data_store.add_knowledge_item(
-                    text=fact["text"], category=fact.get("category") or current_step["category"]
+                riga = data_store.add_knowledge_item(
+                    text=fatto["text"], category=fatto.get("category") or step["category"]
                 )
             except (OSError, ValueError) as e:
                 # Un fatto che non si riesce a salvare non deve interrompere
                 # l'intervista: era proprio questo il difetto BLK-01, dove
                 # l'errore arrivava fino all'utente come un 500.
-                logger.error("Fatto non salvato (%s): %s", fact.get("text", "")[:60], e)
+                logger.error("Fatto non salvato (%s): %s", fatto.get("text", "")[:60], e)
                 continue
-            new_facts.append(saved)
-            session["learned_facts"].append(saved)
+            salvati.append(riga)
+            session["learned_facts"].append(riga)
+        return salvati
 
-        # 3. Rilevamento di routine potenziali
-        proposed_routine = extracted_info.get("proposed_routine")
-        routine_proposal_text = ""
-        if proposed_routine and proposed_routine.get("name"):
-            session["proposed_routines"].append(proposed_routine)
-            routine_proposal_text = f"\n\n💡 Ho notato una possibile routine: vuoi che crei l'automazione '{proposed_routine['name']}'?"
+    @staticmethod
+    def _stesso_passo(
+        session: Dict[str, Any],
+        step: Dict[str, Any],
+        messaggio: str,
+        interpretato: bool,
+        capiti: Optional[List[Dict[str, str]]] = None,
+        suggerimento: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Si resta sulla stessa domanda: non si e' ancora salvato niente."""
+        return {
+            "is_active": True,
+            "step_index": session["current_step_index"],
+            "step": step,
+            "total_steps": len(INTERVIEW_STEPS),
+            "fase": session["fase"],
+            "message": messaggio,
+            "new_facts": [],
+            "capiti": capiti or [],
+            "suggerimento": suggerimento,
+            "proposed_routine": None,
+            "interpretato": interpretato,
+            "is_complete": False,
+        }
 
-        session["answers"][current_step["id"]] = answer_text
+    def _avanza(
+        self,
+        session: Dict[str, Any],
+        prefisso: str,
+        salvati: List[Dict[str, Any]],
+        routine: Optional[Dict[str, Any]],
+        interpretato: bool,
+    ) -> Dict[str, Any]:
+        """Il passo e' chiuso: si azzera il suo stato e si va al successivo."""
+        session["fase"] = FASE_DOMANDA
+        session["in_attesa"] = []
+        session["routine_in_attesa"] = None
+        session["insistito"] = False
+        session["correzioni"] = 0
 
-        # 4. Avanzamento al prossimo step
-        next_step_idx = step_idx + 1
-        if next_step_idx < len(INTERVIEW_STEPS):
-            session["current_step_index"] = next_step_idx
-            next_step = INTERVIEW_STEPS[next_step_idx]
+        proposta = ""
+        if routine and routine.get("name"):
+            session["proposed_routines"].append(routine)
+            proposta = (
+                f"\n\n💡 Ho notato una possibile routine: vuoi che crei l'automazione '{routine['name']}'?"
+            )
 
-            ack = _riconoscimento(interpretato, len(new_facts))
-            bot_msg = ack + next_step["question"] + routine_proposal_text
+        prossimo = session["current_step_index"] + 1
+        if prossimo < len(INTERVIEW_STEPS):
+            session["current_step_index"] = prossimo
+            passo = INTERVIEW_STEPS[prossimo]
             return {
                 "is_active": True,
-                "step_index": next_step_idx,
-                "step": next_step,
+                "step_index": prossimo,
+                "step": passo,
                 "total_steps": len(INTERVIEW_STEPS),
-                "message": bot_msg,
-                "new_facts": new_facts,
-                "proposed_routine": proposed_routine,
+                "fase": FASE_DOMANDA,
+                "message": prefisso + passo["question"] + proposta,
+                "new_facts": salvati,
+                "capiti": [],
+                "suggerimento": None,
+                "proposed_routine": routine,
                 "interpretato": interpretato,
                 "is_complete": False,
             }
-        else:
-            session["is_active"] = False
-            total_learned = len(session["learned_facts"])
-            completion_msg = _chiusura(total_learned, session["non_interpretate"])
-            return {
-                "is_active": False,
-                "step_index": next_step_idx,
-                "total_steps": len(INTERVIEW_STEPS),
-                "message": completion_msg,
-                "new_facts": new_facts,
-                "proposed_routine": proposed_routine,
-                "interpretato": interpretato,
-                "is_complete": True,
-                "summary": {"total_facts": total_learned, "proposed_routines": session["proposed_routines"]},
-            }
+
+        session["is_active"] = False
+        imparati = len(session["learned_facts"])
+        return {
+            "is_active": False,
+            "step_index": prossimo,
+            "total_steps": len(INTERVIEW_STEPS),
+            "fase": FASE_DOMANDA,
+            "message": _chiusura(imparati, session["non_interpretate"]),
+            "new_facts": salvati,
+            "capiti": [],
+            "suggerimento": None,
+            "proposed_routine": routine,
+            "interpretato": interpretato,
+            "is_complete": True,
+            "summary": {"total_facts": imparati, "proposed_routines": session["proposed_routines"]},
+        }
 
     async def _extract_knowledge_and_routines(self, step: Dict[str, Any], user_answer: str) -> Dict[str, Any]:
         if not user_answer or len(user_answer.strip()) < 3:

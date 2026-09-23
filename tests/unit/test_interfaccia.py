@@ -3734,3 +3734,88 @@ function esigi(condizione, messaggio) {
 
     esito = _esegui_con_node(prova)
     assert esito.returncode == 0, esito.stderr or esito.stdout
+
+
+def test_l_intervista_mostra_quello_che_dice_il_server_non_la_domanda_dello_step():
+    """La riparazione della #171 non arrivava sullo schermo.
+
+    La #171 ha insegnato al motore a dire quando non ha capito: «Non sono
+    riuscita a ricavarne niente di preciso... controlla quale modello e'
+    configurato». Quella frase viaggiava nel campo `message` della risposta.
+
+    E la schermata la buttava via. `renderLearningStep` scriveva
+    `qText.innerText = step.question || data.message`, e `step.question` c'e'
+    **sempre**: il riconoscimento non e' mai comparso, in nessuna delle sue
+    tre forme. Chi rispondeva vedeva la domanda dopo e basta, e continuava a
+    credere che la casa stesse imparando — che e' esattamente il difetto che
+    la #171 doveva chiudere.
+
+    Non si cerca una stringa nel sorgente: la funzione si esegue, con un DOM
+    finto, e si guarda cosa finisce nel paragrafo.
+    """
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+
+    sorgente = _testo(CARTELLA_JS / "istruisci.js")
+    prova = _funzione_javascript(sorgente, "renderLearningStep") + """
+function esigi(condizione, messaggio) {
+    if (!condizione) { console.error(messaggio); process.exit(1); }
+}
+function _html(pezzi) { return pezzi.raw.join(''); }
+function safeCreateIcons() {}
+const detto = [];
+function speakText(testo) { detto.push(testo); }
+function loadKnowledge() {}
+
+function elemento() {
+    return {
+        innerText: '', innerHTML: '', value: '', placeholder: '',
+        style: {}, classList: { add() {}, remove() {} },
+        focus() {}, appendChild() {},
+        parentElement: { classList: { add() {}, remove() {} }, innerHTML: '' },
+    };
+}
+const campi = {};
+for (const id of ['learning-interview-modal', 'learning-step-badge', 'learning-progress-bar',
+                  'learning-topic-title', 'learning-question-text', 'learning-hint-text',
+                  'learning-answer-input', 'learning-routine-box', 'learning-routine-desc',
+                  'learning-facts-container', 'learning-facts-list', 'learning-submit-btn']) {
+    campi[id] = elemento();
+}
+globalThis.document = {
+    getElementById: (id) => campi[id] || null,
+    createElement: () => elemento(),
+};
+
+const passo = { title: 'Membri della Famiglia', question: 'Chi vive con te in casa?', hint: 'es. Sonia e Thomas.' };
+
+// 1. Il riconoscimento della #171, che precede la domanda successiva.
+renderLearningStep({
+    is_active: true, is_complete: false, step_index: 1, total_steps: 6, fase: 'domanda',
+    step: passo,
+    message: "Ho conservato la tua risposta, ma non sono riuscita a ricavarne niente di preciso: controlla quale modello e' configurato. Chi vive con te in casa?",
+    new_facts: [], capiti: [], suggerimento: null,
+});
+const mostrato = campi['learning-question-text'].innerText;
+esigi(mostrato.includes('non sono riuscita'),
+      'il riconoscimento non arriva sullo schermo: ' + JSON.stringify(mostrato));
+esigi(detto.some((t) => t.includes('non sono riuscita')),
+      'e nemmeno viene detto a voce: ' + JSON.stringify(detto));
+
+// 2. Il riepilogo della #170: si deve leggere cosa ha capito, prima di dire si'.
+renderLearningStep({
+    is_active: true, is_complete: false, step_index: 0, total_steps: 6, fase: 'conferma',
+    step: passo,
+    message: 'Ho capito questo:\\n\\u2022 La casa e\\' ad Arezzo\\nE\\' giusto?',
+    new_facts: [], capiti: [{ text: "La casa e' ad Arezzo" }],
+    suggerimento: 'Rispondi si\\' per salvare.',
+});
+const riepilogo = campi['learning-question-text'].innerText;
+esigi(riepilogo.includes('Arezzo'),
+      'il riepilogo di cosa ha capito non si vede: ' + JSON.stringify(riepilogo));
+esigi(campi['learning-hint-text'].innerText.includes('Rispondi'),
+      'non dice come si risponde a un riepilogo: ' + JSON.stringify(campi['learning-hint-text'].innerText));
+"""
+
+    esito = _esegui_con_node(prova)
+    assert esito.returncode == 0, esito.stderr or esito.stdout
