@@ -138,14 +138,35 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | 126 | Una scorciatoia per «a quest'ora fai questo» | fatta (#140) |
 | 139 | Un nome di icona sbagliato non da' errore, da' un buco | fatta (#142) |
 | 118 | Lo spegnimento del servizio si pianta: 90 secondi e poi SIGKILL | fatta (#157) |
+| 152 | Il fondo ambientale resta scuro in tema chiaro su quattro schede | fatta (#164) |
+| 153 | `switchTab` con una scheda che non esiste lascia la pagina vuota | fatta (#163) |
+| 159 | Il canale degli eventi rifiuta i dispositivi fidati | fatta (#160) |
+| 161 | Una sessione scaduta non viene detta: ritenta in silenzio | fatta (#162, #173) |
+| 35 | Backup e restore della configurazione, con versione di schema | fatta (#165, #166) |
 | 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` | da fare |
 | 34 | Scomporre `index.html` (7.438 righe) in moduli ES | in corso (#144-#151) |
-| 35 | Backup e restore della configurazione, con versione di schema | da fare |
 | 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | da fare |
-| 37 | Immagine Docker e add-on per Home Assistant OS | da fare |
-| 38 | Documentazione utente e guida all'installazione verificata | da fare |
-| 152 | Il fondo ambientale resta scuro in tema chiaro su quattro schede | da fare |
-| 153 | `switchTab` con una scheda che non esiste lascia la pagina vuota | da fare |
+| 37 | Immagine Docker e add-on per Home Assistant OS | in corso (#168, #169) |
+| 38 | Documentazione utente e guida all'installazione verificata | in corso (#167) |
+| 170 | L'intervista di apprendimento impara poco | in corso (#171, #174) |
+
+Tre voci sono **in corso** e vale la pena dire cosa manca a ciascuna, invece
+di lasciarlo dedurre dal numero:
+
+- **#37** — l'immagine Docker, il `docker-compose.yml` e la pubblicazione su
+  GHCR per `amd64` e `arm64` ci sono. Manca l'add-on per Home Assistant OS, ed
+  e' fermo per una ragione: chi sviluppa qui usa Home Assistant Container, non
+  HA OS, quindi l'add-on non sarebbe provabile in casa; e l'ingress
+  riscriverebbe il percorso di base, che oggi novantadue riferimenti assoluti
+  della pagina non sopportano — cioe' e' lavoro della **#34**, non di questa.
+- **#38** — la CI costruisce l'immagine, la avvia e verifica di riuscire
+  davvero a entrare: e' cosi' che si e' scoperto che l'immagine partiva senza
+  `data/examples/` e nessuno poteva accedere. Manca la documentazione utente
+  vera e propria.
+- **#170** — l'intervista adesso dice quando non ha capito e fa vedere cosa ha
+  capito prima di salvarlo. Mancano le domande singole al posto di quelle
+  triple, il non chiedere cio' che e' gia' nel database, e tutta la tappa due:
+  gli alias dalle entita' vere di Home Assistant e le routine complete.
 
 ### L'interfaccia, prima della 1.0.0 — fatta
 
