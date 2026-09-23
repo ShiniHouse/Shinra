@@ -40,10 +40,31 @@ installi qualcuno che non sei tu. Quello che è già dentro il ramo principale:
   o se se lo mangia un antenato.
 - **Lo spegnimento** (#118): il servizio si ferma in pochi secondi invece di
   aspettare il SIGKILL di systemd dopo novanta.
+- **Backup e ripristino** (#35): un archivio con tutto quello che serve a
+  rimettere in piedi la casa, la versione dello schema scritta dentro, la
+  rotazione delle copie vecchie e un backup automatico a orario. I PIN non
+  escono mai in chiaro — `scripts/esporta_json.py` li scriveva su disco.
+- **La distribuzione** (#37, in parte): immagine Docker a due stadi che gira
+  come utente non privilegiato, `docker-compose.yml`, e la pubblicazione su
+  GHCR per `amd64` e `arm64` a ogni tag. Resta l'add-on per Home Assistant OS.
+- **L'installazione verificata** (#38, in parte): la CI costruisce l'immagine,
+  la avvia e controlla di riuscire davvero a entrare. È così che si è scoperto
+  che l'immagine partiva senza `data/examples/`: rispondeva 200 e nessuno
+  poteva accedere.
+- **La dashboard che dice cosa sta succedendo** (#152, #153, #159, #161): il
+  canale degli eventi accetta i dispositivi fidati invece di rifiutarli dopo
+  ogni riavvio, una sessione scaduta viene detta invece di ritentare in
+  silenzio all'infinito, una scheda che non esiste torna alla console invece
+  di lasciare la pagina vuota, e il tema si applica prima del primo disegno.
+- **L'intervista che impara** (#170, in parte): quando il modello non capisce
+  lo dice, invece di rispondere «Ricevuto! Ho aggiunto 1 nuovi dettagli»; e
+  prima di salvare fa vedere cosa ha capito, così un'interpretazione sbagliata
+  non diventa conoscenza permanente in silenzio.
 
 Restano la parola di attivazione, i moduli ES veri con lo stato in un posto
-solo, backup e restore, l'internazionalizzazione e la distribuzione. Il quadro
-completo è nella [ROADMAP](docs/ROADMAP.md).
+solo, l'internazionalizzazione, l'add-on per Home Assistant OS e il resto
+della documentazione utente. Il quadro completo è nella
+[ROADMAP](docs/ROADMAP.md).
 
 | Documento | Cosa contiene |
 | :--- | :--- |
