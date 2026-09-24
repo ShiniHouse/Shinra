@@ -52,12 +52,18 @@ test.describe('i gesti delegati', () => {
         // barra che reagisce solo se si prende il pulsante per il bordo.
         await page.goto('/index.html');
 
-        // `dispatchEvent` e non `click()`: il bersaglio e' l'icona, che fino
-        // a quando lucide non l'ha sostituita con un `<svg>` non ha
-        // dimensioni e nessuno «puo' premerla». Qui non si prova la mira del
-        // browser — si prova che un evento il cui bersaglio e' un figlio
-        // arrivi lo stesso al gesto dell'antenato, cioe' il `closest`.
-        await page.locator('#tab-btn-automazioni i').first().dispatchEvent('click');
+        // Il figlio si prende come figlio e non per tag: nel markup e' una
+        // `<i data-lucide>`, ma lucide la **sostituisce** con un `<svg>`
+        // appena arriva dal suo CDN. Cercare `i` funziona solo dove quel CDN
+        // non risponde, ed e' esattamente il rosso con cui questa prova e'
+        // nata: verde in locale, in attesa per trenta secondi in CI.
+        //
+        // E `dispatchEvent` invece di `click()`: finche' lucide non e'
+        // arrivata l'icona non ha dimensioni e nessuno «puo' premerla». Qui
+        // non si prova la mira del browser — si prova che un evento il cui
+        // bersaglio e' un figlio arrivi lo stesso al gesto dell'antenato,
+        // cioe' il `closest`.
+        await page.locator('#tab-btn-automazioni > *').first().dispatchEvent('click');
         expect(await schedaAccesa(page), "premere l'icona non ha fatto niente").toEqual(['tab-automazioni']);
     });
 
