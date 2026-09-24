@@ -32,8 +32,8 @@ l'intero file. E' il freno principale a ogni funzione nuova con interfaccia.
       oggi e' esposta a injection dai nomi delle entita' — #148, #149, #150,
       #151
 - [x] Aggiungere ESLint e Prettier alla CI — #146, #147
-- [ ] Valutare un bundler leggero (Vite) mantenendo la possibilita' di servire
-      senza build
+- [x] Valutare un bundler leggero (Vite) mantenendo la possibilita' di servire
+      senza build — **no**, e il perche' sta nell'[ADR 0006](../../adr/0006-niente-bundler.md): #178
 
 ## Criteri di accettazione
 
@@ -90,10 +90,29 @@ ESLint; `Stato.utenteAttivoo` invece e' una proprieta' come un'altra, vale
 `test_ogni_campo_dello_stato_esiste_davvero`, che i campi li legge dal
 contenitore e gli usi da tutto il frontend.
 
+Poi la **#178**, che decide la forma del lavoro rimasto:
+[ADR 0006](../../adr/0006-niente-bundler.md), **niente bundler**. I moduli
+saranno nativi, serviti come stanno sul disco. Le tre cose che un bundler
+avrebbe dato non servono qui — tutto il JavaScript sta in 68 KB compressi,
+ventidue richieste su una rete di casa non si misurano, e non c'e' niente da
+trasformare — e una l'avrebbe tolta: il codice servito e' quello scritto, con
+dentro i commenti che dicono perche' una riga esiste.
+
 Resta fuori, e vale ancora: i **moduli ES veri**. Oggi sono copioni classici e
 devono restarlo finche' la pagina chiama le funzioni dagli `onclick` — sono
-settantasette nel markup e settantadue generati dal JavaScript, ed e' quello
-il lavoro vero, non il `type="module"`.
+settantasette nel markup e settantadue generati dal JavaScript. Il lavoro, nel
+suo ordine:
+
+1. un **registro dei gesti**: ogni area dichiara per nome le funzioni che il
+   markup puo' chiamare;
+2. la **delega degli eventi** su una radice sola, che legge un attributo
+   `data-` invece di eseguire una stringa;
+3. area per area, gli attributi in linea diventano `data-`;
+4. **solo alla fine**, e tutti insieme, i copioni diventano moduli.
+
+I primi tre non rompono niente e si fanno uno per volta. Il quarto e' un
+interruttore, e si tira quando non e' rimasto nessun attributo in linea — che
+e' una cosa che una guardia sa contare.
 
 ## Guardie
 
