@@ -144,7 +144,7 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | 161 | Una sessione scaduta non viene detta: ritenta in silenzio | fatta (#162, #173) |
 | 35 | Backup e restore della configurazione, con versione di schema | fatta (#165, #166) |
 | 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` | da fare |
-| 34 | Scomporre `index.html` (7.438 righe) in moduli ES | in corso (#144-#151, #176, #177) |
+| 34 | Scomporre `index.html` (7.438 righe) in moduli ES | in corso (#144-#151, #176-#178) |
 | 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | da fare |
 | 37 | Immagine Docker e add-on per Home Assistant OS | in corso (#168, #169) |
 | 38 | Documentazione utente e guida all'installazione verificata | in corso (#167) |
@@ -247,9 +247,14 @@ adesso sono campi di `Stato`, in `web/static/js/stato.js`. Le altre
 trentatre' sono rimaste dove stanno: le usa un'area sola, e portarle li' non
 direbbe niente a nessuno.
 
+Il **bundler** e' stato valutato e scartato: [ADR 0006](adr/0006-niente-bundler.md).
+I moduli saranno nativi, serviti come stanno — l'aggiornamento in casa resta
+`deploy.sh` e basta, senza node sul server.
+
 Restano i **moduli ES veri**: i ventidue file sono ancora copioni classici
 caricati in ordine, e devono restarlo finche' la pagina chiama le funzioni
-dagli `onclick`. Vedi la scheda della #34.
+dagli `onclick` — 149 fra attributi nel markup e stringhe generate. Vedi la
+scheda della #34 per l'ordine in cui si toglieranno.
 
 La scomposizione ha prodotto **due regressioni**, tutte e due trovate in casa e
 chiuse (#154, #155). Da li' e' nata la **#156**: sette gesti dell'editor a nodi
