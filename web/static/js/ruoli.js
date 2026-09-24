@@ -4,7 +4,6 @@
 // parte — un pulsante che risponde sempre 403 non protegge, sembra un
 // guasto. Riferimento: issue #46 e #47, ADR 0004.
 
-let ruoliData = [];
 let permessiCatalogo = [];
 let _permessiCorrenti = [];
 
@@ -64,7 +63,7 @@ function _testoDelDettaglio(dettaglio, stato) {
 }
 
 function nomeDelRuolo(idRuolo) {
-    const r = ruoliData.find((x) => x.id === idRuolo);
+    const r = Stato.ruoli.find((x) => x.id === idRuolo);
     return r ? r.nome : idRuolo || 'senza ruolo';
 }
 
@@ -76,7 +75,7 @@ async function loadRuoli() {
             fetch('/api/ruoli', { headers: getAuthHeaders() }),
             fetch('/api/permessi', { headers: getAuthHeaders() }),
         ]);
-        if (rRuoli.ok) ruoliData = await rRuoli.json();
+        if (rRuoli.ok) Stato.ruoli = await rRuoli.json();
         if (rPermessi.ok) permessiCatalogo = await rPermessi.json();
     } catch (e) {
         console.error('loadRuoli error:', e);
@@ -89,7 +88,7 @@ async function loadRuoli() {
     const container = document.getElementById('ruoli-lista');
     if (!container) return;
 
-    container.innerHTML = _html`${ruoliData.map((r) => {
+    container.innerHTML = _html`${Stato.ruoli.map((r) => {
         const scelti = r.permessi || [];
         const etichette = permessiCatalogo
             .filter((p) => scelti.includes(p.id))
@@ -100,7 +99,7 @@ async function loadRuoli() {
                     : 'bg-slate-800 border-slate-700 text-slate-300';
                 return _html`<span class="px-2 py-0.5 rounded-full border text-[10px] ${colore}">${p.descrizione}</span>`;
             });
-        const quanti = usersData.filter((u) => u.role === r.id).length;
+        const quanti = Stato.utenti.filter((u) => u.role === r.id).length;
         return _html`
         <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3 hover:border-slate-700 transition">
             <div class="flex justify-between items-start gap-3">
@@ -136,7 +135,7 @@ async function loadRuoli() {
 
 function apriModaleRuolo(idRuolo) {
     const identificativo = idRuolo ? decodeURIComponent(idRuolo) : null;
-    const ruolo = identificativo ? ruoliData.find((r) => r.id === identificativo) : null;
+    const ruolo = identificativo ? Stato.ruoli.find((r) => r.id === identificativo) : null;
     const scelti = ruolo ? ruolo.permessi || [] : [];
     const modifica = Boolean(ruolo);
 
@@ -279,7 +278,7 @@ async function loadDispositivi() {
     }
 
     const nomeDi = (id) => {
-        const u = usersData.find((x) => x.id === id);
+        const u = Stato.utenti.find((x) => x.id === id);
         return u ? u.name : id;
     };
 

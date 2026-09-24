@@ -1,6 +1,3 @@
-let activeUserId = 'alessio';
-let usersData = [];
-
 // Store del display originale per ogni tab
 const tabDisplayMap = {
     console: 'grid',
@@ -339,12 +336,12 @@ function getUserAvatarInfo(u) {
 async function loadUsersDropdown() {
     try {
         const res = await fetch('/api/users', { headers: getAuthHeaders() });
-        usersData = await res.json();
+        Stato.utenti = await res.json();
         const select = document.getElementById('user-select');
         const mobileSelect = document.getElementById('mobile-user-select');
-        const opzioni = _html`${usersData.map((u) => {
+        const opzioni = _html`${Stato.utenti.map((u) => {
             const av = getUserAvatarInfo(u);
-            return _html`<option value="${u.id}" ${u.id === activeUserId ? _grezzo('selected') : ''}>${av.emoji} ${u.name} (${u.role})</option>`;
+            return _html`<option value="${u.id}" ${u.id === Stato.utenteAttivo ? _grezzo('selected') : ''}>${av.emoji} ${u.name} (${u.role})</option>`;
         })}`;
 
         if (select) select.innerHTML = opzioni;
@@ -356,7 +353,7 @@ async function loadUsersDropdown() {
 }
 
 function changeActiveUser(userId) {
-    activeUserId = userId;
+    Stato.utenteAttivo = userId;
     const select = document.getElementById('user-select');
     const mobileSelect = document.getElementById('mobile-user-select');
     if (select && select.value !== userId) select.value = userId;
@@ -365,7 +362,7 @@ function changeActiveUser(userId) {
 }
 
 function updateActiveUserBanner() {
-    const user = usersData.find((u) => u.id === activeUserId) || {
+    const user = Stato.utenti.find((u) => u.id === Stato.utenteAttivo) || {
         name: 'Utente',
         role: 'adult',
         age_group: 'adult',

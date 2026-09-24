@@ -30,13 +30,12 @@ function playChimeAlert() {
     }
 }
 
-let _activeTimers = [];
 let _timerInterval = null;
 
 async function loadTimers() {
     try {
         const res = await fetch('/api/timers', { headers: getAuthHeaders() });
-        _activeTimers = await res.json();
+        Stato.timerAttivi = await res.json();
         renderTimers();
     } catch (e) {
         console.error('Errore loadTimers:', e);
@@ -46,13 +45,13 @@ async function loadTimers() {
 function renderTimers() {
     const container = document.getElementById('active-timers-list');
     if (!container) return;
-    if (!_activeTimers || _activeTimers.length === 0) {
+    if (!Stato.timerAttivi || Stato.timerAttivi.length === 0) {
         container.innerHTML =
             '<div class="text-[11px] text-slate-500 text-center py-2">Nessun timer attivo. Prova a dire "Timer pasta 9 minuti".</div>';
         return;
     }
 
-    container.innerHTML = _html`${_activeTimers.map((t) => {
+    container.innerHTML = _html`${Stato.timerAttivi.map((t) => {
         const rem = t.remaining_seconds || 0;
         const m = Math.floor(rem / 60);
         const s = rem % 60;
@@ -90,7 +89,7 @@ function renderTimers() {
 
 async function deleteTimer(id) {
     await fetch(`/api/timers/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
-    _activeTimers = _activeTimers.filter((t) => t.id !== id);
+    Stato.timerAttivi = Stato.timerAttivi.filter((t) => t.id !== id);
     renderTimers();
 }
 
@@ -120,7 +119,7 @@ async function saveNewTimerManual() {
     const res = await fetch('/api/timers', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ label, duration_seconds: secs, user_id: activeUserId || 'alessio' }),
+        body: JSON.stringify({ label, duration_seconds: secs, user_id: Stato.utenteAttivo || 'alessio' }),
     });
     if (res.ok) {
         closeModal();
@@ -138,18 +137,18 @@ function startTimerTick() {
     if (_timerInterval) clearInterval(_timerInterval);
     _timerInterval = setInterval(() => {
         let cambiato = false;
-        for (const t of _activeTimers) {
+        for (const t of Stato.timerAttivi) {
             if (t.remaining_seconds > 0) {
                 t.remaining_seconds -= 1;
                 cambiato = true;
-                if (t.remaining_seconds === 0 && !t._notified && !_eventiCollegati) {
+                if (t.remaining_seconds === 0 && !t._notified && !Stato.eventiCollegati) {
                     t._notified = true;
                     playChimeAlert();
                     speakText(`Attenzione, il timer per ${t.label} è terminato!`);
                 }
             }
         }
-        if (cambiato || _activeTimers.length > 0) {
+        if (cambiato || Stato.timerAttivi.length > 0) {
             renderTimers();
         }
     }, 1000);

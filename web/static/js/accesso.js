@@ -222,7 +222,7 @@ async function handleUnlockSubmit(e) {
             // L'utente attivo non e' piu' una scelta da menu: e' chi
             // ha appena dimostrato di essere se stesso con il PIN.
             if (data.utente && data.utente.id) {
-                activeUserId = data.utente.id;
+                Stato.utenteAttivo = data.utente.id;
                 try {
                     localStorage.setItem('shinra_active_user', data.utente.id);
                 } catch {}
@@ -242,7 +242,7 @@ async function handleUnlockSubmit(e) {
             loadTimers();
             loadReminders();
             // Il WebSocket era stato rifiutato senza sessione: ora si puo'.
-            _attesaRiconnessione = 1000;
+            Stato.attesaRiconnessione = 1000;
             collegaEventi();
         } else {
             const errData = await res.json().catch(() => ({}));
@@ -314,12 +314,12 @@ function resetInactivityTimer() {
 });
 
 function setVoiceMuteState(isMuted) {
-    voiceMuted = isMuted;
+    Stato.voceZittita = isMuted;
     localStorage.setItem('shinra_voice_muted', isMuted);
-    if (voiceMuted) {
-        if (currentAudioPlayer) {
-            currentAudioPlayer.pause();
-            currentAudioPlayer = null;
+    if (Stato.voceZittita) {
+        if (Stato.audioInCorso) {
+            Stato.audioInCorso.pause();
+            Stato.audioInCorso = null;
         }
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
@@ -343,8 +343,8 @@ function updateEmpatheticGreeting() {
     if (!el) return;
     const hour = new Date().getHours();
     const userName =
-        typeof activeUserId !== 'undefined' && activeUserId
-            ? activeUserId.charAt(0).toUpperCase() + activeUserId.slice(1)
+        typeof Stato.utenteAttivo !== 'undefined' && Stato.utenteAttivo
+            ? Stato.utenteAttivo.charAt(0).toUpperCase() + Stato.utenteAttivo.slice(1)
             : 'Alessio';
 
     let greeting = '';

@@ -185,7 +185,7 @@ async function loadVoci() {
 
     const puoAssociare = posso('utenti.gestisci');
     const opzioni = (utente) =>
-        usersData.map(
+        Stato.utenti.map(
             (u) =>
                 _html`<option value="${u.id}"${u.id === utente ? _grezzo(' selected') : ''}>${u.name}</option>`,
         );

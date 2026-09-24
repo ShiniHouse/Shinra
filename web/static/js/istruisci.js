@@ -24,7 +24,7 @@ async function startLearningModal() {
         const res = await fetch('/api/learning/start', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ user_id: activeUserId || 'alessio' }),
+            body: JSON.stringify({ user_id: Stato.utenteAttivo || 'alessio' }),
         });
         if (!res.ok) throw new Error('Errore avvio sessione');
         const data = await res.json();
@@ -160,7 +160,7 @@ async function submitLearningAnswer() {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({
-                user_id: activeUserId || 'alessio',
+                user_id: Stato.utenteAttivo || 'alessio',
                 answer: text,
             }),
         });
@@ -330,7 +330,7 @@ async function closeLearningModal() {
         await fetch('/api/learning/stop', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ user_id: activeUserId || 'alessio' }),
+            body: JSON.stringify({ user_id: Stato.utenteAttivo || 'alessio' }),
         });
     } catch {}
 

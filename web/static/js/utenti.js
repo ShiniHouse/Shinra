@@ -35,7 +35,7 @@ async function loadUsers() {
     try {
         const res = await fetch('/api/users', { headers: getAuthHeaders() });
         const items = await res.json();
-        usersData = items;
+        Stato.utenti = items;
         const container = document.getElementById('users-list');
         if (!container) return;
 
@@ -91,7 +91,7 @@ async function loadUsers() {
     await loadDispositivi();
     await loadPasskey();
     // Dopo i profili, non prima: l'elenco delle voci disegna un menu
-    // con i nomi di casa, e `usersData` dev'essere gia' pieno.
+    // con i nomi di casa, e `Stato.utenti` dev'essere gia' pieno.
     await loadVoci();
 }
 
@@ -104,7 +104,7 @@ function openEditUserModal(userId) {
 }
 
 function openUserModal(userId = null) {
-    const user = userId ? usersData.find((u) => u.id === userId) : null;
+    const user = userId ? Stato.utenti.find((u) => u.id === userId) : null;
     const isEdit = Boolean(user);
     _selectedAvatarType = user && user.avatar_type ? user.avatar_type : 'male_adult';
 
@@ -124,7 +124,7 @@ function openUserModal(userId = null) {
                 ? 'teen'
                 : 'adult';
     const ruoloAttuale = user ? user.role || ruoloProposto : ruoloProposto;
-    const elencoRuoli = ruoliData.length ? ruoliData : [{ id: ruoloAttuale, nome: ruoloAttuale }];
+    const elencoRuoli = Stato.ruoli.length ? Stato.ruoli : [{ id: ruoloAttuale, nome: ruoloAttuale }];
     const opzioniRuolo = elencoRuoli.map(
         (r) =>
             _html`<option value="${r.id}" ${r.id === ruoloAttuale ? _grezzo('selected') : ''}>${r.nome}</option>`,
@@ -225,7 +225,7 @@ async function saveUserForm(existingUserId = '') {
     if (_selectedAvatarType.startsWith('male')) gender = 'male';
     else if (_selectedAvatarType.startsWith('female')) gender = 'female';
 
-    const userToUpdate = existingUserId ? usersData.find((u) => u.id === existingUserId) : null;
+    const userToUpdate = existingUserId ? Stato.utenti.find((u) => u.id === existingUserId) : null;
     const preferred_news_categories = userToUpdate
         ? userToUpdate.preferred_news_categories || ['generale']
         : ['generale'];

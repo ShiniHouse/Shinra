@@ -261,12 +261,10 @@ async function toggleWebSpeech() {
 
 // ==================== MOTORE VOCALE UMANIZZATO HD ====================
 let neuralVoice = localStorage.getItem('shinra_neural_voice') || 'it-IT-DiegoNeural';
-let voiceMuted = localStorage.getItem('shinra_voice_muted') === 'true';
 let voiceRate = parseFloat(localStorage.getItem('shinra_voice_rate')) || 1.0;
 let voicePitch = parseFloat(localStorage.getItem('shinra_voice_pitch')) || 1.0;
 let selectedVoiceURI = localStorage.getItem('shinra_voice_uri') || 'auto';
 let availableVoices = [];
-let currentAudioPlayer = null;
 
 function initVoiceEngine() {
     syncVoiceUI();
@@ -304,7 +302,7 @@ function syncVoiceUI() {
     if (cfgNeural) cfgNeural.value = neuralVoice;
 
     const cfgMuted = document.getElementById('cfg-voice-muted');
-    if (cfgMuted) cfgMuted.checked = voiceMuted;
+    if (cfgMuted) cfgMuted.checked = Stato.voceZittita;
 
     const cfgRate = document.getElementById('cfg-voice-rate');
     if (cfgRate) {
@@ -328,12 +326,12 @@ function setNeuralVoice(voiceId) {
 }
 
 function toggleVoiceMute() {
-    voiceMuted = !voiceMuted;
-    localStorage.setItem('shinra_voice_muted', voiceMuted);
-    if (voiceMuted) {
-        if (currentAudioPlayer) {
-            currentAudioPlayer.pause();
-            currentAudioPlayer = null;
+    Stato.voceZittita = !Stato.voceZittita;
+    localStorage.setItem('shinra_voice_muted', Stato.voceZittita);
+    if (Stato.voceZittita) {
+        if (Stato.audioInCorso) {
+            Stato.audioInCorso.pause();
+            Stato.audioInCorso = null;
         }
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
@@ -378,7 +376,7 @@ function cleanTextForSpeech(text) {
 }
 
 async function speakText(text) {
-    if (voiceMuted) return;
+    if (Stato.voceZittita) return;
 
     const clean = cleanTextForSpeech(text);
     if (!clean) return;
@@ -388,9 +386,9 @@ async function speakText(text) {
     // Se la voce selezionata è una voce neurale HD del server
     if (neuralVoice !== 'browser') {
         try {
-            if (currentAudioPlayer) {
-                currentAudioPlayer.pause();
-                currentAudioPlayer = null;
+            if (Stato.audioInCorso) {
+                Stato.audioInCorso.pause();
+                Stato.audioInCorso = null;
             }
             const res = await fetch('/api/tts', {
                 method: 'POST',
@@ -403,10 +401,10 @@ async function speakText(text) {
             if (res.ok) {
                 const blob = await res.blob();
                 const audioUrl = URL.createObjectURL(blob);
-                currentAudioPlayer = new Audio(audioUrl);
-                currentAudioPlayer.onended = () => updateLivingCoreState('idle');
-                currentAudioPlayer.onerror = () => updateLivingCoreState('idle');
-                currentAudioPlayer.play().catch((e) => {
+                Stato.audioInCorso = new Audio(audioUrl);
+                Stato.audioInCorso.onended = () => updateLivingCoreState('idle');
+                Stato.audioInCorso.onerror = () => updateLivingCoreState('idle');
+                Stato.audioInCorso.play().catch((e) => {
                     console.warn('Audio playback block/error:', e);
                     updateLivingCoreState('idle');
                 });
@@ -444,8 +442,8 @@ async function testVoicePreview() {
             ? 'Sistemi operativi. Voce neurale ad alta definizione calibrata e pronta.'
             : 'Ciao, sono Shinra. La mia voce neurale ad alta definizione è pronta.';
 
-    const wasMuted = voiceMuted;
-    voiceMuted = false;
+    const wasMuted = Stato.voceZittita;
+    Stato.voceZittita = false;
     await speakText(previewText);
-    voiceMuted = wasMuted;
+    Stato.voceZittita = wasMuted;
 }

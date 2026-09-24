@@ -62,7 +62,7 @@ async function loadSettings() {
         // Assistente & Alexa Invocazione
         const asstName = cfg.assistant?.name || 'Kyra';
         const alexaInv = cfg.alexa?.invocation_name || 'kyra';
-        activeAssistantName = asstName;
+        Stato.nomeAssistente = asstName;
         document.querySelectorAll('.assistant-name-label').forEach((el) => (el.innerText = asstName));
 
         const asstInput = document.getElementById('cfg-assistant-name');
@@ -73,7 +73,7 @@ async function loadSettings() {
 
         // Audio
         const muteCb = document.getElementById('cfg-voice-muted');
-        if (muteCb) muteCb.checked = voiceMuted;
+        if (muteCb) muteCb.checked = Stato.voceZittita;
     } catch (e) {
         console.error('Errore loadSettings:', e);
     }

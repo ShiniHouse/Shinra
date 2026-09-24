@@ -20,11 +20,9 @@
 // autenticato» -> si smette e lo si dice; risponde «sei dentro» -> la caduta
 // e' un'altra cosa, si ritenta.
 let _eventiSocket = null;
-let _eventiCollegati = false;
-let _attesaRiconnessione = 1000;
 
 function _segnalaStatoEventi(collegato) {
-    _eventiCollegati = collegato;
+    Stato.eventiCollegati = collegato;
     const spia = document.getElementById('stato-eventi');
     if (spia) {
         spia.className = `w-2 h-2 rounded-full ${collegato ? 'bg-emerald-500' : 'bg-slate-600'}`;
@@ -45,7 +43,7 @@ function collegaEventi() {
     }
 
     _eventiSocket.onopen = () => {
-        _attesaRiconnessione = 1000;
+        Stato.attesaRiconnessione = 1000;
         _segnalaStatoEventi(true);
     };
 
@@ -69,8 +67,8 @@ function collegaEventi() {
         }
         // Riconnessione con attesa crescente, al massimo mezzo minuto:
         // un server riavviato non deve subire una raffica di tentativi.
-        setTimeout(collegaEventi, _attesaRiconnessione);
-        _attesaRiconnessione = Math.min(_attesaRiconnessione * 2, 30000);
+        setTimeout(collegaEventi, Stato.attesaRiconnessione);
+        Stato.attesaRiconnessione = Math.min(Stato.attesaRiconnessione * 2, 30000);
     };
 
     _eventiSocket.onerror = () => {
@@ -111,7 +109,7 @@ async function _laSessioneEFinita() {
 // apposta — risponde 200 agli sconosciuti, non 401 — quindi la barra non
 // compare da sola e va chiesta qui.
 function _sessioneScaduta() {
-    _attesaRiconnessione = 1000;
+    Stato.attesaRiconnessione = 1000;
     if (typeof mostraRifiuto === 'function') mostraRifiuto(401);
     const spia = document.getElementById('stato-eventi');
     if (spia) {
@@ -121,7 +119,7 @@ function _sessioneScaduta() {
 
 function gestisciEvento(evento) {
     if (evento.tipo === 'timer.scaduto') {
-        const t = _activeTimers.find((x) => x.id === evento.dati.id);
+        const t = Stato.timerAttivi.find((x) => x.id === evento.dati.id);
         if (t) {
             t.remaining_seconds = 0;
             t._notified = true;
