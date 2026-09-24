@@ -35,10 +35,18 @@ ACCESSO = RADICE / "web" / "templates" / "accesso.html"
 # invece del giorno che qualcuno si ricorda di aggiungerlo qui.
 CARTELLA_CSS = RADICE / "web" / "static" / "css"
 CARTELLA_JS = RADICE / "web" / "static" / "js"
+# Dalla #34 anche il markup sta in pezzi: `index.html` tiene il `<head>`,
+# l'ossatura e i collegamenti, e include un file per area. Stessa regola dei
+# fogli e dei copioni — la cartella si legge, i nomi non si sanno a memoria.
+CARTELLA_PARTI = RADICE / "web" / "templates" / "parti"
 
 
 def _fogli() -> list[Path]:
     return sorted(CARTELLA_CSS.glob("*.css"))
+
+
+def _parti() -> list[Path]:
+    return sorted(CARTELLA_PARTI.glob("*.html"))
 
 
 def _copioni() -> list[Path]:
@@ -72,15 +80,28 @@ def _senza_commenti_html(testo: str) -> str:
     return re.sub(r"<!--.*?-->", "", testo, flags=re.S)
 
 
+def _markup() -> str:
+    """Tutto il markup della dashboard: l'ossatura piu' i pezzi inclusi.
+
+    Dalla #34 `index.html` non contiene piu' le schede: le include. Una
+    guardia che cerca un elemento nella pagina deve guardare qui, non
+    `_testo(PAGINA)` — quella adesso vede solo il `<head>`, i collegamenti e
+    dieci righe di `{% include %}`.
+    """
+    pezzi = _parti()
+    assert len(pezzi) >= 5, f"i pezzi del markup sono spariti: {[p.name for p in pezzi]}"
+    return "\n".join(_testo(p) for p in [PAGINA, *pezzi])
+
+
 def _frontend() -> str:
     """Markup, foglio di stile e copione insieme.
 
     Dalla #34 vivono in file separati, uno per area. Una guardia che chiede
     «questa cosa esiste nel frontend?» guarda qui; una che dice **dove** deve
-    stare guarda i file precisi — `_testo(PAGINA)` per il markup, `_stile()`
-    per i colori, `_comportamento()` per il codice.
+    stare guarda i file precisi — `_markup()` per il markup, `_stile()` per i
+    colori, `_comportamento()` per il codice.
     """
-    return "\n".join(_testo(p) for p in [PAGINA, *_fogli(), *_copioni()])
+    return "\n".join([_markup(), *(_testo(p) for p in [*_fogli(), *_copioni()])])
 
 
 def _stile() -> str:
@@ -137,6 +158,9 @@ def test_il_copione_e_sintatticamente_valido():
         assert esito.returncode == 0, f"{percorso.name} non si compila:\n{esito.stderr}"
 
 
+# Solo i due file che hanno davvero copioni in linea: i pezzi di `parti/` sono
+# markup e basta, e che restino tali lo verifica
+# `test_i_copioni_in_linea_sono_solo_quelli_che_devono_girare_prima_del_disegno`.
 @pytest.mark.parametrize("percorso", [PAGINA, ACCESSO], ids=lambda p: p.name)
 def test_gli_script_inline_sono_sintatticamente_validi(percorso: Path):
     """Un errore di sintassi qui non da' un 500: da' una pagina morta.
@@ -1144,12 +1168,29 @@ def test_lo_stato_della_voce_non_si_ricorda_finche_non_e_definitivo():
 # ------------------------------------------- la colonna della console (#123)
 
 
-def _colonna_della_console(testo: str) -> str:
+def _pezzo(nome: str) -> str:
+    """Il markup di un'area sola.
+
+    Dalla #34 ogni scheda sta in un file suo, e una guardia che riguarda una
+    scheda legge quel file. Non e' pignoleria: `_markup()` unisce i pezzi in
+    ordine alfabetico, quindi «da qui fino alla scheda dopo» li' dentro non
+    vuol dire piu' niente.
+    """
+    percorso = CARTELLA_PARTI / f"{nome}.html"
+    assert percorso.is_file(), f"il pezzo `{nome}.html` non esiste: i pezzi sono {[p.name for p in _parti()]}"
+    return _testo(percorso)
+
+
+def _colonna_della_console() -> str:
     """La colonna di destra della console vocale: un terzo della prima
     schermata che si apre, e l'unica parte della pagina che sta accesa
-    davanti a chi abita la casa senza che l'abbia chiesta."""
-    inizio = testo.index("<!-- Right: Activity Logs & Active Timers -->")
-    return testo[inizio : testo.index('<div id="tab-knowledge"', inizio)]
+    davanti a chi abita la casa senza che l'abbia chiesta.
+
+    Prima della #34 finiva «dove comincia la scheda dopo»; adesso finisce
+    dove finisce il file, che e' la stessa cosa detta meglio.
+    """
+    console = _pezzo("console")
+    return console[console.index("<!-- Right: Activity Logs & Active Timers -->") :]
 
 
 def test_la_colonna_della_console_non_porta_piu_la_diagnostica():
@@ -1161,7 +1202,7 @@ def test_la_colonna_della_console_non_porta_piu_la_diagnostica():
     delle due sparisce — si leggono in Impostazioni, che e' dove si va
     quando si vogliono cambiare.
     """
-    colonna = _colonna_della_console(_frontend())
+    colonna = _colonna_della_console()
 
     assert "Stato Sistema" not in colonna, "il pannello della diagnostica e' ancora acceso"
     assert 'id="model-name-badge"' not in colonna, "il nome del modello e' ancora nella colonna"
@@ -1336,7 +1377,7 @@ def test_la_colonna_della_console_resta_leggera():
     Il numero qui sotto non e' un obiettivo: e' un tetto. Serve il giorno
     che qualcuno aggiunge un pannello «solo questo» a questa colonna.
     """
-    colonna = re.sub(r"<!--.*?-->", "", _colonna_della_console(_frontend()), flags=re.S)
+    colonna = re.sub(r"<!--.*?-->", "", _colonna_della_console(), flags=re.S)
 
     tag = len(re.findall(r"<(?!/)[a-zA-Z]", colonna))
     titoli = len(re.findall(r"<h\d", colonna))
@@ -1569,9 +1610,11 @@ def test_la_barra_non_taglia_il_menu_di_configurazione():
 # ----------------------------------- Impostazioni a sezioni richiudibili (#124)
 
 
-def _scheda_impostazioni(testo: str) -> str:
-    inizio = testo.index('<div id="tab-settings"')
-    return testo[inizio : testo.index("</main>", inizio)]
+def _scheda_impostazioni() -> str:
+    """Tutta la scheda Impostazioni. Dalla #34 e' un file suo: prima si
+    ritagliava da `<div id="tab-settings">` fino a `</main>`, e quel
+    `</main>` adesso sta in `index.html`, cioe' in un altro file."""
+    return _pezzo("impostazioni")
 
 
 def _a_riposo(pezzo: str) -> str:
@@ -1600,7 +1643,7 @@ def test_le_impostazioni_si_aprono_una_sezione_alla_volta():
     Non e' una schermata da leggere, e' una schermata in cui si cerca — e
     cercare in un muro aperto e' piu' lento che aprire la sezione giusta.
     """
-    scheda = _senza_commenti_html(_scheda_impostazioni(_frontend()))
+    scheda = _senza_commenti_html(_scheda_impostazioni())
 
     sezioni = re.findall(r'<details class="sezione-impostazioni" data-sezione="(\w+)"([^>]*)>', scheda)
 
@@ -1615,7 +1658,7 @@ def test_ogni_sezione_dice_cosa_contiene_anche_da_chiusa():
     """Una sezione chiusa che non dice cosa c'e' dentro e' un cassetto senza
     etichetta: si aprono tutti finche' non salta fuori quello giusto, che e'
     esattamente cio' da cui si voleva uscire."""
-    scheda = _senza_commenti_html(_scheda_impostazioni(_frontend()))
+    scheda = _senza_commenti_html(_scheda_impostazioni())
 
     mute = []
     for sezione in re.findall(r'data-sezione="(\w+)".*?</summary>', scheda, re.S):
@@ -1636,7 +1679,7 @@ def test_nessun_campo_sparisce_dalle_impostazioni():
     ed e' l'errore piu' facile da fare riorganizzando una schermata piena.
     """
     testo = _frontend()
-    scheda = _senza_commenti_html(_scheda_impostazioni(testo))
+    scheda = _senza_commenti_html(_scheda_impostazioni())
 
     # Gli identificativi dei campi che la pagina legge e scrive davvero.
     letti = set(re.findall(r"getElementById\('(cfg-[\w-]+)'\)", _senza_commenti(testo)))
@@ -1655,7 +1698,7 @@ def test_a_riposo_le_impostazioni_mostrano_meno_di_un_terzo_dei_campi():
     sezione e' la scelta della palette, che si fa con delle carte e non con
     dei campi. Cio' che conta e' che i 17 restino tutti a un clic.
     """
-    scheda = _scheda_impostazioni(_frontend())
+    scheda = _scheda_impostazioni()
 
     tutti = len(re.findall(r"<(?:input|select|textarea)\b", _senza_commenti_html(scheda)))
     visibili = len(re.findall(r"<(?:input|select|textarea)\b", _a_riposo(scheda)))
@@ -2145,7 +2188,7 @@ def test_la_pagina_non_porta_piu_dentro_il_copione_e_il_foglio():
     """
     pagina = _testo(PAGINA)
 
-    assert "<style>" not in pagina, "il foglio di stile e' tornato dentro la pagina"
+    assert "<style>" not in _markup(), "il foglio di stile e' tornato dentro la pagina"
 
     inline = _script_inline(pagina)
     assert len(inline) == 3, (
@@ -2155,9 +2198,17 @@ def test_la_pagina_non_porta_piu_dentro_il_copione_e_il_foglio():
     for blocco in inline:
         assert len(blocco) < 2000, "un copione in linea e' cresciuto: va in un file suo"
 
-    assert (
-        len(pagina.splitlines()) < 1400
-    ), f"la pagina e' {len(pagina.splitlines())} righe: era 7.438 e deve scendere, non risalire"
+    # I pezzi inclusi sono markup e basta: un copione in linea li' dentro non
+    # sta nel `<head>`, quindi non ha la ragione che giustifica gli altri tre,
+    # e nessun linter lo guarderebbe.
+    intrusi = {p.name: len(_script_inline(_testo(p))) for p in _parti() if _script_inline(_testo(p))}
+    assert not intrusi, f"copioni in linea dentro i pezzi del markup: {intrusi}"
+
+    assert len(pagina.splitlines()) < 250, (
+        f"index.html e' {len(pagina.splitlines())} righe: dalla #34 tiene solo "
+        "il `<head>`, l'ossatura e i collegamenti — una scheda nuova e' un "
+        "pezzo in `parti/`, non altre righe qui"
+    )
 
 
 def test_i_fogli_e_i_copioni_esistono_e_non_sono_vuoti():
@@ -2183,20 +2234,67 @@ def test_nessun_pezzo_del_frontend_supera_le_cinquecento_righe():
     entrare in testa tutto insieme, e si torna a modificarlo cercando col
     trova invece di leggerlo. La pagina unica ne aveva 7.438.
 
+    Fino a poco fa qui c'era un'eccezione — `lunghi.pop("index.html")` — con
+    scritto accanto che il markup andava spezzato in template inclusi. Adesso
+    e' spezzato, e l'eccezione e' sparita: nessun file del frontend e' piu'
+    fuori dal criterio.
+
     Riferimento: issue #34.
     """
     lunghi = {}
-    for percorso in [PAGINA, ACCESSO, *_fogli(), *_copioni()]:
+    for percorso in [PAGINA, ACCESSO, *_parti(), *_fogli(), *_copioni()]:
         righe = len(_testo(percorso).splitlines())
         if righe > 500:
             lunghi[percorso.name] = righe
 
-    # `index.html` e' l'unico ancora sopra: e' markup, e va spezzato in
-    # template inclusi, non in moduli. Finche' non succede resta segnato qui,
-    # cosi' la guardia morde su tutto il resto invece di essere spenta.
-    lunghi.pop("index.html", None)
-
     assert not lunghi, f"file oltre le cinquecento righe: {lunghi}"
+
+
+def _inclusi() -> list[str]:
+    """I pezzi che `index.html` include, nell'ordine in cui stanno."""
+    return re.findall(r'{%\s*include\s+"parti/([^"]+)"\s*%}', _senza_commenti_html(_testo(PAGINA)))
+
+
+def test_la_pagina_include_tutti_i_pezzi_e_nessun_altro():
+    """Il gemello della guardia sui collegamenti, per il markup.
+
+    Un pezzo scritto e mai incluso e' una scheda che non esiste, e non da'
+    nessun errore: il file c'e', la pagina si compone lo stesso, e manca una
+    parte di dashboard. Un nome sbagliato nell'altro verso fa l'opposto —
+    `TemplateNotFound` a ogni apertura — ed e' il caso fortunato.
+
+    Riferimento: issue #34.
+    """
+    inclusi = _inclusi()
+    sul_disco = [p.name for p in _parti()]
+
+    assert sorted(inclusi) == sorted(sul_disco), (
+        f"esistono ma la pagina non li include: {sorted(set(sul_disco) - set(inclusi))}\n"
+        f"inclusi ma non esistono: {sorted(set(inclusi) - set(sul_disco))}"
+    )
+    assert len(inclusi) == len(set(inclusi)), f"un pezzo e' incluso due volte: {inclusi}"
+
+
+def test_ogni_scheda_sta_in_un_pezzo_suo():
+    """Una scheda per pezzo, e nessuna rimasta dentro `index.html`.
+
+    E' il senso della scomposizione: aprire il file giusto senza cercare. Un
+    pezzo che ne contenesse due sarebbe un file spezzato senza il vantaggio
+    dello spezzarlo, e una scheda rimasta nell'ossatura sarebbe la prima riga
+    di un ritorno al file unico — che di righe ne aveva 7.438.
+    """
+
+    def schede(testo: str) -> list[str]:
+        return re.findall(r'id="tab-([a-z]+)"[^>]*class="[^"]*\btab-content\b', testo)
+
+    nell_ossatura = schede(_testo(PAGINA))
+    assert not nell_ossatura, f"schede rimaste dentro index.html: {nell_ossatura}"
+
+    doppie = {p.name: s for p in _parti() if len(s := schede(_testo(p))) > 1}
+    assert not doppie, f"pezzi che portano piu' di una scheda: {doppie}"
+
+    tutte = [s for p in _parti() for s in schede(_testo(p))]
+    assert len(tutte) >= 6, f"schede trovate nei pezzi: {tutte}"
 
 
 def _collegamenti(pagina: str) -> list[str]:
@@ -2268,6 +2366,37 @@ def test_la_pagina_li_collega_con_la_versione_attaccata():
         assert "versione" in collegamento.group(1), (
             f"{indirizzo} porta una versione fissa invece di quella vera: " f"{collegamento.group(1)}"
         )
+
+
+def test_la_pagina_servita_porta_dentro_ogni_pezzo(cliente_autenticato):
+    """Le guardie di sopra leggono il disco. Questa guarda cosa arriva.
+
+    E' l'unica che prova davvero che `{% include %}` funziona: che la
+    cartella sia quella che Jinja cerca, che i nomi combacino, e che la
+    pagina composta contenga tutto il markup che prima era scritto dentro.
+
+    Di ogni pezzo si cerca la prima riga vera — tolti i commenti, che nella
+    pagina ci sarebbero comunque anche se l'include fallisse a meta'.
+
+    Riferimento: issue #34.
+    """
+    servita = cliente_autenticato.get("/")
+    assert servita.status_code == 200, f"la dashboard risponde {servita.status_code}"
+
+    mancanti = []
+    for pezzo in _parti():
+        vere = [r.strip() for r in _senza_commenti_html(_testo(pezzo)).splitlines() if r.strip()]
+        assert vere, f"{pezzo.name} non ha nemmeno una riga di markup"
+        if vere[0] not in servita.text:
+            mancanti.append(f"{pezzo.name}: manca «{vere[0][:60]}»")
+
+    assert not mancanti, f"pezzi che non arrivano nella pagina servita: {mancanti}"
+
+    # E la pagina composta deve pesare quanto la somma dei pezzi: un include
+    # che portasse dentro solo la prima riga passerebbe il controllo di sopra.
+    atteso = sum(len(_testo(p).splitlines()) for p in _parti())
+    arrivate = len(servita.text.splitlines())
+    assert arrivate > atteso, f"la pagina servita ha {arrivate} righe, i soli pezzi ne fanno {atteso}"
 
 
 def test_il_server_serve_davvero_il_foglio_e_il_copione(cliente_autenticato):
@@ -3683,7 +3812,7 @@ def test_il_modale_manda_quello_che_la_casella_dice():
     if shutil.which("node") is None:
         pytest.skip("node non disponibile: in CI c'e'")
 
-    pagina = _testo(PAGINA)
+    pagina = _markup()
     modale = pagina[pagina.index('id="lock-screen-modal"') :][:4000]
     assert 'id="unlock-ricorda"' in modale, "il modale non ha la casella «ricorda questo dispositivo»"
     assert 'type="checkbox"' in modale, "la casella non e' una casella"

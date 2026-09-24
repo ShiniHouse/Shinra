@@ -1,0 +1,119 @@
+        <!-- ==================== AUTOMAZIONI E ROUTINE ====================
+             Una scheda sola, perche' sono la stessa cosa vista da due lati: una
+             routine e' una sequenza che parte a comando, un'automazione e' una
+             sequenza che parte da sola. Lo dice gia' il codice delle rotte.
+
+             Tenerle in due schede separate e' esattamente il motivo per cui una
+             routine poteva esistere di qua e non comparire di la' senza che
+             nessuna delle due schermate lo spiegasse: e' la domanda da cui e'
+             nata la issue #127, e questa scheda e' la sua risposta strutturale.
+
+             L'editor a nodi resta al primo livello, dentro questa scheda: rami,
+             condizioni, ritardi e sequenze non si esprimono in un modulo, ed e'
+             l'unico posto dove si puo' dire alla casa qualcosa che non sta in
+             una riga. Riferimenti: #27, #127, #128. -->
+        <div id="tab-automazioni" class="tab-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="zap" class="w-5 h-5 text-amber-400"></i> Cosa fa la casa da sola
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Ogni automazione dice quando scatta, quando scatterà la prossima volta e com'è andata l'ultima.</p>
+                </div>
+                <button onclick="loadRegole()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Aggiorna
+                </button>
+            </div>
+
+            <!-- La scorciatoia (#126).
+                 `POST /api/regole` esiste dalla v0.3.0 e la dashboard non la
+                 chiamava mai: l'unico modo di fare un'automazione era aprire
+                 l'editor, disegnare una routine e cambiare l'innesco del
+                 primo blocco. Per «alle 23 spegni tutto» e' un giro lungo.
+
+                 Questa e' una porta in piu' sulla stessa stanza, non una
+                 porta al posto di quella: copre un innesco, nessuna
+                 condizione, un'azione. Quando serve di piu', porta
+                 all'editor invece di crescere. -->
+            <details id="scorciatoia" class="sezione-impostazioni">
+                <summary>
+                    <div class="min-w-0">
+                        <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                            <!-- `sparkles`, non `wand-sparkles`: il secondo non
+                                 esiste in lucide 0.344.0 e si vede come un
+                                 buco. E' il secondo nome sbagliato in un
+                                 giorno — ci vuole una guardia (#139). -->
+                            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i> «Alle 23, spegni tutto»
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Un innesco, un'azione, senza aprire l'editor. Per tutto il resto c'è il disegno a blocchi.</p>
+                    </div>
+                    <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
+                </summary>
+                <div class="corpo-sezione space-y-4 text-xs">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-slate-400 font-semibold block">Quando</label>
+                            <select id="scorciatoia-quando" onchange="disegnaScorciatoia()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                                <option value="orario">A un orario</option>
+                                <option value="alba">All'alba</option>
+                                <option value="tramonto">Al tramonto</option>
+                                <option value="stato">Quando un valore supera una soglia</option>
+                                <option value="evento">Quando succede qualcosa in casa</option>
+                            </select>
+                            <div id="scorciatoia-quando-campi" class="space-y-2"></div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-slate-400 font-semibold block">Fai questo</label>
+                            <select id="scorciatoia-cosa" onchange="disegnaScorciatoia()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                                <option value="modalita">Avvia una routine</option>
+                                <option value="dispositivo">Accendi o spegni un dispositivo</option>
+                                <option value="avviso">Mandami un avviso</option>
+                            </select>
+                            <div id="scorciatoia-cosa-campi" class="space-y-2"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-slate-400 font-semibold block mb-1">Come la chiamo <span class="text-slate-600 font-normal">(facoltativo)</span></label>
+                        <input type="text" id="scorciatoia-nome" placeholder="Se lo lasci vuoto, il nome lo scrivo io" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                    </div>
+
+                    <!-- Il rifiuto del server si legge qui, non in un `alert`:
+                         un avviso di sistema si chiude e non lascia traccia di
+                         cosa non andava. -->
+                    <div id="scorciatoia-esito" class="hidden p-2.5 rounded-lg"></div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                        <button type="button" onclick="apriEditorDallaScorciatoia()" class="text-indigo-400 hover:text-indigo-300 font-semibold underline decoration-dotted text-left">
+                            Serve qualcosa di più complicato?
+                        </button>
+                        <button type="button" onclick="creaScorciatoia()" id="scorciatoia-crea" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shrink-0">
+                            Crea l'automazione
+                        </button>
+                    </div>
+                </div>
+            </details>
+
+            <div id="regole-lista" class="space-y-3">
+                <!-- Caricato dinamicamente -->
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="workflow" class="w-5 h-5 text-indigo-400"></i> Le routine che disegni
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Blocchi collegati: un innesco, poi azioni, attese e risposte vocali. Da qui nascono anche le automazioni qui sopra — basta dare al primo blocco un innesco che non sia la voce.</p>
+                </div>
+                <button onclick="openModularModeBuilder()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shrink-0 shadow-lg shadow-indigo-600/20">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Nuova Routine Modulare
+                </button>
+            </div>
+
+            <!-- Lista Routine Modulari -->
+            <div id="modes-list" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <!-- Caricato dinamicamente in formato Modular Flow -->
+            </div>
+        </div>
+

@@ -22,6 +22,7 @@ l'intero file. E' il freno principale a ogni funzione nuova con interfaccia.
 ## Cosa fare
 
 - [x] Separare CSS e JavaScript in file propri — #144
+- [x] Separare il markup delle schede in template inclusi, uno per area — #176
 - [x] Suddividere il JavaScript per area: autenticazione, chat, voce,
       dispositivi, routine, canvas, timer, impostazioni — #145, #147, #151.
       Sono venti file, uno per area, ma sono ancora copioni classici caricati
@@ -36,7 +37,7 @@ l'intero file. E' il freno principale a ogni funzione nuova con interfaccia.
 
 ## Criteri di accettazione
 
-- [ ] Nessun file frontend supera le cinquecento righe
+- [x] Nessun file frontend supera le cinquecento righe — #176
 - [x] ESLint passa in CI
 - [ ] Nessuna regressione funzionale sull'interfaccia
 - [x] Un nome di entita' contenente HTML non altera la pagina
@@ -54,22 +55,29 @@ Misurato adesso:
 
 | | prima | dopo |
 | :--- | :-- | :-- |
-| `web/templates/index.html` | 7.438 righe | **1.306** |
+| `web/templates/index.html` | 7.438 righe | **150** |
+| File di markup | 1 | 10: l'ossatura e nove pezzi inclusi |
 | File JavaScript | 1 (dentro l'HTML) | 21, il piu' lungo di **451** righe |
 | File CSS | 1 (dentro l'HTML) | 5 |
 | Concatenazioni di stringhe non protette | tutte | **zero**, con guardia |
 
-I due criteri ancora aperti, e perche':
+Poi la **#176**, che ha spezzato anche il markup: `index.html` tiene il
+`<head>`, l'ossatura e i collegamenti, e include nove pezzi — uno per scheda,
+piu' l'intestazione e i modali. La pagina servita e' venuta fuori **identica
+byte per byte** a quella di prima, il che era il punto: era un cambio di
+struttura e non doveva cambiare niente altro.
 
-- **Cinquecento righe.** Tutto il JavaScript e tutto il CSS ci stanno sotto.
-  Resta `index.html`: 1.257 righe di solo markup. Scende quando il markup di
-  ogni area seguira' il suo JavaScript, cosa che conviene fare insieme ai
-  moduli ES.
+Il criterio ancora aperto, e perche':
+
 - **Nessuna regressione.** Due ne sono uscite dalla scomposizione, tutte e due
   trovate in casa e chiuse: il nodo che non si trascinava dall'intestazione
   (#154) e la crocetta che non staccava il cavo (#155). Da li' e' nata la
   #156, che fa girare in CI sette gesti veri dell'editor con un browser vero.
-  Restano aperte la #152 e la #153, che pero' c'erano gia' prima.
+  La #152 e la #153 sono state chiuse (#164, #163), ma c'erano gia' prima.
+
+Restano fuori da questo lavoro, e valgono ancora: i **moduli ES veri** — oggi
+sono copioni classici, e devono restarlo finche' la pagina chiama le funzioni
+dagli `onclick` — e lo **stato globale in un contenitore unico**.
 
 ## Guardie
 

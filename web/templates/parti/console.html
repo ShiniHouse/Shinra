@@ -1,0 +1,113 @@
+        <!-- ==================== TAB 1: CONSOLE CHAT & VOCE ==================== -->
+        <div id="tab-console" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left & Center: Chat (2 cols) -->
+            <div class="lg:col-span-2 flex flex-col h-[75vh] bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur">
+                <!-- User Banner -->
+                <div id="active-user-banner" class="px-4 py-2 bg-indigo-950/40 border-b border-slate-800 text-xs flex items-center justify-between text-indigo-300">
+                    <span>Sessione attiva: <strong id="banner-user-name">Alessio</strong> (<span id="banner-user-role">admin</span>)</span>
+                    <span class="text-slate-500">Linguaggio: Calibrato automaticamente</span>
+                </div>
+
+                <!-- Quick Prompts Pills -->
+                <div class="p-2.5 border-b border-slate-800 bg-slate-900/40 flex items-center gap-2 overflow-x-auto text-xs whitespace-nowrap">
+                    <button onclick="sendQuickPrompt('Che tempo farà domani a Roma?')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">🌤️ Meteo domani</button>
+                    <button onclick="sendQuickPrompt('Cosa significa il termine olocausto?')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">📚 Definizione</button>
+                    <button onclick="sendQuickPrompt('Quali sono le ultime notizie dal mondo?')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">📰 Notizie del mondo</button>
+                    <button onclick="sendQuickPrompt('Attiva la modalità cinema')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">🎬 Modalità cinema</button>
+                    <button onclick="sendQuickPrompt('Qual è lo stato dei dispositivi in casa?')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">🏠 Stato casa</button>
+                </div>
+
+                <!-- Messages Area -->
+                <div id="messages-container" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
+                    <div class="flex gap-3 max-w-2xl">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
+                            <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200">
+                            <p class="font-medium text-indigo-400 mb-1 assistant-name-label">Kyra</p>
+                            <p id="welcome-text">Alessio. Sono online. Gestisco i dispositivi, il meteo, le notizie e la tua conoscenza domestica.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Bar -->
+                <div class="p-4 border-t border-slate-800 bg-slate-900/80">
+                    <form id="chat-form" onsubmit="handleSend(event)" class="flex items-center gap-2">
+                        <button type="button" id="mic-btn" onclick="toggleSpeechRecognition()" title="Parla con la voce" class="w-11 h-11 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition border border-slate-700">
+                            <i data-lucide="mic" id="mic-icon" class="w-5 h-5"></i>
+                        </button>
+                        <div class="flex-1">
+                            <input type="text" id="user-input" placeholder="Scrivi un messaggio o parla al microfono..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                        <button type="submit" id="send-btn" class="w-11 h-11 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition shadow-lg shadow-indigo-600/30">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                        </button>
+                    </form>
+                    <div id="recording-status" class="hidden mt-2 text-xs text-rose-400 flex items-center gap-1.5 animate-pulse">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> In ascolto... Parla adesso!
+                    </div>
+
+                    <!-- Da quale stanza sto parlando (issue #33).
+                         Sta qui, sotto il microfono, e non fra le impostazioni:
+                         è una proprietà di *questo* dispositivo in *questo*
+                         momento — il telefono che si sposta di stanza cambia
+                         risposta — e nasconderla in un pannello vorrebbe dire
+                         che nessuno la aggiorna mai. -->
+                    <div class="mt-2 flex items-center gap-2 text-[11px] text-slate-500">
+                        <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                        <span>Parlo da:</span>
+                        <input
+                            type="text"
+                            id="scelta-stanza"
+                            list="stanze-note"
+                            placeholder="nessuna stanza"
+                            onchange="scegliStanza(this.value)"
+                            class="bg-transparent border-b border-slate-700 focus:border-indigo-500 focus:outline-none px-1 py-0.5 text-slate-300 w-32"
+                            title="Dicendo la stanza, «accendi la luce» accende quella di qui">
+                        <datalist id="stanze-note"></datalist>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Activity Logs & Active Timers -->
+            <div class="flex flex-col gap-5">
+                <!-- Un solo pannello, perche' e' una sola storia: cosa sta
+                     succedendo in casa e cosa sta per succedere. Timer,
+                     promemoria e prossimi scatti erano tre titoli separati
+                     che rispondevano tutti alla stessa domanda (issue #123).
+                     Il prossimo scatto lo sa gia' `/api/regole`. -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 backdrop-blur flex flex-col space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                            <i data-lucide="timer" class="w-4 h-4 text-amber-400"></i> Adesso, in casa
+                        </h2>
+                        <div class="flex items-center gap-1.5">
+                            <span id="stato-eventi" title="Collegamento agli eventi del server" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                            <button onclick="openAddTimerModal()" class="px-2 py-1 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/30 rounded-lg text-[11px] font-semibold transition flex items-center gap-1">
+                                <i data-lucide="plus" class="w-3 h-3"></i> + Timer
+                            </button>
+                        </div>
+                    </div>
+                    <div id="active-timers-list" class="space-y-2">
+                        <div class="text-[11px] text-slate-500 text-center py-2">Nessun timer attivo. Prova a dire "Timer pasta 9 minuti".</div>
+                    </div>
+                    <div id="lista-promemoria" class="space-y-2"></div>
+                    <div id="prossimi-scatti" class="space-y-2 pt-3 border-t border-slate-800/80">
+                        <div class="text-[11px] text-slate-500 text-center py-2">Sto guardando il calendario della casa...</div>
+                    </div>
+                </div>
+
+                <!-- I tool invocati non sono la giornata di chi abita qui: si
+                     guardano quando qualcosa non torna. Restano a un clic, con
+                     il numero in vista perche' si sappia che ci sono. -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-3 backdrop-blur">
+                    <button type="button" onclick="apriFinestraTool()" title="Gli strumenti che Shinra ha usato per rispondere" class="w-full flex items-center justify-between gap-2 text-xs text-slate-400 hover:text-slate-200 transition">
+                        <span class="flex items-center gap-2 font-semibold">
+                            <i data-lucide="cpu" class="w-4 h-4 text-violet-400"></i> Cosa ha fatto Shinra
+                        </span>
+                        <span id="conta-tool" class="font-mono text-[11px] text-slate-500">niente, per ora</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+

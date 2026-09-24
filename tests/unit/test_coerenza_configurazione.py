@@ -428,7 +428,13 @@ def test_l_interfaccia_non_nomina_un_modello_che_non_e_il_predefinito():
 
     from shinra.config.settings import AppConfig
 
-    pagina = (RADICE / "web" / "templates" / "index.html").read_text(encoding="utf-8")
+    # Dalla #34 il markup sta in pezzi e il titolo del pannello vive in
+    # `parti/impostazioni.html`: leggere il solo `index.html` lascerebbe
+    # questa guardia verde su una pagina che nomina di nuovo Gemma.
+    modelli = RADICE / "web" / "templates"
+    pezzi = sorted((modelli / "parti").glob("*.html"))
+    assert len(pezzi) >= 5, f"i pezzi del markup sono spariti: {[p.name for p in pezzi]}"
+    pagina = "\n".join(p.read_text(encoding="utf-8") for p in [modelli / "index.html", *pezzi])
     famiglia_predefinita = AppConfig().llm.model.split(":")[0].lower()
 
     # I bordi di parola contano: scritta senza, questa guardia accusava

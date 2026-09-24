@@ -1,0 +1,40 @@
+        <!-- ==================== TAB 4: MAPPA DISPOSITIVI ==================== -->
+        <div id="tab-aliases" class="tab-content hidden space-y-5">
+            <!-- Header -->
+            <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="layout-grid" class="w-5 h-5 text-indigo-400"></i> Mappa Dispositivi Home Assistant
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Assegna nomi naturali (es. "lampadario salotto") ai dispositivi tecnici. Shinra userà questi nomi per capire i tuoi comandi vocali.</p>
+                    </div>
+                    <button onclick="discoverHAEntities()" id="btn-discover" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shrink-0">
+                        <i data-lucide="scan-search" class="w-4 h-4"></i> Scopri Dispositivi HA
+                    </button>
+                </div>
+
+                <!-- Filtro ricerca -->
+                <div id="alias-filter-row" class="hidden mt-3 flex gap-2 items-center">
+                    <input type="text" id="alias-filter-input" oninput="filterEntities(this.value)" placeholder="Filtra per nome..." class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                    <span id="alias-filter-count" class="text-xs text-slate-500 shrink-0"></span>
+                </div>
+            </div>
+
+            <!-- Alias già configurati -->
+            <div id="aliases-saved-section" class="space-y-2">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide px-1">Alias configurati</p>
+                <div id="aliases-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                    <!-- Caricato dinamicamente -->
+                </div>
+            </div>
+
+            <!-- Risultato scoperta dispositivi HA -->
+            <div id="ha-entities-section" class="hidden space-y-4">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide px-1">Tutti i dispositivi rilevati</p>
+                <div id="ha-entities-groups" class="space-y-4">
+                    <!-- Caricato dinamicamente -->
+                </div>
+            </div>
+        </div>
+

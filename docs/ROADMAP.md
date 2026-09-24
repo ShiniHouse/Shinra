@@ -144,7 +144,7 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | 161 | Una sessione scaduta non viene detta: ritenta in silenzio | fatta (#162, #173) |
 | 35 | Backup e restore della configurazione, con versione di schema | fatta (#165, #166) |
 | 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` | da fare |
-| 34 | Scomporre `index.html` (7.438 righe) in moduli ES | in corso (#144-#151) |
+| 34 | Scomporre `index.html` (7.438 righe) in moduli ES | in corso (#144-#151, #176) |
 | 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | da fare |
 | 37 | Immagine Docker e add-on per Home Assistant OS | in corso (#168, #169) |
 | 38 | Documentazione utente e guida all'installazione verificata | in corso (#167) |
@@ -226,7 +226,8 @@ e JavaScript da `index.html` e li hanno divisi per area.
 
 | | prima | dopo |
 | :--- | :-- | :-- |
-| `web/templates/index.html` | 7.438 righe | **1.306** |
+| `web/templates/index.html` | 7.438 righe | **150** |
+| File di markup | 1 | 10: l'ossatura e nove pezzi inclusi |
 | File JavaScript | 1, dentro l'HTML | 21, il piu' lungo di **451** righe |
 | File CSS | 1, dentro l'HTML | 5 |
 | ESLint e Prettier | non esistevano | in CI, obbligatori |
