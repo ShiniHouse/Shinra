@@ -16,8 +16,10 @@ revisione a fine progetto, quando le funzioni corrispondono alle promesse.
 
 - [ ] Riscrivere il README perche' descriva il comportamento reale
 - [ ] Guida all'installazione per ciascuna modalita': Docker, add-on, manuale
-- [ ] Guida alla configurazione iniziale, dal primo avvio alla prima routine
-- [ ] Guida alla risoluzione dei problemi, ricavata dai difetti realmente incontrati
+- [x] Guida alla configurazione iniziale, dal primo avvio alla prima routine —
+      [`docs/PRIMI-PASSI.md`](../../PRIMI-PASSI.md), #180
+- [x] Guida alla risoluzione dei problemi, ricavata dai difetti realmente
+      incontrati — [`docs/PROBLEMI.md`](../../PROBLEMI.md), #180
 - [ ] Documentazione di riferimento delle API
 - [ ] Guida allo sviluppo di un modulo nuovo, secondo `ARCHITECTURE.md` §4
 - [x] **Verifica**: installazione da zero su una macchina pulita seguendo solo la documentazione, annotando ogni punto in cui serve conoscenza non scritta
@@ -73,8 +75,31 @@ Tre guardie in `test_coerenza_configurazione.py`:
 La seconda e' nata da un errore mio: riscrivendo il blocco ho messo
 `voce.trascrizione` al posto di `voce.motore`. Rileggere non basta.
 
-### Cosa resta della #38
+## Le due guide, scritte
 
-Il README completo, la guida Docker e quella all'add-on aspettano la #37: non
-si documenta un'installazione che non esiste ancora. La documentazione delle
-API e la guida allo sviluppo di un modulo sono lavoro a se'.
+**#180.** `docs/PRIMI-PASSI.md` copre la mezz'ora dopo il primo accesso: il
+PIN da cambiare, i profili di chi vive in casa, il token di Home Assistant in
+`.env` e non altrove, i nomi da dare alle proprie cose — che e' l'unico passo
+che **solo l'utente** puo' fare — la prima automazione dalla scorciatoia, e
+l'intervista di apprendimento con le due cose da sapere prima di cominciarla.
+
+`docs/PROBLEMI.md` e' fatta di guasti **successi davvero**, col sintomo per
+come si presenta e non per come lo si racconterebbe dopo. Il modello troppo
+piccolo sta per primo perche' e' il piu' caro di tutti: non sembra un guasto,
+la casa risponde, e semplicemente non succede niente — e' girata cosi' per
+settimane. Poi il canale eventi a 403, il PIN scorso via nel log, l'immagine
+senza profili, `python3-venv`, il ripristino da un backup, e una tabella di
+cose che sembrano guasti e non lo sono.
+
+Guardie in `tests/unit/test_guide.py`: ogni collegamento fra i documenti porta
+a un file che esiste, ogni `scripts/*.py` nominato esiste, le guide sono
+nell'indice del README, e quella dei problemi nomina **il modello predefinito
+vero** — perche' una guida che ne consiglia un altro manda a cercare dalla
+parte sbagliata proprio chi ha gia' quel problema.
+
+## Cosa resta della #38
+
+Il README completo e la guida all'add-on aspettano la #37: non si documenta
+un'installazione che non esiste ancora. La guida Docker c'e' gia' nel README
+dalla #168. La documentazione delle API e la guida allo sviluppo di un modulo
+sono lavoro a se'.
