@@ -31,7 +31,7 @@ installi qualcuno che non sei tu. Quello che è già dentro il ramo principale:
   impostazioni a sezioni, e la colonna di destra che racconta cosa sta per
   succedere in casa invece della diagnostica.
 - **Il frontend scomposto** (#144–#151, #176): `index.html` è passato da 7.438
-  righe a **150**; il markup delle schede sta in nove file inclusi, il
+  righe a **158**; il markup delle schede sta in nove file inclusi, il
   JavaScript in ventuno file, uno per area, il più lungo di **451** righe; il
   CSS in cinque; ESLint e Prettier girano in CI. Nessun file del frontend
   supera le cinquecento righe, ed è un test a dirlo. E ogni
