@@ -416,3 +416,12 @@ async function cancellaRegola(id) {
     await fetch(`/api/regole/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
     loadRegole();
 }
+
+// I gesti che il markup di quest'area puo' chiedere (#34). L'elenco e'
+// la stessa forma che avra' la lista di `export` il giorno dei moduli.
+Gesti.registra({
+    apriEditorDallaScorciatoia,
+    creaScorciatoia,
+    disegnaScorciatoia,
+    loadRegole,
+});

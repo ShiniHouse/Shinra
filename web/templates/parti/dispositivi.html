@@ -9,14 +9,14 @@
                         </h2>
                         <p class="text-xs text-slate-400 mt-1">Assegna nomi naturali (es. "lampadario salotto") ai dispositivi tecnici. Shinra userà questi nomi per capire i tuoi comandi vocali.</p>
                     </div>
-                    <button onclick="discoverHAEntities()" id="btn-discover" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shrink-0">
+                    <button data-gesto="discoverHAEntities" id="btn-discover" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shrink-0">
                         <i data-lucide="scan-search" class="w-4 h-4"></i> Scopri Dispositivi HA
                     </button>
                 </div>
 
                 <!-- Filtro ricerca -->
                 <div id="alias-filter-row" class="hidden mt-3 flex gap-2 items-center">
-                    <input type="text" id="alias-filter-input" oninput="filterEntities(this.value)" placeholder="Filtra per nome..." class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                    <input type="text" id="alias-filter-input" data-mentre-scrivi="filterEntities" data-argomento="valore" placeholder="Filtra per nome..." class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
                     <span id="alias-filter-count" class="text-xs text-slate-500 shrink-0"></span>
                 </div>
             </div>

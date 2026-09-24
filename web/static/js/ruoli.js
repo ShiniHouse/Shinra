@@ -345,3 +345,10 @@ async function revocaTuttiDispositivi() {
     alert(esito.revocati === 1 ? 'Un dispositivo revocato.' : `${esito.revocati} dispositivi revocati.`);
     await loadDispositivi();
 }
+
+// I gesti che il markup di quest'area puo' chiedere (#34). L'elenco e'
+// la stessa forma che avra' la lista di `export` il giorno dei moduli.
+Gesti.registra({
+    apriModaleRuolo,
+    revocaTuttiDispositivi,
+});

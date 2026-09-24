@@ -28,7 +28,7 @@
             <!-- Desktop Header Controls (>= md) -->
             <div class="hidden md:flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end">
                 <!-- 3-Way Theme Switcher (Auto Solare / Giorno / Notte) -->
-                <button id="theme-toggle-btn" onclick="cycleTheme()" class="px-2.5 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/70 hover:scale-105 transition flex items-center gap-1.5 text-xs font-semibold text-slate-200 shadow-sm" title="Modalità Tema: Clicca per cambiare tra Auto (Solare) / Giorno / Notte">
+                <button id="theme-toggle-btn" data-gesto="cycleTheme" class="px-2.5 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/70 hover:scale-105 transition flex items-center gap-1.5 text-xs font-semibold text-slate-200 shadow-sm" title="Modalità Tema: Clicca per cambiare tra Auto (Solare) / Giorno / Notte">
                     <span id="theme-toggle-icon"><i data-lucide="sun-medium" class="w-3.5 h-3.5 text-amber-400"></i></span>
                     <span id="theme-toggle-label" class="text-[11px]">Auto</span>
                 </button>
@@ -37,7 +37,7 @@
                 <div class="flex items-center gap-1.5 bg-slate-800/70 border border-slate-700/80 rounded-xl px-2.5 py-1 text-xs">
                     <i data-lucide="user" class="w-3.5 h-3.5 text-violet-400"></i>
                     <span class="text-slate-400">Parli come:</span>
-                    <select id="user-select" onchange="changeActiveUser(this.value)" class="bg-transparent text-violet-300 font-semibold focus:outline-none cursor-pointer text-xs">
+                    <select id="user-select" data-al-cambio="changeActiveUser" data-argomento="valore" class="bg-transparent text-violet-300 font-semibold focus:outline-none cursor-pointer text-xs">
                         <option value="alessio">Caricamento...</option>
                     </select>
                 </div>
@@ -65,17 +65,17 @@
                      chiamarla no, e l'unico blocco possibile era quello
                      automatico per inattivita'. Su un tablet di casa con un PIN
                      per persona, potersi togliere di mezzo e' il minimo. -->
-                <button id="lock-session-btn" onclick="lockSession()" style="display:none" class="px-2.5 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/70 hover:bg-rose-600 hover:border-rose-500 hover:text-white transition flex items-center gap-1.5 text-[11px] font-semibold text-slate-300" title="Blocca la sessione: al prossimo accesso servira' il PIN">
+                <button id="lock-session-btn" data-gesto="lockSession" style="display:none" class="px-2.5 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/70 hover:bg-rose-600 hover:border-rose-500 hover:text-white transition flex items-center gap-1.5 text-[11px] font-semibold text-slate-300" title="Blocca la sessione: al prossimo accesso servira' il PIN">
                     <i data-lucide="lock" class="w-3.5 h-3.5"></i> Blocca
                 </button>
             </div>
 
             <!-- Mobile Controls (Hamburger + Quick Theme Toggle) (< md) -->
             <div class="flex md:hidden items-center gap-2">
-                <button onclick="cycleTheme()" class="p-2 rounded-xl border border-slate-700/80 bg-slate-800/70 text-amber-400 transition" title="Cambia Tema">
+                <button data-gesto="cycleTheme" class="p-2 rounded-xl border border-slate-700/80 bg-slate-800/70 text-amber-400 transition" title="Cambia Tema">
                     <i data-lucide="sun-medium" class="w-4 h-4"></i>
                 </button>
-                <button id="mobile-hamburger-btn" onclick="toggleMobileMenu()" class="p-2 rounded-xl border border-slate-700/80 bg-slate-800/70 text-slate-200 hover:text-white transition flex items-center justify-center" aria-label="Menu">
+                <button id="mobile-hamburger-btn" data-gesto="toggleMobileMenu" class="p-2 rounded-xl border border-slate-700/80 bg-slate-800/70 text-slate-200 hover:text-white transition flex items-center justify-center" aria-label="Menu">
                     <i data-lucide="menu" id="mobile-menu-icon" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -91,13 +91,13 @@
              (#122), ricomparso dall'altra parte della pagina. Se la riga non
              ci sta, va a capo. -->
         <div class="hidden md:flex flex-wrap max-w-7xl mx-auto px-4 sm:px-6 gap-2 border-t border-slate-800/60 dark:border-slate-800/60 light:border-slate-200/80 text-xs font-semibold py-1.5">
-            <button onclick="switchTab('console')" id="tab-btn-console" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-600/30 dark:bg-indigo-600/30 light:bg-indigo-100 text-indigo-300 dark:text-indigo-300 light:text-indigo-800 border border-indigo-500/40 dark:border-indigo-500/40 light:border-indigo-300 transition shadow-sm">
+            <button data-gesto="switchTab" data-testo="console" id="tab-btn-console" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-600/30 dark:bg-indigo-600/30 light:bg-indigo-100 text-indigo-300 dark:text-indigo-300 light:text-indigo-800 border border-indigo-500/40 dark:border-indigo-500/40 light:border-indigo-300 transition shadow-sm">
                 <i data-lucide="message-square" class="w-4 h-4"></i> Console Vocale
             </button>
-            <button onclick="switchTab('automazioni')" id="tab-btn-automazioni" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
+            <button data-gesto="switchTab" data-testo="automazioni" id="tab-btn-automazioni" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
                 <i data-lucide="zap" class="w-4 h-4"></i> Automazioni e routine
             </button>
-            <button onclick="switchTab('aliases')" id="tab-btn-aliases" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
+            <button data-gesto="switchTab" data-testo="aliases" id="tab-btn-aliases" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
                 <i data-lucide="layout-grid" class="w-4 h-4"></i> Dispositivi
             </button>
 
@@ -110,24 +110,24 @@
                  Le tre di sopra, quelle di ogni giorno, non si nascondono
                  dietro nessun menu. Riferimento: #128. -->
             <div class="relative ml-auto">
-                <button type="button" onclick="alternaMenuConfigurazione(event)" id="tab-btn-configurazione" aria-haspopup="true" aria-expanded="false" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
+                <button type="button" data-gesto="alternaMenuConfigurazione" data-argomento="evento" id="tab-btn-configurazione" aria-haspopup="true" aria-expanded="false" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
                     <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Configurazione
                     <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
                 </button>
                 <div id="menu-configurazione" class="hidden absolute right-0 top-full mt-1.5 w-64 z-40 rounded-xl border border-slate-800 bg-slate-900 shadow-2xl p-1.5 space-y-0.5">
-                    <button type="button" onclick="switchTab('knowledge')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                    <button type="button" data-gesto="switchTab" data-testo="knowledge" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
                         <span class="flex items-center gap-2 text-slate-200"><i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i> Conoscenza della casa</span>
                         <span class="block text-[11px] text-slate-500 font-normal mt-0.5 pl-6">Cosa Shinra sa di voi</span>
                     </button>
-                    <button type="button" onclick="switchTab('sources')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                    <button type="button" data-gesto="switchTab" data-testo="sources" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
                         <span class="flex items-center gap-2 text-slate-200"><i data-lucide="globe" class="w-4 h-4 text-sky-400"></i> Fonti e notizie</span>
                         <span class="block text-[11px] text-slate-500 font-normal mt-0.5 pl-6">Da dove legge quando gli chiedi le novità</span>
                     </button>
-                    <button type="button" onclick="switchTab('users')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                    <button type="button" data-gesto="switchTab" data-testo="users" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
                         <span class="flex items-center gap-2 text-slate-200"><i data-lucide="users" class="w-4 h-4 text-pink-400"></i> Persone e permessi</span>
                         <span class="block text-[11px] text-slate-500 font-normal mt-0.5 pl-6">Chi abita qui e cosa può fare</span>
                     </button>
-                    <button type="button" onclick="switchTab('settings')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                    <button type="button" data-gesto="switchTab" data-testo="settings" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
                         <span class="flex items-center gap-2 text-slate-200"><i data-lucide="settings" class="w-4 h-4 text-slate-400"></i> Impostazioni dell'hub</span>
                         <span class="block text-[11px] text-slate-500 font-normal mt-0.5 pl-6">Modello, Home Assistant, Alexa, voce</span>
                     </button>
@@ -143,7 +143,7 @@
                     <i data-lucide="user" class="w-4 h-4 text-violet-400"></i>
                     <span class="text-xs text-slate-400">Utente attivo:</span>
                 </div>
-                <select id="mobile-user-select" onchange="changeActiveUser(this.value)" class="bg-transparent text-violet-300 font-bold focus:outline-none cursor-pointer text-xs">
+                <select id="mobile-user-select" data-al-cambio="changeActiveUser" data-argomento="valore" class="bg-transparent text-violet-300 font-bold focus:outline-none cursor-pointer text-xs">
                     <option value="alessio">Caricamento...</option>
                 </select>
             </div>
@@ -153,13 +153,13 @@
                  alto, le quattro di configurazione sotto, separate da una
                  riga che dice cosa sono. Riferimento: #128. -->
             <div class="grid grid-cols-1 gap-2 text-xs font-semibold">
-                <button onclick="switchTabMobile('console')" class="tab-btn-m p-2.5 rounded-xl bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 flex items-center gap-2 text-left">
+                <button data-gesto="switchTabMobile" data-testo="console" class="tab-btn-m p-2.5 rounded-xl bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 flex items-center gap-2 text-left">
                     <i data-lucide="message-square" class="w-4 h-4"></i> Console Vocale
                 </button>
-                <button onclick="switchTabMobile('automazioni')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                <button data-gesto="switchTabMobile" data-testo="automazioni" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
                     <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Automazioni e routine
                 </button>
-                <button onclick="switchTabMobile('aliases')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                <button data-gesto="switchTabMobile" data-testo="aliases" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
                     <i data-lucide="layout-grid" class="w-4 h-4 text-amber-400"></i> Dispositivi
                 </button>
             </div>
@@ -167,23 +167,23 @@
             <div class="space-y-2">
                 <p class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold px-1">Configurazione</p>
                 <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
-                    <button onclick="switchTabMobile('knowledge')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                    <button data-gesto="switchTabMobile" data-testo="knowledge" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
                         <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i> Conoscenza
                     </button>
-                    <button onclick="switchTabMobile('sources')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                    <button data-gesto="switchTabMobile" data-testo="sources" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
                         <i data-lucide="globe" class="w-4 h-4 text-sky-400"></i> Fonti
                     </button>
-                    <button onclick="switchTabMobile('users')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                    <button data-gesto="switchTabMobile" data-testo="users" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
                         <i data-lucide="users" class="w-4 h-4 text-pink-400"></i> Persone
                     </button>
-                    <button onclick="switchTabMobile('settings')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                    <button data-gesto="switchTabMobile" data-testo="settings" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
                         <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i> Impostazioni
                     </button>
                 </div>
             </div>
 
             <!-- Quick Action: Shinra Istruisci -->
-            <button onclick="startLearningModal(); toggleMobileMenu();" class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-indigo-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md">
+            <button data-gesto="apriApprendimentoDalMenu" class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-indigo-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md">
                 <i data-lucide="graduation-cap" class="w-4 h-4"></i> Shinra Istruisci (Intervista)
             </button>
 
@@ -193,7 +193,7 @@
                     <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Ollama</span>
                     <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> HA</span>
                 </div>
-                <button onclick="lockSession()" class="text-amber-400 flex items-center gap-1 font-semibold">
+                <button data-gesto="lockSession" class="text-amber-400 flex items-center gap-1 font-semibold">
                     <i data-lucide="lock" class="w-3.5 h-3.5"></i> Blocca
                 </button>
             </div>

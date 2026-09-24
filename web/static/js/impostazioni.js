@@ -428,3 +428,16 @@ window.addEventListener('load', function () {
     // WebSocket quando cambia. Questa e' solo la fotografia iniziale.
     caricaPresenza();
 });
+
+// I gesti che il markup di quest'area puo' chiedere (#34). L'elenco e'
+// la stessa forma che avra' la lista di `export` il giorno dei moduli.
+Gesti.registra({
+    copyAlexaSkillJson,
+    handleAssistantNameInput,
+    installPwa,
+    loadOllamaModels,
+    saveSettings,
+    testHaConnection,
+    updateAlexaGeneratorName,
+    updateMaxTokensLabel,
+});

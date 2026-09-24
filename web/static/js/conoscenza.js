@@ -376,3 +376,9 @@ function openAddKnowledgeModal() {
     `);
     setTimeout(() => document.getElementById('new-k-text')?.focus(), 100);
 }
+
+// I gesti che il markup di quest'area puo' chiedere (#34). L'elenco e'
+// la stessa forma che avra' la lista di `export` il giorno dei moduli.
+Gesti.registra({
+    openAddKnowledgeModal,
+});

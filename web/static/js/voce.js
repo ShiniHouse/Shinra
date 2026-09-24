@@ -447,3 +447,14 @@ async function testVoicePreview() {
     await speakText(previewText);
     Stato.voceZittita = wasMuted;
 }
+
+// I gesti che il markup di quest'area puo' chiedere (#34). L'elenco e'
+// la stessa forma che avra' la lista di `export` il giorno dei moduli.
+Gesti.registra({
+    setNeuralVoice,
+    setSpecificVoice,
+    setVoicePitch,
+    setVoiceRate,
+    testVoicePreview,
+    toggleSpeechRecognition,
+});
