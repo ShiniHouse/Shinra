@@ -72,6 +72,8 @@ della documentazione utente. Il quadro completo è nella
 
 | Documento | Cosa contiene |
 | :--- | :--- |
+| [`docs/PRIMI-PASSI.md`](docs/PRIMI-PASSI.md) | Dal primo accesso alla prima automazione: profili, Home Assistant, alias, routine |
+| [`docs/PROBLEMI.md`](docs/PROBLEMI.md) | Cosa fare quando qualcosa non funziona, guasto per guasto — tutti successi davvero |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le cinque fasi da `0.1.0` a `1.0.0` e i criteri di uscita di ciascuna |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Struttura attuale, struttura target e come si aggiunge un modulo nuovo |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | Aggiornamento del server Debian e cosa fare se non si riesce più a entrare |
@@ -570,6 +572,11 @@ che `config.yaml` è finito in un commit una volta, e basta una volta.
 ---
 
 ## 🛠️ Risoluzione Problemi (Troubleshooting)
+
+I quattro qui sotto sono quelli che si incontrano più spesso. L'elenco
+completo — un guasto per voce, tutti successi davvero, con il sintomo per
+come si presenta e non per come lo si racconterebbe dopo — sta in
+[`docs/PROBLEMI.md`](docs/PROBLEMI.md).
 
 | Problema | Causa Possibile | Soluzione |
 | :--- | :--- | :--- |
