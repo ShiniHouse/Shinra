@@ -1,0 +1,96 @@
+        <!-- ==================== TAB 6: GESTIONE UTENTI ==================== -->
+        <div id="tab-users" class="tab-content hidden space-y-6">
+            <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="users" class="w-5 h-5 text-indigo-400"></i> Profili Famiglia & Accesso Minori
+                    </h2>
+                    <p class="text-xs text-slate-400">Registra i membri della famiglia: Shinra adatterà automaticamente il linguaggio e i filtri di sicurezza.</p>
+                </div>
+                <button onclick="openAddUserModal()" id="btn-nuovo-utente" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Nuovo Utente
+                </button>
+            </div>
+
+            <div id="users-list" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Caricato dinamicamente -->
+            </div>
+
+            <!-- ---- Ruoli e permessi (issue #46) ---- -->
+            <div id="sezione-ruoli" class="space-y-4" style="display:none">
+                <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-indigo-400"></i> Ruoli & Permessi
+                        </h2>
+                        <p class="text-xs text-slate-400">Cosa puo' comandare ciascun ruolo. Serrature e allarme sono un permesso a se': chi accende una luce non deve per questo poter aprire la porta di casa.</p>
+                    </div>
+                    <button onclick="apriModaleRuolo(null)" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Nuovo Ruolo
+                    </button>
+                </div>
+
+                <div id="ruoli-lista" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Caricato dinamicamente -->
+                </div>
+            </div>
+
+            <!-- ---- Dispositivi fidati (issue #47) ---- -->
+            <div id="sezione-dispositivi" class="space-y-4">
+                <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="smartphone" class="w-5 h-5 text-indigo-400"></i> Dispositivi Fidati
+                        </h2>
+                        <p class="text-xs text-slate-400">
+                            I dispositivi a cui il PIN non viene piu' chiesto. <span id="dispositivi-ambito"></span>
+                        </p>
+                    </div>
+                    <button onclick="revocaTuttiDispositivi()" id="btn-revoca-tutti" style="display:none" class="px-3.5 py-2 bg-rose-600/20 hover:bg-rose-600 border border-rose-600/40 text-rose-300 hover:text-white rounded-xl text-xs font-semibold items-center gap-1.5 transition shrink-0">
+                        <i data-lucide="shield-off" class="w-4 h-4"></i> Revoca tutti
+                    </button>
+                </div>
+
+                <div id="dispositivi-lista" class="space-y-2">
+                    <!-- Caricato dinamicamente -->
+                </div>
+            </div>
+
+            <!-- ---- Passkey (issue #48) ---- -->
+            <div id="sezione-passkey" class="space-y-4">
+                <div class="flex justify-between items-center bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="fingerprint" class="w-5 h-5 text-indigo-400"></i> Passkey
+                        </h2>
+                        <p class="text-xs text-slate-400">
+                            Entra con impronta o volto, senza digitare il PIN. <span id="passkey-nota"></span>
+                        </p>
+                    </div>
+                    <button onclick="aggiungiPasskey()" id="btn-aggiungi-passkey" style="display:none" class="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold items-center gap-1.5 transition shrink-0">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Aggiungi
+                    </button>
+                </div>
+
+                <div id="passkey-lista" class="space-y-2">
+                    <!-- Caricato dinamicamente -->
+                </div>
+            </div>
+
+            <!-- ---- Voci riconosciute (issue #48) ---- -->
+            <div id="sezione-voci" class="space-y-4">
+                <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="mic" class="w-5 h-5 text-indigo-400"></i> Voci Riconosciute
+                    </h2>
+                    <p class="text-xs text-slate-400">
+                        Chi parla agli Echo. Una voce non associata comanda come un ospite:
+                        niente serrature, niente allarme.
+                    </p>
+                </div>
+
+                <div id="voci-lista" class="space-y-2">
+                    <!-- Caricato dinamicamente -->
+                </div>
+            </div>
+        </div>

@@ -14,27 +14,36 @@ chiamata all'API, perche' qui risponde 404. Se un giorno servisse,
 la strada e' far girare l'applicazione vera e dare al browser una
 sessione; ma sarebbe un altro tipo di prova, piu' lenta e piu' fragile.
 
-Il segnaposto delle espressioni Jinja non usa DOTALL e non accetta
-graffe annidate: la prima versione, scritta con `.*?` e `re.S`,
-mangiava cinquantaquattro caratteri di JavaScript vero fra la prima
-`{{` e la `}}` piu' vicina, e la pagina si apriva con il copione morto.
+La pagina si compone chiedendolo a Jinja, non cancellando i tag con
+un'espressione regolare. Fino alla #176 si faceva cosi', e finche' i
+blocchi erano commenti e condizioni bastava — con due trappole gia'
+pagate: il segnaposto senza DOTALL e senza graffe annidate, perche' la
+prima versione mangiava cinquantaquattro caratteri di JavaScript vero
+fra la prima `{{` e la `}}` piu' vicina, e la pagina si apriva con il
+copione morto.
+
+Dalla #176 `{% include %}` porta dentro nove file di markup: cancellarlo
+darebbe una dashboard che si apre, risponde, e non ha nessuna scheda
+dentro — e i test dei gesti direbbero che il pulsante non c'e', il che
+sarebbe anche vero.
 """
 
 from __future__ import annotations
 
-import re
 import shutil
 import sys
+from types import SimpleNamespace
+
+from jinja2 import Environment, FileSystemLoader
 
 from shinra import percorsi
 
 FUORI = percorsi.RADICE / ".anteprima"
 
-# `{% ... %}` sparisce, `{{ ... }}` diventa una parola. Niente DOTALL, e
-# niente graffe dentro l'espressione: cosi' il segnaposto non puo'
-# scavalcare un `${...}` del JavaScript.
-BLOCCHI = re.compile(r"\{%[^%]*%\}")
-ESPRESSIONI = re.compile(r"\{\{[^{}]*\}\}")
+# Una versione finta al posto di quella vera: l'anteprima non esce da un
+# checkout con un tag, e il riquadro della versione nell'intestazione deve
+# comunque esserci, perche' i gesti misurano anche la barra.
+VERSIONE = SimpleNamespace(descrizione="anteprima", ramo="anteprima", commit="anteprima")
 
 # Solo per l'anteprima: `?scheda=automazioni` apre quella scheda,
 # `&editor=1` apre l'editor a nodi, `&tema=light` fotografa di giorno.
@@ -75,9 +84,17 @@ def prepara() -> None:
         shutil.rmtree(FUORI)
     FUORI.mkdir()
 
-    pagina = (percorsi.MODELLI_HTML / "index.html").read_text(encoding="utf-8")
-    pagina = BLOCCHI.sub("", pagina)
-    pagina = ESPRESSIONI.sub("anteprima", pagina)
+    ambiente = Environment(loader=FileSystemLoader(str(percorsi.MODELLI_HTML)), autoescape=True)
+    pagina = ambiente.get_template("index.html").render(versione=VERSIONE)
+
+    if "{% include" in pagina:
+        raise SystemExit("la pagina composta porta ancora un include: qualcosa non e' stato reso")
+    # Il controllo che sarebbe servito alla #176: una pagina senza schede si
+    # apre, risponde e sembra viva. I gesti direbbero «il pulsante non c'e'»,
+    # ed e' il genere di messaggio che manda a cercare nel posto sbagliato.
+    schede = pagina.count('class="tab-content')
+    if schede < 6:
+        raise SystemExit(f"la pagina composta ha {schede} schede: i pezzi inclusi non sono entrati")
     if "</body>" not in pagina:
         raise SystemExit("la pagina non ha piu' un </body>: il gancio delle schede non sa dove andare")
     if "<head>" not in pagina:

@@ -1,0 +1,201 @@
+    <!-- Top Header -->
+    <header class="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-xl sticky top-0 z-50 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between">
+            <!-- Living Core & Title -->
+            <div class="flex items-center gap-3">
+                <div id="header-living-core" class="living-core" title="Shinra Living Core">
+                    <div class="living-core-halo"></div>
+                    <i data-lucide="sparkles" class="w-5 h-5 text-white animate-pulse"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-extrabold bg-gradient-to-r from-amber-200 via-violet-200 to-indigo-300 dark:from-amber-200 dark:via-violet-200 dark:to-indigo-300 light:from-amber-700 light:via-violet-700 light:to-indigo-800 bg-clip-text text-transparent">Shinra</h1>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">AI Hub</span>
+                        {% if versione %}
+                        <!-- Serve a rispondere a «a che versione siamo?» guardando
+                             la pagina, invece di entrare in SSH sul server. Il
+                             suggerimento porta commit e ramo, che sono cio' che
+                             identifica davvero il codice in esecuzione. -->
+                        <span id="badge-versione"
+                              class="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide bg-slate-800/80 text-slate-400 border border-slate-700/80 cursor-default"
+                              title="{{ versione.descrizione }}{% if versione.ramo and versione.ramo != 'HEAD' %} · ramo {{ versione.ramo }}{% endif %}{% if versione.commit %} · commit {{ versione.commit }}{% endif %}">{{ versione.descrizione }}</span>
+                        {% endif %}
+                    </div>
+                    <p id="empathetic-greeting" class="text-[11px] text-slate-400 font-medium hidden sm:block">Buon pomeriggio. Casa pronta e accogliente.</p>
+                </div>
+            </div>
+
+            <!-- Desktop Header Controls (>= md) -->
+            <div class="hidden md:flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end">
+                <!-- 3-Way Theme Switcher (Auto Solare / Giorno / Notte) -->
+                <button id="theme-toggle-btn" onclick="cycleTheme()" class="px-2.5 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/70 hover:scale-105 transition flex items-center gap-1.5 text-xs font-semibold text-slate-200 shadow-sm" title="Modalità Tema: Clicca per cambiare tra Auto (Solare) / Giorno / Notte">
+                    <span id="theme-toggle-icon"><i data-lucide="sun-medium" class="w-3.5 h-3.5 text-amber-400"></i></span>
+                    <span id="theme-toggle-label" class="text-[11px]">Auto</span>
+                </button>
+
+                <!-- User Selector Dropdown -->
+                <div class="flex items-center gap-1.5 bg-slate-800/70 border border-slate-700/80 rounded-xl px-2.5 py-1 text-xs">
+                    <i data-lucide="user" class="w-3.5 h-3.5 text-violet-400"></i>
+                    <span class="text-slate-400">Parli come:</span>
+                    <select id="user-select" onchange="changeActiveUser(this.value)" class="bg-transparent text-violet-300 font-semibold focus:outline-none cursor-pointer text-xs">
+                        <option value="alessio">Caricamento...</option>
+                    </select>
+                </div>
+
+                <!-- Status Badges -->
+                <div id="ollama-status" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 border border-slate-700/80 text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                    <span>Ollama</span>
+                </div>
+                <div id="ha-status" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 border border-slate-700/80 text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                    <span>HA</span>
+                </div>
+
+                <!-- Chi c'e' in casa (issue #22). `person` era fra i domini
+                     visibili e nessuno lo guardava: e' l'informazione piu'
+                     utile della domotica ed era l'unica che non si vedeva. -->
+                <div id="presenza-pill" style="display:none" class="items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 border border-slate-700/80 text-slate-300" title="Chi c'e' in casa">
+                    <span id="presenza-punto" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                    <span id="presenza-testo">Casa</span>
+                </div>
+
+                <!-- Blocca la sessione. `checkAuthStatus` cercava questo pulsante
+                     da sempre e non lo trovava: la funzione c'era, il modo di
+                     chiamarla no, e l'unico blocco possibile era quello
+                     automatico per inattivita'. Su un tablet di casa con un PIN
+                     per persona, potersi togliere di mezzo e' il minimo. -->
+                <button id="lock-session-btn" onclick="lockSession()" style="display:none" class="px-2.5 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/70 hover:bg-rose-600 hover:border-rose-500 hover:text-white transition flex items-center gap-1.5 text-[11px] font-semibold text-slate-300" title="Blocca la sessione: al prossimo accesso servira' il PIN">
+                    <i data-lucide="lock" class="w-3.5 h-3.5"></i> Blocca
+                </button>
+            </div>
+
+            <!-- Mobile Controls (Hamburger + Quick Theme Toggle) (< md) -->
+            <div class="flex md:hidden items-center gap-2">
+                <button onclick="cycleTheme()" class="p-2 rounded-xl border border-slate-700/80 bg-slate-800/70 text-amber-400 transition" title="Cambia Tema">
+                    <i data-lucide="sun-medium" class="w-4 h-4"></i>
+                </button>
+                <button id="mobile-hamburger-btn" onclick="toggleMobileMenu()" class="p-2 rounded-xl border border-slate-700/80 bg-slate-800/70 text-slate-200 hover:text-white transition flex items-center justify-center" aria-label="Menu">
+                    <i data-lucide="menu" id="mobile-menu-icon" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Desktop Navigation Tabs Bar (>= md)
+
+             Niente `overflow-x-auto`: serviva a far scorrere otto schede, e
+             adesso che sono quattro ritaglierebbe il menu di configurazione
+             invece di lasciarlo uscire — un contenitore che scorre taglia
+             tutto cio' che gli esce dai bordi, menu compresi. E' lo stesso
+             difetto della X dell'editor chiusa dentro `overflow-hidden`
+             (#122), ricomparso dall'altra parte della pagina. Se la riga non
+             ci sta, va a capo. -->
+        <div class="hidden md:flex flex-wrap max-w-7xl mx-auto px-4 sm:px-6 gap-2 border-t border-slate-800/60 dark:border-slate-800/60 light:border-slate-200/80 text-xs font-semibold py-1.5">
+            <button onclick="switchTab('console')" id="tab-btn-console" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-600/30 dark:bg-indigo-600/30 light:bg-indigo-100 text-indigo-300 dark:text-indigo-300 light:text-indigo-800 border border-indigo-500/40 dark:border-indigo-500/40 light:border-indigo-300 transition shadow-sm">
+                <i data-lucide="message-square" class="w-4 h-4"></i> Console Vocale
+            </button>
+            <button onclick="switchTab('automazioni')" id="tab-btn-automazioni" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
+                <i data-lucide="zap" class="w-4 h-4"></i> Automazioni e routine
+            </button>
+            <button onclick="switchTab('aliases')" id="tab-btn-aliases" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i> Dispositivi
+            </button>
+
+            <!-- Le quattro schede che si aprono una volta e poi quasi mai:
+                 conoscenza, fonti, utenti, impostazioni. Stanno dietro un solo
+                 ingresso perche' trattarle come gemelle di «parla alla casa»
+                 e' la scelta che generava piu' affaticamento di qualunque
+                 altra. Restano scritte per esteso, non ridotte a icone: un
+                 indovinello che si ripresenta ogni volta non e' un guadagno.
+                 Le tre di sopra, quelle di ogni giorno, non si nascondono
+                 dietro nessun menu. Riferimento: #128. -->
+            <div class="relative ml-auto">
+                <button type="button" onclick="alternaMenuConfigurazione(event)" id="tab-btn-configurazione" aria-haspopup="true" aria-expanded="false" class="tab-btn flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-400 dark:text-slate-400 light:text-slate-600 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-200/60 transition">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Configurazione
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                </button>
+                <div id="menu-configurazione" class="hidden absolute right-0 top-full mt-1.5 w-64 z-40 rounded-xl border border-slate-800 bg-slate-900 shadow-2xl p-1.5 space-y-0.5">
+                    <button type="button" onclick="switchTab('knowledge')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                        <span class="flex items-center gap-2 text-slate-200"><i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i> Conoscenza della casa</span>
+                        <span class="block text-[11px] text-slate-500 font-normal mt-0.5 pl-6">Cosa Shinra sa di voi</span>
+                    </button>
+                    <button type="button" onclick="switchTab('sources')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                        <span class="flex items-center gap-2 text-slate-200"><i data-lucide="globe" class="w-4 h-4 text-sky-400"></i> Fonti e notizie</span>
+                        <span class="block text-[11px] text-slate-500 font-normal mt-0.5 pl-6">Da dove legge quando gli chiedi le novità</span>
+                    </button>
+                    <button type="button" onclick="switchTab('users')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                        <span class="flex items-center gap-2 text-slate-200"><i data-lucide="users" class="w-4 h-4 text-pink-400"></i> Persone e permessi</span>
+                        <span class="block text-[11px] text-slate-500 font-normal mt-0.5 pl-6">Chi abita qui e cosa può fare</span>
+                    </button>
+                    <button type="button" onclick="switchTab('settings')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                        <span class="flex items-center gap-2 text-slate-200"><i data-lucide="settings" class="w-4 h-4 text-slate-400"></i> Impostazioni dell'hub</span>
+                        <span class="block text-[11px] text-slate-500 font-normal mt-0.5 pl-6">Modello, Home Assistant, Alexa, voce</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Drawer Menu (< md) -->
+        <div id="mobile-menu-drawer" class="hidden md:hidden border-t border-slate-800/80 bg-slate-950/95 backdrop-blur-2xl p-4 space-y-4 transition-all">
+            <!-- Active User Row -->
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="user" class="w-4 h-4 text-violet-400"></i>
+                    <span class="text-xs text-slate-400">Utente attivo:</span>
+                </div>
+                <select id="mobile-user-select" onchange="changeActiveUser(this.value)" class="bg-transparent text-violet-300 font-bold focus:outline-none cursor-pointer text-xs">
+                    <option value="alessio">Caricamento...</option>
+                </select>
+            </div>
+
+            <!-- Navigation Links — una navigazione sola, non due elenchi
+                 diversi fra telefono e computer. Le tre di ogni giorno in
+                 alto, le quattro di configurazione sotto, separate da una
+                 riga che dice cosa sono. Riferimento: #128. -->
+            <div class="grid grid-cols-1 gap-2 text-xs font-semibold">
+                <button onclick="switchTabMobile('console')" class="tab-btn-m p-2.5 rounded-xl bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 flex items-center gap-2 text-left">
+                    <i data-lucide="message-square" class="w-4 h-4"></i> Console Vocale
+                </button>
+                <button onclick="switchTabMobile('automazioni')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                    <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Automazioni e routine
+                </button>
+                <button onclick="switchTabMobile('aliases')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                    <i data-lucide="layout-grid" class="w-4 h-4 text-amber-400"></i> Dispositivi
+                </button>
+            </div>
+
+            <div class="space-y-2">
+                <p class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold px-1">Configurazione</p>
+                <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+                    <button onclick="switchTabMobile('knowledge')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                        <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i> Conoscenza
+                    </button>
+                    <button onclick="switchTabMobile('sources')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                        <i data-lucide="globe" class="w-4 h-4 text-sky-400"></i> Fonti
+                    </button>
+                    <button onclick="switchTabMobile('users')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                        <i data-lucide="users" class="w-4 h-4 text-pink-400"></i> Persone
+                    </button>
+                    <button onclick="switchTabMobile('settings')" class="tab-btn-m p-2.5 rounded-xl bg-slate-900/80 text-slate-300 border border-slate-800 flex items-center gap-2 text-left">
+                        <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i> Impostazioni
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Action: Shinra Istruisci -->
+            <button onclick="startLearningModal(); toggleMobileMenu();" class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-indigo-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md">
+                <i data-lucide="graduation-cap" class="w-4 h-4"></i> Shinra Istruisci (Intervista)
+            </button>
+
+            <!-- Status Badges Row -->
+            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-800/80">
+                <div class="flex items-center gap-3">
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Ollama</span>
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> HA</span>
+                </div>
+                <button onclick="lockSession()" class="text-amber-400 flex items-center gap-1 font-semibold">
+                    <i data-lucide="lock" class="w-3.5 h-3.5"></i> Blocca
+                </button>
+            </div>
+        </div>
+    </header>
