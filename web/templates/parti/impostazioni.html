@@ -5,7 +5,7 @@
                     <i data-lucide="settings" class="w-5 h-5 text-indigo-400"></i> Impostazioni Generali
                 </h2>
 
-                <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-5 text-xs">
+                <form id="settings-form" data-all-invio="saveSettings" data-argomento="evento" class="space-y-5 text-xs">
                     <!-- Atmosfera & Palette di Design — l'unica aperta all'arrivo.
                          Otto pannelli spalancati insieme non sono una schermata da
                          leggere, sono una schermata in cui si cerca, e cercare in un
@@ -24,7 +24,7 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
                             <!-- Palette 1: Aurora (Apple Intelligence / Linear) -->
-                            <div onclick="setPalette('aurora')" id="palette-card-aurora" class="palette-card p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between hover:scale-[1.02] border-indigo-500 ring-2 ring-indigo-500/40 bg-slate-900/90 shadow-sm">
+                            <div data-gesto="setPalette" data-testo="aurora" id="palette-card-aurora" class="palette-card p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between hover:scale-[1.02] border-indigo-500 ring-2 ring-indigo-500/40 bg-slate-900/90 shadow-sm">
                                 <div>
                                     <div class="flex items-center justify-between mb-2">
                                         <span class="font-bold text-xs text-slate-100 flex items-center gap-1">🌌 Obsidian Aurora</span>
@@ -41,7 +41,7 @@
                             </div>
 
                             <!-- Palette 2: Sandstone (Claude / Anthropic) -->
-                            <div onclick="setPalette('sandstone')" id="palette-card-sandstone" class="palette-card p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between hover:scale-[1.02] border-slate-800 bg-slate-900/50 shadow-sm">
+                            <div data-gesto="setPalette" data-testo="sandstone" id="palette-card-sandstone" class="palette-card p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between hover:scale-[1.02] border-slate-800 bg-slate-900/50 shadow-sm">
                                 <div>
                                     <div class="flex items-center justify-between mb-2">
                                         <span class="font-bold text-xs text-slate-100 flex items-center gap-1">☕ Warm Sandstone</span>
@@ -58,7 +58,7 @@
                             </div>
 
                             <!-- Palette 3: Stealth (Vercel / Teenage Eng) -->
-                            <div onclick="setPalette('stealth')" id="palette-card-stealth" class="palette-card p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between hover:scale-[1.02] border-slate-800 bg-slate-900/50 shadow-sm">
+                            <div data-gesto="setPalette" data-testo="stealth" id="palette-card-stealth" class="palette-card p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between hover:scale-[1.02] border-slate-800 bg-slate-900/50 shadow-sm">
                                 <div>
                                     <div class="flex items-center justify-between mb-2">
                                         <span class="font-bold text-xs text-slate-100 flex items-center gap-1">⚡ Cyber Stealth</span>
@@ -96,7 +96,7 @@
                         <div>
                             <div class="flex justify-between items-center mb-1">
                                 <label class="text-slate-400 font-semibold">Modello IA (Ollama):</label>
-                                <button type="button" onclick="loadOllamaModels()" class="text-indigo-400 hover:text-indigo-300 text-[11px] flex items-center gap-1 font-semibold transition">
+                                <button type="button" data-gesto="loadOllamaModels" class="text-indigo-400 hover:text-indigo-300 text-[11px] flex items-center gap-1 font-semibold transition">
                                     🔄 Ricarica Modelli da Ollama
                                 </button>
                             </div>
@@ -116,7 +116,7 @@
                                 <span>Lunghezza Massima Risposta (Token):</span>
                                 <span id="cfg-max-tokens-val" class="text-indigo-400 font-mono font-bold">150 token</span>
                             </div>
-                            <input type="range" id="cfg-max-tokens" min="50" max="600" step="25" value="150" oninput="updateMaxTokensLabel(this.value)" class="w-full accent-indigo-500 cursor-pointer">
+                            <input type="range" id="cfg-max-tokens" min="50" max="600" step="25" value="150" data-mentre-scrivi="updateMaxTokensLabel" data-argomento="valore" class="w-full accent-indigo-500 cursor-pointer">
                             <p class="text-[10px] text-slate-500 mt-1">Valori consigliati: 100-150 per comandi vocali rapidi (8-12s); 300-500 per risposte più lunghe ed elaborate.</p>
                         </div>
                         </div>
@@ -135,7 +135,7 @@
                         </summary>
                         <div class="corpo-sezione space-y-3">
                         <div class="flex justify-end">
-                            <button type="button" onclick="testHaConnection()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/40 rounded-lg text-[11px] font-semibold transition">
+                            <button type="button" data-gesto="testHaConnection" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/40 rounded-lg text-[11px] font-semibold transition">
                                 🔌 Testa Connessione
                             </button>
                         </div>
@@ -183,14 +183,14 @@
                         </summary>
                         <div class="corpo-sezione space-y-3">
                         <div class="flex justify-end">
-                            <button type="button" onclick="testVoicePreview()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/40 rounded-lg text-[11px] font-semibold transition flex items-center gap-1">
+                            <button type="button" data-gesto="testVoicePreview" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/40 rounded-lg text-[11px] font-semibold transition flex items-center gap-1">
                                 🔊 Ascolta Anteprima
                             </button>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="text-slate-400 block mb-1">🌟 Voce Neurale Server HD (Edge-TTS):</label>
-                                <select id="cfg-neural-voice" onchange="setNeuralVoice(this.value)" class="w-full bg-slate-900 border border-indigo-700/60 rounded-lg p-2 text-indigo-300 font-semibold">
+                                <select id="cfg-neural-voice" data-al-cambio="setNeuralVoice" data-argomento="valore" class="w-full bg-slate-900 border border-indigo-700/60 rounded-lg p-2 text-indigo-300 font-semibold">
                                     <option value="it-IT-DiegoNeural">👨 Diego (Maschile / Jarvis HD)</option>
                                     <option value="it-IT-ElsaNeural">👩 Elsa (Femminile / Shinra HD)</option>
                                     <option value="it-IT-IsabellaNeural">👩 Isabella (Femminile Dolce HD)</option>
@@ -200,7 +200,7 @@
                             </div>
                             <div>
                                 <label class="text-slate-400 block mb-1">🌐 Voce Browser (Solo se scelto Locale):</label>
-                                <select id="cfg-browser-voice" onchange="setSpecificVoice(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                                <select id="cfg-browser-voice" data-al-cambio="setSpecificVoice" data-argomento="valore" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                                     <option value="auto">Selezione Automatica Naturale</option>
                                 </select>
                             </div>
@@ -211,18 +211,18 @@
                                     <span>Velocità parlato:</span>
                                     <span id="rate-val" class="text-indigo-400 font-mono">1.0x</span>
                                 </div>
-                                <input type="range" id="cfg-voice-rate" min="0.8" max="1.3" step="0.05" value="1.0" oninput="setVoiceRate(this.value)" class="w-full accent-indigo-500 cursor-pointer">
+                                <input type="range" id="cfg-voice-rate" min="0.8" max="1.3" step="0.05" value="1.0" data-mentre-scrivi="setVoiceRate" data-argomento="valore" class="w-full accent-indigo-500 cursor-pointer">
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 mb-1">
                                     <span>Tonalità (Pitch):</span>
                                     <span id="pitch-val" class="text-indigo-400 font-mono">1.0</span>
                                 </div>
-                                <input type="range" id="cfg-voice-pitch" min="0.7" max="1.3" step="0.05" value="1.0" oninput="setVoicePitch(this.value)" class="w-full accent-indigo-500 cursor-pointer">
+                                <input type="range" id="cfg-voice-pitch" min="0.7" max="1.3" step="0.05" value="1.0" data-mentre-scrivi="setVoicePitch" data-argomento="valore" class="w-full accent-indigo-500 cursor-pointer">
                             </div>
                         </div>
                         <div class="flex items-center gap-2 pt-2 border-t border-slate-800/80">
-                            <input type="checkbox" id="cfg-voice-muted" onchange="setVoiceMuteState(this.checked)" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
+                            <input type="checkbox" id="cfg-voice-muted" data-al-cambio="setVoiceMuteState" data-argomento="spunta" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
                             <label for="cfg-voice-muted" class="text-slate-300 cursor-pointer font-medium">Disattiva riproduzione audio vocale (Modalità Silenziosa)</label>
                         </div>
                         </div>
@@ -241,7 +241,7 @@
                         </summary>
                         <div class="corpo-sezione space-y-3">
                         <div class="flex justify-end">
-                            <button type="button" id="pwa-settings-install-btn" onclick="installPwa()" class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/20 shrink-0">
+                            <button type="button" id="pwa-settings-install-btn" data-gesto="installPwa" class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/20 shrink-0">
                                 <i data-lucide="download" class="w-3.5 h-3.5"></i> Installa App
                             </button>
                         </div>
@@ -271,7 +271,7 @@
                         </summary>
                         <div class="corpo-sezione space-y-3">
                         <div class="flex justify-end">
-                            <button type="button" onclick="lockSession()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition">
+                            <button type="button" data-gesto="lockSession" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition">
                                 <i data-lucide="lock" class="w-3 h-3"></i> Blocca Ora
                             </button>
                         </div>
@@ -289,7 +289,7 @@
                                 <label class="text-slate-300 block mb-1 font-semibold text-xs flex items-center gap-1.5">
                                     <i data-lucide="timer" class="w-3.5 h-3.5 text-amber-400"></i> Blocco Automatico per Inattività:
                                 </label>
-                                <select id="cfg-sec-auto-lock-timeout" onchange="setAutoLockTimeout(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs font-medium">
+                                <select id="cfg-sec-auto-lock-timeout" data-al-cambio="setAutoLockTimeout" data-argomento="valore" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs font-medium">
                                     <option value="0">Disattivato (Non bloccare mai automaticamente)</option>
                                     <option value="1">Dopo 1 minuto di inattività</option>
                                     <option value="3">Dopo 3 minuti di inattività</option>
@@ -320,11 +320,11 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                             <div>
                                 <label class="text-slate-300 block mb-1 font-semibold text-xs">Nome Assistente (Personalità / Risposte):</label>
-                                <input type="text" id="cfg-assistant-name" oninput="handleAssistantNameInput(this.value)" placeholder="Es. Kyra" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs font-semibold">
+                                <input type="text" id="cfg-assistant-name" data-mentre-scrivi="handleAssistantNameInput" data-argomento="valore" placeholder="Es. Kyra" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs font-semibold">
                             </div>
                             <div>
                                 <label class="text-slate-300 block mb-1 font-semibold text-xs">Nome Invocazione Vocale Alexa ("Alexa, apri..."):</label>
-                                <input type="text" id="cfg-alexa-invocation" oninput="updateAlexaGeneratorName(this.value)" placeholder="Es. kyra" class="w-full bg-slate-900 border border-indigo-700/60 rounded-lg p-2 text-indigo-300 font-mono text-xs font-bold">
+                                <input type="text" id="cfg-alexa-invocation" data-mentre-scrivi="updateAlexaGeneratorName" data-argomento="valore" placeholder="Es. kyra" class="w-full bg-slate-900 border border-indigo-700/60 rounded-lg p-2 text-indigo-300 font-mono text-xs font-bold">
                                 <!-- La frase da dire all'altoparlante. Nella
                                      console era scritta a mano — «Alexa, apri
                                      Kyra» — e restava quella anche dopo aver
@@ -340,7 +340,7 @@
                                 <span class="text-xs font-semibold text-slate-300 flex items-center gap-1">
                                     <i data-lucide="code" class="w-3.5 h-3.5 text-amber-400"></i> Interaction Model JSON Personalizzato:
                                 </span>
-                                <button type="button" onclick="copyAlexaSkillJson()" id="copy-alexa-json-btn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+                                <button type="button" data-gesto="copyAlexaSkillJson" id="copy-alexa-json-btn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
                                     <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copia JSON
                                 </button>
                             </div>

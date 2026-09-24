@@ -7,7 +7,7 @@
                     </h2>
                     <p class="text-xs text-slate-400">Registra i membri della famiglia: Shinra adatterà automaticamente il linguaggio e i filtri di sicurezza.</p>
                 </div>
-                <button onclick="openAddUserModal()" id="btn-nuovo-utente" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                <button data-gesto="openAddUserModal" id="btn-nuovo-utente" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
                     <i data-lucide="user-plus" class="w-4 h-4"></i> Nuovo Utente
                 </button>
             </div>
@@ -25,7 +25,7 @@
                         </h2>
                         <p class="text-xs text-slate-400">Cosa puo' comandare ciascun ruolo. Serrature e allarme sono un permesso a se': chi accende una luce non deve per questo poter aprire la porta di casa.</p>
                     </div>
-                    <button onclick="apriModaleRuolo(null)" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0">
+                    <button data-gesto="apriModaleRuolo" data-argomento="niente" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0">
                         <i data-lucide="plus" class="w-4 h-4"></i> Nuovo Ruolo
                     </button>
                 </div>
@@ -46,7 +46,7 @@
                             I dispositivi a cui il PIN non viene piu' chiesto. <span id="dispositivi-ambito"></span>
                         </p>
                     </div>
-                    <button onclick="revocaTuttiDispositivi()" id="btn-revoca-tutti" style="display:none" class="px-3.5 py-2 bg-rose-600/20 hover:bg-rose-600 border border-rose-600/40 text-rose-300 hover:text-white rounded-xl text-xs font-semibold items-center gap-1.5 transition shrink-0">
+                    <button data-gesto="revocaTuttiDispositivi" id="btn-revoca-tutti" style="display:none" class="px-3.5 py-2 bg-rose-600/20 hover:bg-rose-600 border border-rose-600/40 text-rose-300 hover:text-white rounded-xl text-xs font-semibold items-center gap-1.5 transition shrink-0">
                         <i data-lucide="shield-off" class="w-4 h-4"></i> Revoca tutti
                     </button>
                 </div>
@@ -67,7 +67,7 @@
                             Entra con impronta o volto, senza digitare il PIN. <span id="passkey-nota"></span>
                         </p>
                     </div>
-                    <button onclick="aggiungiPasskey()" id="btn-aggiungi-passkey" style="display:none" class="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold items-center gap-1.5 transition shrink-0">
+                    <button data-gesto="aggiungiPasskey" id="btn-aggiungi-passkey" style="display:none" class="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold items-center gap-1.5 transition shrink-0">
                         <i data-lucide="plus" class="w-4 h-4"></i> Aggiungi
                     </button>
                 </div>

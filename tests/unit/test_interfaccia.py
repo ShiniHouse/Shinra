@@ -122,6 +122,21 @@ def _comportamento() -> str:
     return copione
 
 
+def _gesto(nome: str, testo: str | None = None, quando: str = "gesto") -> str:
+    """Come il markup chiede un gesto, dalla #34.
+
+    Prima le guardie cercavano `switchTab('console')`, perche' la chiamata
+    stava scritta dentro un `onclick`. Adesso il markup **nomina** il gesto e
+    non esegue niente, e com'e' scritto lo sa questa funzione sola: il giorno
+    che la forma cambia non ci sono sei guardie da rincorrere una per una.
+
+    `quando` e' l'evento: `gesto` per il clic, `al-cambio`, `mentre-scrivi`,
+    `all-invio` per gli altri tre.
+    """
+    pezzo = f'data-{quando}="{nome}"'
+    return pezzo if testo is None else f'{pezzo} data-testo="{testo}"'
+
+
 def _script_inline(testo: str) -> list[str]:
     """Solo gli script scritti nella pagina: quelli con `src` non sono nostri."""
     return re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", testo, re.S)
@@ -477,8 +492,8 @@ def test_le_automazioni_hanno_una_schermata():
     testo = _frontend()
 
     assert 'id="tab-automazioni"' in testo, "la scheda non esiste"
-    assert "switchTab('automazioni')" in testo, "non ci si arriva dalla navigazione"
-    assert "switchTabMobile('automazioni')" in testo, "dal telefono non ci si arriva"
+    assert _gesto("switchTab", "automazioni") in testo, "non ci si arriva dalla navigazione"
+    assert _gesto("switchTabMobile", "automazioni") in testo, "dal telefono non ci si arriva"
     # Il **ramo**, non la riga esatta: fissare la riga vuol dire che chiunque
     # aggiunga un terzo pezzo alla scheda deve toccare questa guardia, e una
     # guardia che si tocca a ogni aggiunta smette di dire qualcosa.
@@ -627,7 +642,9 @@ def test_la_stanza_si_puo_cambiare_da_dove_si_parla():
     testo = _frontend()
 
     assert 'id="scelta-stanza"' in testo, "non si puo' scegliere la stanza"
-    assert "scegliStanza(this.value)" in testo, "la scelta non viene salvata"
+    assert (
+        _gesto("scegliStanza", quando="al-cambio") + ' data-argomento="valore"' in testo
+    ), "la scelta non viene salvata"
     # Sta nella barra del microfono, non fra le impostazioni.
     barra = testo[testo.index('id="chat-form"') : testo.index("<!-- Right: Activity Logs")]
     assert 'id="scelta-stanza"' in barra, "la stanza e' finita lontano da dove si parla"
@@ -1457,7 +1474,7 @@ def test_le_quattro_schede_di_configurazione_restano_raggiungibili():
 
     for scheda in DIETRO_LA_CONFIGURAZIONE:
         assert f'id="tab-{scheda}"' in testo, f"la scheda {scheda} non esiste piu'"
-        assert f"switchTab('{scheda}')" in menu, f"dal menu di configurazione non si arriva a {scheda}"
+        assert _gesto("switchTab", scheda) in menu, f"dal menu di configurazione non si arriva a {scheda}"
 
 
 def test_dal_telefono_la_navigazione_e_una_sola():
@@ -1469,7 +1486,7 @@ def test_dal_telefono_la_navigazione_e_una_sola():
     """
     cassetto = _senza_commenti_html(_cassetto_telefono(_frontend()))
 
-    destinazioni = re.findall(r"switchTabMobile\('([a-z]+)'\)", cassetto)
+    destinazioni = re.findall(r'data-gesto="switchTabMobile" data-testo="([a-z]+)"', cassetto)
 
     assert destinazioni == PRIMO_LIVELLO + DIETRO_LA_CONFIGURAZIONE, (
         f"dal telefono si arriva a {destinazioni}: manca qualcosa, o l'ordine "
@@ -1493,7 +1510,7 @@ def test_l_editor_a_nodi_resta_al_primo_livello():
     inizio = testo.index('<div id="tab-automazioni"')
     scheda = testo[inizio : testo.index('<div id="tab-users"', inizio)]
 
-    assert "openModularModeBuilder()" in scheda, "l'editor non si apre da questa scheda"
+    assert _gesto("openModularModeBuilder") in scheda, "l'editor non si apre da questa scheda"
     assert 'id="modes-list"' in scheda, "l'elenco delle routine non e' in questa scheda"
     assert 'id="regole-lista"' in scheda, "l'elenco delle automazioni non e' in questa scheda"
 
@@ -2058,7 +2075,7 @@ def test_la_scorciatoia_non_ha_tolto_niente_all_editor():
         testo[testo.index('<div id="tab-automazioni"') : testo.index('<div id="tab-users"')]
     )
 
-    assert "openModularModeBuilder()" in scheda, "l'editor non si apre piu' da questa scheda"
+    assert _gesto("openModularModeBuilder") in scheda, "l'editor non si apre piu' da questa scheda"
     assert 'id="modes-list"' in scheda, "l'elenco delle routine e' sparito"
     assert 'id="scorciatoia"' in scheda, "la scorciatoia non e' qui"
 
@@ -2356,8 +2373,13 @@ def test_i_copioni_si_caricano_nell_ordine_in_cui_furono_scritti():
     # Poi `sicurezza.js`, che dichiara `_html` — usato da tutti per disegnare.
     # Nessuno dei due esegue niente al caricamento.
     assert ordine[0] == "stato.js", f"il primo copione e' {ordine[0]}"
-    assert ordine[1] == "sicurezza.js", f"il secondo copione e' {ordine[1]}"
-    assert ordine[2] == "avvio.js", f"il terzo copione e' {ordine[2]}"
+    # `gesti.js` subito dopo: ogni area, in fondo, chiama `Gesti.registra(...)`
+    # al caricamento. Se arrivasse dopo di loro, `Gesti` non esisterebbe
+    # ancora e nessun gesto verrebbe registrato — cioe' nessun pulsante della
+    # dashboard farebbe niente.
+    assert ordine[1] == "gesti.js", f"il secondo copione e' {ordine[1]}"
+    assert ordine[2] == "sicurezza.js", f"il terzo copione e' {ordine[2]}"
+    assert ordine[3] == "avvio.js", f"il quarto copione e' {ordine[3]}"
     assert ordine[-1] == "impostazioni.js", f"l'ultimo copione e' {ordine[-1]}"
     assert ordine.index("navigazione.js") < ordine.index("tela.js"), (
         "navigazione.js dichiara le costanti delle schede che gli altri leggono: " "deve arrivare prima"
@@ -4133,3 +4155,134 @@ def test_zittire_shinra_sopravvive_alla_riapertura():
         f"chi rilegge cerca `{chiave}`, chi scrive usa {sorted(scritture)}: "
         "i due capi non si incontrano, e la scelta si perde in silenzio"
     )
+
+
+# ------------------------------- i gesti al posto degli onclick (issue #34)
+
+QUANDO = {"gesto": "click", "al-cambio": "change", "mentre-scrivi": "input", "all-invio": "submit"}
+
+# Gli argomenti che il guardiano sa preparare. Il vocabolario e' chiuso
+# apposta: indovinarlo dall'elemento sembra comodo finche' non si incontra
+# `openModularModeBuilder(existingId = null)`, che chiamata con un evento
+# aprirebbe l'editor su una routine che si chiama `[object PointerEvent]`.
+ARGOMENTI = {"valore", "spunta", "evento", "vero", "falso", "niente"}
+
+
+def _gesti_nel_markup() -> dict[str, set[str]]:
+    """Dal nome dell'attributo ai gesti che il markup chiede con quello."""
+    markup = _markup()
+    return {q: set(re.findall(rf'data-{q}="([^"]+)"', markup)) for q in QUANDO}
+
+
+def _gesti_registrati() -> set[str]:
+    """I nomi che le aree passano a `Gesti.registra({...})`.
+
+    Si leggono dal codice senza commenti: un nome citato in una spiegazione
+    non e' una registrazione, ed e' il modo in cui una guardia di questo file
+    e' gia' stata resa cieca quattro volte.
+    """
+    nomi = set()
+    for blocco in re.findall(r"Gesti\.registra\(\{(.*?)\}\)", _senza_commenti(_comportamento()), re.S):
+        nomi |= set(re.findall(r"^\s*([A-Za-z_$][\w$]*)\s*,", blocco, re.M))
+    return nomi
+
+
+def test_la_dashboard_non_esegue_piu_stringhe_dal_markup():
+    """Il vero ostacolo ai moduli ES, tolto (#34, ADR 0006).
+
+    Un attributo `onclick` e' una stringa che il browser esegue nello spazio
+    globale. Il giorno che i copioni diventano moduli quello spazio resta
+    vuoto, e ogni clic smette di fare qualcosa — tutti insieme, senza un
+    errore. Per questo il lavoro della #34 non e' aggiungere `type="module"`:
+    e' arrivare qui.
+
+    `accesso.html` resta fuori e per nome: e' un'altra pagina, con un copione
+    suo di poche righe e tre gesti, e caricarci `gesti.js` per quelli
+    costerebbe piu' di quello che varrebbe.
+    """
+    colpevoli = []
+    for pezzo in [PAGINA, *_parti()]:
+        for attributo in re.findall(r"\son([a-z]+)=\"", _senza_commenti_html(_testo(pezzo))):
+            colpevoli.append(f"{pezzo.name}: on{attributo}")
+
+    assert colpevoli == [], (
+        "la dashboard esegue di nuovo stringhe dal markup: il giorno dei "
+        f"moduli questi clic non faranno piu' niente — {colpevoli}"
+    )
+
+
+def test_ogni_gesto_chiesto_dal_markup_e_registrato():
+    """Un gesto scritto e mai registrato e' un pulsante che non fa niente.
+
+    A differenza di un `onclick` con un refuso — che almeno lasciava un
+    ReferenceError in console — qui il guardiano stampa il nome che non
+    conosce, ma solo **se** qualcuno preme. Questa guardia lo dice prima.
+    """
+    chiesti = set().union(*_gesti_nel_markup().values())
+    assert len(chiesti) > 30, f"gesti trovati nel markup: {sorted(chiesti)}"
+
+    registrati = _gesti_registrati()
+    assert len(registrati) > 30, f"gesti registrati: {sorted(registrati)}"
+
+    assert (
+        sorted(chiesti - registrati) == []
+    ), f"il markup chiede gesti che nessuna area registra: {sorted(chiesti - registrati)}"
+
+
+def test_ogni_gesto_registrato_e_una_funzione_che_esiste():
+    """L'altro verso, che ESLint gia' controlla — ma solo se il nome sta in
+    un file che lui guarda. Scriverlo qui costa una riga e vale il giorno che
+    qualcuno rinomina una funzione e dimentica la registrazione."""
+    dichiarate = set(re.findall(r"^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)", _comportamento(), re.M))
+    inesistenti = sorted(_gesti_registrati() - dichiarate)
+    assert inesistenti == [], f"gesti registrati che non sono funzioni: {inesistenti}"
+
+
+def test_nessun_gesto_registrato_resta_senza_chi_lo_chiami():
+    """Una registrazione di troppo e' un nome che la pagina non usa piu'.
+
+    Non fa danno, ma dice una cosa falsa: che quel pulsante esista. E il
+    giorno dei moduli diventerebbe un `export` senza lettori.
+    """
+    chiesti = set().union(*_gesti_nel_markup().values())
+    inutili = sorted(_gesti_registrati() - chiesti)
+    assert inutili == [], f"questi gesti sono registrati e nessuno li chiede dal markup: {inutili}"
+
+
+def test_ogni_argomento_dichiarato_e_uno_che_il_guardiano_sa_preparare():
+    """`data-argomento` ha un vocabolario chiuso, e un nome fuori elenco non
+    e' un errore di sintassi: e' una funzione chiamata senza argomenti, che
+    fa qualcosa di leggermente sbagliato in silenzio."""
+    strani = sorted(set(re.findall(r'data-argomento="([^"]+)"', _markup())) - ARGOMENTI)
+    assert strani == [], f"argomenti che il guardiano non sa preparare: {strani}"
+
+    # E nessun elemento deve dichiararne due: `data-testo` e `data-argomento`
+    # insieme non si contraddicono a caso — vince `data-testo`, e l'altro
+    # resta li' a dire una cosa che non succede.
+    doppi = re.findall(
+        r"<[^>]*data-testo=\"[^\"]*\"[^>]*data-argomento=|<[^>]*data-argomento=\"[^\"]*\"[^>]*data-testo=",
+        _markup(),
+    )
+    assert doppi == [], f"elementi che dichiarano due argomenti: {len(doppi)}"
+
+
+def test_il_guardiano_dei_gesti_ascolta_i_quattro_eventi():
+    """Gli attributi nel markup e gli eventi ascoltati sono due elenchi che
+    devono combaciare: un `data-mentre-scrivi` senza un ascolto su `input` e'
+    un campo che non reagisce mentre ci si scrive, e non lo dice nessuno."""
+    sorgente = _senza_commenti(_testo(CARTELLA_JS / "gesti.js"))
+    mappa = re.search(r"EVENTI:\s*\{(.*?)\}", sorgente, re.S)
+    assert mappa, "`gesti.js` non dichiara piu' quali eventi ascolta"
+
+    dichiarati = dict(re.findall(r"(\w+):\s*'(\w+)'", mappa.group(1)))
+    # Dal nome della proprieta' in JavaScript all'attributo nel markup:
+    # `alCambio` -> `al-cambio`.
+    attributi = {
+        re.sub(r"([A-Z])", lambda m: "-" + m.group(1).lower(), v): k
+        for v, k in ((v, k) for k, v in dichiarati.items())
+    }
+    assert attributi == QUANDO, f"gli eventi ascoltati sono {attributi}, i test si aspettano {QUANDO}"
+
+    usati = {q for q, nomi in _gesti_nel_markup().items() if nomi}
+    assert usati, "il markup non chiede piu' nessun gesto"
+    assert usati <= set(QUANDO), f"il markup usa attributi che nessuno ascolta: {sorted(usati - set(QUANDO))}"

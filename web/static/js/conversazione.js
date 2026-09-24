@@ -294,3 +294,12 @@ async function riempiStanzeNote() {
         // Senza suggerimenti la stanza si scrive a mano, e va bene.
     }
 }
+
+// I gesti che il markup di quest'area puo' chiedere (#34). L'elenco e'
+// la stessa forma che avra' la lista di `export` il giorno dei moduli.
+Gesti.registra({
+    apriFinestraTool,
+    handleSend,
+    scegliStanza,
+    sendQuickPrompt,
+});

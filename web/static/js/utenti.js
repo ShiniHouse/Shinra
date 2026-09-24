@@ -270,3 +270,9 @@ async function deleteUser(id) {
     await loadUsers();
     await loadUsersDropdown();
 }
+
+// I gesti che il markup di quest'area puo' chiedere (#34). L'elenco e'
+// la stessa forma che avra' la lista di `export` il giorno dei moduli.
+Gesti.registra({
+    openAddUserModal,
+});

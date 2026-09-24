@@ -373,3 +373,13 @@ function updateActiveUserBanner() {
     if (nameEl) nameEl.innerText = `${av.emoji} ${user.name}`;
     if (roleEl) roleEl.innerText = `${user.role} • ${av.label}`;
 }
+
+// I gesti che il markup di quest'area puo' chiedere (#34). L'elenco e'
+// la stessa forma che avra' la lista di `export` il giorno dei moduli.
+Gesti.registra({
+    alternaMenuConfigurazione,
+    changeActiveUser,
+    switchTab,
+    switchTabMobile,
+    toggleMobileMenu,
+});

@@ -319,6 +319,15 @@ async function toggleLearningMic() {
     }
 }
 
+function apriApprendimentoDalMenu() {
+    // Dal menu del telefono l'intervista si apre e il menu si chiude, in
+    // quest'ordine. Nel markup erano due chiamate in fila dentro lo stesso
+    // `onclick`; un gesto ne nomina uno solo, e due cose che vanno sempre
+    // insieme sono una cosa sola che merita un nome.
+    startLearningModal();
+    toggleMobileMenu();
+}
+
 async function closeLearningModal() {
     if (isLearningListening && learningRecognition) {
         learningRecognition.stop();
@@ -355,3 +364,15 @@ async function deleteKnowledge(id) {
     await fetch(`/api/knowledge/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
     loadKnowledge();
 }
+
+// I gesti che il markup di quest'area puo' chiedere (#34). L'elenco e'
+// la stessa forma che avra' la lista di `export` il giorno dei moduli.
+Gesti.registra({
+    acceptProposedRoutine,
+    apriApprendimentoDalMenu,
+    closeLearningModal,
+    replayLearningQuestionAudio,
+    startLearningModal,
+    submitLearningAnswer,
+    toggleLearningMic,
+});

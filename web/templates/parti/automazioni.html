@@ -20,7 +20,7 @@
                     </h2>
                     <p class="text-xs text-slate-400 mt-1">Ogni automazione dice quando scatta, quando scatterà la prossima volta e com'è andata l'ultima.</p>
                 </div>
-                <button onclick="loadRegole()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0">
+                <button data-gesto="loadRegole" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0">
                     <i data-lucide="refresh-cw" class="w-4 h-4"></i> Aggiorna
                 </button>
             </div>
@@ -53,7 +53,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <label class="text-slate-400 font-semibold block">Quando</label>
-                            <select id="scorciatoia-quando" onchange="disegnaScorciatoia()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <select id="scorciatoia-quando" data-al-cambio="disegnaScorciatoia" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                                 <option value="orario">A un orario</option>
                                 <option value="alba">All'alba</option>
                                 <option value="tramonto">Al tramonto</option>
@@ -65,7 +65,7 @@
 
                         <div class="space-y-2">
                             <label class="text-slate-400 font-semibold block">Fai questo</label>
-                            <select id="scorciatoia-cosa" onchange="disegnaScorciatoia()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <select id="scorciatoia-cosa" data-al-cambio="disegnaScorciatoia" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                                 <option value="modalita">Avvia una routine</option>
                                 <option value="dispositivo">Accendi o spegni un dispositivo</option>
                                 <option value="avviso">Mandami un avviso</option>
@@ -85,10 +85,10 @@
                     <div id="scorciatoia-esito" class="hidden p-2.5 rounded-lg"></div>
 
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-                        <button type="button" onclick="apriEditorDallaScorciatoia()" class="text-indigo-400 hover:text-indigo-300 font-semibold underline decoration-dotted text-left">
+                        <button type="button" data-gesto="apriEditorDallaScorciatoia" class="text-indigo-400 hover:text-indigo-300 font-semibold underline decoration-dotted text-left">
                             Serve qualcosa di più complicato?
                         </button>
-                        <button type="button" onclick="creaScorciatoia()" id="scorciatoia-crea" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shrink-0">
+                        <button type="button" data-gesto="creaScorciatoia" id="scorciatoia-crea" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shrink-0">
                             Crea l'automazione
                         </button>
                     </div>
@@ -106,7 +106,7 @@
                     </h2>
                     <p class="text-xs text-slate-400 mt-1">Blocchi collegati: un innesco, poi azioni, attese e risposte vocali. Da qui nascono anche le automazioni qui sopra — basta dare al primo blocco un innesco che non sia la voce.</p>
                 </div>
-                <button onclick="openModularModeBuilder()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shrink-0 shadow-lg shadow-indigo-600/20">
+                <button data-gesto="openModularModeBuilder" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shrink-0 shadow-lg shadow-indigo-600/20">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Nuova Routine Modulare
                 </button>
             </div>

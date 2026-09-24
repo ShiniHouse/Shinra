@@ -9,13 +9,13 @@
                         <p class="text-xs text-slate-400 mt-1">Scegli da dove Shinra attinge notizie, economia e aggiornamenti. Più fonti aggiungi, più Shinra è informata.</p>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap shrink-0">
-                        <button onclick="bulkToggleSources(true)" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-600/40 text-emerald-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                        <button data-gesto="bulkToggleSources" data-argomento="vero" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-600/40 text-emerald-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
                             <i data-lucide="check-check" class="w-4 h-4"></i> Attiva Tutte
                         </button>
-                        <button onclick="bulkToggleSources(false)" class="px-3 py-2 bg-rose-600/20 hover:bg-rose-600 border border-rose-600/40 text-rose-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                        <button data-gesto="bulkToggleSources" data-argomento="falso" class="px-3 py-2 bg-rose-600/20 hover:bg-rose-600 border border-rose-600/40 text-rose-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
                             <i data-lucide="x" class="w-4 h-4"></i> Disattiva Tutte
                         </button>
-                        <button onclick="openAddSourceModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0 shadow-sm">
+                        <button data-gesto="openAddSourceModal" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0 shadow-sm">
                             <i data-lucide="plus" class="w-4 h-4"></i> URL Personalizzato
                         </button>
                     </div>

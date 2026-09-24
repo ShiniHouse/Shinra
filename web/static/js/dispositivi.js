@@ -251,3 +251,10 @@ async function deleteAlias(id) {
     await fetch(`/api/aliases/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
     loadAliases();
 }
+
+// I gesti che il markup di quest'area puo' chiedere (#34). L'elenco e'
+// la stessa forma che avra' la lista di `export` il giorno dei moduli.
+Gesti.registra({
+    discoverHAEntities,
+    filterEntities,
+});

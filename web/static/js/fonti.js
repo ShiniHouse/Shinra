@@ -317,3 +317,10 @@ async function deleteSource(id) {
     await fetch(`/api/sources/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
     loadSources();
 }
+
+// I gesti che il markup di quest'area puo' chiedere (#34). L'elenco e'
+// la stessa forma che avra' la lista di `export` il giorno dei moduli.
+Gesti.registra({
+    bulkToggleSources,
+    openAddSourceModal,
+});
