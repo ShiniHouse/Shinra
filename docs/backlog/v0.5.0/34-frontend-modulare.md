@@ -27,7 +27,7 @@ l'intero file. E' il freno principale a ogni funzione nuova con interfaccia.
       dispositivi, routine, canvas, timer, impostazioni — #145, #147, #151.
       Sono venti file, uno per area, ma sono ancora copioni classici caricati
       in ordine: **moduli ES veri no, non ancora**
-- [ ] Sostituire lo stato globale sparso con un contenitore unico
+- [x] Sostituire lo stato globale sparso con un contenitore unico — #177
 - [x] Sostituire la generazione di HTML per concatenazione di stringhe, che
       oggi e' esposta a injection dai nomi delle entita' — #148, #149, #150,
       #151
@@ -55,9 +55,9 @@ Misurato adesso:
 
 | | prima | dopo |
 | :--- | :-- | :-- |
-| `web/templates/index.html` | 7.438 righe | **158** |
+| `web/templates/index.html` | 7.438 righe | **159** |
 | File di markup | 1 | 10: l'ossatura e nove pezzi inclusi |
-| File JavaScript | 1 (dentro l'HTML) | 21, il piu' lungo di **451** righe |
+| File JavaScript | 1 (dentro l'HTML) | 22, il piu' lungo di **449** righe |
 | File CSS | 1 (dentro l'HTML) | 5 |
 | Concatenazioni di stringhe non protette | tutte | **zero**, con guardia |
 
@@ -75,9 +75,25 @@ Il criterio ancora aperto, e perche':
   #156, che fa girare in CI sette gesti veri dell'editor con un browser vero.
   La #152 e la #153 sono state chiuse (#164, #163), ma c'erano gia' prima.
 
-Restano fuori da questo lavoro, e valgono ancora: i **moduli ES veri** — oggi
-sono copioni classici, e devono restarlo finche' la pagina chiama le funzioni
-dagli `onclick` — e lo **stato globale in un contenitore unico**.
+Poi la **#177**, lo stato in un posto solo. Le variabili globali erano
+quarantaquattro, ma solo **undici** attraversavano piu' di un file — e quelle
+undici erano il difetto: `activeUserId` girava per cinque file, `_canvasState`
+per quattro con ottanta riferimenti. Adesso sono campi di `Stato`, in
+`web/static/js/stato.js`, ognuno con scritto accanto chi lo scrive e chi lo
+legge. Le altre trentatre' sono rimaste dove stanno: le usa un'area sola, e
+portarle li' avrebbe allungato l'elenco senza dire niente a nessuno.
+
+Il contenitore toglie una protezione, e va detto: con le variabili sciolte,
+`activeUserIdd` era un nome che nessuno dichiarava e `no-undef` fermava
+ESLint; `Stato.utenteAttivoo` invece e' una proprieta' come un'altra, vale
+`undefined` e non solleva niente. La rimette
+`test_ogni_campo_dello_stato_esiste_davvero`, che i campi li legge dal
+contenitore e gli usi da tutto il frontend.
+
+Resta fuori, e vale ancora: i **moduli ES veri**. Oggi sono copioni classici e
+devono restarlo finche' la pagina chiama le funzioni dagli `onclick` — sono
+settantasette nel markup e settantadue generati dal JavaScript, ed e' quello
+il lavoro vero, non il `type="module"`.
 
 ## Guardie
 

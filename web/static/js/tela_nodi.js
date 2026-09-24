@@ -1,5 +1,5 @@
 function updateNodeData(nodeId, field, val) {
-    const node = _canvasState.nodes.find((n) => n.id === nodeId);
+    const node = Stato.tela.nodes.find((n) => n.id === nodeId);
     if (node) {
         node.data[field] = val;
     }
@@ -24,12 +24,12 @@ const COMANDI_DENTRO_AL_NODO = 'button, input, select, textarea, a, option';
 
 function startDragNode(nodeId, e) {
     if (e.target.closest && e.target.closest(COMANDI_DENTRO_AL_NODO)) return;
-    const node = _canvasState.nodes.find((n) => n.id === nodeId);
+    const node = Stato.tela.nodes.find((n) => n.id === nodeId);
     if (!node) return;
     const canvas = document.getElementById('flow-canvas');
     const rect = canvas.getBoundingClientRect();
-    _canvasState.isDraggingNode = nodeId;
-    _canvasState.dragOffset = {
+    Stato.tela.isDraggingNode = nodeId;
+    Stato.tela.dragOffset = {
         x: e.clientX - rect.left - node.x,
         y: e.clientY - rect.top - node.y,
     };
@@ -37,35 +37,35 @@ function startDragNode(nodeId, e) {
 
 function onPinMouseDown(sourceNodeId, e, ramo = null) {
     e.stopPropagation();
-    _canvasState.connectingSourceId = sourceNodeId;
+    Stato.tela.connectingSourceId = sourceNodeId;
     // Da quale uscita parte il cavo. Solo le condizioni ne hanno due,
     // e l'etichetta sta sull'**arco**: e' l'arco a sapere da quale
     // uscita parte, ed e' l'unica informazione che serve al motore
     // per percorrerne uno solo (issue #28).
-    _canvasState.connectingRamo = ramo;
+    Stato.tela.connectingRamo = ramo;
 }
 
 function onPinMouseUp(targetNodeId, e) {
     e.stopPropagation();
-    if (_canvasState.connectingSourceId && _canvasState.connectingSourceId !== targetNodeId) {
+    if (Stato.tela.connectingSourceId && Stato.tela.connectingSourceId !== targetNodeId) {
         // Aggiunge la connessione se non già esistente. Due archi con
         // lo stesso arrivo ma rami diversi sono connessioni diverse:
         // e' come si disegna «se sì fai questo, se no fai lo stesso
         // ma dopo qualcos'altro».
-        const ramo = _canvasState.connectingRamo || null;
-        const exists = _canvasState.edges.some(
+        const ramo = Stato.tela.connectingRamo || null;
+        const exists = Stato.tela.edges.some(
             (x) =>
-                x.from === _canvasState.connectingSourceId &&
+                x.from === Stato.tela.connectingSourceId &&
                 x.to === targetNodeId &&
                 (x.ramo || null) === ramo,
         );
         if (!exists) {
-            const nuovo = { from: _canvasState.connectingSourceId, to: targetNodeId };
+            const nuovo = { from: Stato.tela.connectingSourceId, to: targetNodeId };
             if (ramo) nuovo.ramo = ramo;
-            _canvasState.edges.push(nuovo);
+            Stato.tela.edges.push(nuovo);
         }
-        _canvasState.connectingSourceId = null;
-        _canvasState.connectingRamo = null;
+        Stato.tela.connectingSourceId = null;
+        Stato.tela.connectingRamo = null;
         renderCanvasElements();
     }
 }
@@ -77,7 +77,7 @@ function onPinMouseUp(targetNodeId, e) {
 // a seconda di dove le hai scritte.
 
 function setTipoCondizione(nodeId, tipo) {
-    const node = _canvasState.nodes.find((n) => n.id === nodeId);
+    const node = Stato.tela.nodes.find((n) => n.id === nodeId);
     if (!node) return;
     // Si riparte da zero al cambio di tipo: i campi di una condizione
     // non valgono per un'altra, e lasciarli in giro produce una
@@ -93,7 +93,7 @@ function setTipoCondizione(nodeId, tipo) {
 }
 
 function setTipoInnesco(nodeId, tipo) {
-    const node = _canvasState.nodes.find((n) => n.id === nodeId);
+    const node = Stato.tela.nodes.find((n) => n.id === nodeId);
     if (!node) return;
     // Come per le condizioni: si riparte da zero. I campi di un
     // innesco a orario non valgono per uno su soglia, e lasciarli in
@@ -111,14 +111,14 @@ function setTipoInnesco(nodeId, tipo) {
 }
 
 function setDatoInnesco(nodeId, campo, valore) {
-    const node = _canvasState.nodes.find((n) => n.id === nodeId);
+    const node = Stato.tela.nodes.find((n) => n.id === nodeId);
     if (!node) return;
     node.data.trigger = node.data.trigger || { tipo: 'voce' };
     node.data.trigger[campo] = valore;
 }
 
 function alternaGiornoInnesco(nodeId, giorno) {
-    const node = _canvasState.nodes.find((n) => n.id === nodeId);
+    const node = Stato.tela.nodes.find((n) => n.id === nodeId);
     if (!node) return;
     const t = (node.data.trigger = node.data.trigger || { tipo: 'orario' });
     const scelti = new Set(t.giorni || []);
@@ -128,14 +128,14 @@ function alternaGiornoInnesco(nodeId, giorno) {
 }
 
 function setDatoCondizione(nodeId, campo, valore) {
-    const node = _canvasState.nodes.find((n) => n.id === nodeId);
+    const node = Stato.tela.nodes.find((n) => n.id === nodeId);
     if (!node) return;
     node.data.condizione = node.data.condizione || {};
     node.data.condizione[campo] = valore;
 }
 
 function alternaGiorno(nodeId, giorno) {
-    const node = _canvasState.nodes.find((n) => n.id === nodeId);
+    const node = Stato.tela.nodes.find((n) => n.id === nodeId);
     if (!node) return;
     const c = (node.data.condizione = node.data.condizione || { tipo: 'giorni' });
     const scelti = new Set(c.giorni || []);
@@ -146,7 +146,7 @@ function alternaGiorno(nodeId, giorno) {
 
 function addCanvasNode(type) {
     const id = `node_${Date.now().toString().slice(-5)}`;
-    const count = _canvasState.nodes.length;
+    const count = Stato.tela.nodes.length;
     const newNode = {
         id: id,
         type: type,
@@ -167,18 +167,18 @@ function addCanvasNode(type) {
         newNode.data.titolo = '';
         newNode.data.testo = '';
     }
-    _canvasState.nodes.push(newNode);
+    Stato.tela.nodes.push(newNode);
     renderCanvasElements();
 }
 
 function deleteCanvasNode(nodeId) {
-    _canvasState.nodes = _canvasState.nodes.filter((n) => n.id !== nodeId);
-    _canvasState.edges = _canvasState.edges.filter((e) => e.from !== nodeId && e.to !== nodeId);
+    Stato.tela.nodes = Stato.tela.nodes.filter((n) => n.id !== nodeId);
+    Stato.tela.edges = Stato.tela.edges.filter((e) => e.from !== nodeId && e.to !== nodeId);
     renderCanvasElements();
 }
 
 function deleteCanvasEdge(idx) {
-    _canvasState.edges.splice(idx, 1);
+    Stato.tela.edges.splice(idx, 1);
     renderCanvasWires();
     updateCanvasStats();
 }
@@ -192,9 +192,9 @@ function renderCanvasWires(draftPos = null) {
     // li ripulirebbe — i cavi sparirebbero e nessuno saprebbe perche'.
     const cavi = [];
 
-    _canvasState.edges.forEach((edge, idx) => {
-        const fromNode = _canvasState.nodes.find((n) => n.id === edge.from);
-        const toNode = _canvasState.nodes.find((n) => n.id === edge.to);
+    Stato.tela.edges.forEach((edge, idx) => {
+        const fromNode = Stato.tela.nodes.find((n) => n.id === edge.from);
+        const toNode = Stato.tela.nodes.find((n) => n.id === edge.to);
         if (fromNode && toNode) {
             const x1 = fromNode.x + 240; // output pin (right side)
             const y1 = fromNode.y + 20; // pin y position
@@ -222,8 +222,8 @@ function renderCanvasWires(draftPos = null) {
     });
 
     // Disegna cavo di bozza durante il trascinamento
-    if (draftPos && _canvasState.connectingSourceId) {
-        const srcNode = _canvasState.nodes.find((n) => n.id === _canvasState.connectingSourceId);
+    if (draftPos && Stato.tela.connectingSourceId) {
+        const srcNode = Stato.tela.nodes.find((n) => n.id === Stato.tela.connectingSourceId);
         if (srcNode) {
             const x1 = srcNode.x + 240;
             const y1 = srcNode.y + 20;
@@ -260,7 +260,7 @@ function renderCanvasWires(draftPos = null) {
 async function simulateCanvasFlow() {
     const btn = document.getElementById('btn-sim-canvas');
     const testoPulsante = '▶️ Prova il flusso';
-    if (!_canvasState.nodes.length) return;
+    if (!Stato.tela.nodes.length) return;
     if (btn) btn.innerHTML = _html`<span class="animate-spin">⏳</span> Simulazione...`;
 
     let esito;
@@ -268,7 +268,7 @@ async function simulateCanvasFlow() {
         const res = await fetch('/api/modes/simula', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ nodes: _canvasState.nodes, edges: _canvasState.edges }),
+            body: JSON.stringify({ nodes: Stato.tela.nodes, edges: Stato.tela.edges }),
         });
         if (!res.ok) throw new Error('simulazione rifiutata');
         esito = await res.json();
@@ -288,7 +288,7 @@ async function simulateCanvasFlow() {
         const el = document.getElementById(`c-node-${idNodo}`);
         if (el) el.classList.add('ring-2', 'ring-violet-400', 'border-violet-400', 'scale-[1.02]');
 
-        const nodo = _canvasState.nodes.find((n) => n.id === idNodo);
+        const nodo = Stato.tela.nodes.find((n) => n.id === idNodo);
         if (nodo && nodo.type === 'delay') {
             await new Promise((r) => setTimeout(r, Math.min((nodo.data.seconds || 3) * 1000, 3000)));
         } else if (nodo && nodo.type === 'tts') {
@@ -305,7 +305,7 @@ async function simulateCanvasFlow() {
         // ramo scelto e basta, ed e' tutta la differenza fra vedere
         // cosa succede e vedere cosa potrebbe succedere.
         const scelta = decisioni.get(idNodo);
-        const uscenti = _canvasState.edges.filter(
+        const uscenti = Stato.tela.edges.filter(
             (e) =>
                 e.from === idNodo &&
                 visitati.includes(e.to) &&
@@ -345,14 +345,14 @@ function mostraLeDecisioni(decisioni) {
 }
 
 async function saveCanvasMode() {
-    if (!_canvasState.name) {
+    if (!Stato.tela.name) {
         alert('Inserisci un nome per la routine.');
         return;
     }
 
     // Converte anche in array lineare di actions per garantire retrocompatibilità al 100%
     const linearActions = [];
-    _canvasState.nodes.forEach((n) => {
+    Stato.tela.nodes.forEach((n) => {
         if (n.type !== 'trigger') {
             linearActions.push({
                 type: n.type,
@@ -365,14 +365,14 @@ async function saveCanvasMode() {
     });
 
     const payload = {
-        id: _canvasState.id || undefined,
-        name: _canvasState.name,
-        icon: _canvasState.icon || 'workflow',
-        description: _canvasState.description || '',
-        trigger_phrases: _canvasState.trigger_phrases,
+        id: Stato.tela.id || undefined,
+        name: Stato.tela.name,
+        icon: Stato.tela.icon || 'workflow',
+        description: Stato.tela.description || '',
+        trigger_phrases: Stato.tela.trigger_phrases,
         enabled: true,
-        nodes: _canvasState.nodes,
-        edges: _canvasState.edges,
+        nodes: Stato.tela.nodes,
+        edges: Stato.tela.edges,
         actions: linearActions,
     };
 

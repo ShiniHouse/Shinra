@@ -31,10 +31,12 @@ installi qualcuno che non sei tu. Quello che è già dentro il ramo principale:
   impostazioni a sezioni, e la colonna di destra che racconta cosa sta per
   succedere in casa invece della diagnostica.
 - **Il frontend scomposto** (#144–#151, #176): `index.html` è passato da 7.438
-  righe a **158**; il markup delle schede sta in nove file inclusi, il
-  JavaScript in ventuno file, uno per area, il più lungo di **451** righe; il
+  righe a **159**; il markup delle schede sta in nove file inclusi, il
+  JavaScript in ventidue file, uno per area, il più lungo di **449** righe; il
   CSS in cinque; ESLint e Prettier girano in CI. Nessun file del frontend
-  supera le cinquecento righe, ed è un test a dirlo. E ogni
+  supera le cinquecento righe, ed è un test a dirlo. E lo stato che attraversa
+  le aree — undici variabili, una girava per cinque file — sta in un
+  contenitore solo (#177). E ogni
   valore che finisce nella pagina viene scappato: prima bastava un dispositivo
   chiamato `<img onerror=...>` in Home Assistant.
 - **I gesti dell'editor a nodi in CI** (#156): sette gesti veri, con un

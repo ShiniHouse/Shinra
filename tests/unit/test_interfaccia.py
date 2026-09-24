@@ -39,6 +39,10 @@ CARTELLA_JS = RADICE / "web" / "static" / "js"
 # l'ossatura e i collegamenti, e include un file per area. Stessa regola dei
 # fogli e dei copioni — la cartella si legge, i nomi non si sanno a memoria.
 CARTELLA_PARTI = RADICE / "web" / "templates" / "parti"
+# Il file che dichiara `Stato`, il contenitore di cio' che attraversa le aree
+# (#34). Sta qui in cima perche' lo legge anche `_esegui_con_node`, che deve
+# dichiararlo prima di eseguire una funzione che lo usa.
+CONTENITORE = "stato.js"
 
 
 def _fogli() -> list[Path]:
@@ -919,8 +923,17 @@ def test_le_routine_a_innesco_vocale_si_vedono_fra_le_automazioni():
 
 
 def _esegui_con_node(sorgente: str) -> subprocess.CompletedProcess:
+    """Esegue il pezzo di copione dato, con `Stato` gia' dichiarato.
+
+    Il contenitore si prende dal file vero invece di scriverne una copia qui:
+    una copia resta giusta anche il giorno che l'originale non lo e' piu', ed
+    e' il motivo per cui esiste anche `_riga_javascript`. Costa una
+    dichiarazione in cima al file temporaneo, e in cambio un campo tolto da
+    `stato.js` fa fallire i test che lo usavano invece di lasciarli verdi.
+    """
+    contenitore = _testo(CARTELLA_JS / CONTENITORE)
     with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as file:
-        file.write(sorgente)
+        file.write(contenitore + "\n" + sorgente)
         temporaneo = file.name
     try:
         return subprocess.run(["node", temporaneo], capture_output=True, text=True, check=False)
@@ -1996,10 +2009,14 @@ const campi = {
     'scorciatoia-nome': { value: 'Sera in giardino' }
 };
 const document = { getElementById: (id) => campi[id] || null };
-const _canvasState = { nodes: [], edges: [], name: '' };
+// La tela **non** si sostituisce con un oggetto scritto qui: si usa quella
+// vera, che `_esegui_con_node` porta dentro insieme al contenitore. Una
+// copia locale resterebbe giusta anche il giorno che `Stato.tela` nasce
+// `null` — e quel giorno l'editor non si aprirebbe piu' in casa, con questo
+// test verde.
 function openModularModeBuilder() {
-    _canvasState.name = 'Nuova Routine';
-    _canvasState.nodes = [
+    Stato.tela.name = 'Nuova Routine';
+    Stato.tela.nodes = [
         { id: 'node_trig', type: 'trigger', data: { phrases: ['modalita relax'] } },
         { id: 'node_ha1', type: 'ha_device', data: {} }
     ];
@@ -2011,8 +2028,8 @@ function renderFlowCanvasModal() {}
         + _funzione_javascript(testo, "apriEditorDallaScorciatoia")
         + """
 apriEditorDallaScorciatoia();
-const nodo = _canvasState.nodes.find(n => n.type === 'trigger');
-console.log(JSON.stringify({ innesco: nodo.data.trigger, nome: _canvasState.name }));
+const nodo = Stato.tela.nodes.find(n => n.type === 'trigger');
+console.log(JSON.stringify({ innesco: nodo.data.trigger, nome: Stato.tela.name }));
 """
     )
 
@@ -2333,11 +2350,14 @@ def test_i_copioni_si_caricano_nell_ordine_in_cui_furono_scritti():
     """
     ordine = [p.split("/")[-1] for p in _collegamenti(_testo(PAGINA)) if p.endswith(".js")]
 
-    # `sicurezza.js` sta davanti a tutti: dichiara `_html`, che ogni altra
-    # area usa per disegnare. Non esegue niente al caricamento, quindi
-    # anticiparlo non cambia nulla se non l'ordine di dichiarazione.
-    assert ordine[0] == "sicurezza.js", f"il primo copione e' {ordine[0]}"
-    assert ordine[1] == "avvio.js", f"il secondo copione e' {ordine[1]}"
+    # `stato.js` sta davanti a tutti: e' una sola dichiarazione, e ogni altra
+    # area ne legge i campi. Un file che arrivasse prima e leggesse `Stato`
+    # in cima troverebbe un nome che non esiste ancora.
+    # Poi `sicurezza.js`, che dichiara `_html` — usato da tutti per disegnare.
+    # Nessuno dei due esegue niente al caricamento.
+    assert ordine[0] == "stato.js", f"il primo copione e' {ordine[0]}"
+    assert ordine[1] == "sicurezza.js", f"il secondo copione e' {ordine[1]}"
+    assert ordine[2] == "avvio.js", f"il terzo copione e' {ordine[2]}"
     assert ordine[-1] == "impostazioni.js", f"l'ultimo copione e' {ordine[-1]}"
     assert ordine.index("navigazione.js") < ordine.index("tela.js"), (
         "navigazione.js dichiara le costanti delle schede che gli altri leggono: " "deve arrivare prima"
@@ -2560,8 +2580,10 @@ def test_eslint_impara_i_nomi_globali_dalla_cartella():
     if not (RADICE / "node_modules").exists():
         pytest.skip("attrezzi del frontend non installati: `npm install` per averli. In CI ci sono")
 
-    # `timer.js` deve conoscere un nome dichiarato da `navigazione.js`
-    # (`activeUserId`: e' quello che mancava) e uno da `accesso.js`.
+    # `timer.js` deve conoscere un nome dichiarato da un altro file: `Stato`,
+    # che sta in `stato.js` e da cui `timer.js` legge i timer accesi. Prima
+    # della #34 qui c'era `activeUserId`, che era il nome che mancava davvero
+    # quando questa guardia e' nata.
     lettura = """
 import config from './eslint.config.js';
 const per = (f) => config.find(c => c.files && c.files.includes('web/static/js/' + f));
@@ -2584,7 +2606,7 @@ console.log(JSON.stringify({
     assert visto["quanti"] == len(_copioni()), (
         f"la configurazione copre {visto['quanti']} copioni, sul disco ce ne sono " f"{len(_copioni())}"
     )
-    for nome in ("activeUserId", "getAuthHeaders", "document", "fetch"):
+    for nome in ("Stato", "getAuthHeaders", "document", "fetch"):
         assert nome in visto["timer"], f"ESLint non sa che `{nome}` esiste: gridera' su codice giusto"
     assert "saveNewTimerManual" not in visto["timer"], (
         "i nomi che timer.js dichiara da se' gli vengono dati anche come globali: " "e' una ridichiarazione"
@@ -3226,7 +3248,11 @@ def test_premere_la_x_di_un_nodo_non_lo_trascina():
 
     prova = (
         """
-const _canvasState = { nodes: [{ id: 'n1', x: 10, y: 10 }], isDraggingNode: null, dragOffset: null };
+// Si **riempie** la tela vera invece di sostituirla: cosi' se un giorno
+// `Stato.tela` nascesse `null`, qui esplode subito invece di passare.
+Stato.tela.nodes = [{ id: 'n1', x: 10, y: 10 }];
+Stato.tela.isDraggingNode = null;
+Stato.tela.dragOffset = null;
 function finto(tag, dentro) {
     const nodo = {
         tagName: tag.toUpperCase(),
@@ -3264,9 +3290,9 @@ const casi = {
 };
 const esito = {};
 for (const [nome, bersaglio] of Object.entries(casi)) {
-    _canvasState.isDraggingNode = null;
+    Stato.tela.isDraggingNode = null;
     startDragNode('n1', { target: bersaglio, clientX: 100, clientY: 100 });
-    esito[nome] = _canvasState.isDraggingNode !== null;
+    esito[nome] = Stato.tela.isDraggingNode !== null;
 }
 console.log(JSON.stringify(esito));
 """
@@ -3357,9 +3383,10 @@ def _banco_del_canale_eventi() -> str:
     sorgente = _testo(CARTELLA_JS / "eventi.js")
     return "\n".join(
         [
+            # `Stato.eventiCollegati` e `Stato.attesaRiconnessione` stanno in `Stato`
+            # dalla #34, e `_esegui_con_node` porta dentro il contenitore
+            # vero. Qui resta solo il socket, che e' di quest'area sola.
             _riga_javascript(sorgente, "let _eventiSocket"),
-            _riga_javascript(sorgente, "let _eventiCollegati"),
-            _riga_javascript(sorgente, "let _attesaRiconnessione"),
             _funzione_javascript(sorgente, "_segnalaStatoEventi"),
             _funzione_javascript(sorgente, "collegaEventi"),
             _funzione_javascript(sorgente, "_laSessioneEFinita"),
@@ -3388,7 +3415,7 @@ function esigi(condizione, messaggio) {
 
 async function cade(rispostaDiStato) {
     _eventiSocket = null;
-    _attesaRiconnessione = 1000;
+    Stato.attesaRiconnessione = 1000;
     registro.ritentativi = [];
     registro.barre = [];
     globalThis.fetch = rispostaDiStato;
@@ -3454,7 +3481,7 @@ def test_un_server_irraggiungibile_si_ritenta_ancora_e_in_silenzio():
           'il server e\\' irraggiungibile e si accusa la sessione');
     esigi(registro.ritentativi.length === 1, 'non si ritenta piu\\' a server spento');
     esigi(registro.ritentativi[0] === 1000, 'il primo ritentativo non e\\' immediato');
-    esigi(_attesaRiconnessione === 2000, 'l\\'attesa non cresce piu\\'');
+    esigi(Stato.attesaRiconnessione === 2000, 'l\\'attesa non cresce piu\\'');
 
     // E chi e' dentro davvero: la caduta e' un'altra cosa, si ritenta.
     await cade(dentro);
@@ -3948,3 +3975,161 @@ esigi(campi['learning-hint-text'].innerText.includes('Rispondi'),
 
     esito = _esegui_con_node(prova)
     assert esito.returncode == 0, esito.stderr or esito.stdout
+
+
+# ----------------------------- lo stato in un posto solo (issue #34)
+
+
+def _dichiarazioni_mutabili(percorso: Path) -> set[str]:
+    """I `let` e i `var` a colonna zero: quelli che finiscono in globale.
+
+    Le costanti restano fuori apposta. Una `const` condivisa non e' stato —
+    e' un valore che tutti leggono e nessuno cambia, e spostarla in un
+    contenitore di stato direbbe una cosa falsa su cosa sia.
+    """
+    return set(re.findall(r"^(?:let|var)\s+([A-Za-z_$][\w$]*)", _senza_commenti(_testo(percorso)), re.M))
+
+
+def test_lo_stato_condiviso_sta_nel_contenitore():
+    """La regola della #34, scritta come guardia.
+
+    Fino a poco fa ogni area teneva il suo stato in un `let` a colonna zero.
+    Finche' quella variabile la leggeva solo il suo file andava bene. Undici
+    non erano cosi': le scriveva un'area e le leggeva un'altra —
+    `activeUserId` girava per cinque file — e guardando un file solo non
+    c'era modo di sapere quali fossero. Lo spazio globale era il contenitore,
+    cioe' nessun contenitore.
+
+    Adesso quelle stanno in `Stato`. Questa guardia impedisce che ne nasca
+    una dodicesima di nascosto: se un `let` dichiarato in un file viene letto
+    da un altro, o entra nel contenitore o resta dove sta.
+
+    Riferimento: issue #34.
+    """
+    copioni = [p for p in _copioni() if p.name != CONTENITORE]
+    assert len(copioni) > 15, f"copioni trovati: {[p.name for p in copioni]}"
+
+    # Il codice senza commenti: un nome citato nella spiegazione di un'altra
+    # area non e' un uso, ed e' esattamente il modo in cui una guardia di
+    # questo file e' gia' stata resa cieca quattro volte.
+    corpi = {p.name: _senza_commenti(_testo(p)) for p in copioni}
+
+    sparsi = []
+    for percorso in copioni:
+        for nome in _dichiarazioni_mutabili(percorso):
+            altri = [
+                altro
+                for altro, corpo in corpi.items()
+                if altro != percorso.name and re.search(rf"\b{re.escape(nome)}\b", corpo)
+            ]
+            if altri:
+                sparsi.append(f"{percorso.name} dichiara `{nome}`, che leggono anche {altri}")
+
+    assert sparsi == [], (
+        "questo stato attraversa le aree e non sta in `Stato`: o entra nel "
+        f"contenitore, o resta dentro la sua area — {sparsi}"
+    )
+
+
+def _campi_dello_stato() -> set[str]:
+    """I campi dichiarati in `Stato`, presi dal contenitore.
+
+    Sono le chiavi al primo livello di rientro dentro `const Stato = {`:
+    quattro spazi, un nome, due punti. Un campo annidato — `tela.nodes` — non
+    e' un campo dello stato, e' un dettaglio di quel campo.
+    """
+    sorgente = _senza_commenti(_testo(CARTELLA_JS / CONTENITORE))
+    corpo = sorgente[sorgente.index("const Stato = {") :]
+    return set(re.findall(r"^    ([A-Za-z_$][\w$]*):", corpo, re.M))
+
+
+def test_ogni_campo_dello_stato_esiste_davvero():
+    """Il contenitore toglie una protezione: questa la rimette.
+
+    Con le variabili sciolte, `activeUserIdd` era un nome che nessuno
+    dichiarava e `no-undef` fermava ESLint. `Stato.utenteAttivoo` invece e'
+    una proprieta' come un'altra: vale `undefined`, non solleva niente, e il
+    difetto si vede in casa come una funzione che «non fa niente» — che e'
+    il guasto piu' caro da cercare, perche' non lascia tracce.
+
+    ESLint non puo' saperlo. Questa guardia si': i campi li legge dal
+    contenitore, gli usi da tutto il frontend.
+
+    Riferimento: issue #34.
+    """
+    campi = _campi_dello_stato()
+    assert len(campi) >= 10, f"campi trovati in Stato: {sorted(campi)}"
+
+    usati = set(re.findall(r"\bStato\.([A-Za-z_$][\w$]*)", _senza_commenti(_frontend())))
+    assert usati, "nessun uso di `Stato` nel frontend: la guardia non guarda piu' niente"
+
+    inventati = sorted(usati - campi)
+    assert inventati == [], (
+        f"queste proprieta' di `Stato` non esistono nel contenitore: {inventati}. "
+        "Valgono `undefined` senza dire niente — aggiungile a `stato.js` o "
+        "correggi il nome."
+    )
+
+    # E l'altro verso: un campo che non usa piu' nessuno e' stato che la
+    # dashboard si porta dietro senza motivo.
+    mai_usati = sorted(campi - usati)
+    assert mai_usati == [], f"campi dichiarati in `Stato` e usati da nessuno: {mai_usati}"
+
+
+def test_i_gesti_parlano_allo_stato_vero():
+    """Il banco dei gesti legge `Stato.tela` dentro un `page.evaluate()`.
+
+    E' codice che gira nel browser vero, quindi un nome sbagliato li' dentro
+    non e' un errore di compilazione: e' un test che fallisce parlando di
+    tutt'altro. Il nome sta scritto in due posti — qui e nel contenitore — e
+    questa guardia li tiene insieme.
+    """
+    banchi = sorted((RADICE / "tests" / "gesti").glob("*.mjs"))
+    assert banchi, "i banchi dei gesti sono spariti"
+
+    campi = _campi_dello_stato()
+    nominati = set()
+    for banco in banchi:
+        nominati |= set(re.findall(r"\bStato\.([A-Za-z_$][\w$]*)", _senza_commenti(_testo(banco))))
+
+    assert nominati, "nessun banco dei gesti guarda piu' lo stato della dashboard"
+    assert (
+        sorted(nominati - campi) == []
+    ), f"i gesti nominano campi che `Stato` non ha: {sorted(nominati - campi)}"
+
+
+def test_zittire_shinra_sopravvive_alla_riapertura():
+    """Lo stato che si ricorda fra un'apertura e l'altra ha due estremi.
+
+    Chi zittisce Shinra lo fa una volta e si aspetta che resti cosi'. La
+    scelta si scrive in `localStorage` da due punti — le impostazioni e lo
+    sblocco — e si rilegge in `stato.js` quando la dashboard nasce. Sono tre
+    posti che devono nominare **la stessa chiave**: se uno solo la sbaglia,
+    la dashboard riparte parlando e nessun errore lo dice.
+
+    Spostando la variabile in `Stato` (#34) la rilettura ha cambiato file, ed
+    e' esattamente il momento in cui un capo dei due si perde. Una mutazione
+    che la toglieva non faceva fallire niente: questa guardia e' quella
+    mutazione, scritta.
+    """
+    contenitore = _senza_commenti(_testo(CARTELLA_JS / CONTENITORE))
+    partenza = re.search(
+        r"voceZittita:.*?localStorage\.getItem\(\s*'([^']+)'\s*\)\s*===\s*'true'",
+        contenitore,
+        re.S,
+    )
+    assert partenza, (
+        "`Stato.voceZittita` non si rilegge piu' da `localStorage`: chi zittisce "
+        "Shinra se la ritrova che parla alla riapertura"
+    )
+    chiave = partenza.group(1)
+
+    scritture = set(re.findall(r"localStorage\.setItem\(\s*'([^']+)'\s*,\s*[^)]*[Mm]uted", _comportamento()))
+    scritture |= set(
+        re.findall(r"localStorage\.setItem\(\s*'([^']+)'\s*,\s*Stato\.voceZittita", _comportamento())
+    )
+    assert scritture, "nessuno scrive piu' la scelta: si perde a ogni chiusura"
+    assert scritture == {chiave}, (
+        f"chi rilegge cerca `{chiave}`, chi scrive usa {sorted(scritture)}: "
+        "i due capi non si incontrano, e la scelta si perde in silenzio"
+    )

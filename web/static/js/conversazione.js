@@ -1,5 +1,4 @@
 // Messages Handling
-let activeAssistantName = 'Kyra';
 
 function appendUserMessage(text) {
     const container = document.getElementById('messages-container');
@@ -34,7 +33,7 @@ function appendAssistantMessage(text, actions = []) {
         <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 flex-1 shadow-sm">
             <div class="flex items-center justify-between mb-1">
                 <p class="font-bold text-amber-400 dark:text-amber-400 light:text-amber-600 flex items-center gap-1.5">
-                    <span class="assistant-name-label">${activeAssistantName}</span>
+                    <span class="assistant-name-label">${Stato.nomeAssistente}</span>
                     <span class="inline-flex gap-0.5 items-end h-3">
                         <span class="soundwave-bar"></span>
                         <span class="soundwave-bar" style="animation-delay: 0.2s"></span>
@@ -167,7 +166,7 @@ async function handleSend(e) {
             headers: getAuthHeaders(),
             body: JSON.stringify({
                 message: text,
-                user_id: activeUserId || 'alessio',
+                user_id: Stato.utenteAttivo || 'alessio',
                 // Da quale stanza si sta parlando (issue #33). Va
                 // sempre, anche scrivendo: chi scrive dalla cucina
                 // intende la luce della cucina esattamente come chi

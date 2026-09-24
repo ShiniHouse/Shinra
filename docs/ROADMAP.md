@@ -144,7 +144,7 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | 161 | Una sessione scaduta non viene detta: ritenta in silenzio | fatta (#162, #173) |
 | 35 | Backup e restore della configurazione, con versione di schema | fatta (#165, #166) |
 | 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` | da fare |
-| 34 | Scomporre `index.html` (7.438 righe) in moduli ES | in corso (#144-#151, #176) |
+| 34 | Scomporre `index.html` (7.438 righe) in moduli ES | in corso (#144-#151, #176, #177) |
 | 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | da fare |
 | 37 | Immagine Docker e add-on per Home Assistant OS | in corso (#168, #169) |
 | 38 | Documentazione utente e guida all'installazione verificata | in corso (#167) |
@@ -226,9 +226,9 @@ e JavaScript da `index.html` e li hanno divisi per area.
 
 | | prima | dopo |
 | :--- | :-- | :-- |
-| `web/templates/index.html` | 7.438 righe | **158** |
+| `web/templates/index.html` | 7.438 righe | **159** |
 | File di markup | 1 | 10: l'ossatura e nove pezzi inclusi |
-| File JavaScript | 1, dentro l'HTML | 21, il piu' lungo di **451** righe |
+| File JavaScript | 1, dentro l'HTML | 22, il piu' lungo di **449** righe |
 | File CSS | 1, dentro l'HTML | 5 |
 | ESLint e Prettier | non esistevano | in CI, obbligatori |
 | HTML costruito concatenando stringhe | ovunque | **zero**, con guardia |
@@ -241,8 +241,15 @@ dispositivo chiamato `<img onerror=...>` in Home Assistant.
 ESLint, al primo giro, ha trovato un difetto vero gia' in produzione: il
 pulsante «+ Timer» chiamava un nome che non e' mai esistito.
 
-Restano i **moduli ES veri** e il **contenitore unico dello stato**: i ventuno
-file sono ancora copioni classici caricati in ordine. Vedi la scheda della #34.
+Lo **stato condiviso** sta in un contenitore solo dalla #177: undici
+variabili che attraversavano le aree — `activeUserId` girava per cinque file —
+adesso sono campi di `Stato`, in `web/static/js/stato.js`. Le altre
+trentatre' sono rimaste dove stanno: le usa un'area sola, e portarle li' non
+direbbe niente a nessuno.
+
+Restano i **moduli ES veri**: i ventidue file sono ancora copioni classici
+caricati in ordine, e devono restarlo finche' la pagina chiama le funzioni
+dagli `onclick`. Vedi la scheda della #34.
 
 La scomposizione ha prodotto **due regressioni**, tutte e due trovate in casa e
 chiuse (#154, #155). Da li' e' nata la **#156**: sette gesti dell'editor a nodi

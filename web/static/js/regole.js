@@ -78,7 +78,7 @@ function _campiCosaScorciatoia(tipo) {
     if (tipo === 'modalita') {
         // Le routine gia' disegnate: la scorciatoia non le duplica, le
         // fa partire. E' l'aggancio fra le due meta' di questa scheda.
-        const routine = (_allModesCache || []).map(
+        const routine = (Stato.routine || []).map(
             (m) => _html`<option value="${m.name || m.id}">${m.name || m.id}</option>`,
         );
         if (!routine.length) {
@@ -233,13 +233,13 @@ function apriEditorDallaScorciatoia() {
     const innesco = inniescoDallaScorciatoia();
     openModularModeBuilder();
 
-    const nodo = (_canvasState.nodes || []).find((n) => n.type === 'trigger');
+    const nodo = (Stato.tela.nodes || []).find((n) => n.type === 'trigger');
     if (nodo) {
         nodo.data = nodo.data || {};
         nodo.data.trigger = innesco;
     }
     const scritto = (document.getElementById('scorciatoia-nome') || {}).value || '';
-    if (scritto.trim()) _canvasState.name = scritto.trim();
+    if (scritto.trim()) Stato.tela.name = scritto.trim();
 
     renderFlowCanvasModal();
 }

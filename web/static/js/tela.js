@@ -1,16 +1,4 @@
 // ==================== VISUAL FLOW CANVAS (STILE VISIO / NODE-RED) ====================
-let _canvasState = {
-    id: '',
-    name: '',
-    icon: 'workflow',
-    description: '',
-    trigger_phrases: [],
-    nodes: [],
-    edges: [],
-    isDraggingNode: null,
-    dragOffset: { x: 0, y: 0 },
-    connectingSourceId: null,
-};
 
 function openModularModeBuilder(existingId = null) {
     let mode = {
@@ -23,20 +11,20 @@ function openModularModeBuilder(existingId = null) {
         edges: [],
     };
     if (existingId) {
-        const found = _allModesCache.find((m) => m.id === existingId);
+        const found = Stato.routine.find((m) => m.id === existingId);
         if (found) mode = JSON.parse(JSON.stringify(found));
     }
 
-    _canvasState.id = mode.id || '';
-    _canvasState.name = mode.name || (existingId ? '' : 'Nuova Routine');
-    _canvasState.icon = mode.icon || 'workflow';
-    _canvasState.description = mode.description || '';
-    _canvasState.trigger_phrases = mode.trigger_phrases || [];
+    Stato.tela.id = mode.id || '';
+    Stato.tela.name = mode.name || (existingId ? '' : 'Nuova Routine');
+    Stato.tela.icon = mode.icon || 'workflow';
+    Stato.tela.description = mode.description || '';
+    Stato.tela.trigger_phrases = mode.trigger_phrases || [];
 
     // Se la routine ha già nodi e archi grafici carichiamoli, altrimenti convertiamo le vecchie actions in grafo
     if (mode.nodes && mode.nodes.length > 0) {
-        _canvasState.nodes = mode.nodes;
-        _canvasState.edges = mode.edges || [];
+        Stato.tela.nodes = mode.nodes;
+        Stato.tela.edges = mode.edges || [];
     } else if (mode.actions && mode.actions.length > 0) {
         // Auto-conversione in layout orizzontale a nodi
         const nTrigger = {
@@ -46,13 +34,13 @@ function openModularModeBuilder(existingId = null) {
             y: 140,
             data: { phrases: mode.trigger_phrases || [] },
         };
-        _canvasState.nodes = [nTrigger];
-        _canvasState.edges = [];
+        Stato.tela.nodes = [nTrigger];
+        Stato.tela.edges = [];
         let prevId = 'node_trig';
 
         mode.actions.forEach((act, idx) => {
             const nId = `node_${idx + 1}`;
-            _canvasState.nodes.push({
+            Stato.tela.nodes.push({
                 id: nId,
                 type: act.type || 'ha_device',
                 x: 40 + (idx + 1) * 270,
@@ -64,29 +52,29 @@ function openModularModeBuilder(existingId = null) {
                     message: act.message || '',
                 },
             });
-            _canvasState.edges.push({ from: prevId, to: nId });
+            Stato.tela.edges.push({ from: prevId, to: nId });
             prevId = nId;
         });
     } else {
         // Routine vuota predefinita con nodo Trigger
-        _canvasState.nodes = [
+        Stato.tela.nodes = [
             {
                 id: 'node_trig',
                 type: 'trigger',
                 x: 50,
                 y: 140,
-                data: { phrases: ['modalità ' + (_canvasState.name.toLowerCase() || 'relax')] },
+                data: { phrases: ['modalità ' + (Stato.tela.name.toLowerCase() || 'relax')] },
             },
             { id: 'node_ha1', type: 'ha_device', x: 340, y: 140, data: { entity_id: '', action: 'turn_on' } },
         ];
-        _canvasState.edges = [{ from: 'node_trig', to: 'node_ha1' }];
+        Stato.tela.edges = [{ from: 'node_trig', to: 'node_ha1' }];
     }
 
     renderFlowCanvasModal();
 }
 
 function renderFlowCanvasModal() {
-    const triggersStr = _canvasState.trigger_phrases.join(', ');
+    const triggersStr = Stato.tela.trigger_phrases.join(', ');
 
     showModal(
         _html`
@@ -106,8 +94,8 @@ function renderFlowCanvasModal() {
                     <div class="w-8 h-8 rounded-lg bg-indigo-600/40 text-indigo-300 flex items-center justify-center font-bold">
                         <i data-lucide="workflow" class="w-4 h-4"></i>
                     </div>
-                    <input type="text" id="cv-name" value="${_canvasState.name || ''}" placeholder="Nome Routine (es. Cinema, Notte)" oninput="_canvasState.name = this.value" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 font-bold focus:outline-none focus:border-indigo-500 w-40">
-                    <input type="text" id="cv-triggers" value="${triggersStr}" placeholder="Frasi vocali: es. modalità cinema, relax" oninput="_canvasState.trigger_phrases = this.value.split(',').map(s=>s.trim()).filter(s=>s.length>0)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 flex-1 min-w-[180px]">
+                    <input type="text" id="cv-name" value="${Stato.tela.name || ''}" placeholder="Nome Routine (es. Cinema, Notte)" oninput="Stato.tela.name = this.value" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 font-bold focus:outline-none focus:border-indigo-500 w-40">
+                    <input type="text" id="cv-triggers" value="${triggersStr}" placeholder="Frasi vocali: es. modalità cinema, relax" oninput="Stato.tela.trigger_phrases = this.value.split(',').map(s=>s.trim()).filter(s=>s.length>0)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 flex-1 min-w-[180px]">
                 </div>
 
                 <!-- I blocchi da aggiungere. La parola «Aggiungi»
@@ -199,11 +187,11 @@ function initCanvasInteractions() {
         const mouseY = e.clientY - rect.top;
 
         // 1. Dragging Node
-        if (_canvasState.isDraggingNode) {
-            const node = _canvasState.nodes.find((n) => n.id === _canvasState.isDraggingNode);
+        if (Stato.tela.isDraggingNode) {
+            const node = Stato.tela.nodes.find((n) => n.id === Stato.tela.isDraggingNode);
             if (node) {
-                node.x = Math.max(10, Math.min(rect.width - 240, mouseX - _canvasState.dragOffset.x));
-                node.y = Math.max(10, Math.min(rect.height - 180, mouseY - _canvasState.dragOffset.y));
+                node.x = Math.max(10, Math.min(rect.width - 240, mouseX - Stato.tela.dragOffset.x));
+                node.y = Math.max(10, Math.min(rect.height - 180, mouseY - Stato.tela.dragOffset.y));
                 const el = document.getElementById(`c-node-${node.id}`);
                 if (el) {
                     el.style.left = `${node.x}px`;
@@ -214,16 +202,16 @@ function initCanvasInteractions() {
         }
 
         // 2. Connecting Wire Draft
-        if (_canvasState.connectingSourceId) {
+        if (Stato.tela.connectingSourceId) {
             renderCanvasWires({ x: mouseX, y: mouseY });
         }
     };
 
     // Global Mouse Up su Canvas
     canvas.onmouseup = () => {
-        _canvasState.isDraggingNode = null;
-        if (_canvasState.connectingSourceId) {
-            _canvasState.connectingSourceId = null;
+        Stato.tela.isDraggingNode = null;
+        if (Stato.tela.connectingSourceId) {
+            Stato.tela.connectingSourceId = null;
             renderCanvasWires();
         }
     };

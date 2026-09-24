@@ -71,7 +71,7 @@ async function premi(page, selettore) {
 test.describe('editor a nodi', () => {
     test("la crocetta che stacca un cavo si puo' premere", async ({ page }) => {
         await apriEditor(page);
-        expect(await page.evaluate(() => _canvasState.edges.length)).toBe(1);
+        expect(await page.evaluate(() => Stato.tela.edges.length)).toBe(1);
 
         // Prima di premere: chi c'e' davvero sotto al dito? Se non e' la
         // crocetta, il clic non le arrivera' mai — ed e' esattamente
@@ -85,12 +85,12 @@ test.describe('editor a nodi', () => {
         expect(sotto, 'qualcosa copre la crocetta del cavo').toBe('circle');
 
         await premi(page, '#flow-svg-layer circle');
-        await expect.poll(() => page.evaluate(() => _canvasState.edges.length)).toBe(0);
+        await expect.poll(() => page.evaluate(() => Stato.tela.edges.length)).toBe(0);
     });
 
     test('la crocetta di un nodo lo toglie invece di trascinarlo', async ({ page }) => {
         await apriEditor(page);
-        const prima = await page.evaluate(() => _canvasState.nodes.length);
+        const prima = await page.evaluate(() => Stato.tela.nodes.length);
 
         const p = await centro(page, 'button[title="Elimina nodo"]');
         await page.mouse.move(p.x, p.y);
@@ -101,13 +101,13 @@ test.describe('editor a nodi', () => {
         // guardarlo dopo non direbbe niente: la prima versione di questo
         // test lo guardava dopo, e infatti non mordeva.
         expect(
-            await page.evaluate(() => _canvasState.isDraggingNode),
+            await page.evaluate(() => Stato.tela.isDraggingNode),
             'premere la crocetta fa partire il trascinamento del nodo',
         ).toBeNull();
 
         await page.mouse.move(p.x + 1, p.y + 1);
         await page.mouse.up();
-        await expect.poll(() => page.evaluate(() => _canvasState.nodes.length)).toBe(prima - 1);
+        await expect.poll(() => page.evaluate(() => Stato.tela.nodes.length)).toBe(prima - 1);
     });
 
     test("prendere il nodo per l'intestazione invece lo trascina", async ({ page }) => {
@@ -118,34 +118,34 @@ test.describe('editor a nodi', () => {
         const p = await centro(page, '#c-node-node_ha1 .flow-node-header');
         await page.mouse.move(p.x, p.y);
         await page.mouse.down();
-        expect(await page.evaluate(() => _canvasState.isDraggingNode)).toBe('node_ha1');
+        expect(await page.evaluate(() => Stato.tela.isDraggingNode)).toBe('node_ha1');
         await page.mouse.up();
     });
 
     test("un nodo si sposta prendendolo per l'intestazione", async ({ page }) => {
         await apriEditor(page);
-        const prima = await page.evaluate(() => _canvasState.nodes[1].x);
+        const prima = await page.evaluate(() => Stato.tela.nodes[1].x);
         const p = await centro(page, '#c-node-node_ha1 .flow-node-header');
         await page.mouse.move(p.x, p.y);
         await page.mouse.down();
         await page.mouse.move(p.x + 70, p.y + 40, { steps: 6 });
         await page.mouse.up();
-        await expect.poll(() => page.evaluate(() => _canvasState.nodes[1].x)).toBeGreaterThan(prima + 50);
+        await expect.poll(() => page.evaluate(() => Stato.tela.nodes[1].x)).toBeGreaterThan(prima + 50);
     });
 
     test('scrivere in un campo del nodo non lo sposta', async ({ page }) => {
         await apriEditor(page);
-        const prima = await page.evaluate(() => _canvasState.nodes[1].x);
+        const prima = await page.evaluate(() => Stato.tela.nodes[1].x);
         await page.locator('#c-node-node_ha1 input').first().click();
         await page.keyboard.type('light.salotto');
-        expect(await page.evaluate(() => _canvasState.nodes[1].x)).toBe(prima);
+        expect(await page.evaluate(() => Stato.tela.nodes[1].x)).toBe(prima);
         await expect(page.locator('#c-node-node_ha1 input').first()).toHaveValue('light.salotto');
     });
 
     test("un cavo si tira da un pin all'altro", async ({ page }) => {
         await apriEditor(page);
         await page.evaluate(() => {
-            _canvasState.edges = [];
+            Stato.tela.edges = [];
             renderCanvasWires();
             updateCanvasStats();
         });
@@ -155,13 +155,13 @@ test.describe('editor a nodi', () => {
         await page.mouse.down();
         await page.mouse.move(a.x, a.y, { steps: 10 });
         await page.mouse.up();
-        await expect.poll(() => page.evaluate(() => _canvasState.edges.length)).toBe(1);
+        await expect.poll(() => page.evaluate(() => Stato.tela.edges.length)).toBe(1);
     });
 
     test('la barra aggiunge un blocco', async ({ page }) => {
         await apriEditor(page);
-        const prima = await page.evaluate(() => _canvasState.nodes.length);
+        const prima = await page.evaluate(() => Stato.tela.nodes.length);
         await page.getByRole('button', { name: /Ritardo \(Pausa\)/ }).click();
-        await expect.poll(() => page.evaluate(() => _canvasState.nodes.length)).toBe(prima + 1);
+        await expect.poll(() => page.evaluate(() => Stato.tela.nodes.length)).toBe(prima + 1);
     });
 });

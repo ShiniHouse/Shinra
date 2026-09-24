@@ -2,7 +2,7 @@ function renderCanvasElements() {
     const container = document.getElementById('flow-nodes-container');
     if (!container) return;
 
-    container.innerHTML = _html`${_canvasState.nodes.map((node) => {
+    container.innerHTML = _html`${Stato.tela.nodes.map((node) => {
         let headerBg = 'from-indigo-600 to-violet-600';
         let icon = 'workflow';
         let typeLabel = 'Modulo';
@@ -266,5 +266,5 @@ function renderCanvasElements() {
 
 function updateCanvasStats() {
     const el = document.getElementById('canvas-stats');
-    if (el) el.innerText = `Nodi: ${_canvasState.nodes.length} | Connessioni: ${_canvasState.edges.length}`;
+    if (el) el.innerText = `Nodi: ${Stato.tela.nodes.length} | Connessioni: ${Stato.tela.edges.length}`;
 }

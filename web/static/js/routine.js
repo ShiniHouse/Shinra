@@ -1,5 +1,4 @@
 // ==================== MODULAR ROUTINE BUILDER ====================
-let _allModesCache = [];
 let _modeAccordionState = {};
 
 function toggleModeSteps(modeId) {
@@ -14,7 +13,7 @@ function toggleModeSteps(modeId) {
 async function loadModes() {
     try {
         const res = await fetch('/api/modes', { headers: getAuthHeaders() });
-        _allModesCache = await res.json();
+        Stato.routine = await res.json();
         // La scorciatoia offre di far partire una routine gia'
         // disegnata: l'elenco lo sa solo adesso, e prima di adesso
         // avrebbe proposto una tendina vuota (#126).
@@ -22,14 +21,14 @@ async function loadModes() {
         const container = document.getElementById('modes-list');
         if (!container) return;
 
-        if (!_allModesCache || _allModesCache.length === 0) {
+        if (!Stato.routine || Stato.routine.length === 0) {
             container.innerHTML = _html`<div class="col-span-2 text-center py-8 text-slate-500 text-xs">
                 Nessuna routine configurata. Clicca "+ Nuova Routine Modulare" per crearne una.
             </div>`;
             return;
         }
 
-        container.innerHTML = _html`${_allModesCache.map((m) => {
+        container.innerHTML = _html`${Stato.routine.map((m) => {
             const triggers = (m.trigger_phrases || []).map(
                 (t) =>
                     _html`<span class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] text-slate-300 font-mono">"${t}"</span>`,
