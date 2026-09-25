@@ -111,6 +111,21 @@ package-dir = { "" = "src" }
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# I file che non sono `.py` e devono comunque finire nel pacchetto.
+#
+# Serve perche' un'installazione vera — `pip install .`, che e' quella
+# dell'immagine Docker — copia solo cio' che e' dichiarato qui. In sviluppo
+# non si vede: `pip install -e .` lascia il pacchetto dov'e', e i test girano
+# sul sorgente.
+#
+# Scoperto provando davvero: senza questa riga `lingue/it.yaml` non entrava, e
+# Shinra partiva, rispondeva 200, lasciava entrare — e poi **nessun intento**
+# funzionava, perche' gli schemi con cui capisce una frase non c'erano.
+# `test_ogni_file_non_python_del_pacchetto_e_dichiarato` impedisce che
+# succeda di nuovo con un file nuovo.
+[tool.setuptools.package-data]
+shinra = ["services/intenti/lingue/*.yaml"]
+
 # `shinra` da riga di comando. `run.py` resta come alias: il servizio in
 # produzione parte da li' (deploy/shinra.service).
 [project.scripts]
