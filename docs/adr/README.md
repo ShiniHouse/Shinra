@@ -20,3 +20,4 @@ state scartate alternative ragionevoli. Non serve per le decisioni ovvie.
 | [0004](0004-identita-ruoli-e-permessi.md) | Identita' per persona, ruoli personalizzati e dispositivi fidati | Accettato |
 | [0005](0005-sqlalchemy-sincrono.md) | SQLAlchemy sincrono, non asincrono | Accettato |
 | [0006](0006-niente-bundler.md) | Niente bundler: moduli ES serviti come sono | Accettato |
+| [0007](0007-parola-di-attivazione-nel-browser.md) | La parola di attivazione si ascolta nel browser | Accettato |
