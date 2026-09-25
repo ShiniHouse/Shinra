@@ -34,6 +34,9 @@ GUIDE = [
 # ancore interne alla stessa pagina, niente mailto.
 COLLEGAMENTO = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 
+# Cartelle che non sono nostre, o che git ignora.
+FUORI = {".git", ".venv", "venv", "node_modules", "__pycache__", ".anteprima", "_corpi_pr"}
+
 # `scripts/imposta_pin.py` ovunque compaia, anche dentro un comando.
 COPIONE = re.compile(r"\bscripts/([\w.-]+\.(?:py|sh))\b")
 
@@ -44,6 +47,23 @@ def _guide_esistenti() -> list[Path]:
     return presenti
 
 
+def _tutti_i_documenti() -> list[Path]:
+    """Ogni `.md` del progetto, letto dalla cartella e non da un elenco.
+
+    `GUIDE` sopra e' la manciata di documenti *rivolti a chi usa Shinra*, e
+    serve alle guardie che parlano di loro. Per i collegamenti e i comandi il
+    perimetro e' un altro: vale per tutto cio' che si legge — le schede del
+    backlog, gli ADR, le note di rilascio.
+
+    E' una distinzione che e' costata una mutazione: un collegamento rotto da
+    una scheda del backlog a un ADR non lo vedeva nessuno, perche' quella
+    scheda non era nell'elenco.
+    """
+    documenti = sorted(f for f in RADICE.rglob("*.md") if not (FUORI & set(f.relative_to(RADICE).parts)))
+    assert len(documenti) > 30, f"documenti trovati: {len(documenti)}"
+    return documenti
+
+
 def test_ogni_collegamento_fra_i_documenti_porta_da_qualche_parte():
     """Un collegamento rotto in una guida e' un vicolo cieco per chi legge.
 
@@ -52,7 +72,7 @@ def test_ogni_collegamento_fra_i_documenti_porta_da_qualche_parte():
     dove sia finito il documento.
     """
     rotti = []
-    for guida in _guide_esistenti():
+    for guida in _tutti_i_documenti():
         for riferimento in COLLEGAMENTO.findall(guida.read_text(encoding="utf-8")):
             if riferimento.startswith(("http://", "https://", "mailto:", "#", "data:")):
                 continue
@@ -72,7 +92,7 @@ def test_ogni_copione_nominato_dalle_guide_esiste():
     """
     mancanti = []
     trovati = 0
-    for guida in _guide_esistenti():
+    for guida in _tutti_i_documenti():
         for nome in COPIONE.findall(guida.read_text(encoding="utf-8")):
             trovati += 1
             if not (RADICE / "scripts" / nome).is_file():
