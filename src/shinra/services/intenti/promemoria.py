@@ -6,6 +6,7 @@ import logging
 from typing import Optional
 
 from shinra.services.intenti.base import Intento, Richiesta, Risposta, registra
+from shinra.services.intenti.lingue import schemi
 
 logger = logging.getLogger("Shinra.Intenti")
 
@@ -16,31 +17,10 @@ class Apprendimento(Intento):
     nome = "apprendimento"
     priorita = 10  # prima di tutto: durante un'intervista ogni frase e' una risposta
 
-    INNESCHI = (
-        "kyra istruisci",
-        "kira istruisci",
-        "chira istruisci",
-        "shinra istruisci",
-        "istruisci",
-        "modalità apprendimento",
-        "impara la casa",
-        "intervista casa",
-        "insegna abitudini",
-        "voglio insegnarti",
-        "impara abitudini",
-    )
-    INTERRUZIONI = (
-        "annulla intervista",
-        "ferma intervista",
-        "esci da apprendimento",
-        "stop intervista",
-        "annulla",
-    )
-
     def applicabile(self, richiesta: Richiesta) -> bool:
         from shinra.services.interview_engine import interview_engine
 
-        if any(t in richiesta.minuscolo for t in self.INNESCHI):
+        if any(t in richiesta.minuscolo for t in schemi().avvii_apprendimento):
             return True
         return interview_engine.is_session_active(richiesta.id_utente)
 
@@ -49,12 +29,12 @@ class Apprendimento(Intento):
 
         utente = richiesta.id_utente
 
-        if any(t in richiesta.minuscolo for t in self.INNESCHI):
+        if any(t in richiesta.minuscolo for t in schemi().avvii_apprendimento):
             esito = interview_engine.start_session(utente)
             richiesta.annota("learning_interview", {"action": "start"}, esito)
             return Risposta(esito["message"], extra={"learning_session": esito})
 
-        if any(p in richiesta.minuscolo for p in self.INTERRUZIONI):
+        if any(p in richiesta.minuscolo for p in schemi().interruzioni_apprendimento):
             interview_engine.stop_session(utente)
             return Risposta("Modalità Apprendimento interrotta. Possiamo riprendere quando vuoi.")
 

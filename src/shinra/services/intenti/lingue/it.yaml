@@ -1,0 +1,111 @@
+# Come si dicono le cose, in italiano.
+#
+# Questo file non contiene traduzioni di etichette: contiene gli schemi con cui
+# Shinra **capisce** una frase prima di chiamare il modello. Finche' stavano
+# scritti dentro `casa.py`, `informazioni.py` e `promemoria.py`, aggiungere una
+# lingua voleva dire modificare la logica — che e' il difetto da cui nasce la
+# issue #36, e il suo criterio di accettazione: «aggiungere una lingua non
+# richiede modifiche al codice della logica».
+#
+# Un file nuovo accanto a questo, con le stesse chiavi, e' una lingua nuova.
+# Il caricatore dice per nome quale chiave manca, invece di lasciar fallire un
+# intento a meta'.
+#
+# Riferimento: issue #36.
+
+lingua: it
+nome: italiano
+
+casa:
+  # Parole che dicono «qui dentro», non «fuori». Servono a distinguere «che
+  # temperatura c'e' in salotto» — un sensore di casa — da «che temperatura
+  # c'e' a Bologna», che e' il meteo.
+  segnali_interni:
+    - in casa
+    - dentro
+    - qui
+    - in salotto
+    - in cucina
+    - in camera
+    - in bagno
+    - in sala
+    - in soggiorno
+    - in taverna
+    - in garage
+    - in mansarda
+    - in studio
+    - in corridoio
+    - in ingresso
+    - in cantina
+
+  # «Accendi la luce della cucina»: il verbo, poi l'articolo facoltativo, poi
+  # il nome della cosa. Il primo gruppo e' il verbo, il secondo la cosa.
+  controllo_dispositivo: "^(accendi|attiva|spegni|disattiva)\\s+(?:la\\s+|il\\s+|le\\s+|l'|i\\s+|gli\\s+)?(.+)$"
+
+  # Quali di quei verbi accendono. Gli altri spengono.
+  verbi_che_accendono:
+    - accendi
+    - attiva
+
+meteo:
+  parole:
+    - meteo
+    - tempo a
+    - tempo fa
+    - tempo farà
+    - previsioni
+    - pioverà
+    - piove
+    - temperatura
+    - gradi fuori
+
+  # La parola con cui si chiede il giorno dopo invece di adesso.
+  domani: domani
+
+  # «a Reggio Emilia», «ad Alfonsine», «a San Giovanni in Persiceto». Il nome
+  # puo' essere composto e contenere preposizioni interne: si prendono le
+  # parole che cominciano per maiuscola piu' i collegamenti fra loro. Una
+  # vecchia versione ne catturava una sola, e spezzava a meta' meta' Italia.
+  citta: "\\b(?:a|ad|in|per|di)\\s+((?:[A-ZÀ-Ù][\\wàèéìòùç']*)(?:\\s+(?:d[ei]|del|della|delle|dei|in|al|sul|sulla|a)\\s+[A-ZÀ-Ù]?[\\wàèéìòùç']*|\\s+[A-ZÀ-Ù][\\wàèéìòùç']*)*)"
+
+enciclopedia:
+  inneschi:
+    - cosa significa
+    - chi era
+    - chi è
+    - chi fu
+    - definizione di
+    - cos'è
+    - che cos'è
+    - spiegami
+    - quando è
+    - quando e
+    - patrono
+    - storia di
+    - dove si trova
+    - chi sono
+    - biografia di
+
+  # Si toglie la domanda e resta il termine da cercare.
+  pulizia: "^(cosa significa|chi era|chi è|chi fu|definizione di|cos'è|che cos'è|spiegami|il termine|la parola|quando è|quando e|dove si trova|storia di|patrono di|la festa di|il santo)\\s+"
+
+apprendimento:
+  avvii:
+    - kyra istruisci
+    - kira istruisci
+    - chira istruisci
+    - shinra istruisci
+    - istruisci
+    - modalità apprendimento
+    - impara la casa
+    - intervista casa
+    - insegna abitudini
+    - voglio insegnarti
+    - impara abitudini
+
+  interruzioni:
+    - annulla intervista
+    - ferma intervista
+    - esci da apprendimento
+    - stop intervista
+    - annulla

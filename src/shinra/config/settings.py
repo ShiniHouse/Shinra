@@ -76,6 +76,18 @@ class AlexaConfig(BaseModel):
 class AssistantConfig(BaseModel):
     name: str = "Kyra"
     default_city: str = "Roma"
+    # La lingua con cui Shinra **capisce** una frase: quale file di
+    # `services/intenti/lingue/` usare per gli schemi degli intenti.
+    #
+    # Questo campo c'era gia' stato, e fu tolto: si chiamava `language`,
+    # nessuna riga lo leggeva, e `test_ogni_opzione_di_configurazione_ha_un_
+    # consumatore` lo trovo' fra le due opzioni che promettevano qualcosa che
+    # il programma non faceva. Torna adesso perche' adesso e' vero — la #36 e'
+    # il lavoro che lo rende vero, come diceva quel test.
+    #
+    # Una lingua che non esiste sul disco non spegne la casa: si ripiega
+    # sull'italiano e lo scrive nel log.
+    language: str = "it"
 
 
 class SecurityConfig(BaseModel):

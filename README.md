@@ -544,6 +544,7 @@ home_assistant:
 assistant:
   name: "Kyra"                           # come si chiama quando le parli
   default_city: "Roma"
+  language: "it"                         # con quale lingua capisce le frasi
 
 voce:
   motore: "locale"                       # locale | browser
