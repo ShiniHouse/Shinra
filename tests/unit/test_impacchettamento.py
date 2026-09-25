@@ -36,9 +36,7 @@ IGNORATI = ("__pycache__", ".pytest_cache", ".ruff_cache", ".mypy_cache")
 def _dichiarati() -> list[str]:
     """Gli schemi elencati sotto `[tool.setuptools.package-data]` per `shinra`."""
     testo = PYPROJECT.read_text(encoding="utf-8")
-    sezione = re.search(
-        r"^\[tool\.setuptools\.package-data\]\s*\n(.*?)(?=^\[|\Z)", testo, re.M | re.S
-    )
+    sezione = re.search(r"^\[tool\.setuptools\.package-data\]\s*\n(.*?)(?=^\[|\Z)", testo, re.M | re.S)
     assert sezione, "`pyproject.toml` non dichiara piu' nessun file di dati del pacchetto"
 
     riga = re.search(r"^\s*shinra\s*=\s*\[(.*?)\]", sezione.group(1), re.M | re.S)
