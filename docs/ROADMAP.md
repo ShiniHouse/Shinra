@@ -145,7 +145,7 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | 35 | Backup e restore della configurazione, con versione di schema | fatta (#165, #166) |
 | 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` | da fare |
 | 34 | Scomporre `index.html` (7.438 righe) in moduli ES | in corso (#144-#151, #176-#178) |
-| 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | da fare |
+| 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | in corso (#181) |
 | 37 | Immagine Docker e add-on per Home Assistant OS | in corso (#168, #169) |
 | 38 | Documentazione utente e guida all'installazione verificata | in corso (#167) |
 | 170 | L'intervista di apprendimento impara poco | in corso (#171, #174) |
@@ -163,6 +163,10 @@ di lasciarlo dedurre dal numero:
   davvero a entrare: e' cosi' che si e' scoperto che l'immagine partiva senza
   `data/examples/` e nessuno poteva accedere. Manca la documentazione utente
   vera e propria.
+- **#36** — gli schemi con cui Shinra **capisce** una frase stanno in un file
+  per lingua, e aggiungerne una non richiede di toccare il codice: lo prova un
+  test che ne inventa una. Restano le stringhe rivolte all'utente, il prompt
+  di sistema parametrico, la scelta per utente e una seconda lingua vera.
 - **#170** — l'intervista adesso dice quando non ha capito e fa vedere cosa ha
   capito prima di salvarlo. Mancano le domande singole al posto di quelle
   triple, il non chiedere cio' che e' gia' nel database, e tutta la tappa due:

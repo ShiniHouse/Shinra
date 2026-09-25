@@ -57,6 +57,10 @@ alexa:
 assistant:
   name: "Kyra"
   default_city: "Roma"
+  # La lingua con cui Shinra capisce le frasi: il nome di un file in
+  # src/shinra/services/intenti/lingue/. Una lingua che non c'e' non spegne
+  # la casa, si ripiega sull'italiano e lo scrive nel log.
+  language: "it"
 
 voce:
   # Dove finisce l'audio di chi parla al microfono della dashboard (issue #31).

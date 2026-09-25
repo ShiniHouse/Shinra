@@ -8,31 +8,10 @@ from typing import Optional
 
 from shinra.infra.data_store import data_store
 from shinra.services.intenti.base import Intento, Richiesta, Risposta, registra
+from shinra.services.intenti.lingue import schemi
 from shinra.skills.registry import execute_tool
 
 logger = logging.getLogger("Shinra.Intenti")
-
-# Parole che dicono «qui dentro», non «fuori». Servono a distinguere «che
-# temperatura c'e' in salotto» — un sensore di casa — da «che temperatura c'e'
-# a Bologna», che e' il meteo.
-SEGNALI_INTERNI = (
-    "in casa",
-    "dentro",
-    "qui",
-    "in salotto",
-    "in cucina",
-    "in camera",
-    "in bagno",
-    "in sala",
-    "in soggiorno",
-    "in taverna",
-    "in garage",
-    "in mansarda",
-    "in studio",
-    "in corridoio",
-    "in ingresso",
-    "in cantina",
-)
 
 
 class TemperaturaInterna(Intento):
@@ -51,7 +30,7 @@ class TemperaturaInterna(Intento):
         testo = richiesta.minuscolo
         if not any(p in testo for p in ("temperatura", "che caldo", "che freddo", "gradi")):
             return False
-        if any(s in testo for s in SEGNALI_INTERNI):
+        if any(s in testo for s in schemi().segnali_interni):
             return True
         # Anche il nome di un dispositivo configurato vale come «qui dentro»:
         # chi ha un alias «clima camera» sta parlando di casa sua.
@@ -91,22 +70,17 @@ class ControlloDispositivo(Intento):
     nome = "controllo-dispositivo"
     priorita = 40
 
-    ESPRESSIONE = re.compile(
-        r"^(accendi|attiva|spegni|disattiva)\s+(?:la\s+|il\s+|le\s+|l'|i\s+|gli\s+)?(.+)$",
-        re.IGNORECASE,
-    )
-
     def applicabile(self, richiesta: Richiesta) -> bool:
-        return self.ESPRESSIONE.match(richiesta.testo.strip()) is not None
+        return schemi().controllo_dispositivo.match(richiesta.testo.strip()) is not None
 
     async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
-        trovato = self.ESPRESSIONE.match(richiesta.testo.strip())
+        trovato = schemi().controllo_dispositivo.match(richiesta.testo.strip())
         if not trovato:
             return None
 
         verbo = trovato.group(1).lower()
         cercato = trovato.group(2).strip().lower()
-        accende = verbo in ("accendi", "attiva")
+        accende = verbo in schemi().verbi_che_accendono
         azione = "turn_on" if accende else "turn_off"
 
         entita, nome = self._risolvi(cercato)

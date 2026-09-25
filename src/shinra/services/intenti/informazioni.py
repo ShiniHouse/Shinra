@@ -3,35 +3,14 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import Optional
 
 from shinra.config.settings import settings
 from shinra.services.intenti.base import Intento, Richiesta, Risposta, registra
+from shinra.services.intenti.lingue import schemi
 from shinra.skills.registry import execute_tool
 
 logger = logging.getLogger("Shinra.Intenti")
-
-PAROLE_METEO = (
-    "meteo",
-    "tempo a",
-    "tempo fa",
-    "tempo farà",
-    "previsioni",
-    "pioverà",
-    "piove",
-    "temperatura",
-    "gradi fuori",
-)
-
-# «a Reggio Emilia», «ad Alfonsine», «a San Giovanni in Persiceto». Il nome
-# puo' essere composto e contenere preposizioni interne: si prendono le
-# parole che cominciano per maiuscola piu' i collegamenti fra loro. La
-# vecchia espressione ne catturava una sola, e spezzava a meta' meta' Italia.
-CITTA = re.compile(
-    r"\b(?:a|ad|in|per|di)\s+"
-    r"((?:[A-ZÀ-Ù][\wàèéìòùç']*)(?:\s+(?:d[ei]|del|della|delle|dei|in|al|sul|sulla|a)\s+[A-ZÀ-Ù]?[\wàèéìòùç']*|\s+[A-ZÀ-Ù][\wàèéìòùç']*)*)"
-)
 
 
 class Meteo(Intento):
@@ -45,7 +24,7 @@ class Meteo(Intento):
     priorita = 50
 
     def applicabile(self, richiesta: Richiesta) -> bool:
-        return any(p in richiesta.minuscolo for p in PAROLE_METEO)
+        return any(p in richiesta.minuscolo for p in schemi().parole_meteo)
 
     async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
         citta = self.citta(richiesta.testo)
@@ -72,7 +51,7 @@ class Meteo(Intento):
 
     @staticmethod
     def citta(testo: str) -> str:
-        trovata = CITTA.search(testo)
+        trovata = schemi().citta.search(testo)
         if trovata:
             candidata = " ".join(trovata.group(1).split()).strip(" .,?!")
             if candidata:
@@ -83,7 +62,7 @@ class Meteo(Intento):
     def _frase(esito: dict, testo: str) -> str:
         localita = esito.get("localita", "")
         previsioni = esito.get("previsioni", [])
-        if "domani" in testo and len(previsioni) > 1:
+        if schemi().domani in testo and len(previsioni) > 1:
             domani = previsioni[1]
             return (
                 f"Domani a {localita} {domani.get('condizione', 'variabile').lower()}, "
@@ -143,36 +122,11 @@ class Enciclopedia(Intento):
     nome = "enciclopedia"
     priorita = 70
 
-    INNESCHI = (
-        "cosa significa",
-        "chi era",
-        "chi è",
-        "chi fu",
-        "definizione di",
-        "cos'è",
-        "che cos'è",
-        "spiegami",
-        "quando è",
-        "quando e",
-        "patrono",
-        "storia di",
-        "dove si trova",
-        "chi sono",
-        "biografia di",
-    )
-
-    PULIZIA = re.compile(
-        r"^(cosa significa|chi era|chi è|chi fu|definizione di|cos'è|che cos'è|spiegami|"
-        r"il termine|la parola|quando è|quando e|dove si trova|storia di|patrono di|"
-        r"la festa di|il santo)\s+",
-        re.IGNORECASE,
-    )
-
     def applicabile(self, richiesta: Richiesta) -> bool:
-        return any(p in richiesta.minuscolo for p in self.INNESCHI)
+        return any(p in richiesta.minuscolo for p in schemi().inneschi_enciclopedia)
 
     async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
-        termine = self.PULIZIA.sub("", richiesta.testo).strip(" ?.,\"'")
+        termine = schemi().pulizia_enciclopedia.sub("", richiesta.testo).strip(" ?.,\"'")
         if not termine:
             return None
 
