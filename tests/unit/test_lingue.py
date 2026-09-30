@@ -46,17 +46,27 @@ def lingua_inventata(tmp_path, monkeypatch) -> str:
     """Una lingua che non esiste, scritta adesso, senza toccare una riga di
     codice. Le parole sono inventate apposta: se un intento continuasse a
     capire l'italiano vorrebbe dire che ha ancora i suoi schemi dentro."""
+    # Si parte da una lingua completa — l'inglese — e si cambia tutto cio'
+    # che gli intenti leggono: cosi' il file inventato ha tutte le chiavi che
+    # il caricatore esige, e il test prova che **nessuna** parola inglese o
+    # italiana resta nel comportamento.
+    base = yaml.safe_load((lingue.CARTELLA / "en.yaml").read_text(encoding="utf-8"))
     dati = {
+        **base,
         "lingua": "zz",
         "nome": "inventata",
         "casa": {
+            **base["casa"],
             "segnali_interni": ["nel bloop"],
             "controllo_dispositivo": r"^(zap|unzap)\s+(.+)$",
             "verbi_che_accendono": ["zap"],
+            "parole_temperatura": ["blorpgradi"],
         },
         "meteo": {"parole": ["blorp"], "citta": r"\bverso\s+([A-Z]\w*)", "domani": "dopo"},
         "enciclopedia": {"inneschi": ["spiegoni su"], "pulizia": r"^(spiegoni su)\s+"},
         "apprendimento": {"avvii": ["impara tutto"], "interruzioni": ["basta cosi"]},
+        "notizie": {"inneschi": ["novita zz"]},
+        "messaggi": {**base["messaggi"], "dispositivo_acceso": "{nome} zappato."},
     }
     (tmp_path / "zz.yaml").write_text(yaml.safe_dump(dati, allow_unicode=True), encoding="utf-8")
     # L'italiano resta accanto: e' la lingua di ripiego, e toglierlo
@@ -90,6 +100,10 @@ def test_una_lingua_nuova_non_richiede_di_toccare_il_codice(lingua_inventata):
             self.testo = testo
             self.minuscolo = testo.lower()
 
+        @property
+        def schemi(self):
+            return lingue.schemi()
+
     # Il controllo dei dispositivi capisce il verbo inventato...
     trovato = schemi.controllo_dispositivo.match("zap la cosa")
     assert trovato, "il controllo dispositivi non parla la lingua nuova"
@@ -120,11 +134,14 @@ def test_una_lingua_nuova_non_richiede_di_toccare_il_codice(lingua_inventata):
         "adesso": {"temperatura": "18", "condizione": "Nuvoloso"},
     }
     assert "22" in Meteo._frase(
-        previsioni, "che blorp fa dopo"
+        previsioni, "che blorp fa dopo", schemi
     ), "il meteo non legge il «domani» della lingua nuova"
     assert "22" not in Meteo._frase(
-        previsioni, "che blorp fa domani"
+        previsioni, "che blorp fa domani", schemi
     ), "il meteo capisce ancora «domani» in italiano: quella parola e' rimasta nel codice"
+
+    # E le frasi che dice: vengono dal file, non dal codice.
+    assert schemi.dice("dispositivo_acceso", nome="Cosa") == "Cosa zappato."
 
 
 def test_cambiare_lingua_non_richiede_un_riavvio(lingua_inventata, monkeypatch):
@@ -142,6 +159,10 @@ def test_cambiare_lingua_non_richiede_un_riavvio(lingua_inventata, monkeypatch):
         def __init__(self, testo):
             self.testo = testo
             self.minuscolo = testo.lower()
+
+        @property
+        def schemi(self):
+            return lingue.schemi()
 
     assert Meteo().applicabile(FintaRichiesta("che blorp fa"))
     assert not Meteo().applicabile(FintaRichiesta("che meteo fa"))
@@ -294,7 +315,9 @@ def test_ogni_schema_che_il_codice_legge_e_dichiarato_nel_caricatore():
     # Ogni campo di `Schemi`, tranne i due che descrivono la lingua stessa,
     # deve nascere da una chiave verificata.
     campi = set(lingue.Schemi.__dataclass_fields__) - {"lingua", "nome"}
-    assert len(campi) == len(lingue.RICHIESTE), (
+    # `messaggi` e `prompt` nascono da due elenchi di chiavi, `CHIAVI_MESSAGGI` e
+    # `CHIAVI_PROMPT`, che il caricatore controlla una per una.
+    assert len(campi) == len(lingue.RICHIESTE) + 2, (
         f"`Schemi` ha {len(campi)} campi e il caricatore ne verifica "
-        f"{len(lingue.RICHIESTE)}: uno dei due elenchi e' rimasto indietro"
+        f"{len(lingue.RICHIESTE)} piu' le due sezioni di frasi: uno dei due elenchi e' rimasto indietro"
     )

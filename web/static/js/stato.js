@@ -45,6 +45,11 @@ export const Stato = {
      *  qualcuno. */
     ruoli: [],
 
+    /** Le lingue che Shinra parla, come le ha mandate il server: serve al
+     *  menu della scheda del profilo. `installazione` e' quella della casa,
+     *  la scelta di chi non sceglie niente. */
+    lingue: { installazione: 'it', lingue: [] },
+
     // --- l'editor a nodi ---------------------------------------------------
 
     /** Nodi, cavi, trascinamento e cavo in corso dell'editor delle routine.

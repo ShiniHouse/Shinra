@@ -10,6 +10,7 @@ from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.llm.ollama import OllamaClient
 from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.intenti import Richiesta, instrada
+from shinra.services.intenti.lingue import schemi
 from shinra.services.memory import ConversationMemory, gestore_memorie
 from shinra.services.user_manager import UserProfile, user_manager
 from shinra.skills.registry import TOOLS_SCHEMA, execute_tool
@@ -55,14 +56,19 @@ class ShinraAgent:
         # 1b. Argomenti vietati al profilo: si controlla prima di qualunque
         # altra cosa, altrimenti il fast-path potrebbe agire su una richiesta
         # che questo utente non ha il diritto di fare.
-        from shinra.domain.argomenti_vietati import RISPOSTA_PREDEFINITA, consenti
+        from shinra.domain.argomenti_vietati import consenti
+
+        # La lingua di chi sta parlando: quella del profilo, se l'ha scelta,
+        # altrimenti quella dell'installazione (issue #36).
+        lingua = schemi(getattr(profile, "lingua", "") or "")
 
         vietato = consenti(user_text, profile)
         if vietato:
+            rifiuto = lingua.dice("argomento_vietato")
             mem.add_user_message(user_text)
-            mem.add_assistant_message(RISPOSTA_PREDEFINITA)
+            mem.add_assistant_message(rifiuto)
             return {
-                "response": RISPOSTA_PREDEFINITA,
+                "response": rifiuto,
                 "actions": [],
                 "user": profile.model_dump() if profile else None,
                 "success": True,
@@ -100,6 +106,7 @@ class ShinraAgent:
             ha_summary = await self.ha.get_relevant_entities_summary()
 
         system_prompt = get_system_prompt(
+            lingua=lingua,
             home_context_summary=ha_summary,
             default_city=settings.assistant.default_city,
             user_profile=profile,
@@ -116,10 +123,12 @@ class ShinraAgent:
         # letto a voce cosi' com'e'.
         if richiesta.contesto:
             system_prompt += (
-                "\n\n### INFORMAZIONI IN TEMPO REALE:\n"
+                "\n\n"
+                + lingua.prompt_di("informazioni_in_tempo_reale")
+                + "\n"
                 + "\n".join(richiesta.contesto)
-                + "\nRispondi direttamente alla domanda dell'utente comunicando questi dati in modo "
-                "sintetico e naturale (1-2 frasi). Non menzionare API o funzioni tecniche."
+                + "\n"
+                + lingua.prompt_di("informazioni_chiusura")
             )
 
         # 5. Aggiornamento memoria e messaggi
@@ -130,32 +139,8 @@ class ShinraAgent:
 
         # 6. Ciclo di Tool Calling con Gemma / Qwen
         # Attiva i tools complessi solo se il messaggio contiene richieste di domotica o ricerca web attiva
-        ACTION_KEYWORDS = [
-            "accend",
-            "spegn",
-            "attiva",
-            "disattiva",
-            "imposta",
-            "regola",
-            "alza",
-            "abbassa",
-            "chiudi",
-            "apri",
-            "luce",
-            "luci",
-            "lampad",
-            "termostato",
-            "presa",
-            "interruttore",
-            "modalità",
-            "routine",
-            "stato casa",
-            "cerca sul web",
-            "cerca su internet",
-            "trova online",
-            "dispositivi",
-            "entità",
-        ]
+        # Le parole che fanno passare gli strumenti al modello, nella lingua di chi parla.
+        ACTION_KEYWORDS = lingua.parole_azione
         needs_action_tools = any(kw in user_text.lower() for kw in ACTION_KEYWORDS)
 
         for iteration in range(max_tool_iterations):
@@ -169,12 +154,9 @@ class ShinraAgent:
             response = await self.ollama.chat(messages=conversation_messages, tools=current_tools)
 
             if not response.get("success"):
-                err_msg = response.get("error") or "Errore di elaborazione da Ollama"
+                err_msg = response.get("error") or "Ollama"
                 logger.error(f"[Shinra] Errore Ollama: {err_msg}")
-                fallback = (
-                    f"Si è verificato un problema di comunicazione con il motore IA: {err_msg}. "
-                    "Assicurati che Ollama sia avviato e il modello sia pronto."
-                )
+                fallback = lingua.dice("errore_ollama", errore=err_msg)
                 return {
                     "response": fallback,
                     "actions": actions_taken,
@@ -207,12 +189,16 @@ class ShinraAgent:
                     conversation_messages.append(
                         {
                             "role": "user",
-                            "content": f"Risultato operazione {t_name}: {json.dumps(t_res, ensure_ascii=False)}. Formula ora una risposta breve e naturale per l'utente.",
+                            "content": lingua.dice(
+                                "risultato_operazione",
+                                tool=t_name,
+                                risultato=json.dumps(t_res, ensure_ascii=False),
+                            ),
                         }
                     )
                     continue
                 else:
-                    final_text = content.strip() or "Operazione completata."
+                    final_text = content.strip() or lingua.dice("operazione_completata")
                     mem.add_assistant_message(final_text)
                     return {
                         "response": final_text,
@@ -250,7 +236,7 @@ class ShinraAgent:
                     }
                 )
 
-        fallback = "Ho elaborato la tua richiesta e verificato i dati."
+        fallback = lingua.dice("dati_verificati")
         mem.add_assistant_message(fallback)
         return {
             "response": fallback,

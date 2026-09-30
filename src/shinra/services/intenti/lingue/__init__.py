@@ -24,9 +24,10 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Mapping, Tuple
 
 import yaml
 
@@ -48,6 +49,65 @@ RICHIESTE: Tuple[Tuple[str, ...], ...] = (
     ("enciclopedia", "pulizia"),
     ("apprendimento", "avvii"),
     ("apprendimento", "interruzioni"),
+    ("casa", "parole_temperatura"),
+    ("casa", "preposizioni_stanza"),
+    ("notizie", "inneschi"),
+    ("agente", "parole_azione"),
+    ("calendario", "giorni"),
+    ("calendario", "mesi"),
+    ("calendario", "formato_data"),
+)
+
+# Le frasi che Shinra **dice**, una per chiave. Stanno qui e non in
+# `RICHIESTE` perche' il controllo e' piu' fine: non basta che la sezione
+# `messaggi` esista, ogni frase che il codice sa dire deve avere la sua in
+# ogni lingua. Una chiave che manca non deve scoppiare dentro una risposta a
+# chi sta parlando: si dice per nome al caricamento.
+CHIAVI_MESSAGGI: Tuple[str, ...] = (
+    "temperatura_sensori_illeggibili",
+    "temperatura_nessun_sensore",
+    "temperatura_nessun_sensore_in",
+    "temperatura_una_lettura",
+    "temperatura_piu_letture",
+    "dispositivo_negato",
+    "dispositivo_non_comandato",
+    "dispositivo_acceso",
+    "dispositivo_spento",
+    "modalita_attivata",
+    "meteo_domani",
+    "meteo_adesso",
+    "meteo_massima",
+    "condizione_variabile",
+    "notizie_ultime",
+    "apprendimento_interrotto",
+    "timer_impostato",
+    "promemoria_impostato",
+    "argomento_vietato",
+    "errore_ollama",
+    "operazione_completata",
+    "dati_verificati",
+    "risultato_operazione",
+)
+
+# I pezzi del prompt di sistema. Lo stesso ragionamento: il prompt e' il
+# punto in cui la lingua della risposta si decide davvero, perche' il modello
+# risponde nella lingua in cui gli si parla. Un prompt in italiano con
+# l'utente che scrive in inglese produce risposte in un italiano stentato.
+CHIAVI_PROMPT: Tuple[str, ...] = (
+    "intro",
+    "utente_anonimo",
+    "persona_bambino",
+    "persona_ragazzo",
+    "persona_adulto",
+    "ruolo_admin",
+    "ruolo_adulto",
+    "regole",
+    "titolo_conoscenza",
+    "titolo_alias",
+    "titolo_modalita",
+    "titolo_dispositivi",
+    "informazioni_in_tempo_reale",
+    "informazioni_chiusura",
 )
 
 
@@ -71,6 +131,37 @@ class Schemi:
     pulizia_enciclopedia: re.Pattern
     avvii_apprendimento: Tuple[str, ...]
     interruzioni_apprendimento: Tuple[str, ...]
+    parole_temperatura: Tuple[str, ...]
+    stanza: re.Pattern
+    inneschi_notizie: Tuple[str, ...]
+    parole_azione: Tuple[str, ...]
+    giorni: Tuple[str, ...]
+    mesi: Tuple[str, ...]
+    formato_data: str
+    messaggi: Mapping[str, str]
+    prompt: Mapping[str, str]
+
+    def dice(self, chiave: str, **valori: Any) -> str:
+        """Una frase di questa lingua, con i valori al loro posto."""
+        return self.messaggi[chiave].format_map(valori)
+
+    def prompt_di(self, chiave: str, **valori: Any) -> str:
+        """Un pezzo del prompt di sistema in questa lingua."""
+        return self.prompt[chiave].format_map(valori)
+
+    def data_e_ora(self, momento: "datetime") -> str:
+        """«mercoledi 30 settembre 2026, ore 21:40», senza passare dal locale
+        del sistema: i nomi dei giorni e dei mesi stanno nel file della
+        lingua, cosi' la risposta non dipende da come e' configurata la
+        macchina che ospita Shinra."""
+        return self.formato_data.format(
+            giorno=self.giorni[momento.weekday()],
+            numero=momento.day,
+            mese=self.mesi[momento.month - 1],
+            anno=momento.year,
+            ore=f"{momento.hour:02d}",
+            minuti=f"{momento.minute:02d}",
+        )
 
 
 def lingue_disponibili() -> Tuple[str, ...]:
@@ -81,6 +172,12 @@ def lingue_disponibili() -> Tuple[str, ...]:
 
 def _verifica(dati: Dict[str, Any], dove: Path) -> None:
     mancanti = []
+    for sezione, chiavi in (("messaggi", CHIAVI_MESSAGGI), ("prompt", CHIAVI_PROMPT)):
+        presenti = dati.get(sezione)
+        if not isinstance(presenti, dict):
+            mancanti.append(sezione)
+            continue
+        mancanti.extend(f"{sezione}.{k}" for k in chiavi if not presenti.get(k))
     for percorso in RICHIESTE:
         nodo: Any = dati
         for pezzo in percorso:
@@ -113,7 +210,34 @@ def _compila(lingua: str) -> Schemi:
         pulizia_enciclopedia=re.compile(dati["enciclopedia"]["pulizia"], re.IGNORECASE),
         avvii_apprendimento=tuple(dati["apprendimento"]["avvii"]),
         interruzioni_apprendimento=tuple(dati["apprendimento"]["interruzioni"]),
+        parole_temperatura=tuple(dati["casa"]["parole_temperatura"]),
+        stanza=re.compile(dati["casa"]["preposizioni_stanza"], re.IGNORECASE),
+        inneschi_notizie=tuple(dati["notizie"]["inneschi"]),
+        parole_azione=tuple(dati["agente"]["parole_azione"]),
+        giorni=tuple(dati["calendario"]["giorni"]),
+        mesi=tuple(dati["calendario"]["mesi"]),
+        formato_data=str(dati["calendario"]["formato_data"]),
+        messaggi={k: str(v) for k, v in dati["messaggi"].items()},
+        prompt={k: str(v) for k, v in dati["prompt"].items()},
     )
+
+
+def elenco_lingue() -> Dict[str, Any]:
+    """Le lingue fra cui scegliere, per il menu del profilo.
+
+    Ritorna anche quella dell'installazione, perche' «come la casa» e' una
+    scelta a parte: una persona che non sceglie niente la segue, anche se
+    un giorno la casa cambia lingua.
+    """
+    disponibili = []
+    for codice in lingue_disponibili():
+        try:
+            disponibili.append({"codice": codice, "nome": _compila(codice).nome})
+        except LinguaIncompleta:
+            continue  # un file a meta' non si offre: sceglierlo sarebbe ripiegare sull'italiano
+    from shinra.config import settings as impostazioni
+
+    return {"installazione": impostazioni.settings.assistant.language, "lingue": disponibili}
 
 
 def schemi(lingua: str | None = None) -> Schemi:
@@ -124,7 +248,7 @@ def schemi(lingua: str | None = None) -> Schemi:
     refuso in `config.yaml` rende Shinra muta, e un refuso in un file di
     configurazione e' una cosa che succede.
     """
-    if lingua is None:
+    if not lingua:
         from shinra.config import settings as impostazioni
 
         lingua = impostazioni.settings.assistant.language

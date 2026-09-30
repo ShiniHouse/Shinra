@@ -19,6 +19,9 @@ class UserProfile(BaseModel):
     preferred_news_categories: List[str] = ["generale"]
     restricted_topics: List[str] = []
     notes: Optional[str] = ""
+    # La lingua in cui questa persona parla e riceve risposta. Vuota vuol
+    # dire «quella dell'installazione»: chi non ha mai scelto non cambia nulla.
+    lingua: str = ""
 
 
 GUEST_PROFILE = UserProfile(

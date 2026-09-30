@@ -1,0 +1,203 @@
+# How things are said, in English.
+#
+# The second language of issue #36. Its job is to prove the separation: a
+# language is a file next to `it.yaml`, with the same keys, and nothing in the
+# logic changes. Writing it is also the only way to find what was forgotten —
+# the news triggers, the tool keywords and the month names were all Italian
+# inside the code until this file needed them.
+#
+# Not covered yet: timers and reminders. The sentence parser that reads
+# "timer di dieci minuti" and "ricordami domani di..." lives in
+# `domain/quando.py` and `services/timer_engine.py`, and is Italian. In
+# English those requests reach the model, which calls the reminder tool.
+#
+# Reference: issue #36.
+
+lingua: en
+nome: English
+
+casa:
+  # Words that say "in here", not "outside". They tell "what's the
+  # temperature in the living room" — a sensor in the house — apart from
+  # "what's the temperature in Boston", which is the weather.
+  segnali_interni:
+    - in the house
+    - at home
+    - inside
+    - indoors
+    - in here
+    - in the living room
+    - in the kitchen
+    - in the bedroom
+    - in the bathroom
+    - in the dining room
+    - in the study
+    - in the garage
+    - in the attic
+    - in the basement
+    - in the hallway
+
+  # "Turn on the kitchen light": the verb, an optional article, the thing.
+  # First group is the verb, second the thing.
+  controllo_dispositivo: "^(turn on|turn off|switch on|switch off|activate|deactivate)\\s+(?:the\\s+|my\\s+|a\\s+)?(.+)$"
+
+  # Which of those verbs turn things on. The others turn them off.
+  verbi_che_accendono:
+    - turn on
+    - switch on
+    - activate
+
+  parole_temperatura:
+    - temperature
+    - how hot
+    - how cold
+    - degrees
+
+  # "in the kitchen": the preposition and article, then the room.
+  preposizioni_stanza: "\\b(?:in|inside)\\s+(?:the\\s+)?([a-z]+(?:\\s+room)?)"
+
+meteo:
+  parole:
+    - weather
+    - forecast
+    - will it rain
+    - is it raining
+    - is it going to rain
+    - temperature outside
+    - degrees outside
+
+  # The word that asks for the day after instead of now.
+  domani: tomorrow
+
+  # "in Boston", "for San Francisco", "in Stoke on Trent". Capitalised words
+  # plus the small words that link them.
+  citta: "\\b(?:in|for|at)\\s+((?:[A-Z][\\w']*)(?:\\s+(?:of|the|on|upon|in|de)\\s+[A-Z]?[\\w']*|\\s+[A-Z][\\w']*)*)"
+
+enciclopedia:
+  inneschi:
+    - what does
+    - who was
+    - who is
+    - who were
+    - definition of
+    - what is
+    - what's
+    - tell me about
+    - explain
+    - when is
+    - where is
+    - history of
+    - biography of
+
+  # The question is removed and the term to look up remains.
+  pulizia: "^(what does|who was|who is|who were|definition of|what is|what's|tell me about|explain|the term|the word|when is|where is|history of|biography of)\\s+|\\s+mean$"
+
+apprendimento:
+  avvii:
+    - kyra teach
+    - shinra teach
+    - teach you
+    - learning mode
+    - learn the house
+    - learn my habits
+    - interview me
+    - house interview
+
+  interruzioni:
+    - cancel interview
+    - stop interview
+    - exit learning
+    - stop learning
+    - cancel
+
+notizie:
+  inneschi:
+    - news
+    - latest news
+    - press review
+    - what's happening
+
+agente:
+  parole_azione:
+    - turn on
+    - turn off
+    - switch
+    - activate
+    - deactivate
+    - set
+    - adjust
+    - raise
+    - lower
+    - close
+    - open
+    - light
+    - lamp
+    - thermostat
+    - socket
+    - plug
+    - mode
+    - routine
+    - home status
+    - search the web
+    - search online
+    - find online
+    - devices
+    - entities
+
+calendario:
+  giorni: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+  mesi: [January, February, March, April, May, June, July, August, September, October, November, December]
+  formato_data: "{giorno}, {mese} {numero}, {anno}, {ore}:{minuti}"
+
+messaggi:
+  temperatura_sensori_illeggibili: "I can't read the home sensors."
+  temperatura_nessun_sensore: "I can't find a temperature sensor in the house."
+  temperatura_nessun_sensore_in: "I can't find a temperature sensor in {stanza}."
+  temperatura_una_lettura: "{nome}: {valore} degrees."
+  temperatura_piu_letture: "Temperatures in the house: {elenco} degrees."
+  dispositivo_negato: "You don't have permission to control this device."
+  dispositivo_non_comandato: "I couldn't control {nome}."
+  dispositivo_acceso: "{nome} is on."
+  dispositivo_spento: "{nome} is off."
+  modalita_attivata: "{nome} mode activated."
+  meteo_domani: "Tomorrow in {localita}: {condizione}, high of {massima} and low of {minima} degrees."
+  meteo_adesso: "In {localita} it is currently {temperatura}, {condizione}."
+  meteo_massima: " Expected high of {massima} degrees."
+  condizione_variabile: "variable"
+  notizie_ultime: "Latest news: {titoli}"
+  apprendimento_interrotto: "Learning mode stopped. We can pick it up whenever you like."
+  timer_impostato: "Timer for {quantita} {unita} set for {etichetta}."
+  promemoria_impostato: "Done, I'll remind you to {testo} {quando}."
+  argomento_vietato: "I'd rather not talk about that. If you need it, ask an adult at home."
+  errore_ollama: "There was a problem talking to the AI engine: {errore}. Make sure Ollama is running and the model is ready."
+  operazione_completata: "Done."
+  dati_verificati: "I've processed your request and checked the data."
+  risultato_operazione: "Result of {tool}: {risultato}. Now write a short, natural reply for the user."
+
+prompt:
+  intro: "You are {assistente}, an intelligent home assistant. Today is {adesso}. Reference city: {citta}."
+  utente_anonimo: "User"
+  persona_bambino: "You are talking to the child {nome}. Use simple, cheerful, reassuring language. No violent or complex content."
+  persona_ragazzo: "You are talking to the teenager {nome}. Be practical, direct and clear."
+  persona_adulto: "You are talking to {nome} ({ruolo}). Jarvis style: courteous, discreet, precise, short natural answers in English. Avoid wordy sentences."
+  ruolo_admin: "Administrator"
+  ruolo_adulto: "Adult"
+  titolo_conoscenza: "HOME KNOWLEDGE"
+  titolo_alias: "DEVICE ALIASES"
+  titolo_modalita: "MODES"
+  titolo_dispositivi: "ACTIVE DEVICES"
+  informazioni_in_tempo_reale: "### REAL-TIME INFORMATION:"
+  informazioni_chiusura: "Answer the user's question directly, conveying this data briefly and naturally (1-2 sentences). Do not mention APIs or technical functions."
+  regole: |-
+    TOOL RULES (Always use tools for real-time data or actions):
+    - WEATHER: For any question about weather or temperatures, ALWAYS call the `get_weather` tool (default location: "{citta}").
+    - HOME CONTROL: To turn lights on/off, adjust them or check the state of the house, call `control_device` or `get_home_status`.
+    - CLIMATE: For modes (heating, cooling, dehumidifying, ventilation), temperature, fan, humidity or profiles, call `comanda_clima`; to know how it is set, `stato_clima`. The SET temperature and the MEASURED one are two different things: do not pass one off as the other.
+    - BLINDS: To open, close, stop halfway, move to a percentage or tilt the slats, call `comanda_tapparella`. The percentage says how OPEN it is: 0 closed, 100 open, so "lower it to 40%" means position 40.
+    - ENERGY: For consumption and costs call `consumo_energia`; for "which tariff band are we in" `fascia_corrente`; for "how much does it cost to keep this on" `costo_dispositivo`. If the tool says it has no readings, report that: do not invent a number and do not answer zero.
+    - LISTS: For shopping and to-dos call `aggiungi_a_lista`, `leggi_lista`, `togli_da_lista`. Several items in one sentence are several entries: pass them all together, the tool splits them.
+    - CALENDAR: For "what do I have today/tomorrow/Saturday" call `impegni`; for the coming days `prossimi_impegni`; to note something `aggiungi_impegno`.
+    - DEADLINES: For filters, servicing, road tax and warranties call `aggiungi_scadenza`, `scadenze_in_arrivo`, `segna_fatta`. If a tool says it needs to know WHEN, ask the person: do not invent a date and do not say you have noted it.
+    - NEWS: For the day's news or a press review, call `get_latest_news` or `search_web`.
+    - CULTURE & DEFINITIONS: For definitions or concepts, call `search_wikipedia`.
+    Never say you cannot access real-time data: always invoke the appropriate tool. When you receive the data from the tool, write a short, clear and natural reply for the user in 1-2 sentences.

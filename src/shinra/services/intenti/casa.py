@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import Optional
 
 from shinra.infra.data_store import data_store
 from shinra.services.intenti.base import Intento, Richiesta, Risposta, registra
-from shinra.services.intenti.lingue import schemi
 from shinra.skills.registry import execute_tool
 
 logger = logging.getLogger("Shinra.Intenti")
@@ -28,39 +26,42 @@ class TemperaturaInterna(Intento):
 
     def applicabile(self, richiesta: Richiesta) -> bool:
         testo = richiesta.minuscolo
-        if not any(p in testo for p in ("temperatura", "che caldo", "che freddo", "gradi")):
+        lingua = richiesta.schemi
+        if not any(p in testo for p in lingua.parole_temperatura):
             return False
-        if any(s in testo for s in schemi().segnali_interni):
+        if any(s in testo for s in lingua.segnali_interni):
             return True
         # Anche il nome di un dispositivo configurato vale come «qui dentro»:
         # chi ha un alias «clima camera» sta parlando di casa sua.
         return any((a.get("alias") or "").lower() in testo for a in data_store.get_aliases())
 
     async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
-        stanza = self._stanza(richiesta.minuscolo)
+        lingua = richiesta.schemi
+        stanza = self._stanza(richiesta.minuscolo, lingua)
         esito = await execute_tool("get_indoor_temperature", {"room": stanza})
         richiesta.annota("get_indoor_temperature", {"room": stanza}, esito)
 
         if not esito.get("success"):
             # Nessun sensore, o Home Assistant irraggiungibile: meglio dirlo
             # che rispondere con la temperatura di fuori.
-            return Risposta(esito.get("message") or "Non riesco a leggere i sensori di casa.")
+            return Risposta(esito.get("message") or lingua.dice("temperatura_sensori_illeggibili"))
 
         letture = esito.get("letture", [])
         if not letture:
-            dove = f" in {stanza}" if stanza else " in casa"
-            return Risposta(f"Non trovo un sensore di temperatura{dove}.")
+            if stanza:
+                return Risposta(lingua.dice("temperatura_nessun_sensore_in", stanza=stanza))
+            return Risposta(lingua.dice("temperatura_nessun_sensore"))
 
         if len(letture) == 1:
             sola = letture[0]
-            return Risposta(f"{sola['nome']}: {sola['valore']} gradi.")
+            return Risposta(lingua.dice("temperatura_una_lettura", nome=sola["nome"], valore=sola["valore"]))
 
         elenco = ", ".join(f"{voce['nome']} {voce['valore']}" for voce in letture[:4])
-        return Risposta(f"Temperature in casa: {elenco} gradi.")
+        return Risposta(lingua.dice("temperatura_piu_letture", elenco=elenco))
 
     @staticmethod
-    def _stanza(testo: str) -> str:
-        trovata = re.search(r"\b(?:in|nel|nella|del|della|al|alla)\s+([a-zàèéìòù]+)", testo)
+    def _stanza(testo: str, lingua) -> str:
+        trovata = lingua.stanza.search(testo)
         return trovata.group(1) if trovata else ""
 
 
@@ -71,16 +72,17 @@ class ControlloDispositivo(Intento):
     priorita = 40
 
     def applicabile(self, richiesta: Richiesta) -> bool:
-        return schemi().controllo_dispositivo.match(richiesta.testo.strip()) is not None
+        return richiesta.schemi.controllo_dispositivo.match(richiesta.testo.strip()) is not None
 
     async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
-        trovato = schemi().controllo_dispositivo.match(richiesta.testo.strip())
+        lingua = richiesta.schemi
+        trovato = lingua.controllo_dispositivo.match(richiesta.testo.strip())
         if not trovato:
             return None
 
         verbo = trovato.group(1).lower()
         cercato = trovato.group(2).strip().lower()
-        accende = verbo in schemi().verbi_che_accendono
+        accende = verbo in lingua.verbi_che_accendono
         azione = "turn_on" if accende else "turn_off"
 
         entita, nome = self._risolvi(cercato)
@@ -96,14 +98,16 @@ class ControlloDispositivo(Intento):
             richiesta.memoria.add_tool_interaction("control_device", argomenti, esito)
 
         if esito.get("permesso_negato"):
-            return Risposta(esito.get("spiegazione", "Non hai il permesso di comandare questo dispositivo."))
+            return Risposta(esito.get("spiegazione", lingua.dice("dispositivo_negato")))
         if esito.get("error") or esito.get("success") is False:
             # Prima si rispondeva «acceso» comunque, anche quando il comando
             # non era arrivato: peggio che tacere, perche' chi ascolta se ne
             # va convinto che la luce sia accesa.
-            return Risposta(f"Non sono riuscito a comandare {nome}.")
+            return Risposta(lingua.dice("dispositivo_non_comandato", nome=nome))
 
-        return Risposta(f"{nome.capitalize()} {'acceso' if accende else 'spento'}.")
+        return Risposta(
+            lingua.dice("dispositivo_acceso" if accende else "dispositivo_spento", nome=nome.capitalize())
+        )
 
     @staticmethod
     def _risolvi(cercato: str) -> tuple[Optional[str], str]:
@@ -131,7 +135,7 @@ class AttivaModalita(Intento):
         argomenti = {"mode_name": modalita.get("name")}
         esito = await execute_tool("activate_mode", argomenti)
         richiesta.annota("activate_mode", argomenti, esito)
-        return Risposta(f"Modalità {modalita.get('name')} attivata.")
+        return Risposta(richiesta.schemi.dice("modalita_attivata", nome=modalita.get("name")))
 
     @staticmethod
     def _trova(testo: str) -> Optional[dict]:

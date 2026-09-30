@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:  # pragma: no cover
+    from shinra.services.intenti.lingue import Schemi
     from shinra.services.memory import ConversationMemory
     from shinra.services.user_manager import UserProfile
 
@@ -39,6 +40,22 @@ class Richiesta:
     @property
     def minuscolo(self) -> str:
         return self.testo.lower()
+
+    @property
+    def lingua(self) -> str:
+        """La lingua di chi parla: quella del profilo, se l'ha scelta.
+
+        Vuota vuol dire «quella dell'installazione»: e' il caso di chi non ha
+        mai aperto la scheda del proprio profilo, cioe' quasi tutti.
+        """
+        return getattr(self.profilo, "lingua", "") or ""
+
+    @property
+    def schemi(self) -> "Schemi":
+        """Gli schemi e le frasi nella lingua di chi ha scritto."""
+        from shinra.services.intenti.lingue import schemi
+
+        return schemi(self.lingua)
 
     @property
     def id_utente(self) -> str:
