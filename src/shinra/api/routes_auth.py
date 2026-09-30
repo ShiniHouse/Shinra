@@ -235,6 +235,7 @@ async def concludi_registrazione_passkey(
     request: Request,
     profilo: Optional[UserProfile] = Depends(sicurezza.richiedi_autenticazione),
 ):
+    """Conclude la registrazione di una passkey sul dispositivo di chi e' entrato."""
     if profilo is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Accedi prima.")
     schema, host = _dove(request)
@@ -331,6 +332,7 @@ async def elenco_passkey(profilo: Optional[UserProfile] = Depends(sicurezza.rich
 async def revoca_passkey(
     identificativo: str, profilo: Optional[UserProfile] = Depends(sicurezza.richiedi_autenticazione)
 ):
+    """Toglie una passkey: da quel dispositivo non si entra piu' con quella."""
     if profilo is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Accedi prima.")
     if not servizio_passkey.revoca(profilo, identificativo):
@@ -344,6 +346,7 @@ async def revoca_passkey(
 
 @router.post("/logout")
 async def esci(request: Request, response: Response):
+    """Chiude la sessione e cancella i cookie."""
     profilo = sicurezza.utente_corrente(request)
     sicurezza.chiudi_sessione(sicurezza.token_dalla_richiesta(request))
     registro.registra("uscita", attore=profilo.id if profilo else None, canale="web")

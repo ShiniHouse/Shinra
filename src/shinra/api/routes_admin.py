@@ -46,11 +46,13 @@ class IdentifyRequest(BaseModel):
 # --- USERS ENDPOINTS ---
 @router.get("/users")
 async def list_users():
+    """Elenca i profili della casa. Il PIN non esce mai."""
     return user_manager.get_users()
 
 
 @router.post("/users", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_UTENTI))])
 async def save_user(user: UserProfile):
+    """Crea o aggiorna un profilo. Declassare l'ultimo amministratore e' rifiutato."""
     try:
         user_manager.upsert_user(user)
     except UltimoAmministratore as e:
@@ -61,6 +63,7 @@ async def save_user(user: UserProfile):
 
 @router.delete("/users/{user_id}", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_UTENTI))])
 async def delete_user(user_id: str):
+    """Cancella un profilo."""
     try:
         success = user_manager.delete_user(user_id)
     except UltimoAmministratore as e:
@@ -124,6 +127,7 @@ async def imposta_pin_utente(
 
 @router.post("/users/identify")
 async def identify_user(req: IdentifyRequest):
+    """Riconosce un profilo dal nome detto e restituisce il saluto adatto alla sua fascia d'eta'."""
     profile = user_manager.find_user_by_name(req.text)
     if profile.age_group == "child":
         greeting = f"Ciao {profile.name}! Come posso aiutarti oggi?"
@@ -137,34 +141,40 @@ async def identify_user(req: IdentifyRequest):
 # --- KNOWLEDGE ENDPOINTS ---
 @router.get("/knowledge")
 async def list_knowledge():
+    """Elenca i fatti della conoscenza di casa."""
     return data_store.get_knowledge()
 
 
 @router.post("/knowledge", dependencies=[Depends(richiedi_permesso(permessi.SCRIVI_CONOSCENZA))])
 async def save_knowledge(item: Dict[str, Any]):
+    """Aggiunge o aggiorna un fatto della conoscenza di casa."""
     salvato = data_store.salva_fatto(item)
     return {"success": True, "item": salvato}
 
 
 @router.delete("/knowledge/{item_id}", dependencies=[Depends(richiedi_permesso(permessi.SCRIVI_CONOSCENZA))])
 async def delete_knowledge(item_id: str):
+    """Cancella un fatto della conoscenza di casa."""
     return {"success": data_store.cancella_fatto(item_id)}
 
 
 # --- SOURCES (RSS) ENDPOINTS ---
 @router.get("/sources")
 async def list_sources():
+    """Elenca le fonti di notizie (feed RSS)."""
     return data_store.get_sources()
 
 
 @router.post("/sources")
 async def save_source(source: Dict[str, Any]):
+    """Aggiunge o aggiorna una fonte di notizie."""
     salvata = data_store.salva_fonte(source)
     return {"success": True, "source": salvata}
 
 
 @router.post("/sources/bulk-toggle")
 async def bulk_toggle_sources(payload: Dict[str, Any]):
+    """Accende o spegne tutte le fonti di notizie in una volta."""
     attive = bool(payload.get("enabled", True))
     quante = data_store.imposta_tutte_le_fonti(attive)
     return {"success": True, "count": quante, "enabled": attive}
@@ -172,11 +182,13 @@ async def bulk_toggle_sources(payload: Dict[str, Any]):
 
 @router.delete("/sources/{source_id}")
 async def delete_source(source_id: str):
+    """Cancella una fonte di notizie."""
     return {"success": data_store.cancella_fonte(source_id)}
 
 
 @router.get("/sources/test")
 async def test_source(url: str = Query(...)):
+    """Prova un indirizzo di feed prima di aggiungerlo: dice se e' valido e mostra tre titoli."""
     try:
 
         def _parse():
@@ -296,11 +308,13 @@ async def get_ha_entities(domain: Optional[str] = None):
 # --- DEVICE ALIASES ENDPOINTS ---
 @router.get("/aliases")
 async def list_aliases():
+    """Elenca gli alias: i nomi che la casa da' ai dispositivi («luce cucina»)."""
     return data_store.get_aliases()
 
 
 @router.post("/aliases", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_IMPOSTAZIONI))])
 async def save_alias(alias: Dict[str, Any]):
+    """Crea o aggiorna un alias di dispositivo."""
     salvato = data_store.salva_alias(alias)
     return {"success": True, "alias": salvato}
 
@@ -309,12 +323,14 @@ async def save_alias(alias: Dict[str, Any]):
     "/aliases/{alias_id}", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_IMPOSTAZIONI))]
 )
 async def delete_alias(alias_id: str):
+    """Cancella un alias."""
     return {"success": data_store.cancella_alias(alias_id)}
 
 
 # --- MODES ENDPOINTS ---
 @router.get("/modes")
 async def list_modes():
+    """Elenca le routine (modalita') configurate."""
     return data_store.get_modes()
 
 
@@ -399,6 +415,7 @@ async def simula_modalita(mode: Dict[str, Any]):
 
 @router.delete("/modes/{mode_id}", dependencies=[Depends(richiedi_permesso(permessi.MODIFICA_MODALITA))])
 async def delete_mode(mode_id: str):
+    """Cancella una routine, e con lei le regole che il suo grafo aveva generato."""
     # Prima le regole, poi la routine: se cadesse in mezzo, resterebbe una
     # routine senza inneschi — fastidioso — invece di un innesco che ogni
     # mattina prova ad attivare una routine che non esiste piu'.
@@ -410,6 +427,7 @@ async def delete_mode(mode_id: str):
     "/modes/{mode_name}/activate", dependencies=[Depends(richiedi_permesso(permessi.ATTIVA_MODALITA))]
 )
 async def trigger_mode(mode_name: str):
+    """Esegue una routine per nome, con i permessi di chi la invoca."""
     result = await activate_mode(mode_name)
     return result
 
@@ -431,6 +449,7 @@ def is_masked(secret: Optional[str]) -> bool:
 
 @router.get("/settings", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_IMPOSTAZIONI))])
 async def get_app_settings():
+    """Le impostazioni lette dal disco, con token e PIN mascherati."""
     # Qui la rilettura da disco e' voluta, ed e' l'unico posto che la fa.
     # Dalla issue #14 nessun altro punto del progetto legge config.yaml
     # durante una richiesta: si lavora sull'oggetto condiviso, che il
@@ -448,6 +467,7 @@ async def get_app_settings():
 
 @router.post("/settings", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_IMPOSTAZIONI))])
 async def update_app_settings(new_settings: AppConfig):
+    """Salva le impostazioni. Un token o un PIN rimasti mascherati non sovrascrivono quelli veri."""
     current_cfg = reload_settings()
 
     # Preserva token Home Assistant se inviato mascherato o vuoto
@@ -589,34 +609,40 @@ class CreateReminderReq(BaseModel):
 
 @router.get("/timers")
 async def list_timers():
+    """Elenca i timer attivi."""
     return timer_engine.get_timers()
 
 
 @router.post("/timers")
 async def create_timer(payload: CreateTimerReq):
+    """Crea un timer."""
     item = timer_engine.add_timer(payload.label, payload.duration_seconds, payload.user_id)
     return {"success": True, "timer": item}
 
 
 @router.delete("/timers/{timer_id}")
 async def remove_timer(timer_id: str):
+    """Cancella un timer."""
     success = timer_engine.delete_timer(timer_id)
     return {"success": success}
 
 
 @router.get("/reminders")
 async def list_reminders():
+    """Elenca i promemoria in attesa."""
     return timer_engine.get_reminders()
 
 
 @router.post("/reminders")
 async def create_reminder(payload: CreateReminderReq):
+    """Crea un promemoria."""
     item = timer_engine.add_reminder(payload.text, payload.remind_at, payload.user_id)
     return {"success": True, "reminder": item}
 
 
 @router.delete("/reminders/{reminder_id}")
 async def remove_reminder(reminder_id: str):
+    """Cancella un promemoria."""
     success = timer_engine.delete_reminder(reminder_id)
     return {"success": success}
 
@@ -640,30 +666,35 @@ class ConfirmRoutineReq(BaseModel):
 
 @router.post("/learning/start")
 async def start_learning_session(payload: StartLearningReq):
+    """Avvia l'intervista di apprendimento per un profilo."""
     res = interview_engine.start_session(payload.user_id)
     return res
 
 
 @router.post("/learning/answer")
 async def answer_learning_question(payload: AnswerLearningReq):
+    """Manda la risposta a una domanda dell'intervista."""
     res = await interview_engine.process_answer(payload.user_id, payload.answer)
     return res
 
 
 @router.post("/learning/confirm-routine")
 async def confirm_learning_routine(payload: ConfirmRoutineReq):
+    """Conferma la routine proposta alla fine dell'intervista."""
     res = interview_engine.confirm_routine(payload.routine)
     return res
 
 
 @router.post("/learning/stop")
 async def stop_learning_session(payload: StartLearningReq):
+    """Interrompe l'intervista di apprendimento."""
     interview_engine.stop_session(payload.user_id)
     return {"success": True, "message": "Sessione terminata."}
 
 
 @router.get("/learning/status")
 async def get_learning_status(user_id: str = "alessio"):
+    """Dice se c'e' un'intervista aperta e a che punto e'."""
     session = interview_engine.get_session(user_id)
     return {"is_active": interview_engine.is_session_active(user_id), "session": session}
 
@@ -727,6 +758,7 @@ async def elenco_permessi():
 
 @router.get("/ruoli")
 async def elenco_ruoli():
+    """Elenca i ruoli con i loro permessi."""
     return depositi.ruoli.elenco()
 
 
@@ -771,6 +803,7 @@ async def salva_ruolo(ruolo: Dict[str, Any]):
 
 @router.delete("/ruoli/{id_ruolo}", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_UTENTI))])
 async def cancella_ruolo(id_ruolo: str):
+    """Cancella un ruolo personalizzato: i cinque predefiniti, e quelli con persone assegnate, no."""
     ruolo = depositi.ruoli.per_id(id_ruolo)
     if ruolo is None:
         raise HTTPException(status_code=404, detail="Ruolo non trovato.")
@@ -818,6 +851,7 @@ async def elenco_dispositivi(
 async def revoca_dispositivo(
     id_dispositivo: str, chiamante: Optional[UserProfile] = Depends(richiedi_autenticazione)
 ):
+    """Revoca un dispositivo fidato. Chi non e' amministratore puo' revocare solo i propri."""
     proprietari = {d["id"]: d["user_id"] for d in dispositivi.elenco()}
     if id_dispositivo not in proprietari:
         raise HTTPException(status_code=404, detail="Dispositivo non trovato.")

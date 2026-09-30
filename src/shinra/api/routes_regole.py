@@ -157,6 +157,7 @@ async def elenco() -> Dict[str, Any]:
 async def crea(
     dati: RegolaIn, profilo: Optional[UserProfile] = Depends(richiedi_autenticazione)
 ) -> Dict[str, Any]:
+    """Crea una regola del motore (innesco, condizioni, azioni)."""
     _valida(dati)
     voce = motore_regole.crea(dati.model_dump(), autore=profilo.id if profilo else None)
     return {"success": True, "regola": voce}
@@ -164,6 +165,7 @@ async def crea(
 
 @router.patch("/{identificativo}", dependencies=[Depends(richiedi_permesso(permessi.MODIFICA_MODALITA))])
 async def modifica(identificativo: str, dati: Modifica) -> Dict[str, Any]:
+    """Modifica una regola esistente."""
     cambiamenti = {k: v for k, v in dati.model_dump().items() if v is not None}
     if not cambiamenti:
         raise HTTPException(status_code=400, detail="Non c'e' niente da cambiare.")
@@ -176,6 +178,7 @@ async def modifica(identificativo: str, dati: Modifica) -> Dict[str, Any]:
 
 @router.delete("/{identificativo}", dependencies=[Depends(richiedi_permesso(permessi.MODIFICA_MODALITA))])
 async def cancella(identificativo: str) -> Dict[str, Any]:
+    """Cancella una regola."""
     if not motore_regole.cancella(identificativo):
         raise HTTPException(status_code=404, detail="Regola non trovata.")
     return {"success": True}
