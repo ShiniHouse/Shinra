@@ -24,7 +24,7 @@ function renderCanvasElements() {
             const ph = (node.data.phrases || []).join(', ');
             bodyHtml = _html`
                 <div class="space-y-2 text-xs">
-                    <select onchange="setTipoInnesco('${node.id}', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200">
+                    <select data-al-cambio="setTipoInnesco" data-args="${_args(node.id)}" data-argomento="valore" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200">
                         <option value="voce" ${t.tipo === 'voce' ? 'selected' : ''}>Quando lo chiedo a voce</option>
                         <option value="orario" ${t.tipo === 'orario' ? 'selected' : ''}>A un orario</option>
                         <option value="alba" ${t.tipo === 'alba' ? 'selected' : ''}>All'alba</option>
@@ -36,18 +36,18 @@ function renderCanvasElements() {
                         t.tipo === 'voce'
                             ? _html`
                         <label class="text-[10px] text-slate-400 font-semibold block">Frasi di Attivazione:</label>
-                        <input type="text" value="${ph}" oninput="updateNodeData('${node.id}', 'phrases', this.value.split(',').map(s=>s.trim()))" placeholder="es. attiva cinema, cinema" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500">
+                        <input type="text" value="${ph}" data-mentre-scrivi="aggiornaFrasiNodo" data-args="${_args(node.id)}" data-argomento="valore" placeholder="es. attiva cinema, cinema" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500">
                     `
                             : ''
                     }
                     ${
                         t.tipo === 'orario'
                             ? _html`
-                        <input type="time" value="${t.ora || '07:00'}" onchange="setDatoInnesco('${node.id}', 'ora', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-100">
+                        <input type="time" value="${t.ora || '07:00'}" data-al-cambio="setDatoInnesco" data-args="${_args(node.id, 'ora')}" data-argomento="valore" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-100">
                         <div class="flex gap-0.5">
                             ${['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(
                                 (g, i) => _html`
-                                <button type="button" onclick="alternaGiornoInnesco(${_grezzo(_perAttributoJs(node.id))}, ${i})" class="flex-1 py-1 rounded text-[10px] font-bold ${(t.giorni || []).includes(i) ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'}">${g}</button>
+                                <button type="button" data-gesto="alternaGiornoInnesco" data-args="${_args(node.id, i)}" class="flex-1 py-1 rounded text-[10px] font-bold ${(t.giorni || []).includes(i) ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'}">${g}</button>
                             `,
                             )}
                         </div>
@@ -59,7 +59,7 @@ function renderCanvasElements() {
                         t.tipo === 'alba' || t.tipo === 'tramonto'
                             ? _html`
                         <div class="flex items-center gap-2">
-                            <input type="number" value="${t.scarto_minuti || 0}" onchange="setDatoInnesco('${node.id}', 'scarto_minuti', parseInt(this.value)||0)" class="w-20 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 text-center">
+                            <input type="number" value="${t.scarto_minuti || 0}" data-al-cambio="setScartoMinuti" data-args="${_args(node.id)}" data-argomento="valore" class="w-20 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 text-center">
                             <span class="text-[11px] text-slate-400">minuti di scarto (negativi = prima)</span>
                         </div>
                     `
@@ -68,13 +68,13 @@ function renderCanvasElements() {
                     ${
                         t.tipo === 'stato'
                             ? _html`
-                        <input type="text" value="${t.entity_id || ''}" oninput="setDatoInnesco('${node.id}', 'entity_id', this.value)" placeholder="es. sensor.temperatura_salotto" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
-                        <select onchange="setDatoInnesco('${node.id}', 'confronto', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200">
+                        <input type="text" value="${t.entity_id || ''}" data-mentre-scrivi="setDatoInnesco" data-args="${_args(node.id, 'entity_id')}" data-argomento="valore" placeholder="es. sensor.temperatura_salotto" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                        <select data-al-cambio="setDatoInnesco" data-args="${_args(node.id, 'confronto')}" data-argomento="valore" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200">
                             <option value="attraversa_sotto" ${t.confronto === 'attraversa_sotto' ? 'selected' : ''}>quando scende sotto</option>
                             <option value="attraversa_sopra" ${t.confronto === 'attraversa_sopra' ? 'selected' : ''}>quando sale sopra</option>
                             <option value="diventa" ${t.confronto === 'diventa' ? 'selected' : ''}>quando diventa</option>
                         </select>
-                        <input type="text" value="${t.valore !== undefined ? t.valore : ''}" oninput="setDatoInnesco('${node.id}', 'valore', this.value)" placeholder="es. 15" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                        <input type="text" value="${t.valore !== undefined ? t.valore : ''}" data-mentre-scrivi="setDatoInnesco" data-args="${_args(node.id, 'valore')}" data-argomento="valore" placeholder="es. 15" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
                         <p class="text-[10px] text-slate-500 leading-snug">Scatta nel momento in cui la soglia viene attraversata, non a ogni lettura che sta di là.</p>
                     `
                             : ''
@@ -82,8 +82,8 @@ function renderCanvasElements() {
                     ${
                         t.tipo === 'evento'
                             ? _html`
-                        <input type="text" value="${t.evento || ''}" oninput="setDatoInnesco('${node.id}', 'evento', this.value)" placeholder="es. casa.vuota" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
-                        <input type="text" value="${t.entity_id || ''}" oninput="setDatoInnesco('${node.id}', 'entity_id', this.value)" placeholder="solo per questa entità (facoltativo)" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                        <input type="text" value="${t.evento || ''}" data-mentre-scrivi="setDatoInnesco" data-args="${_args(node.id, 'evento')}" data-argomento="valore" placeholder="es. casa.vuota" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                        <input type="text" value="${t.entity_id || ''}" data-mentre-scrivi="setDatoInnesco" data-args="${_args(node.id, 'entity_id')}" data-argomento="valore" placeholder="solo per questa entità (facoltativo)" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
                     `
                             : ''
                     }
@@ -104,10 +104,10 @@ function renderCanvasElements() {
                 <div class="space-y-2 text-xs">
                     <div>
                         <label class="text-[10px] text-slate-400 font-semibold block mb-0.5">Dispositivo / Alias:</label>
-                        <input type="text" value="${node.data.entity_id || ''}" oninput="updateNodeData('${node.id}', 'entity_id', this.value)" placeholder="es. light.salotto" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+                        <input type="text" value="${node.data.entity_id || ''}" data-mentre-scrivi="updateNodeData" data-args="${_args(node.id, 'entity_id')}" data-argomento="valore" placeholder="es. light.salotto" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
                     </div>
                     <div class="flex gap-1.5">
-                        <select onchange="updateNodeData('${node.id}', 'action', this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200">
+                        <select data-al-cambio="updateNodeData" data-args="${_args(node.id, 'action')}" data-argomento="valore" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200">
                             <option value="turn_on" ${node.data.action === 'turn_on' ? 'selected' : ''}>Accendi</option>
                             <option value="turn_off" ${node.data.action === 'turn_off' ? 'selected' : ''}>Spegni</option>
                             <option value="toggle" ${node.data.action === 'toggle' ? 'selected' : ''}>Inverti</option>
@@ -123,14 +123,14 @@ function renderCanvasElements() {
                 <div class="space-y-2 text-xs">
                     <label class="text-[10px] text-slate-400 font-semibold block">Attesa prima del prossimo step:</label>
                     <div class="flex items-center gap-2">
-                        <input type="number" min="1" max="300" value="${node.data.seconds || 5}" oninput="updateNodeData('${node.id}', 'seconds', parseInt(this.value)||1)" class="w-20 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 font-bold text-center">
+                        <input type="number" min="1" max="300" value="${node.data.seconds || 5}" data-mentre-scrivi="aggiornaSecondiNodo" data-args="${_args(node.id)}" data-argomento="valore" class="w-20 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 font-bold text-center">
                         <span class="text-xs text-slate-400">secondi</span>
                     </div>
                     <div class="flex gap-1">
-                        <button type="button" onclick="setQuickDelay('${node.id}', 3)" class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 hover:bg-slate-700">3s</button>
-                        <button type="button" onclick="setQuickDelay('${node.id}', 5)" class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 hover:bg-slate-700">5s</button>
-                        <button type="button" onclick="setQuickDelay('${node.id}', 10)" class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 hover:bg-slate-700">10s</button>
-                        <button type="button" onclick="setQuickDelay('${node.id}', 30)" class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 hover:bg-slate-700">30s</button>
+                        <button type="button" data-gesto="setQuickDelay" data-args="${_args(node.id, 3)}" class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 hover:bg-slate-700">3s</button>
+                        <button type="button" data-gesto="setQuickDelay" data-args="${_args(node.id, 5)}" class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 hover:bg-slate-700">5s</button>
+                        <button type="button" data-gesto="setQuickDelay" data-args="${_args(node.id, 10)}" class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 hover:bg-slate-700">10s</button>
+                        <button type="button" data-gesto="setQuickDelay" data-args="${_args(node.id, 30)}" class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 hover:bg-slate-700">30s</button>
                     </div>
                 </div>
             `;
@@ -141,7 +141,7 @@ function renderCanvasElements() {
             bodyHtml = _html`
                 <div class="space-y-1 text-xs">
                     <label class="text-[10px] text-slate-400 font-semibold block">Frase da pronunciare:</label>
-                    <textarea rows="2" oninput="updateNodeData('${node.id}', 'message', this.value)" placeholder="es. Luci regolate, buona visione!" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500">${node.data.message || ''}</textarea>
+                    <textarea rows="2" data-mentre-scrivi="updateNodeData" data-args="${_args(node.id, 'message')}" data-argomento="valore" placeholder="es. Luci regolate, buona visione!" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500">${node.data.message || ''}</textarea>
                 </div>
             `;
         } else if (node.type === 'condizione') {
@@ -151,7 +151,7 @@ function renderCanvasElements() {
             const c = node.data.condizione || {};
             bodyHtml = _html`
                 <div class="space-y-2 text-xs">
-                    <select onchange="setTipoCondizione('${node.id}', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200">
+                    <select data-al-cambio="setTipoCondizione" data-args="${_args(node.id)}" data-argomento="valore" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200">
                         <option value="presenza" ${c.tipo === 'presenza' ? 'selected' : ''}>C'è qualcuno in casa</option>
                         <option value="stato_entita" ${c.tipo === 'stato_entita' ? 'selected' : ''}>Un dispositivo è in uno stato</option>
                         <option value="fra_le_ore" ${c.tipo === 'fra_le_ore' ? 'selected' : ''}>Siamo in una fascia oraria</option>
@@ -160,8 +160,8 @@ function renderCanvasElements() {
                     ${
                         c.tipo === 'stato_entita'
                             ? _html`
-                        <input type="text" value="${c.entity_id || ''}" oninput="setDatoCondizione('${node.id}', 'entity_id', this.value)" placeholder="es. light.salotto" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
-                        <input type="text" value="${c.stato || ''}" oninput="setDatoCondizione('${node.id}', 'stato', this.value)" placeholder="stato atteso, es. on" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                        <input type="text" value="${c.entity_id || ''}" data-mentre-scrivi="setDatoCondizione" data-args="${_args(node.id, 'entity_id')}" data-argomento="valore" placeholder="es. light.salotto" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                        <input type="text" value="${c.stato || ''}" data-mentre-scrivi="setDatoCondizione" data-args="${_args(node.id, 'stato')}" data-argomento="valore" placeholder="stato atteso, es. on" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
                     `
                             : ''
                     }
@@ -169,9 +169,9 @@ function renderCanvasElements() {
                         c.tipo === 'fra_le_ore'
                             ? _html`
                         <div class="flex items-center gap-1.5">
-                            <input type="time" value="${c.dalle || '20:00'}" onchange="setDatoCondizione('${node.id}', 'dalle', this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-100">
+                            <input type="time" value="${c.dalle || '20:00'}" data-al-cambio="setDatoCondizione" data-args="${_args(node.id, 'dalle')}" data-argomento="valore" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-100">
                             <span class="text-slate-500 text-[10px]">e</span>
-                            <input type="time" value="${c.alle || '23:00'}" onchange="setDatoCondizione('${node.id}', 'alle', this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-100">
+                            <input type="time" value="${c.alle || '23:00'}" data-al-cambio="setDatoCondizione" data-args="${_args(node.id, 'alle')}" data-argomento="valore" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-100">
                         </div>
                     `
                             : ''
@@ -182,7 +182,7 @@ function renderCanvasElements() {
                         <div class="flex gap-0.5">
                             ${['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(
                                 (g, i) => _html`
-                                <button type="button" onclick="alternaGiorno(${_grezzo(_perAttributoJs(node.id))}, ${i})" class="flex-1 py-1 rounded text-[10px] font-bold ${(c.giorni || []).includes(i) ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400'}">${g}</button>
+                                <button type="button" data-gesto="alternaGiorno" data-args="${_args(node.id, i)}" class="flex-1 py-1 rounded text-[10px] font-bold ${(c.giorni || []).includes(i) ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400'}">${g}</button>
                             `,
                             )}
                         </div>
@@ -193,7 +193,7 @@ function renderCanvasElements() {
                         c.tipo === 'presenza'
                             ? _html`
                         <label class="flex items-center gap-2 text-[11px] text-slate-300">
-                            <input type="checkbox" ${c.abitata !== false ? 'checked' : ''} onchange="setDatoCondizione('${node.id}', 'abitata', this.checked)">
+                            <input type="checkbox" ${c.abitata !== false ? 'checked' : ''} data-al-cambio="setDatoCondizione" data-args="${_args(node.id, 'abitata')}" data-argomento="spunta">
                             Vero quando in casa c'è qualcuno
                         </label>
                     `
@@ -211,8 +211,8 @@ function renderCanvasElements() {
             typeLabel = '🔔 Notifica';
             bodyHtml = _html`
                 <div class="space-y-2 text-xs">
-                    <input type="text" value="${node.data.titolo || ''}" oninput="updateNodeData('${node.id}', 'titolo', this.value)" placeholder="Titolo" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
-                    <textarea rows="2" oninput="updateNodeData('${node.id}', 'testo', this.value)" placeholder="es. la lavatrice ha finito" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">${node.data.testo || ''}</textarea>
+                    <input type="text" value="${node.data.titolo || ''}" data-mentre-scrivi="updateNodeData" data-args="${_args(node.id, 'titolo')}" data-argomento="valore" placeholder="Titolo" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">
+                    <textarea rows="2" data-mentre-scrivi="updateNodeData" data-args="${_args(node.id, 'testo')}" data-argomento="valore" placeholder="es. la lavatrice ha finito" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100">${node.data.testo || ''}</textarea>
                     <p class="text-[10px] text-slate-500 leading-snug">
                         Arriva sul telefono, anche a chi non è in casa — a differenza
                         dell'annuncio vocale, che lo sente solo chi è nella stanza.
@@ -230,25 +230,25 @@ function renderCanvasElements() {
         return _html`
             <div id="c-node-${node.id}" class="flow-node absolute w-60 pointer-events-auto rounded-xl bg-slate-950/90 border border-slate-700 shadow-xl backdrop-blur" style="left: ${node.x}px; top: ${node.y}px;">
                 <!-- Input Pin (Left) -->
-                ${hasInputPin ? _html`<div onmouseup="onPinMouseUp('${node.id}', event)" class="port-pin port-pin-in" title="Collega qui il cavo in ingresso"></div>` : ''}
+                ${hasInputPin ? _html`<div data-al-rilascio="onPinMouseUp" data-args="${_args(node.id)}" data-argomento="evento" class="port-pin port-pin-in" title="Collega qui il cavo in ingresso"></div>` : ''}
 
                 <!-- Output Pin (Right) -->
                 ${
                     isCondizione
                         ? _html`
-                <div onmousedown="onPinMouseDown('${node.id}', event, 'vero')" class="port-pin port-pin-out port-pin-vero" title="Ramo SÌ: la condizione è soddisfatta"></div>
-                <div onmousedown="onPinMouseDown('${node.id}', event, 'falso')" class="port-pin port-pin-out port-pin-falso" title="Ramo NO: la condizione non è soddisfatta"></div>
+                <div data-al-premere="onPinMouseDown" data-args="${_args(node.id, 'vero')}" data-argomento="evento" class="port-pin port-pin-out port-pin-vero" title="Ramo SÌ: la condizione è soddisfatta"></div>
+                <div data-al-premere="onPinMouseDown" data-args="${_args(node.id, 'falso')}" data-argomento="evento" class="port-pin port-pin-out port-pin-falso" title="Ramo NO: la condizione non è soddisfatta"></div>
                 `
-                        : _html`<div onmousedown="onPinMouseDown('${node.id}', event)" class="port-pin port-pin-out" title="Trascina cavo verso un altro nodo"></div>`
+                        : _html`<div data-al-premere="onPinMouseDown" data-args="${_args(node.id, null)}" data-argomento="evento" class="port-pin port-pin-out" title="Trascina cavo verso un altro nodo"></div>`
                 }
 
                 <!-- Node Header -->
-                <div class="flow-node-header flex items-center justify-between px-3 py-2 bg-gradient-to-r ${headerBg} rounded-t-xl cursor-move text-white font-bold text-xs" onmousedown="startDragNode('${node.id}', event)">
+                <div class="flow-node-header flex items-center justify-between px-3 py-2 bg-gradient-to-r ${headerBg} rounded-t-xl cursor-move text-white font-bold text-xs" data-al-premere="startDragNode" data-args="${_args(node.id)}" data-argomento="evento">
                     <div class="flex items-center gap-1.5">
                         <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
                         <span>${typeLabel}</span>
                     </div>
-                    ${node.type !== 'trigger' ? _html`<button type="button" onclick="deleteCanvasNode('${node.id}')" class="text-white/70 hover:text-white p-0.5" title="Elimina nodo"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>` : ''}
+                    ${node.type !== 'trigger' ? _html`<button type="button" data-gesto="deleteCanvasNode" data-args="${_args(node.id)}" class="text-white/70 hover:text-white p-0.5" title="Elimina nodo"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>` : ''}
                 </div>
 
                 <!-- Node Body -->
@@ -268,3 +268,29 @@ function updateCanvasStats() {
     const el = document.getElementById('canvas-stats');
     if (el) el.innerText = `Nodi: ${Stato.tela.nodes.length} | Connessioni: ${Stato.tela.edges.length}`;
 }
+
+// I campi del nodo che non scrivono il valore cosi' com'e': prima la
+// conversione stava nell'attributo (`parseInt(this.value)||1`), adesso ha
+// una funzione con un nome.
+function aggiornaFrasiNodo(nodeId, valore) {
+    updateNodeData(
+        nodeId,
+        'phrases',
+        valore.split(',').map((s) => s.trim()),
+    );
+}
+
+function aggiornaSecondiNodo(nodeId, valore) {
+    updateNodeData(nodeId, 'seconds', parseInt(valore) || 1);
+}
+
+function setScartoMinuti(nodeId, valore) {
+    setDatoInnesco(nodeId, 'scarto_minuti', parseInt(valore) || 0);
+}
+
+// I gesti che il markup di quest'area puo' chiedere (#34).
+Gesti.registra({
+    aggiornaFrasiNodo,
+    aggiornaSecondiNodo,
+    setScartoMinuti,
+});

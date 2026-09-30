@@ -292,7 +292,7 @@ function renderRegole(regole, modi) {
                     <span class="text-slate-300">qui sotto</span>, metti un innesco
                     «a un orario» o «al tramonto» sul primo nodo, e salva.
                 </p>
-                <button type="button" onclick="vaiAlleRoutine()" class="mt-4 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
+                <button type="button" data-gesto="vaiAlleRoutine" class="mt-4 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
                     Vai alle routine
                 </button>
             </div>`);
@@ -325,10 +325,10 @@ function renderRegole(regole, modi) {
                     </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <button type="button" onclick="provaRegola(${_grezzo(_perAttributoJs(r.id))})" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold" title="Esegue adesso, saltando l'innesco ma non le condizioni">
+                    <button type="button" data-gesto="provaRegola" data-args="${_args(r.id)}" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold" title="Esegue adesso, saltando l'innesco ma non le condizioni">
                         Prova
                     </button>
-                    <button type="button" onclick="alternaRegola(${_grezzo(_perAttributoJs(r.id))}, ${!r.attiva})" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold ${r.attiva ? 'bg-amber-600/20 text-amber-300 hover:bg-amber-600/30' : 'bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30'}">
+                    <button type="button" data-gesto="alternaRegola" data-args="${_args(r.id, !r.attiva)}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold ${r.attiva ? 'bg-amber-600/20 text-amber-300 hover:bg-amber-600/30' : 'bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30'}">
                         ${r.attiva ? 'Zittisci' : 'Riattiva'}
                     </button>
                     ${
@@ -336,7 +336,7 @@ function renderRegole(regole, modi) {
                             ? _grezzo(
                                   '<span class="text-[10px] text-slate-600 max-w-[7rem] leading-tight">Per toglierla, togli l\'innesco dalla routine</span>',
                               )
-                            : _html`<button type="button" onclick="cancellaRegola(${_grezzo(_perAttributoJs(r.id))})" class="p-1.5 text-slate-500 hover:text-rose-400" title="Elimina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`
+                            : _html`<button type="button" data-gesto="cancellaRegola" data-args="${_args(r.id)}" class="p-1.5 text-slate-500 hover:text-rose-400" title="Elimina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`
                     }
                 </div>
             </div>`;
@@ -372,7 +372,7 @@ function renderRegole(regole, modi) {
                                           )
                                 }
                             </div>
-                            <button type="button" onclick="openModularModeBuilder(${_grezzo(_perAttributoJs(m.id))})" class="shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold" title="Apre il disegno di questa routine">
+                            <button type="button" data-gesto="openModularModeBuilder" data-args="${_args(m.id)}" class="shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold" title="Apre il disegno di questa routine">
                                 Apri
                             </button>
                         </div>`,
@@ -424,4 +424,8 @@ Gesti.registra({
     creaScorciatoia,
     disegnaScorciatoia,
     loadRegole,
+    alternaRegola,
+    cancellaRegola,
+    provaRegola,
+    vaiAlleRoutine,
 });

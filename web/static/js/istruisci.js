@@ -61,7 +61,7 @@ function renderLearningStep(data) {
         hintText.innerText = 'Tutti i fatti e le preferenze sono stati registrati nella tua Conoscenza Casa.';
         answerInput.parentElement.classList.add('hidden');
         submitBtn.parentElement.innerHTML = _html`
-            <button type="button" onclick="closeLearningModal()" class="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-indigo-600 hover:from-emerald-400 text-white rounded-xl text-xs font-bold transition shadow-lg">
+            <button type="button" data-gesto="closeLearningModal" class="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-indigo-600 hover:from-emerald-400 text-white rounded-xl text-xs font-bold transition shadow-lg">
                 Chiudi e Visualizza Conoscenza
             </button>
         `;
@@ -375,4 +375,6 @@ Gesti.registra({
     startLearningModal,
     submitLearningAnswer,
     toggleLearningMic,
+    deleteKnowledge,
+    saveNewKnowledge,
 });

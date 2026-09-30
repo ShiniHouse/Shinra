@@ -69,7 +69,7 @@ async function loadPasskey() {
                     </p>
                 </div>
             </div>
-            <button onclick="revocaPasskey(${_grezzo(_perAttributoJs(encodeURIComponent(p.id)))}, ${_grezzo(_perAttributoJs(p.nome))})" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold shrink-0 transition">
+            <button data-gesto="revocaPasskey" data-args="${_args(encodeURIComponent(p.id), p.nome)}" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold shrink-0 transition">
                 Revoca
             </button>
         </div>`,
@@ -211,11 +211,11 @@ async function loadVoci() {
                 puoAssociare
                     ? _html`
             <div class="flex items-center gap-1.5 shrink-0">
-                <select onchange="associaVoce(${_grezzo(_perAttributoJs(encodeURIComponent(v.person_id)))}, this.value)" class="px-2 py-1 rounded-xl bg-slate-800 border border-slate-700 text-[11px] text-slate-200">
+                <select data-al-cambio="associaVoce" data-args="${_args(encodeURIComponent(v.person_id))}" data-argomento="valore" class="px-2 py-1 rounded-xl bg-slate-800 border border-slate-700 text-[11px] text-slate-200">
                     <option value=""${noto ? '' : _grezzo(' selected')}>— nessuno —</option>
                     ${opzioni(v.user_id)}
                 </select>
-                <button onclick="dimenticaVoce(${_grezzo(_perAttributoJs(encodeURIComponent(v.person_id)))})" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold transition">
+                <button data-gesto="dimenticaVoce" data-args="${_args(encodeURIComponent(v.person_id))}" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold transition">
                     Dimentica
                 </button>
             </div>`
@@ -258,4 +258,7 @@ async function dimenticaVoce(personId) {
 // la stessa forma che avra' la lista di `export` il giorno dei moduli.
 Gesti.registra({
     aggiungiPasskey,
+    associaVoce,
+    dimenticaVoce,
+    revocaPasskey,
 });

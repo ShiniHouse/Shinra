@@ -364,8 +364,8 @@ def test_una_condizione_ha_due_uscite_distinte():
     tutto, e chi lo disegna si aspetta due strade."""
     testo = _frontend()
 
-    assert "onPinMouseDown('${node.id}', event, 'vero')" in testo
-    assert "onPinMouseDown('${node.id}', event, 'falso')" in testo
+    assert 'data-al-premere="onPinMouseDown" data-args="${_args(node.id, \'vero\')}"' in testo
+    assert 'data-al-premere="onPinMouseDown" data-args="${_args(node.id, \'falso\')}"' in testo
     assert "nuovo.ramo = ramo" in testo, "il ramo non viene scritto sull'arco"
 
 
@@ -457,7 +457,7 @@ def test_l_innesco_di_una_routine_si_puo_scegliere():
     resta quello che era: un innesco vocale e basta."""
     testo = _frontend()
 
-    assert "setTipoInnesco('${node.id}', this.value)" in testo, "non si puo' cambiare tipo di innesco"
+    assert _gesto("setTipoInnesco", quando="al-cambio") in testo, "non si puo' cambiare tipo di innesco"
     for tipo in ("orario", "alba", "tramonto", "stato", "evento"):
         assert f'value="{tipo}"' in testo, f"manca l'innesco «{tipo}» fra le scelte"
 
@@ -541,10 +541,11 @@ def test_aspettare_un_evento_non_si_confonde_con_non_scattare_mai():
 def test_una_regola_si_puo_zittire_senza_cancellarla():
     testo = _frontend()
 
-    # Da quando l'identificativo passa da `_perAttributoJs`, fra le
-    # parentesi non c'e' piu' un apice scritto a mano: si guarda che la
-    # chiamata esista e che porti lo stato rovesciato, non come e' scritta.
-    assert re.search(r"alternaRegola\(.*?,\s*\$\{!r\.attiva\}\)", testo), "non si puo' zittire una regola"
+    # Si guarda che il gesto esista e che porti lo stato rovesciato, non
+    # come e' scritto il resto dell'elenco degli argomenti.
+    assert re.search(
+        r'data-gesto="alternaRegola" data-args="\$\{_args\(.*?,\s*!r\.attiva\)\}"', testo
+    ), "non si puo' zittire una regola"
     assert "'/api/regole/${id}'" in testo.replace("`", "'"), "lo stato non torna al server"
 
 
@@ -1103,12 +1104,12 @@ def test_la_chiusura_dell_editor_sta_fuori_dalla_finestra():
     apertura = testo.index("function renderFlowCanvasModal()")
     corpo = testo[apertura : testo.index("function initCanvasInteractions")]
 
-    assert "closeModal()" in corpo, "l'editor non si puo' piu' chiudere"
+    assert _gesto("closeModal") in corpo, "l'editor non si puo' piu' chiudere"
     assert "-top-3.5 -right-3.5" in corpo, "la chiusura non e' nell'angolo, fuori dal riquadro"
 
     # E la fetta attorno a «Salva» non deve contenere anche la chiusura.
-    intorno = corpo[corpo.index("saveCanvasMode()") :][:600]
-    assert "closeModal()" not in intorno, "la X e' tornata in fila accanto a «Salva»"
+    intorno = corpo[corpo.index(_gesto("saveCanvasMode")) :][:600]
+    assert _gesto("closeModal") not in intorno, "la X e' tornata in fila accanto a «Salva»"
 
 
 def test_la_finestra_larga_non_taglia_cio_che_sporge():
@@ -2081,8 +2082,9 @@ def test_la_scorciatoia_non_ha_tolto_niente_all_editor():
 
     # E i pezzi dell'editor sono tutti al loro posto: rami, condizioni,
     # ritardi e sequenze non si esprimono in un modulo.
-    for pezzo in ("addCanvasNode('condizione')", "addCanvasNode('delay')", "addCanvasNode('tts')"):
-        assert pezzo in testo, f"l'editor ha perso un pezzo: {pezzo}"
+    for tipo in ("condizione", "delay", "tts"):
+        pezzo = 'data-gesto="addCanvasNode" data-args="${_args(\'' + tipo + "')}\""
+        assert pezzo in testo, f"l'editor ha perso un pezzo: {tipo}"
 
 
 # ------------------------------------------- i nomi delle icone (issue #139)
@@ -3125,7 +3127,7 @@ appendAssistantMessage("{ostile}");
 console.log(JSON.stringify({{
     intatto: disegnato.includes('<img src=x'),
     scappato: disegnato.includes('&lt;img src=x'),
-    apiceNudaNellAttributo: /onclick="speakText\\([^"]*'[^"]*\\)"/.test(disegnato),
+    apiceNudaNellAttributo: /data-gesto="speakText" data-args="[^"]*'[^"]*"/.test(disegnato),
 }}));
 """
     )
@@ -3138,7 +3140,7 @@ console.log(JSON.stringify({{
     assert visto["scappato"], "il testo non compare affatto: la guardia non sta guardando niente"
     assert not visto[
         "apiceNudaNellAttributo"
-    ], "un apice chiude la stringa dentro l'onclick e ne apre un'altra"
+    ], "un apice nudo nell'attributo dei dati: il valore smette di essere solo un valore"
 
 
 def test_html_ripulisce_anche_cio_che_finisce_in_un_attributo():
@@ -3162,7 +3164,7 @@ const casi = {
     numero: String(_html`<p>${42}</p>`),
     grezzo: String(_html`<p>${_grezzo('<b>voluto</b>')}</p>`),
     annidato: String(_html`<ul>${['a<b', 'c&d'].map((v) => _html`<li>${v}</li>`)}</ul>`),
-    perAttributoJs: String(_html`<b onclick="fai(${_grezzo(_perAttributoJs("un'apice \" e virgolette"))})"></b>`),
+    argomenti: String(_html`<b data-args="${_args("un'apice \" e virgolette")}"></b>`),
 };
 console.log(JSON.stringify(casi));
 """
@@ -3187,10 +3189,8 @@ console.log(JSON.stringify(casi));
     assert visto["annidato"] == "<ul><li>a&lt;b</li><li>c&amp;d</li></ul>", (
         "un `_html` dentro un altro va ripulito due volte, o non ci entra affatto: " f"{visto['annidato']}"
     )
-    assert (
-        "'" not in visto["perAttributoJs"]
-        and '"' not in visto["perAttributoJs"].split("fai(")[1].split(")")[0]
-    )
+    valore = visto["argomenti"].split('data-args="')[1].rsplit('"', 1)[0]
+    assert "'" not in valore and '"' not in valore, f"l'attributo dei dati si apre da solo: {valore}"
 
 
 def _argomento_di(sorgente: str, apertura: int) -> str:
@@ -3218,8 +3218,8 @@ def test_grezzo_si_usa_solo_su_markup_scritto_da_noi():
     L'ho scoperto provando a rovinare una riga cosi': l'unica mutazione,
     su otto, che non mordeva.
 
-    Quindi l'argomento deve essere una stringa scritta li' — apici e
-    nient'altro — oppure `_perAttributoJs(...)`, che ripulisce a modo suo.
+    Quindi l'argomento deve essere una stringa scritta li': apici e
+    nient'altro.
 
     Riferimento: issue #34.
     """
@@ -3231,8 +3231,7 @@ def test_grezzo_si_usa_solo_su_markup_scritto_da_noi():
         for m in re.finditer(r"\b_grezzo\s*\(", testo):
             argomento = _argomento_di(testo, m.start())
             letterale = re.fullmatch(r"(?s)(['\"]).*\1,?", argomento)
-            calcolato = argomento.startswith("_perAttributoJs(")
-            if not (letterale or calcolato):
+            if not letterale:
                 riga = testo.count("\n", 0, m.start()) + 1
                 colpevoli.append(f"{percorso.name}:{riga} -> _grezzo({argomento[:60]})")
 
@@ -3383,7 +3382,8 @@ def test_la_crocetta_che_stacca_un_cavo_si_puo_premere():
     ), "il piano dei cavi prende i clic: i cavi passano sopra i nodi e li coprirebbero"
 
     crocetta = re.search(
-        r"<circle[^>]*onclick=\"deleteCanvasEdge", _senza_commenti_html(_testo(CARTELLA_JS / "tela_nodi.js"))
+        r"<circle[^>]*data-gesto=\"deleteCanvasEdge\"",
+        _senza_commenti_html(_testo(CARTELLA_JS / "tela_nodi.js")),
     )
     assert crocetta, "la crocetta che stacca un cavo non c'e' piu'"
     assert "pointer-events-auto" in crocetta.group(
@@ -4159,7 +4159,14 @@ def test_zittire_shinra_sopravvive_alla_riapertura():
 
 # ------------------------------- i gesti al posto degli onclick (issue #34)
 
-QUANDO = {"gesto": "click", "al-cambio": "change", "mentre-scrivi": "input", "all-invio": "submit"}
+QUANDO = {
+    "gesto": "click",
+    "al-cambio": "change",
+    "mentre-scrivi": "input",
+    "all-invio": "submit",
+    "al-premere": "mousedown",
+    "al-rilascio": "mouseup",
+}
 
 # Gli argomenti che il guardiano sa preparare. Il vocabolario e' chiuso
 # apposta: indovinarlo dall'elemento sembra comodo finche' non si incontra
@@ -4170,7 +4177,9 @@ ARGOMENTI = {"valore", "spunta", "evento", "vero", "falso", "niente"}
 
 def _gesti_nel_markup() -> dict[str, set[str]]:
     """Dal nome dell'attributo ai gesti che il markup chiede con quello."""
-    markup = _markup()
+    # Il markup scritto nei file HTML, piu' quello che disegna il JavaScript:
+    # dalla #34 sono due posti e lo stesso vocabolario.
+    markup = _markup() + "\n" + _senza_commenti(_comportamento())
     return {q: set(re.findall(rf'data-{q}="([^"]+)"', markup)) for q in QUANDO}
 
 
@@ -4204,6 +4213,12 @@ def test_la_dashboard_non_esegue_piu_stringhe_dal_markup():
     for pezzo in [PAGINA, *_parti()]:
         for attributo in re.findall(r"\son([a-z]+)=\"", _senza_commenti_html(_testo(pezzo))):
             colpevoli.append(f"{pezzo.name}: on{attributo}")
+    # E quello che il JavaScript disegna: 72 `onclick` stavano nelle stringhe
+    # dei copioni e non in un file di markup, e una guardia che guardava solo
+    # i file HTML li lasciava passare.
+    for percorso in _copioni():
+        for attributo in re.findall(r"\son([a-z]+)=\"", _senza_commenti(_testo(percorso))):
+            colpevoli.append(f"{percorso.name}: on{attributo}")
 
     assert colpevoli == [], (
         "la dashboard esegue di nuovo stringhe dal markup: il giorno dei "

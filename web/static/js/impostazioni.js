@@ -440,4 +440,5 @@ Gesti.registra({
     testHaConnection,
     updateAlexaGeneratorName,
     updateMaxTokensLabel,
+    closeModal,
 });

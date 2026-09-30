@@ -197,7 +197,7 @@ async function loadKnowledge() {
                         <span class="px-2 py-0.5 rounded bg-${col}-950/60 border border-${col}-800 text-[10px] text-${col}-300 font-mono uppercase">${cat}</span>
                         <p class="text-xs text-slate-200 mt-1.5 leading-relaxed">${k.text}</p>
                     </div>
-                    <button onclick="deleteKnowledge(${_grezzo(_perAttributoJs(k.id))})" class="text-slate-600 hover:text-rose-400 transition p-1 opacity-0 group-hover:opacity-100 shrink-0" title="Elimina fatto">
+                    <button data-gesto="deleteKnowledge" data-args="${_args(k.id)}" class="text-slate-600 hover:text-rose-400 transition p-1 opacity-0 group-hover:opacity-100 shrink-0" title="Elimina fatto">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>`;
@@ -270,7 +270,7 @@ function renderKnowledgeTemplates(existingItems) {
                 </div>
             </div>
             <div class="pt-2 border-t border-slate-800/80 flex justify-end">
-                <button onclick="openKnowledgeCategoryModal(${_grezzo(_perAttributoJs(section.id))})" class="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                <button data-gesto="openKnowledgeCategoryModal" data-args="${_args(section.id)}" class="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition">
                     <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> ${filledCount > 0 ? 'Modifica Dati' : 'Compila Categoria'}
                 </button>
             </div>
@@ -298,7 +298,7 @@ function openKnowledgeCategoryModal(sectionId) {
             <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
                 <span class="text-xl">${section.icon}</span> ${section.label}
             </h3>
-            <button onclick="closeModal()" class="text-slate-500 hover:text-slate-300 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <button data-gesto="closeModal" class="text-slate-500 hover:text-slate-300 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
         <p class="text-xs text-slate-400 mt-2">Compila o modifica i dettagli per Shinra. Lascia vuoti i campi che non vuoi memorizzare.</p>
         <div class="space-y-3 mt-4 max-h-[60vh] overflow-y-auto pr-1">
@@ -316,8 +316,8 @@ function openKnowledgeCategoryModal(sectionId) {
             })}
         </div>
         <div class="flex justify-end gap-2 pt-4 border-t border-slate-800 mt-4">
-            <button onclick="closeModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 transition">Annulla</button>
-            <button onclick="saveKnowledgeCategory(${_grezzo(_perAttributoJs(section.id))})" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/30">
+            <button data-gesto="closeModal" class="px-3.5 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 transition">Annulla</button>
+            <button data-gesto="saveKnowledgeCategory" data-args="${_args(section.id)}" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/30">
                 <i data-lucide="check" class="w-3.5 h-3.5"></i> Salva Informazioni
             </button>
         </div>
@@ -370,8 +370,8 @@ function openAddKnowledgeModal() {
             <option value="digitale">digitale</option>
         </select>
         <div class="flex justify-end gap-2">
-            <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300 hover:bg-slate-700">Annulla</button>
-            <button onclick="saveNewKnowledge()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold">Salva</button>
+            <button data-gesto="closeModal" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300 hover:bg-slate-700">Annulla</button>
+            <button data-gesto="saveNewKnowledge" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold">Salva</button>
         </div>
     `);
     setTimeout(() => document.getElementById('new-k-text')?.focus(), 100);
@@ -381,4 +381,6 @@ function openAddKnowledgeModal() {
 // la stessa forma che avra' la lista di `export` il giorno dei moduli.
 Gesti.registra({
     openAddKnowledgeModal,
+    openKnowledgeCategoryModal,
+    saveKnowledgeCategory,
 });

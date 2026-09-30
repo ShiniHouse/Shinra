@@ -38,7 +38,15 @@ const Gesti = {
         change: 'alCambio',
         input: 'mentreScrivi',
         submit: 'allInvio',
+        // Questi due non stanno sulla pagina intera ma sul contenitore
+        // dell'editor a nodi (vedi `ascolta`): un pin ferma la propagazione
+        // perche' il canvas, che sta sopra, non azzeri il cavo che si sta
+        // tirando. Su `document` il canvas l'avrebbe gia' azzerato.
+        mousedown: 'alPremere',
+        mouseup: 'alRilascio',
     },
+    /** I tipi che ascolta la pagina intera. */
+    TIPI_DELLA_PAGINA: ['click', 'change', 'input', 'submit'],
 
     /** Registra un'area intera: `Gesti.registra({ switchTab, setPalette })`.
      *
@@ -76,15 +84,36 @@ const Gesti = {
      *  Nessun attributo vuol dire **nessun argomento**, non «l'evento». */
     _argomento(elemento, evento) {
         if ('testo' in elemento.dataset) return [elemento.dataset.testo];
+        const prima = this._args(elemento);
         const da = elemento.dataset.argomento;
-        if (da === undefined) return [];
-        if (da === 'valore') return [elemento.value];
-        if (da === 'spunta') return [elemento.checked];
-        if (da === 'evento') return [evento];
-        if (da === 'vero') return [true];
-        if (da === 'falso') return [false];
-        if (da === 'niente') return [null];
+        if (da === undefined) return prima;
+        if (da === 'valore') return [...prima, elemento.value];
+        if (da === 'spunta') return [...prima, elemento.checked];
+        if (da === 'evento') return [...prima, evento];
+        if (da === 'vero') return [...prima, true];
+        if (da === 'falso') return [...prima, false];
+        if (da === 'niente') return [...prima, null];
         console.error(`Gesti: argomento «${da}» sconosciuto su`, elemento);
+        return prima;
+    },
+
+    /** Gli argomenti scritti nel markup, `data-args='["a", 2]'`.
+     *
+     *  Sono JSON e solo JSON: `JSON.parse` non esegue niente, quindi un
+     *  valore con apici, virgolette o `</script>` dentro resta un valore.
+     *  Venivano da `onclick="fai('${x}')"`, dove ogni apice nel valore
+     *  chiudeva una stringa. Vengono prima dell'argomento calcolato
+     *  (`data-argomento`), che resta sempre l'ultimo. */
+    _args(elemento) {
+        const grezzo = elemento.dataset.args;
+        if (grezzo === undefined) return [];
+        try {
+            const valori = JSON.parse(grezzo);
+            if (Array.isArray(valori)) return valori;
+        } catch {
+            // cade sotto
+        }
+        console.error('Gesti: data-args non è un elenco JSON su', elemento);
         return [];
     },
 
@@ -103,9 +132,10 @@ const Gesti = {
         funzione(...this._argomento(elemento, evento));
     },
 
-    /** Mette in ascolto la radice. Una volta sola, per tutta la pagina. */
-    ascolta(radice) {
-        for (const tipo of Object.keys(this.EVENTI)) {
+    /** Mette in ascolto una radice. La pagina intera una volta sola; il
+     *  contenitore dell'editor a nodi per i due eventi del mouse. */
+    ascolta(radice, tipi = this.TIPI_DELLA_PAGINA) {
+        for (const tipo of tipi) {
             const attributo = this.EVENTI[tipo].replace(/[A-Z]/g, (l) => '-' + l.toLowerCase());
             radice.addEventListener(tipo, (evento) => this._esegui(evento, attributo));
         }

@@ -75,11 +75,14 @@ function _html(pezzi, ...valori) {
     return new Sicuro(fuori);
 }
 
-// Per mettere un valore dentro una stringa JavaScript dentro un
-// attributo — `onclick="fai('${x}')"`. E' un annidamento che andrebbe
-// tolto del tutto passando dagli ascoltatori invece che dagli attributi
-// (e si fara'), ma finche' c'e' va fatto bene: JSON per la parte
-// JavaScript, e poi le fughe dell'HTML sopra.
-function _perAttributoJs(valore) {
-    return _scappa(JSON.stringify(String(valore ?? '')));
+// Gli argomenti di un gesto, per il markup: `data-args="${_args(id, nome)}"`.
+//
+// Fino alla #34 un valore arrivava al gestore dentro una stringa JavaScript
+// dentro un attributo — `onclick="fai('${x}')"` — e ogni apice o virgoletta
+// nel valore chiudeva una delle due stringhe. Adesso l'attributo contiene
+// soltanto JSON, e `Gesti` lo legge con `JSON.parse`: nessun valore e' mai
+// codice, qualunque cosa contenga. Le fughe dell'HTML le mette `_html`,
+// come per ogni altro valore interpolato.
+function _args(...valori) {
+    return JSON.stringify(valori);
 }

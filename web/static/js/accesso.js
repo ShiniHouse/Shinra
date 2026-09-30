@@ -153,7 +153,7 @@ async function caricaProfiliAccesso() {
         box.classList.remove('hidden');
         box.innerHTML = _html`${profili.map(
             (p) => _html`
-            <button type="button" onclick="scegliProfiloAccesso(${_grezzo(_perAttributoJs(p.id))}, ${_grezzo(_perAttributoJs(p.name || ''))})"
+            <button type="button" data-gesto="scegliProfiloAccesso" data-args="${_args(p.id, p.name || '')}"
                 class="p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-indigo-500 hover:bg-slate-900 transition text-left flex items-center gap-2.5">
                 <span class="w-8 h-8 rounded-xl bg-indigo-600/25 text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0">
                     ${(p.name || '?').charAt(0).toUpperCase()}
@@ -368,4 +368,5 @@ Gesti.registra({
     setAutoLockTimeout,
     setVoiceMuteState,
     tornaAllaSceltaProfilo,
+    scegliProfiloAccesso,
 });

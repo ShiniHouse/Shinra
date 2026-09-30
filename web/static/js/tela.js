@@ -82,7 +82,7 @@ function renderFlowCanvasModal() {
              Stava in fila dopo «Salva», e una X accanto a un pulsante
              di salvataggio non e' una terza azione fra cui scegliere:
              e' l'uscita, e va dove la cercano le mani. -->
-        <button type="button" onclick="closeModal()" title="Chiudi l'editor"
+        <button type="button" data-gesto="closeModal" title="Chiudi l'editor"
                 class="absolute -top-3.5 -right-3.5 z-50 w-9 h-9 rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:bg-rose-600 hover:text-white hover:border-rose-500 shadow-xl flex items-center justify-center transition">
             <i data-lucide="x" class="w-4 h-4"></i>
         </button>
@@ -94,8 +94,8 @@ function renderFlowCanvasModal() {
                     <div class="w-8 h-8 rounded-lg bg-indigo-600/40 text-indigo-300 flex items-center justify-center font-bold">
                         <i data-lucide="workflow" class="w-4 h-4"></i>
                     </div>
-                    <input type="text" id="cv-name" value="${Stato.tela.name || ''}" placeholder="Nome Routine (es. Cinema, Notte)" oninput="Stato.tela.name = this.value" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 font-bold focus:outline-none focus:border-indigo-500 w-40">
-                    <input type="text" id="cv-triggers" value="${triggersStr}" placeholder="Frasi vocali: es. modalità cinema, relax" oninput="Stato.tela.trigger_phrases = this.value.split(',').map(s=>s.trim()).filter(s=>s.length>0)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 flex-1 min-w-[180px]">
+                    <input type="text" id="cv-name" value="${Stato.tela.name || ''}" placeholder="Nome Routine (es. Cinema, Notte)" data-mentre-scrivi="impostaNomeTela" data-argomento="valore" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 font-bold focus:outline-none focus:border-indigo-500 w-40">
+                    <input type="text" id="cv-triggers" value="${triggersStr}" placeholder="Frasi vocali: es. modalità cinema, relax" data-mentre-scrivi="impostaFrasiTela" data-argomento="valore" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 flex-1 min-w-[180px]">
                 </div>
 
                 <!-- I blocchi da aggiungere. La parola «Aggiungi»
@@ -104,19 +104,19 @@ function renderFlowCanvasModal() {
                      leggono come cinque comandi da dare adesso. -->
                 <div class="flex items-center gap-1.5 flex-wrap">
                     <span class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mr-0.5">Aggiungi</span>
-                    <button type="button" onclick="addCanvasNode('ha_device')" class="px-2.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 hover:text-white rounded-lg text-xs font-semibold border border-indigo-500/40 transition flex items-center gap-1">
+                    <button type="button" data-gesto="addCanvasNode" data-args="${_args('ha_device')}" class="px-2.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 hover:text-white rounded-lg text-xs font-semibold border border-indigo-500/40 transition flex items-center gap-1">
                         + 💡 Dispositivo HA
                     </button>
-                    <button type="button" onclick="addCanvasNode('delay')" class="px-2.5 py-1.5 bg-amber-600/30 hover:bg-amber-600 text-amber-200 hover:text-white rounded-lg text-xs font-semibold border border-amber-500/40 transition flex items-center gap-1">
+                    <button type="button" data-gesto="addCanvasNode" data-args="${_args('delay')}" class="px-2.5 py-1.5 bg-amber-600/30 hover:bg-amber-600 text-amber-200 hover:text-white rounded-lg text-xs font-semibold border border-amber-500/40 transition flex items-center gap-1">
                         + ⏱️ Ritardo (Pausa)
                     </button>
-                    <button type="button" onclick="addCanvasNode('tts')" class="px-2.5 py-1.5 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 hover:text-white rounded-lg text-xs font-semibold border border-emerald-500/40 transition flex items-center gap-1">
+                    <button type="button" data-gesto="addCanvasNode" data-args="${_args('tts')}" class="px-2.5 py-1.5 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 hover:text-white rounded-lg text-xs font-semibold border border-emerald-500/40 transition flex items-center gap-1">
                         + 🗣️ Voce Shinra
                     </button>
-                    <button type="button" onclick="addCanvasNode('condizione')" class="px-2.5 py-1.5 bg-violet-600/30 hover:bg-violet-600 text-violet-200 hover:text-white rounded-lg text-xs font-semibold border border-violet-500/40 transition flex items-center gap-1">
+                    <button type="button" data-gesto="addCanvasNode" data-args="${_args('condizione')}" class="px-2.5 py-1.5 bg-violet-600/30 hover:bg-violet-600 text-violet-200 hover:text-white rounded-lg text-xs font-semibold border border-violet-500/40 transition flex items-center gap-1">
                         + 🔀 Condizione
                     </button>
-                    <button type="button" onclick="addCanvasNode('notifica')" class="px-2.5 py-1.5 bg-sky-600/30 hover:bg-sky-600 text-sky-200 hover:text-white rounded-lg text-xs font-semibold border border-sky-500/40 transition flex items-center gap-1">
+                    <button type="button" data-gesto="addCanvasNode" data-args="${_args('notifica')}" class="px-2.5 py-1.5 bg-sky-600/30 hover:bg-sky-600 text-sky-200 hover:text-white rounded-lg text-xs font-semibold border border-sky-500/40 transition flex items-center gap-1">
                         + 🔔 Notifica
                     </button>
                 </div>
@@ -127,10 +127,10 @@ function renderFlowCanvasModal() {
                      affiancati, entrambi col loro colore acceso, e
                      sembravano alternative alla pari. -->
                 <div class="flex items-center gap-2 shrink-0">
-                    <button type="button" onclick="simulateCanvasFlow()" id="btn-sim-canvas" class="px-3 py-1.5 bg-violet-600/20 hover:bg-violet-600 text-violet-200 hover:text-white border border-violet-500/40 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                    <button type="button" data-gesto="simulateCanvasFlow" id="btn-sim-canvas" class="px-3 py-1.5 bg-violet-600/20 hover:bg-violet-600 text-violet-200 hover:text-white border border-violet-500/40 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
                         ▶️ Prova il flusso
                     </button>
-                    <button type="button" onclick="saveCanvasMode()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5">
+                    <button type="button" data-gesto="saveCanvasMode" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5">
                         💾 Salva
                     </button>
                 </div>
@@ -176,9 +176,31 @@ function renderFlowCanvasModal() {
     renderCanvasElements();
 }
 
+// I due campi di testo in cima all'editor. Prima erano assegnazioni scritte
+// dentro l'attributo `oninput`; un gesto e' una funzione con un nome.
+function impostaNomeTela(valore) {
+    Stato.tela.name = valore;
+}
+
+function impostaFrasiTela(valore) {
+    Stato.tela.trigger_phrases = valore
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+}
+
 function initCanvasInteractions() {
     const canvas = document.getElementById('flow-canvas');
     if (!canvas) return;
+
+    // I pin e l'intestazione dei nodi nominano i loro gesti nel markup; li
+    // ascolta il contenitore dei nodi e non la pagina, per una ragione che
+    // e' scritta in `Gesti.EVENTI`.
+    const contenitore = document.getElementById('flow-nodes-container');
+    if (contenitore && !contenitore.dataset.gestiAttivi) {
+        contenitore.dataset.gestiAttivi = '1';
+        Gesti.ascolta(contenitore, ['mousedown', 'mouseup']);
+    }
 
     // Global Mouse Move su Canvas per Drag dei Nodi e Disegno Cavo Attivo
     canvas.onmousemove = (e) => {
@@ -221,4 +243,6 @@ function initCanvasInteractions() {
 // la stessa forma che avra' la lista di `export` il giorno dei moduli.
 Gesti.registra({
     openModularModeBuilder,
+    impostaFrasiTela,
+    impostaNomeTela,
 });
