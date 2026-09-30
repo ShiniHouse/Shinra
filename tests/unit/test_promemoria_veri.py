@@ -132,7 +132,9 @@ async def test_viene_anche_programmata_la_sveglia(scheduler_finto):
     assert identificativo in scheduler_finto
     testo, quando_iso, _ = scheduler_finto[identificativo]
     assert "dentista" in testo.lower()
-    assert quando_iso.startswith(datetime.now().strftime("%Y-%m"))
+    # «Domani mattina» e' domani, non «questo mese»: l'ultima sera del mese
+    # cade nel mese dopo, ed e' il giorno in cui questo test si e' rotto.
+    assert quando_iso.startswith((datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"))
 
 
 async def test_sopravvive_a_un_riavvio(scheduler_finto):
