@@ -111,6 +111,7 @@ async def dispositivi(
 async def leggi_preferenze(
     profilo: Optional[UserProfile] = Depends(richiedi_autenticazione),
 ) -> Dict[str, Any]:
+    """Le preferenze di notifica di chi chiede: canali, categorie e cosa non si puo' silenziare."""
     preferenze = servizio_notifiche.preferenze_di(_chi(profilo))
     return {
         "silenzioso": preferenze.silenzioso,

@@ -72,9 +72,12 @@ della documentazione utente. Il quadro completo è nella
 
 | Documento | Cosa contiene |
 | :--- | :--- |
+| [`docs/INSTALLAZIONE.md`](docs/INSTALLAZIONE.md) | Docker o a mano su Debian, il token di Home Assistant, cosa sopravvive a un aggiornamento |
 | [`docs/PRIMI-PASSI.md`](docs/PRIMI-PASSI.md) | Dal primo accesso alla prima automazione: profili, Home Assistant, alias, routine |
 | [`docs/PROBLEMI.md`](docs/PROBLEMI.md) | Cosa fare quando qualcosa non funziona, guasto per guasto — tutti successi davvero |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le cinque fasi da `0.1.0` a `1.0.0` e i criteri di uscita di ciascuna |
+| [`docs/SVILUPPO.md`](docs/SVILUPPO.md) | Come si aggiunge uno strumento, un intento, una lingua, una rotta, una colonna, un'area della dashboard — e quale test ti dice cosa hai dimenticato |
+| [`docs/API.md`](docs/API.md) | Le rotte HTTP e chi le può chiamare. Generato dal codice: non invecchia |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Struttura attuale, struttura target e come si aggiunge un modulo nuovo |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | Aggiornamento del server Debian e cosa fare se non si riesce più a entrare |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Flusso di lavoro, convenzioni sui commit, processo di rilascio |
@@ -105,14 +108,10 @@ della documentazione utente. Il quadro completo è nella
 ---
 
 ## 🌟 Indice dei Contenuti
+- [🔒 Cosa resta in casa, e cosa no](#-cosa-resta-in-casa-e-cosa-no)
 - [✨ Funzionalità Principali](#-funzionalità-principali)
 - [🏗️ Architettura del Sistema](#️-architettura-del-sistema)
-- [🐳 Installazione con Docker](#-installazione-con-docker)
-- [📦 Installazione & Configurazione su Server Linux/Debian](#-installazione--configurazione-su-server-linuxdebian)
-- [🎛️ Canvas Visuale a Nodi per Routine (Visio Style)](#️-canvas-visuale-a-nodi-per-routine-visio-style)
-- [⏰ Timer & Promemoria Vocali Live](#-timer--promemoria-vocali-live)
-- [📱 Installazione PWA (Smartphone iOS & Android)](#-installazione-pwa-smartphone-ios--android)
-- [🎙️ Motore Vocale & Voci Neurali HD](#️-motore-vocale--voci-neurali-hd)
+- [🚀 Installazione](#-installazione) — e la procedura completa in [`docs/INSTALLAZIONE.md`](docs/INSTALLAZIONE.md)
 - [📡 Guida Integrazione Amazon Alexa (Echo)](#-guida-integrazione-amazon-alexa-echo)
 - [🌐 Configurazione Nginx Reverse Proxy & SSL](#-configurazione-nginx-reverse-proxy--ssl)
 - [⚙️ Parametri di Configurazione (`config/config.yaml`)](#️-parametri-di-configurazione-configconfigyaml)
@@ -178,7 +177,7 @@ voce:
 * Elaborazione locale tramite **Ollama** su CPU o GPU con supporto a qualsiasi modello LLM:
   * **`qwen2.5:3b`** *(Consigliato per velocità istantanea < 1s su CPU e supporto nativo ai Tool)*.
   * **`gemma2:9b`**, **`llama3.2:3b`**, **`qwen2.5:7b`**.
-* **Fast-Path Istantaneo (< 0.05s)**: Risposte istantanee per meteo, notizie, orologio, timer, controllo luci e scenari senza attendere l'inferenza completa del modello quando non necessaria.
+* **Percorso rapido**: meteo, notizie, timer, promemoria, controllo delle luci e attivazione delle routine si riconoscono dalla frase e si eseguono senza passare dal modello; il resto va al modello, che può chiamare gli strumenti (`docs/ARCHITECTURE.md`).
 
 ### 🏠 2. Controllo Domotico Completo (Home Assistant)
 * Scoperta automatica di entità, luci, interruttori, prese, termostati, climatizzatori e sensori.
@@ -191,6 +190,8 @@ voce:
   * 💡 **Dispositivo Home Assistant:** Accensione, spegnimento o regolazione di qualsiasi entità o alias.
   * ⏱️ **Ritardo Temporizzato (Pausa):** Attesa programmata tra un'azione e l'altra (es. 5s, 10s, 30s).
   * 🗣️ **Annuncio Vocale (TTS):** Risposta personalizzata di Shinra con voce neurale.
+  * 🔀 **Condizione:** due uscite, sì e no, sullo stato di un dispositivo, sull'orario o sulla presenza in casa.
+  * 🔔 **Notifica:** un avviso push al telefono di chi deve saperlo.
 * **Simulatore con Flusso Luminoso in Tempo Reale**: I cavi si illuminano con impulsi animati per testare la sequenza visivamente prima di salvarla.
 
 ### ⏰ 4. Timer & Promemoria Vocali con Countdown Live
@@ -231,10 +232,8 @@ voce:
               \                                   /
                \                                 / (HTTPS /api/alexa)
                 ▼                               ▼
-       [ Cloudflare Edge (SSL / WAF Rule) ]
-                        │
-                        ▼
-       [ Nginx Reverse Proxy (Port 80/443) ]
+       [ Reverse proxy + SSL: facoltativo in casa,    ]
+       [ necessario per Alexa (vedi sotto)            ]
                         │
                         ▼
        [ Shinra Backend (FastAPI :8000) ]
@@ -247,215 +246,24 @@ voce:
 
 ---
 
-## 🐳 Installazione con Docker
+## 🚀 Installazione
 
-La strada piu' corta: nessun ambiente virtuale, nessun `systemd`, e
-l'aggiornamento e' una riga.
+La strada piu' corta e' Docker:
 
 ```bash
 mkdir shinra && cd shinra
 curl -O https://raw.githubusercontent.com/ShiniHouse/Shinra/main/docker-compose.yml
 docker compose up -d
+docker compose logs shinra | grep "PRIMO ACCESSO"   # il PIN, una volta sola
+docker compose exec ollama ollama pull qwen2.5:3b   # il modello, una volta sola
 ```
 
-Il PIN del primo accesso compare nel log, **una volta sola**:
+Poi la dashboard su **`http://INDIRIZZO-DEL-SERVER:8000`**.
 
-```bash
-docker compose logs shinra | grep "PRIMO ACCESSO"
-```
-
-Poi la dashboard su **`http://INDIRIZZO-DEL-SERVER:8000`**, e il modello, una
-volta sola:
-
-```bash
-docker compose exec ollama ollama pull qwen2.5:3b
-```
-
-### Il token di Home Assistant
-
-Home Assistant non sta nel compose: quasi sempre gira gia' da un'altra parte.
-Il token si mette in un file `.env` accanto a `docker-compose.yml` — Compose
-lo legge da solo — e **non** dentro l'immagine:
-
-```bash
-cat > .env <<'EOF'
-SHINRA_HA_URL=http://homeassistant.local:8123
-SHINRA_HA_TOKEN=il-tuo-token
-EOF
-chmod 600 .env
-docker compose up -d
-```
-
-### Cosa sopravvive, e cosa no
-
-Tre volumi con nome: `shinra-dati` (database, log, salvataggi automatici),
-`shinra-configurazione` (`config.yaml`) e `ollama-modelli`. Un
-`docker compose down` non li tocca; `docker compose down -v` li cancella —
-e con loro tutta la casa.
-
-Il salvataggio della configurazione funziona anche qui:
-
-```bash
-docker compose exec shinra python scripts/salvataggio.py salva
-```
-
-### Aggiornare
-
-```bash
-docker compose pull && docker compose up -d
-```
-
-Il database si migra da solo alla partenza.
-
-### Home Assistant OS: l'add-on non c'e' ancora
-
-Chi usa **Home Assistant OS** o **Supervised** si aspetterebbe un add-on da
-installare con un clic. Non c'e', ed e' una scelta dichiarata: scriverlo senza
-poterlo installare da nessuna parte vorrebbe dire consegnare qualcosa che
-nessuno ha mai visto funzionare. Serve anche un lavoro sul frontend — sotto
-l'ingress di Home Assistant i percorsi assoluti della dashboard si rompono
-tutti — che appartiene alla issue #34.
-
-Fino ad allora, anche su quelle installazioni Shinra si mette con Docker, qui
-sopra, e si collega a Home Assistant col token come tutti gli altri.
-
----
-
-## 📦 Installazione & Configurazione su Server Linux/Debian
-
-> Questa procedura è stata **verificata da zero su una macchina pulita**
-> seguendo solo quello che è scritto qui: clone, dipendenze, configurazione,
-> primo avvio, primo accesso. Se un passaggio non funziona, è un difetto di
-> questa pagina — [aprine una issue](https://github.com/ShiniHouse/Shinra/issues).
-
-### 1. Quello che serve prima
-
-```bash
-sudo apt update
-sudo apt install -y git python3 python3-venv
-```
-
-Serve **Python 3.10 o più recente**: `python3 --version` lo dice.
-Su Debian `python3-venv` è un pacchetto a parte e senza non si crea
-l'ambiente virtuale — è il primo punto in cui ci si ferma.
-
-### 2. Clonazione e ambiente virtuale
-```bash
-cd /opt
-sudo git clone https://github.com/ShiniHouse/Shinra.git
-cd Shinra
-
-python3 -m venv .venv
-source .venv/bin/activate
-
-pip install --upgrade pip
-pip install -e .
-```
-
-### 3. Configurazione iniziale
-```bash
-cp config/config.example.yaml config/config.yaml
-nano config/config.yaml
-```
-
-Il file di esempio funziona così com'è: si può anche lasciarlo intatto al
-primo giro e sistemarlo dopo, dalle impostazioni della dashboard.
-
-**I segreti non vanno qui.** Il token di Home Assistant e gli altri si
-mettono in `.env`, che non è versionato:
-
-```bash
-echo 'SHINRA_HA_TOKEN=il-tuo-token-di-home-assistant' >> .env
-chmod 600 .env
-```
-
-Senza token Shinra parte lo stesso e lo dice nel log: la casa risponde, ma
-non controlla niente.
-
-**Il database non va preparato**: viene creato e migrato da solo al primo
-avvio. Non c'è nessun comando da lanciare.
-
-### 4. Ollama e il modello
-Ollama è un programma a parte e va installato per primo, seguendo le
-istruzioni ufficiali su [ollama.com](https://ollama.com/download). Deve
-restare in ascolto su `localhost:11434`, che è dove Shinra lo cerca.
-
-Poi il modello:
-```bash
-ollama pull qwen2.5:3b
-```
-
-È lo stesso che `config.example.yaml` configura per difetto, e non è una
-preferenza: `qwen2.5:3b` supporta i **tool** in modo nativo, e qui i tool
-sono tutto — accendere una luce, mettere un timer, leggere una scadenza.
-Un modello senza tool risponde e non fa niente.
-
-Senza Ollama, Shinra parte e funziona per tutto ciò che non passa dal
-modello: timer, dispositivi, routine.
-
-### 5. Primo avvio e primo accesso
-
-```bash
-.venv/bin/python run.py
-```
-
-Apri **`http://INDIRIZZO-DEL-SERVER:8000`** dal browser.
-
-Troverai una schermata di accesso: **l'autenticazione è attiva per difetto**.
-Al primo avvio viene creato un profilo *Amministratore* con un PIN generato
-a caso, e quel PIN **compare una volta sola, nel log dell'avvio**:
-
-```
-=== PRIMO ACCESSO ===  PIN per Amministratore: 462783
-```
-
-Annotalo. Se è già scorso via, si reimposta con `python scripts/imposta_pin.py`.
-
-### 6. Servizio di sistema (`systemd`)
-Quando tutto funziona a mano, si mette in servizio. Crea
-`/etc/systemd/system/shinra.service`:
-
-```ini
-[Unit]
-Description=Shinra AI Smart Home Hub
-After=network.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/opt/Shinra
-ExecStart=/opt/Shinra/.venv/bin/python run.py
-Restart=always
-RestartSec=5
-Environment=PYTHONUNBUFFERED=1
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-systemctl daemon-reload
-systemctl enable --now shinra
-systemctl status shinra
-```
-
-Il PIN del primo accesso, se il primo avvio è avvenuto qui:
-```bash
-journalctl -u shinra --no-pager | grep "PRIMO ACCESSO"
-```
-
-### 7. Metti al sicuro la configurazione
-Le ore che passerai a insegnare alla casa i nomi delle luci e le routine
-valgono più del resto. Un archivio si scrive così:
-
-```bash
-.venv/bin/python scripts/salvataggio.py salva
-```
-
-Da lì in poi se ne scrive uno al giorno da solo, in `data/salvataggi/`.
-Non contiene segreti: né il token, né i PIN. Copiane uno ogni tanto fuori
-da questa macchina — un backup sullo stesso disco protegge dagli errori,
-non dai dischi che muoiono.
+Tutta la procedura — Docker, installazione a mano su Debian con `systemd`,
+il token di Home Assistant, cosa sopravvive a un aggiornamento e perche'
+l'add-on per Home Assistant OS non c'e' ancora — sta in
+[`docs/INSTALLAZIONE.md`](docs/INSTALLAZIONE.md).
 
 ---
 

@@ -147,7 +147,7 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | 34 | Scomporre `index.html` (7.438 righe) in moduli ES | fatta (#144-#151, #176-#178, #200, moduli ES veri) |
 | 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | in corso (#181, #203) — restano timer/promemoria e le etichette della dashboard |
 | 37 | Immagine Docker e add-on per Home Assistant OS | in corso (#168, #169) |
-| 38 | Documentazione utente e guida all'installazione verificata | in corso (#167) |
+| 38 | Documentazione utente e guida all'installazione verificata | in corso (#167, #204) — manca il collaudo di chi non le ha scritte |
 | 170 | L'intervista di apprendimento impara poco | in corso (#171, #174) |
 
 Tre voci sono **in corso** e vale la pena dire cosa manca a ciascuna, invece
@@ -161,8 +161,10 @@ di lasciarlo dedurre dal numero:
   della pagina non sopportano — cioe' e' lavoro della **#34**, non di questa.
 - **#38** — la CI costruisce l'immagine, la avvia e verifica di riuscire
   davvero a entrare: e' cosi' che si e' scoperto che l'immagine partiva senza
-  `data/examples/` e nessuno poteva accedere. Manca la documentazione utente
-  vera e propria.
+  `data/examples/` e nessuno poteva accedere. Dalla #204 ci sono la guida
+  all'installazione, la guida allo sviluppo e il riferimento delle API (generato
+  dal codice). Manca il collaudo: nessuno che non le abbia scritte le ha ancora
+  seguite.
 - **#36** — gli schemi con cui Shinra **capisce** una frase stanno in un file
   per lingua, e aggiungerne una non richiede di toccare il codice: lo prova un
   test che ne inventa una. Dalla #203 anche le frasi che Shinra **dice**, il

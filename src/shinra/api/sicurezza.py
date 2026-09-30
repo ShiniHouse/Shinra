@@ -469,6 +469,9 @@ def richiedi_permesso(permesso: str):
         return profilo
 
     verifica.__name__ = f"richiedi_{permesso.replace('.', '_')}"
+    # Il nome del permesso resta leggibile: `scripts/genera_api.py` lo legge da qui
+    # per dire nel riferimento delle API chi puo' chiamare ogni rotta.
+    verifica.permesso = permesso  # type: ignore[attr-defined]
     return verifica
 
 

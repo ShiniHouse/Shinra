@@ -14,21 +14,21 @@ revisione a fine progetto, quando le funzioni corrispondono alle promesse.
 
 ## Cosa fare
 
-- [ ] Riscrivere il README perche' descriva il comportamento reale
-- [ ] Guida all'installazione per ciascuna modalita': Docker, add-on, manuale
+- [x] Riscrivere il README perche' descriva il comportamento reale — #204: indice rifatto (elencava sezioni che non esistevano), installazione spostata in una guida, tre affermazioni non verificabili tolte o corrette
+- [x] Guida all'installazione per ciascuna modalita': Docker, add-on, manuale — [`docs/INSTALLAZIONE.md`](../../INSTALLAZIONE.md), #204. L'add-on non esiste ancora, e la guida lo dice
 - [x] Guida alla configurazione iniziale, dal primo avvio alla prima routine —
       [`docs/PRIMI-PASSI.md`](../../PRIMI-PASSI.md), #180
 - [x] Guida alla risoluzione dei problemi, ricavata dai difetti realmente
       incontrati — [`docs/PROBLEMI.md`](../../PROBLEMI.md), #180
-- [ ] Documentazione di riferimento delle API
-- [ ] Guida allo sviluppo di un modulo nuovo, secondo `ARCHITECTURE.md` §4
+- [x] Documentazione di riferimento delle API — [`docs/API.md`](../../API.md), generato dalle rotte vere, #204
+- [x] Guida allo sviluppo di un modulo nuovo, secondo `ARCHITECTURE.md` §4 — [`docs/SVILUPPO.md`](../../SVILUPPO.md), #204
 - [x] **Verifica**: installazione da zero su una macchina pulita seguendo solo la documentazione, annotando ogni punto in cui serve conoscenza non scritta
 
 ## Criteri di accettazione
 
 - [ ] Una persona che non conosce il progetto installa e configura Shinra seguendo solo la documentazione
 - [ ] Ogni affermazione del README e' verificabile
-- [ ] La guida allo sviluppo permette di aggiungere un modulo senza leggere il codice dell'agente
+- [x] La guida allo sviluppo permette di aggiungere un modulo senza leggere il codice dell'agente — e un test esegue la ricetta
 
 ## Il collaudo, fatto
 
@@ -103,3 +103,29 @@ Il README completo e la guida all'add-on aspettano la #37: non si documenta
 un'installazione che non esiste ancora. La guida Docker c'e' gia' nel README
 dalla #168. La documentazione delle API e la guida allo sviluppo di un modulo
 sono lavoro a se'.
+
+## #204 — cosa e' stato scritto, e cosa no
+
+- **`docs/API.md`** non si scrive: lo genera `scripts/genera_api.py` dalle rotte
+  vere (89), con chi puo' chiamare ciascuna letto dalle sue dipendenze. Un test
+  fallisce se il file resta indietro, e un altro se una rotta non ha una riga
+  che dice cosa fa. Il primo giro ne ha trovate **41 senza spiegazione**: ora
+  ce l'hanno, e compaiono anche su `/docs`.
+- **`docs/SVILUPPO.md`** ha una ricetta per ogni cosa che si aggiunge. Scriverla
+  ha trovato un'affermazione falsa in `ARCHITECTURE.md` §4 — «nessun altro file
+  va modificato» — mentre il registro dei tool si tocca in tre punti. Corretta.
+  Un test esegue la ricetta dello strumento (`test_guida_sviluppo.py`) e un
+  altro controlla che ogni test e ogni file nominati nella guida esistano.
+- **`docs/INSTALLAZIONE.md`**: le due procedure che stavano nel README
+  (Docker e a mano) hanno adesso una pagina loro. Il README tiene la versione
+  corta.
+- **Nel README**: l'indice elencava quattro sezioni che non esistevano piu'; la
+  scheda dell'editor non nominava condizione e notifica; «risposte in meno di
+  0,05 s» era una misura mai fatta; il diagramma faceva di Cloudflare e nginx
+  un passaggio obbligato.
+
+**Resta aperto il criterio che nessun documento puo' chiudere:** una persona
+che non conosce il progetto, e non e' chi l'ha scritto, segue solo queste pagine
+e arriva a una casa che risponde. Il collaudo della #180 l'ha fatto una volta
+sul README di allora; queste pagine non sono ancora state seguite da nessuno
+che non le abbia scritte.

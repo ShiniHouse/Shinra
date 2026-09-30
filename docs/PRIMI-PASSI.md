@@ -4,8 +4,8 @@ Shinra è installata e sei entrato con il PIN. Questa guida copre la mezz'ora
 dopo: da una dashboard che non sa niente della tua casa a una casa che fa
 qualcosa da sola.
 
-Se l'installazione non è ancora fatta, sta nel
-[README](../README.md#-installazione--configurazione-su-serverlinuxdebian).
+Se l'installazione non è ancora fatta, sta nella
+[guida all'installazione](INSTALLAZIONE.md#a-mano-su-linuxdebian).
 Se qualcosa non funziona, c'è [PROBLEMI.md](PROBLEMI.md).
 
 I passi sono in ordine e ognuno dipende dal precedente. Il quinto è
