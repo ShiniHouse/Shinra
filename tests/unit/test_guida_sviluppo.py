@@ -51,7 +51,7 @@ def strumento_nuovo(monkeypatch):
 
 
 def _voci() -> list[dict]:
-    return registro.elenco(limite=20)
+    return registro.voci(limite=100)
 
 
 async def test_uno_strumento_registrato_come_dice_la_guida_funziona(strumento_nuovo):
@@ -126,17 +126,19 @@ def test_i_nomi_che_la_guida_cita_esistono():
 
 
 def test_ogni_test_nominato_dalla_guida_esiste():
-    """La tabella «cosa ti dicono i test» vale solo se i nomi sono veri."""
+    """La tabella «cosa ti dicono i test» vale solo se i nomi sono veri.
+
+    Un nome puo' essere una funzione di test o il file che la contiene: la
+    guida usa l'uno e l'altro, e tutti e due devono esistere.
+    """
     import re
 
     radice = GUIDA.parent.parent
-    sorgenti = "\n".join(p.read_text(encoding="utf-8") for p in (radice / "tests").rglob("*.py"))
-    nominati = set(re.findall(r"`(test_[a-z0-9_]+)`", GUIDA.read_text(encoding="utf-8")))
+    file_di_test = list((radice / "tests").rglob("*.py"))
+    sorgenti = "\n".join(p.read_text(encoding="utf-8") for p in file_di_test)
+    stem = {p.stem for p in file_di_test}
+    nominati = set(re.findall(r"`(test_[a-z0-9_]+)(?:\.py)?`", GUIDA.read_text(encoding="utf-8")))
 
     assert len(nominati) >= 8, f"test nominati dalla guida: {sorted(nominati)}"
-    mancanti = sorted(n for n in nominati if f"def {n}" not in sorted_sorgenti(sorgenti, n))
+    mancanti = sorted(n for n in nominati if n not in stem and f"def {n}(" not in sorgenti)
     assert mancanti == [], f"la guida nomina test che non esistono: {mancanti}"
-
-
-def sorted_sorgenti(sorgenti: str, _nome: str) -> str:
-    return sorgenti

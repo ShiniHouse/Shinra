@@ -21,11 +21,11 @@ from __future__ import annotations
 import inspect
 import re
 import sys
-from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent
+from shinra import percorsi
+
+BASE = percorsi.RADICE
 USCITA = BASE / "docs" / "API.md"
-sys.path.insert(0, str(BASE / "src"))
 
 METODI = ("GET", "POST", "PUT", "PATCH", "DELETE")
 

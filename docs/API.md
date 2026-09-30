@@ -38,7 +38,7 @@ I dettagli del flusso con le passkey e dei dispositivi fidati stanno nell'ADR
 l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 `/openapi.json`.
 
-## Le rotte (89)
+## Le rotte (90)
 
 ### `alexa`
 
@@ -122,6 +122,12 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 | POST | `/api/learning/start` | sessione aperta | Avvia l'intervista di apprendimento per un profilo. |
 | GET | `/api/learning/status` | sessione aperta | Dice se c'e' un'intervista aperta e a che punto e'. |
 | POST | `/api/learning/stop` | sessione aperta | Interrompe l'intervista di apprendimento. |
+
+### `lingue`
+
+| Metodo | Percorso | Chi | Cosa fa |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/lingue` | sessione aperta | Le lingue che Shinra sa parlare, per il menu del profilo (issue #36). |
 
 ### `modes`
 

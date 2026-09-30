@@ -126,8 +126,11 @@ quattro passi meccanici, sempre gli stessi.
 1. **Il modulo.** Un file in `src/shinra/skills/`, per esempio `vacuum.py`, che
    espone funzioni asincrone tipizzate e uno schema di tool. Non conosce ne'
    FastAPI ne' Alexa.
-2. **La registrazione.** Il modulo si dichiara nel registro dei tool. Nessun
-   altro file va modificato per renderlo raggiungibile dal modello.
+2. **La registrazione.** Il modulo si dichiara nel registro dei tool, in
+   `skills/registry.py`: l'`import`, una voce in `TOOL_HANDLERS` e uno schema
+   in `TOOLS_SCHEMA`. Un file solo, tre punti. Il resto — il registro delle
+   azioni, il controllo dei permessi, la traduzione degli errori — lo fa
+   `execute_tool` senza che il modulo debba ricordarsene.
 3. **I test.** Almeno un test per il caso felice e uno per l'errore, con le
    chiamate HTTP simulate. Nessuna rete nei test unitari.
 4. **La documentazione.** Una voce nel changelog e, se il modulo introduce una
@@ -135,6 +138,10 @@ quattro passi meccanici, sempre gli stessi.
 
 Un modulo che rispetta questi quattro passi funziona automaticamente da chat,
 da PWA e da Alexa, perche' i canali non sanno nulla delle singole capacita'.
+
+La ricetta completa, con un esempio che un test esegue davvero e le altre
+cose che si aggiungono (un intento, una lingua, una rotta, una colonna, un'area
+della dashboard), sta in [`SVILUPPO.md`](SVILUPPO.md).
 
 ---
 
