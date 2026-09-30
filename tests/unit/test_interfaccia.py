@@ -2083,7 +2083,7 @@ def test_la_scorciatoia_non_ha_tolto_niente_all_editor():
     # E i pezzi dell'editor sono tutti al loro posto: rami, condizioni,
     # ritardi e sequenze non si esprimono in un modulo.
     for tipo in ("condizione", "delay", "tts"):
-        pezzo = 'data-gesto="addCanvasNode" data-args="${_args(\'' + tipo + '\')}"'
+        pezzo = 'data-gesto="addCanvasNode" data-args="${_args(\'' + tipo + "')}\""
         assert pezzo in testo, f"l'editor ha perso un pezzo: {tipo}"
 
 
@@ -3382,7 +3382,8 @@ def test_la_crocetta_che_stacca_un_cavo_si_puo_premere():
     ), "il piano dei cavi prende i clic: i cavi passano sopra i nodi e li coprirebbero"
 
     crocetta = re.search(
-        r"<circle[^>]*data-gesto=\"deleteCanvasEdge\"", _senza_commenti_html(_testo(CARTELLA_JS / "tela_nodi.js"))
+        r"<circle[^>]*data-gesto=\"deleteCanvasEdge\"",
+        _senza_commenti_html(_testo(CARTELLA_JS / "tela_nodi.js")),
     )
     assert crocetta, "la crocetta che stacca un cavo non c'e' piu'"
     assert "pointer-events-auto" in crocetta.group(
