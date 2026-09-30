@@ -109,3 +109,7 @@ La seconda meta': le frasi che Shinra **dice**, e la lingua per persona.
   JavaScript) e **i messaggi delle skill** (`registry.py`, `ha_tools.py`,
   l'intervista) sono ancora italiani. Il criterio «nessuna stringa visibile
   resta nel codice» non e' raggiunto, e non lo si dichiara raggiunto.
+
+## Chiusa alla 0.5.0, il resto alla 0.6.0
+
+Chiusa con il meccanismo (#181, #203). Il lavoro che resta ha tre schede nella `v0.6.0`: [#205](../v0.6.0/205-timer-e-promemoria-in-piu-lingue.md) (timer e promemoria), [#206](../v0.6.0/206-etichette-della-dashboard-tradotte.md) (le etichette della dashboard) e [#207](../v0.6.0/207-messaggi-delle-skill-tradotti.md) (i messaggi degli strumenti e dell'intervista). Il criterio «nessuna stringa visibile resta nel codice» e' della #206 e della #207.

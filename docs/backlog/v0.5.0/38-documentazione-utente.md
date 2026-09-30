@@ -129,3 +129,7 @@ che non conosce il progetto, e non e' chi l'ha scritto, segue solo queste pagine
 e arriva a una casa che risponde. Il collaudo della #180 l'ha fatto una volta
 sul README di allora; queste pagine non sono ancora state seguite da nessuno
 che non le abbia scritte.
+
+## Chiusa alla 0.5.0, il collaudo alla 0.6.0
+
+Le guide sono scritte e difese da test (#204). Il collaudo di chi non le ha scritte — l'unica cosa che un documento non puo' fare — e' la [#208](../v0.6.0/208-collaudo-della-documentazione.md).

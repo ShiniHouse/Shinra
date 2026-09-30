@@ -143,12 +143,12 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | 159 | Il canale degli eventi rifiuta i dispositivi fidati | fatta (#160) |
 | 161 | Una sessione scaduta non viene detta: ritenta in silenzio | fatta (#162, #173) |
 | 35 | Backup e restore della configurazione, con versione di schema | fatta (#165, #166) |
-| 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` | da fare (dove gira: deciso, ADR 0007) |
+| 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` | **spostata alla `v0.6.0`** (#211): dove gira e' deciso (ADR 0007), il codice non c'e' |
 | 34 | Scomporre `index.html` (7.438 righe) in moduli ES | fatta (#144-#151, #176-#178, #200, moduli ES veri) |
-| 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | in corso (#181, #203) — restano timer/promemoria e le etichette della dashboard |
-| 37 | Immagine Docker e add-on per Home Assistant OS | in corso (#168, #169) |
-| 38 | Documentazione utente e guida all'installazione verificata | in corso (#167, #204) — manca il collaudo di chi non le ha scritte |
-| 170 | L'intervista di apprendimento impara poco | in corso (#171, #174) |
+| 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | chiusa in parte (#181, #203): il meccanismo, l'inglese e la lingua per persona. Il resto alla `v0.6.0` (#205, #206, #207) |
+| 37 | Immagine Docker e add-on per Home Assistant OS | chiusa in parte (#168, #169): la strada Docker. L'add-on e la prova su Raspberry Pi 4 alla `v0.6.0` (#212) |
+| 38 | Documentazione utente e guida all'installazione verificata | chiusa in parte (#167, #204): le guide sono scritte. Il collaudo di chi non le ha scritte alla `v0.6.0` (#208) |
+| 170 | L'intervista di apprendimento impara poco | chiusa in parte (#171, #174): dice quando non ha capito e mostra cosa ha capito. Il resto alla `v0.6.0` (#209, #210) |
 
 Tre voci sono **in corso** e vale la pena dire cosa manca a ciascuna, invece
 di lasciarlo dedurre dal numero:
@@ -311,6 +311,14 @@ e' una demo.
 | 196 | Nessun file del backend sopra le cinquecento righe | debito |
 | 197 | mypy obbligatorio anche su api e channels | debito |
 | 198 | Guida al Cervello, agli agenti e ai piani | documentazione |
+| 205 | Timer e promemoria capiscono piu' di una lingua — *residuo della #36* | i18n |
+| 206 | Le etichette della dashboard escono dal codice — *residuo della #36* | i18n |
+| 207 | I messaggi degli strumenti e dell'intervista nella lingua di chi parla — *residuo della #36* | i18n |
+| 208 | Collaudo della documentazione da parte di chi non l'ha scritta — *residuo della #38* | documentazione |
+| 209 | Intervista: una domanda per volta, niente domande su cio' che la casa sa — *residuo della #170* | apprendimento |
+| 210 | Intervista: dalle entita' vere alle routine complete — *residuo della #170* | apprendimento |
+| 211 | La parola di attivazione nel browser — *residuo della #30* | voce |
+| 212 | L'add-on per Home Assistant OS e la prova su Raspberry Pi 4 — *residuo della #37, da valutare* | distribuzione |
 
 **Criteri di uscita**
 - Il banco di prova (#183) ha numeri per almeno due modelli, e gli agenti di

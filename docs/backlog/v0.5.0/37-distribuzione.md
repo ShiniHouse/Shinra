@@ -73,3 +73,7 @@ prova non e' fatta, **il criterio resta aperto** — costruire e funzionare sono
 due cose diverse, ed e' esattamente la distinzione che la guardia
 `test_il_workflow_di_pubblicazione_costruisce_le_due_architetture` **non** puo'
 fare al posto di qualcuno che guarda.
+
+## Chiusa alla 0.5.0, il resto alla 0.6.0
+
+La strada Docker e' fatta e provata in CI. L'add-on e la prova su Raspberry Pi 4 richiedono hardware che qui non c'e': la [#212](../v0.6.0/212-add-on-e-raspberry-pi.md), da valutare.

@@ -103,3 +103,7 @@ automatico e il suo ricampionamento.
 la prima causa di falsi positivi — i modelli gia' addestrati di openWakeWord
 sono quasi tutti di due parole. Il primo giro si fa con uno di quelli: da' una
 linea di base e separa due domande che altrimenti si confondono.
+
+## Spostata alla 0.6.0
+
+Nella `v0.5.0` si e' deciso dove gira (ADR 0007). Il codice e la misura dei falsi positivi sono la [#211](../v0.6.0/211-parola-di-attivazione.md).
