@@ -207,7 +207,8 @@ def test_l_avvio_scrive_nel_log_come_sta_la_voce(monkeypatch):
     Adesso lo stato della voce finisce nel log a ogni avvio, anche — anzi,
     soprattutto — quando non c'e' niente da preparare.
     """
-    from shinra.api import app as applicazione
+    # L'avvio vive in `ciclo_di_vita` dalla #196: e' lui che scrive nel log.
+    from shinra.api import ciclo_di_vita as applicazione
 
     righe: list[str] = []
 

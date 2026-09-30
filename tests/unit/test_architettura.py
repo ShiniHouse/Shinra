@@ -59,16 +59,25 @@ DEBITO: frozenset[str] = frozenset(
         # nel pannello di amministrazione. Andranno dietro a un servizio: e'
         # il gruppo piu' numeroso e quello che vale la pena sciogliere per
         # primo.
-        "api/app.py -> shinra.infra.data_store",
-        "api/app.py -> shinra.infra.db",
+        #
+        # Dalla #196 `app.py` e `routes_admin.py` sono divisi per area, e lo
+        # stesso accesso compare in piu' file piu' piccoli: le coppie
+        # file -> modulo passano da dieci a dodici, ma i moduli di
+        # infrastruttura raggiunti dall'API sono gli stessi sei (`data_store`,
+        # `db`, `homeassistant.client`, `llm.ollama`, `scheduler.motore`,
+        # `tts`), e nessuna direzione nuova e' nata.
         "api/app.py -> shinra.infra.homeassistant.client",
         "api/app.py -> shinra.infra.llm.ollama",
-        "api/app.py -> shinra.infra.scheduler.motore",
         "api/app.py -> shinra.infra.tts",
-        "api/routes_admin.py -> shinra.infra.data_store",
-        "api/routes_admin.py -> shinra.infra.db",
-        "api/routes_admin.py -> shinra.infra.homeassistant.client",
-        "api/routes_admin.py -> shinra.infra.llm.ollama",
+        "api/ciclo_di_vita.py -> shinra.infra.data_store",
+        "api/ciclo_di_vita.py -> shinra.infra.db",
+        "api/ciclo_di_vita.py -> shinra.infra.homeassistant.client",
+        "api/ciclo_di_vita.py -> shinra.infra.scheduler.motore",
+        "api/routes_casa.py -> shinra.infra.data_store",
+        "api/routes_casa.py -> shinra.infra.homeassistant.client",
+        "api/routes_impostazioni.py -> shinra.infra.data_store",
+        "api/routes_impostazioni.py -> shinra.infra.llm.ollama",
+        "api/routes_utenti.py -> shinra.infra.db",
         # I dispositivi fidati fanno SQLAlchemy direttamente dentro il
         # livello delle rotte: e' un servizio travestito da modulo dell'API.
         "api/dispositivi.py -> shinra.infra.db.modelli",
