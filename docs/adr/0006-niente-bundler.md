@@ -115,3 +115,26 @@ grafo di `import`: piu' corretto, ma non si legge piu' tutto da un posto solo.
 **Da definire.** Se i moduli debbano restare uno per area, come i copioni di
 oggi, o se qualcuno vada spezzato ancora: si vedra' quando avranno importazioni
 vere, perche' e' li' che si capisce chi dipende da chi.
+
+## Com'e' andata
+
+*30 settembre 2026.* Il quarto passo, l'interruttore, e' stato tirato.
+
+- I 100 attributi in linea rimasti — 72 nelle stringhe che i copioni generano,
+  piu' quelli dell'editor a nodi — sono diventati `data-*`; gli argomenti
+  viaggiano in `data-args` come JSON (#200). Un valore con apici o tag dentro
+  resta un valore, perche' `JSON.parse` non esegue niente.
+- I ventitre copioni sono moduli ES, con un punto d'ingresso
+  (`principale.js`). Gli `import` e gli `export` li ha calcolati uno script
+  dal codice, non a mano; ESLint in modalita' modulo non ha trovato un solo
+  nome mancante, e ha trovato quattro cose che nessuno usava piu'.
+- **Il prezzo non previsto: la cache.** Il numero di versione sta nell'indirizzo
+  dell'ingresso (`principale.js?v=...`), ma un `import` non lo porta. Il
+  server risponde adesso a `/static/` con `Cache-Control: no-cache`: il
+  browser chiede prima se il file e' cambiato, e con l'ETag la risposta a un
+  file invariato e' un 304 senza corpo.
+- Un errore che prima non esisteva: un `import` di un nome che l'altro file
+  non esporta non da' un errore a runtime, rifiuta **tutto** il grafo. Lo
+  prende una guardia che legge gli `export`, non ESLint.
+- Nessun bundler, come deciso. Il codice servito e' ancora quello del
+  repository.

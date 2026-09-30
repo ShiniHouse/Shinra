@@ -19,6 +19,11 @@
 // la chiamata fallisce -> il server non c'e', si ritenta; risponde «non sei
 // autenticato» -> si smette e lo si dice; risponde «sei dentro» -> la caduta
 // e' un'altra cosa, si ritenta.
+import { Stato } from './stato.js';
+import { getAuthHeaders, mostraRifiuto } from './accesso.js';
+import { speakText } from './voce.js';
+import { loadReminders, loadTimers, playChimeAlert } from './timer.js';
+
 let _eventiSocket = null;
 
 function _segnalaStatoEventi(collegato) {
@@ -32,7 +37,7 @@ function _segnalaStatoEventi(collegato) {
     }
 }
 
-function collegaEventi() {
+export function collegaEventi() {
     if (_eventiSocket && _eventiSocket.readyState <= 1) return;
     const protocollo = location.protocol === 'https:' ? 'wss:' : 'ws:';
     try {
@@ -144,7 +149,7 @@ function gestisciEvento(evento) {
 // contro i buchi del GPS, e vederlo spiega perche' la casa non ha
 // ancora reagito.
 
-async function caricaPresenza() {
+export async function caricaPresenza() {
     const pill = document.getElementById('presenza-pill');
     if (!pill) return;
     try {
@@ -192,7 +197,7 @@ async function caricaPresenza() {
 
 let _statiCasa = {};
 
-function _chiaveStato(entityId) {
+export function _chiaveStato(entityId) {
     // Gli identificativi contengono un punto: negli attributi `id` va
     // bene, ma romperebbe un selettore CSS. Qui non si usano
     // selettori, e getElementById non ha il problema — la chiave resta
@@ -200,12 +205,12 @@ function _chiaveStato(entityId) {
     return (entityId || '').replace(/[^a-zA-Z0-9_-]/g, '_');
 }
 
-function _testoStato(entityId) {
+export function _testoStato(entityId) {
     const s = _statiCasa[entityId];
     return s ? s.stato : '';
 }
 
-function aggiornaStatoCasa(dati) {
+export function aggiornaStatoCasa(dati) {
     if (!dati || !dati.entity_id) return;
     _statiCasa[dati.entity_id] = dati;
 

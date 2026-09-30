@@ -1,4 +1,11 @@
 // ==================== SPEECH RECOGNITION (COMPATIBILE IOS SAFARI / PWA) ====================
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _html } from './sicurezza.js';
+import { getAuthHeaders, intestazioniPerModulo, updateLivingCoreState } from './accesso.js';
+import { handleSend } from './conversazione.js';
+import { _dettaglioErrore } from './ruoli.js';
+
 let activeRecognition = null;
 let isRecording = false;
 
@@ -266,7 +273,7 @@ let voicePitch = parseFloat(localStorage.getItem('shinra_voice_pitch')) || 1.0;
 let selectedVoiceURI = localStorage.getItem('shinra_voice_uri') || 'auto';
 let availableVoices = [];
 
-function initVoiceEngine() {
+export function initVoiceEngine() {
     syncVoiceUI();
     if ('speechSynthesis' in window) {
         function loadBrowserVoices() {
@@ -296,7 +303,7 @@ function populateVoiceSelect() {
     });
 }
 
-function syncVoiceUI() {
+export function syncVoiceUI() {
     // Settings tab
     const cfgNeural = document.getElementById('cfg-neural-voice');
     if (cfgNeural) cfgNeural.value = neuralVoice;
@@ -322,21 +329,6 @@ function syncVoiceUI() {
 function setNeuralVoice(voiceId) {
     neuralVoice = voiceId;
     localStorage.setItem('shinra_neural_voice', voiceId);
-    syncVoiceUI();
-}
-
-function toggleVoiceMute() {
-    Stato.voceZittita = !Stato.voceZittita;
-    localStorage.setItem('shinra_voice_muted', Stato.voceZittita);
-    if (Stato.voceZittita) {
-        if (Stato.audioInCorso) {
-            Stato.audioInCorso.pause();
-            Stato.audioInCorso = null;
-        }
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-        }
-    }
     syncVoiceUI();
 }
 
@@ -375,7 +367,7 @@ function cleanTextForSpeech(text) {
     return clean;
 }
 
-async function speakText(text) {
+export async function speakText(text) {
     if (Stato.voceZittita) return;
 
     const clean = cleanTextForSpeech(text);

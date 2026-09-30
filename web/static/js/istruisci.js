@@ -1,5 +1,15 @@
 // ==================== SHINRA ISTRUISCI / LEARNING INTERVIEW ENGINE ====================
-let currentLearningSession = null;
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { getAuthHeaders } from './accesso.js';
+import { toggleMobileMenu } from './navigazione.js';
+import { speakText } from './voce.js';
+import { loadKnowledge } from './conoscenza.js';
+import { loadModes } from './routine.js';
+import { closeModal } from './impostazioni.js';
+
 let learningRecognition = null;
 let isLearningListening = false;
 let currentProposedRoutine = null;
@@ -28,7 +38,6 @@ async function startLearningModal() {
         });
         if (!res.ok) throw new Error('Errore avvio sessione');
         const data = await res.json();
-        currentLearningSession = data;
         renderLearningStep(data);
     } catch (err) {
         console.error('startLearningModal:', err);
@@ -38,7 +47,6 @@ async function startLearningModal() {
 }
 
 function renderLearningStep(data) {
-    currentLearningSession = data;
     const modal = document.getElementById('learning-interview-modal');
     if (!modal) return;
 
@@ -127,12 +135,6 @@ function renderLearningStep(data) {
     // Speak question
     speakText(daMostrare);
     safeCreateIcons();
-}
-
-function playAudioOrSpeak(text) {
-    if (text && typeof speakText === 'function') {
-        speakText(text);
-    }
 }
 
 function replayLearningQuestionAudio() {

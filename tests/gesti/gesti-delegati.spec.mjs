@@ -118,7 +118,9 @@ test.describe('i gesti delegati', () => {
         // apici, virgolette e tag attraversa `_html`, l'attributo e
         // `JSON.parse`, e deve arrivare identico alla funzione.
         await page.goto('/index.html');
-        const visto = await page.evaluate(() => {
+        const visto = await page.evaluate(async () => {
+            const { Gesti } = await import('/static/js/gesti.js');
+            const { _args, _html } = await import('/static/js/sicurezza.js');
             let ricevuto = null;
             Gesti.registra({ proba: (...argomenti) => (ricevuto = argomenti) });
             const ostile = `x'y"z <img src=x onerror=window.__rubato=1> \`${'$'}{1}\``;
@@ -140,6 +142,32 @@ test.describe('i gesti delegati', () => {
         ]);
     });
 
+    test('i moduli si caricano senza un solo errore di JavaScript', async ({ page }) => {
+        // Con i moduli ES le aree si importano a vicenda, e fra due aree che
+        // si importano c'e' un ordine di valutazione che nessuno scrive: un
+        // `const` usato in cima a un modulo prima che l'altro lo abbia
+        // dichiarato e' un ReferenceError al caricamento. Il browser rifiuta
+        // il modulo, e la dashboard resta senza comportamento.
+        const errori = [];
+        page.on('pageerror', (e) => errori.push(`pageerror: ${e.message}`));
+        page.on('console', (m) => {
+            // L'anteprima e' statica: ogni chiamata all'API risponde 404 con
+            // una pagina HTML, e il JavaScript lo racconta in console
+            // (JSON illeggibile, WebSocket rifiutato). Non sono guasti dei
+            // moduli. Quelli hanno nomi precisi.
+            const dei_moduli =
+                /ReferenceError|before initialization|does not provide an export|Failed to resolve module|MIME type/;
+            if (m.type() === 'error' && dei_moduli.test(m.text())) errori.push(`console: ${m.text()}`);
+        });
+
+        await page.goto('/index.html');
+        await page.evaluate(async () => {
+            await import('/static/js/principale.js');
+        });
+
+        expect(errori, 'la pagina ha scritto errori in console al caricamento').toEqual([]);
+    });
+
     test('nessun gesto resta senza chi lo sappia fare', async ({ page }) => {
         // Il guardiano stampa in console quando gli chiedono un nome che non
         // conosce. Qui si preme tutto quello che la pagina offre e si guarda
@@ -157,7 +185,11 @@ test.describe('i gesti delegati', () => {
         );
         expect(nomi.length, "la pagina non chiede piu' nessun gesto").toBeGreaterThan(30);
 
-        const sconosciuti = await page.evaluate((elenco) => elenco.filter((n) => !Gesti.conosce(n)), nomi);
+        const sconosciuti = await page.evaluate(async (elenco) => {
+            await import('/static/js/principale.js');
+            const { Gesti } = await import('/static/js/gesti.js');
+            return elenco.filter((n) => !Gesti.conosce(n));
+        }, nomi);
         expect(sconosciuti, 'gesti che il markup chiede e nessuna area registra').toEqual([]);
         expect(lamentele, "il guardiano si e' lamentato al caricamento").toEqual([]);
     });

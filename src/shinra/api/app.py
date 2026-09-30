@@ -338,7 +338,30 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Shinra AI Hub", version="2.0.0", lifespan=lifespan)
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+class FileStatici(StaticFiles):
+    """I file statici, da rivalidare a ogni richiesta.
+
+    Dalla #34 il JavaScript e' fatto di moduli ES, e un `import` non puo'
+    portare con se' il numero di versione: `principale.js?v=...` cambia a ogni
+    rilascio, ma `./stato.js` dentro di lui resta lo stesso indirizzo. Senza
+    istruzioni un browser puo' tenere un modulo vecchio per ore (la
+    cache euristica e' una frazione dell'eta' del file), e dopo un
+    aggiornamento la pagina girerebbe con un'area nuova e una vecchia.
+
+    `no-cache` non vuol dire «non tenerlo»: vuol dire «chiedi prima se e'
+    cambiato». Con l'ETag che `StaticFiles` manda gia', la risposta di un file
+    invariato e' un 304 senza corpo.
+    """
+
+    def file_response(self, *args, **kwargs):
+        risposta = super().file_response(*args, **kwargs)
+        risposta.headers["Cache-Control"] = "no-cache"
+        return risposta
+
+
+app.mount("/static", FileStatici(directory=str(STATIC_DIR)), name="static")
 
 
 @app.middleware("http")

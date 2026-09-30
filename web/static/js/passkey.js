@@ -6,6 +6,13 @@
 // barra, e senza riempimento. Sbagliare dialetto di base64 e' il modo
 // piu' comune di far fallire una passkey senza capire perche'.
 
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _args, _grezzo, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { getAuthHeaders } from './accesso.js';
+import { _dettaglioErrore, _quando, posso } from './ruoli.js';
+
 function _daBase64url(testo) {
     const normale = testo.replace(/-/g, '+').replace(/_/g, '/');
     const grezzo = atob(normale + '='.repeat((4 - (normale.length % 4)) % 4));
@@ -18,7 +25,7 @@ function _aBase64url(buffer) {
     return btoa(grezzo).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-async function loadPasskey() {
+export async function loadPasskey() {
     const container = document.getElementById('passkey-lista');
     if (!container) return;
 
@@ -161,7 +168,7 @@ async function revocaPasskey(identificativo, nome) {
 // permessi di un ospite. Questo elenco esiste perche' associarla non
 // richieda di copiare a mano un identificativo opaco letto in un log.
 
-async function loadVoci() {
+export async function loadVoci() {
     const container = document.getElementById('voci-lista');
     if (!container) return;
 

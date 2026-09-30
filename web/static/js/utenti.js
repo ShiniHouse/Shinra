@@ -1,4 +1,21 @@
 // ==================== USERS CRUD & AVATARS ====================
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _args, _grezzo, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { getAuthHeaders } from './accesso.js';
+import { getUserAvatarInfo, loadUsersDropdown } from './navigazione.js';
+import {
+    _dettaglioErrore,
+    caricaPermessiCorrenti,
+    loadDispositivi,
+    loadRuoli,
+    nomeDelRuolo,
+    posso,
+} from './ruoli.js';
+import { loadPasskey, loadVoci } from './passkey.js';
+import { closeModal, showModal } from './impostazioni.js';
+
 let _selectedAvatarType = 'male_adult';
 
 function selectUserAvatar(type) {
@@ -22,7 +39,7 @@ function selectUserAvatar(type) {
     }
 }
 
-async function loadUsers() {
+export async function loadUsers() {
     // I permessi si rileggono a ogni apertura della scheda: un ruolo
     // cambiato mentre la pagina e' aperta deve valere subito, non al
     // prossimo ricaricamento del browser.

@@ -1,4 +1,10 @@
 // ==================== SOURCES CATALOG & BULK CONTROLS ====================
+import { Gesti } from './gesti.js';
+import { _args, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { getAuthHeaders } from './accesso.js';
+import { closeModal, showModal } from './impostazioni.js';
+
 const SOURCES_CATALOG = [
     {
         category: '📰 Notizie Italia',
@@ -160,7 +166,7 @@ async function bulkToggleSources(enable) {
     }
 }
 
-async function loadSources() {
+export async function loadSources() {
     try {
         const res = await fetch('/api/sources', { headers: getAuthHeaders() });
         const items = await res.json();

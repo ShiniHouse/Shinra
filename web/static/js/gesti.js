@@ -23,7 +23,7 @@
 //
 // Riferimento: issue #34, ADR 0006.
 
-const Gesti = {
+export const Gesti = {
     /** Dal nome del gesto alla funzione che lo fa. */
     _fatti: new Map(),
 
@@ -66,6 +66,17 @@ const Gesti = {
             }
             this._fatti.set(nome, funzione);
         }
+    },
+
+    /** Esegue un gesto per nome, come se l'avesse chiesto il markup.
+     *  Lo usa l'anteprima statica per aprire una scheda da un indirizzo. */
+    fai(nome, ...argomenti) {
+        const funzione = this._fatti.get(nome);
+        if (!funzione) {
+            console.error(`Gesti: nessuno sa fare «${nome}»`);
+            return;
+        }
+        return funzione(...argomenti);
     },
 
     /** Se un gesto con questo nome esiste. Lo usa la guardia dei test. */

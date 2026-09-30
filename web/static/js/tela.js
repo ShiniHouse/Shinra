@@ -1,6 +1,13 @@
 // ==================== VISUAL FLOW CANVAS (STILE VISIO / NODE-RED) ====================
 
-function openModularModeBuilder(existingId = null) {
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _args, _html } from './sicurezza.js';
+import { renderCanvasElements } from './tela_disegno.js';
+import { renderCanvasWires } from './tela_nodi.js';
+import { showModal } from './impostazioni.js';
+
+export function openModularModeBuilder(existingId = null) {
     let mode = {
         id: '',
         name: '',
@@ -73,7 +80,7 @@ function openModularModeBuilder(existingId = null) {
     renderFlowCanvasModal();
 }
 
-function renderFlowCanvasModal() {
+export function renderFlowCanvasModal() {
     const triggersStr = Stato.tela.trigger_phrases.join(', ');
 
     showModal(

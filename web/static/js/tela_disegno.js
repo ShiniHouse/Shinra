@@ -1,4 +1,10 @@
-function renderCanvasElements() {
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _args, _grezzo, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { renderCanvasWires, setDatoInnesco, updateNodeData } from './tela_nodi.js';
+
+export function renderCanvasElements() {
     const container = document.getElementById('flow-nodes-container');
     if (!container) return;
 
@@ -264,7 +270,7 @@ function renderCanvasElements() {
     updateCanvasStats();
 }
 
-function updateCanvasStats() {
+export function updateCanvasStats() {
     const el = document.getElementById('canvas-stats');
     if (el) el.innerText = `Nodi: ${Stato.tela.nodes.length} | Connessioni: ${Stato.tela.edges.length}`;
 }

@@ -1,4 +1,12 @@
 // ==================== MODULAR ROUTINE BUILDER ====================
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _args, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { getAuthHeaders } from './accesso.js';
+import { speakText } from './voce.js';
+import { disegnaScorciatoia } from './regole.js';
+
 let _modeAccordionState = {};
 
 function toggleModeSteps(modeId) {
@@ -10,7 +18,7 @@ function toggleModeSteps(modeId) {
     safeCreateIcons();
 }
 
-async function loadModes() {
+export async function loadModes() {
     try {
         const res = await fetch('/api/modes', { headers: getAuthHeaders() });
         Stato.routine = await res.json();

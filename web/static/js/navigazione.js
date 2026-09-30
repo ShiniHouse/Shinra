@@ -1,4 +1,17 @@
 // Store del display originale per ogni tab
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _grezzo, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { getAuthHeaders } from './accesso.js';
+import { loadKnowledge } from './conoscenza.js';
+import { loadSources } from './fonti.js';
+import { loadAliases } from './dispositivi.js';
+import { loadModes } from './routine.js';
+import { disegnaScorciatoia, loadRegole } from './regole.js';
+import { loadUsers } from './utenti.js';
+import { loadSettings } from './impostazioni.js';
+
 const tabDisplayMap = {
     console: 'grid',
     knowledge: 'block',
@@ -31,7 +44,7 @@ const SCHEDE_DI_CONFIGURAZIONE = ['knowledge', 'sources', 'users', 'settings'];
 // ==================== MOBILE MENU HAMBURGER CONTROLLER ====================
 let isMobileMenuOpen = false;
 
-function toggleMobileMenu() {
+export function toggleMobileMenu() {
     const drawer = document.getElementById('mobile-menu-drawer');
     const icon = document.getElementById('mobile-menu-icon');
     if (!drawer) return;
@@ -95,7 +108,7 @@ document.addEventListener('keydown', function (evento) {
 });
 
 // Tab Navigation — usa style.display invece di hidden class (evita conflitti Tailwind JIT)
-function switchTab(tabId) {
+export function switchTab(tabId) {
     // Le vecchie destinazioni prima di tutto: da qui in giu' esiste
     // solo il nome nuovo.
     tabId = SCHEDE_UNITE[tabId] || tabId;
@@ -252,7 +265,7 @@ function preparaSezioniImpostazioni() {
 }
 
 // Inizializzazione del layout tab all'avvio
-function initTabs() {
+export function initTabs() {
     Object.keys(tabDisplayMap).forEach((id) => {
         const el = document.getElementById(`tab-${id}`);
         if (el) el.style.display = id === 'console' ? tabDisplayMap['console'] : 'none';
@@ -260,7 +273,7 @@ function initTabs() {
 }
 
 // ==================== USER AVATAR & PROFILE HELPERS ====================
-function getUserAvatarInfo(u) {
+export function getUserAvatarInfo(u) {
     const gender = u.gender || 'unspecified';
     const age = u.age_group || 'adult';
     const role = u.role || 'adult';
@@ -333,7 +346,7 @@ function getUserAvatarInfo(u) {
 }
 
 // Active User Management
-async function loadUsersDropdown() {
+export async function loadUsersDropdown() {
     try {
         const res = await fetch('/api/users', { headers: getAuthHeaders() });
         Stato.utenti = await res.json();
@@ -361,7 +374,7 @@ function changeActiveUser(userId) {
     updateActiveUserBanner();
 }
 
-function updateActiveUserBanner() {
+export function updateActiveUserBanner() {
     const user = Stato.utenti.find((u) => u.id === Stato.utenteAttivo) || {
         name: 'Utente',
         role: 'adult',

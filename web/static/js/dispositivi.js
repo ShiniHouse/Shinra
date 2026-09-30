@@ -1,5 +1,12 @@
 // ==================== ALIASES CRUD ====================
-async function loadAliases() {
+import { Gesti } from './gesti.js';
+import { _args, _grezzo, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { getAuthHeaders } from './accesso.js';
+import { _chiaveStato, _testoStato, aggiornaStatoCasa } from './eventi.js';
+import { closeModal, showModal } from './impostazioni.js';
+
+export async function loadAliases() {
     try {
         const res = await fetch('/api/aliases', { headers: getAuthHeaders() });
         const items = await res.json();
@@ -215,10 +222,6 @@ function openAliasModalForEntity(entityId, friendlyName, currentAlias) {
         </div>
     `);
     setTimeout(() => document.getElementById('new-a-alias')?.focus(), 100);
-}
-
-function openAddAliasModal() {
-    openAliasModalForEntity('', '', '');
 }
 
 async function saveNewAlias() {
