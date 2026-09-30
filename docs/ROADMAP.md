@@ -276,6 +276,49 @@ il test sarebbe restato verde lo stesso.
 
 ---
 
+## v0.6.0 — Il Cervello
+
+> Shinra mostra quello che sa e quello che fa, e divide il lavoro fra agenti
+> che vedono solo i propri strumenti. Resta locale: i collegamenti esterni
+> sono un'opzione, spenta di default.
+
+**Perche' in questo ordine.** La scommessa della fase e' che il modello
+locale scelga bene gli strumenti. Si misura prima (#183), e la misura decide
+quanto ambiziose sono le schede sugli agenti. Il grafo che si illumina viene
+dopo un agente affidabile, non prima: un bel grafo su una risposta sbagliata
+e' una demo.
+
+| # | Lavoro | Area |
+| :-- | :--- | :--- |
+| 183 | Banco di prova: quale modello sceglie lo strumento giusto | misura |
+| 184 | ADR: agenti specializzati per dominio | decisione |
+| 185 | Endpoint che descrive la casa come grafo | grafo |
+| 186 | La scheda Cervello, il grafo interattivo | grafo |
+| 187 | Il grafo regge un telefono e un mini-PC | grafo |
+| 188 | Il ciclo dell'agente racconta cosa sta facendo | grafo vivo |
+| 189 | Il grafo vivo: si illumina quando Shinra lavora | grafo vivo |
+| 190 | Router e agenti di dominio | agenti |
+| 191 | Piani a piu' passaggi, con correzione | agenti |
+| 192 | Le azioni sensibili chiedono sempre conferma | sicurezza |
+| 193 | Manifesto e permessi dei plugin | plugin |
+| 194 | Modello esterno opzionale, spento di default — *da valutare* | integrazioni |
+| 195 | Una regola e un piano scattano davvero in una casa vera | verifica |
+| 196 | Nessun file del backend sopra le cinquecento righe | debito |
+| 197 | mypy obbligatorio anche su api e channels | debito |
+| 198 | Guida al Cervello, agli agenti e ai piani | documentazione |
+
+**Criteri di uscita**
+- Il banco di prova (#183) ha numeri per almeno due modelli, e gli agenti di
+  dominio fanno meglio del ciclo unico, o la scheda dice il contrario.
+- Nessun percorso, nemmeno un piano o un agente, raggiunge una serratura o
+  l'allarme senza conferma (#192).
+- Con l'opzione esterna spenta nessuna richiesta esce dalla rete locale.
+- Il grafo regge il dispositivo piu' lento della casa (#187).
+- Il criterio della `0.4.0` sulle regole che scattano in casa e' verificato o
+  dichiarato non raggiunto (#195).
+
+---
+
 ## v1.0.0 — Stabile
 
 Criteri di uscita, tutti obbligatori:

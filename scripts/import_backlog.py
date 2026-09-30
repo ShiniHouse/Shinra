@@ -36,6 +36,7 @@ MILESTONE = {
     "v0.3.0": "Copertura — eventi Home Assistant in tempo reale e i domini oggi scoperti",
     "v0.4.0": "Proattivita' — motore di regole, notifiche push, voce interamente locale",
     "v0.5.0": "Prodotto — frontend modulare, backup, internazionalizzazione, distribuzione",
+    "v0.6.0": "Il Cervello — il grafo vivo della casa, agenti per dominio, piani a piu' passaggi con conferma",
 }
 
 LABEL = {
