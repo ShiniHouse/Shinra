@@ -1,4 +1,7 @@
-function safeCreateIcons() {
+import { Gesti } from './gesti.js';
+import { _html } from './sicurezza.js';
+
+export function safeCreateIcons() {
     try {
         if (typeof lucide !== 'undefined' && lucide.createIcons) {
             lucide.createIcons();
@@ -11,7 +14,7 @@ function safeCreateIcons() {
 // ==================== PALETTE MANAGER (3 DESIGN ATMOSPHERES) ====================
 let currentPalette = localStorage.getItem('shinra_palette') || 'aurora';
 
-function initPalette() {
+export function initPalette() {
     currentPalette = localStorage.getItem('shinra_palette') || 'aurora';
     setPalette(currentPalette);
 }
@@ -52,7 +55,7 @@ function getSolarTheme() {
     return hour >= 7.0 && hour < 19.5 ? 'light' : 'dark';
 }
 
-function initTheme() {
+export function initTheme() {
     currentThemeSetting = localStorage.getItem('shinra_theme_mode') || 'auto';
     applyTheme();
 }
@@ -69,7 +72,7 @@ function cycleTheme() {
     applyTheme();
 }
 
-function applyTheme() {
+export function applyTheme() {
     let effectiveTheme = currentThemeSetting;
     if (currentThemeSetting === 'auto') {
         effectiveTheme = getSolarTheme();

@@ -1,4 +1,14 @@
-function updateNodeData(nodeId, field, val) {
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _args, _html } from './sicurezza.js';
+import { getAuthHeaders } from './accesso.js';
+import { speakText } from './voce.js';
+import { playChimeAlert } from './timer.js';
+import { loadModes } from './routine.js';
+import { renderCanvasElements, updateCanvasStats } from './tela_disegno.js';
+import { closeModal } from './impostazioni.js';
+
+export function updateNodeData(nodeId, field, val) {
     const node = Stato.tela.nodes.find((n) => n.id === nodeId);
     if (node) {
         node.data[field] = val;
@@ -110,7 +120,7 @@ function setTipoInnesco(nodeId, tipo) {
     renderCanvasElements();
 }
 
-function setDatoInnesco(nodeId, campo, valore) {
+export function setDatoInnesco(nodeId, campo, valore) {
     const node = Stato.tela.nodes.find((n) => n.id === nodeId);
     if (!node) return;
     node.data.trigger = node.data.trigger || { tipo: 'voce' };
@@ -183,7 +193,7 @@ function deleteCanvasEdge(idx) {
     updateCanvasStats();
 }
 
-function renderCanvasWires(draftPos = null) {
+export function renderCanvasWires(draftPos = null) {
     const svg = document.getElementById('flow-svg-layer');
     if (!svg) return;
 

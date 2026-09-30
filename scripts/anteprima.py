@@ -70,13 +70,12 @@ TEMA = """
 """
 
 GANCIO = """
-<script>
-window.addEventListener('load', function () {
-    var q = new URLSearchParams(location.search);
-    var scheda = q.get('scheda');
-    if (scheda) setTimeout(function () { switchTab(scheda); }, 300);
-    if (q.get('editor')) setTimeout(function () { openModularModeBuilder(); }, 700);
-});
+<script type="module">
+import { Gesti } from '/static/js/gesti.js';
+var q = new URLSearchParams(location.search);
+var scheda = q.get('scheda');
+if (scheda) setTimeout(function () { Gesti.fai('switchTab', scheda); }, 300);
+if (q.get('editor')) setTimeout(function () { Gesti.fai('openModularModeBuilder'); }, 700);
 </script>
 </body>"""
 

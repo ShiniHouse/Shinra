@@ -1,5 +1,16 @@
 // ==================== SECURITY & AUTH ENGINE ====================
-function getAuthHeaders(customHeaders = {}) {
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _args, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { loadUsersDropdown, updateActiveUserBanner } from './navigazione.js';
+import { syncVoiceUI } from './voce.js';
+import { loadKnowledge } from './conoscenza.js';
+import { loadReminders, loadTimers } from './timer.js';
+import { caricaPresenza, collegaEventi } from './eventi.js';
+import { checkSystemHealth, loadSettings } from './impostazioni.js';
+
+export function getAuthHeaders(customHeaders = {}) {
     const token = sessionStorage.getItem('shinra_auth_token') || '';
     const headers = { 'Content-Type': 'application/json', ...customHeaders };
     if (token) {
@@ -18,7 +29,7 @@ function getAuthHeaders(customHeaders = {}) {
 // E' esattamente cosi' che il microfono della dashboard non ha mai
 // trascritto niente: la rotta era giusta, il file partiva davvero, ma
 // arrivava con l'etichetta sbagliata.
-function intestazioniPerModulo() {
+export function intestazioniPerModulo() {
     const intestazioni = getAuthHeaders();
     delete intestazioni['Content-Type'];
     return intestazioni;
@@ -56,7 +67,7 @@ function intestazioniPerModulo() {
     };
 })();
 
-function mostraRifiuto(stato) {
+export function mostraRifiuto(stato) {
     let barra = document.getElementById('barra-rifiuto');
     if (!barra) {
         barra = document.createElement('div');
@@ -98,7 +109,7 @@ function nascondiRifiuto() {
     if (barra) barra.classList.add('hidden');
 }
 
-async function checkAuthStatus() {
+export async function checkAuthStatus() {
     try {
         const res = await fetch('/api/auth/status', {
             headers: getAuthHeaders(),
@@ -329,7 +340,7 @@ function setVoiceMuteState(isMuted) {
 }
 
 // ==================== SHINRA LIVING CORE & EMPATHIC GREETING ====================
-function updateLivingCoreState(state) {
+export function updateLivingCoreState(state) {
     const core = document.getElementById('header-living-core');
     if (!core) return;
     core.classList.remove('listening', 'thinking', 'speaking');
@@ -338,7 +349,7 @@ function updateLivingCoreState(state) {
     }
 }
 
-function updateEmpatheticGreeting() {
+export function updateEmpatheticGreeting() {
     const el = document.getElementById('empathetic-greeting');
     if (!el) return;
     const hour = new Date().getHours();

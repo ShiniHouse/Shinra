@@ -1,48 +1,25 @@
 // Configurazione di ESLint per il frontend (issue #34).
 //
-// I file sotto `web/static/js/` sono copioni normali, non moduli ES: la
-// pagina chiama le funzioni dagli attributi `onclick`, che leggono solo lo
-// spazio globale. Quindi ogni file dichiara i suoi nomi *in globale* e legge
-// quelli dichiarati dagli altri.
+// I file sotto `web/static/js/` sono moduli ES: ognuno dichiara `import` e
+// `export` per quello che condivide, e ESLint lo vede file per file — un
+// nome che non e' ne' locale, ne' importato, ne' del browser e' un errore,
+// e non serve piu' un elenco dei "nostri nomi globali" costruito leggendo
+// gli altri file. Quell'elenco era il ponteggio dei copioni classici: lo
+// spazio globale come contenitore, e una regola per fingere che fosse
+// dichiarato.
 //
-// ESLint guarda un file per volta e non sa niente degli altri, percio' senza
-// aiuto `no-undef` griderebbe su ogni chiamata fra un'area e l'altra. La
-// soluzione non e' spegnere la regola — sarebbe spegnere l'unica che trova
-// il refuso in un nome, cioe' il guasto che ha gia' ucciso questa pagina —
-// ma dirgli quali sono i nostri nomi globali.
+// Due regole fanno il lavoro che prima non si poteva fare:
 //
-// L'elenco non si scrive a mano: si legge dai file. Un'area nuova entra il
-// giorno che nasce, e un nome che nessuno dichiara piu' esce da solo. A ogni
-// file diamo i nomi degli *altri*: i suoi li dichiara lui, e darglieli
-// sarebbe una ridichiarazione.
+//   - `no-import-assign`: un'area non puo' piu' riassegnare una variabile
+//     di un'altra. Lo stato che attraversa le aree sta in `Stato`, e una
+//     riassegnazione cross-file e' l'errore che il contenitore esiste per
+//     impedire.
+//   - `no-unused-vars` anche sui nomi di primo livello: una funzione che
+//     nessuno importa, registra o chiama e' codice morto, e lo si vede.
 
-import fs from 'node:fs';
-import path from 'node:path';
 import globals from 'globals';
 
 const CARTELLA = 'web/static/js';
-
-// `function nome(`, `const nome =`, `let nome =`, `var nome =` a colonna
-// zero: sono le dichiarazioni che finiscono nello spazio globale. Quelle
-// rientrate stanno dentro una funzione e non ci interessano.
-const DICHIARAZIONE = /^(?:async\s+)?(?:function|const|let|var)\s+([A-Za-z_$][\w$]*)/gm;
-
-const dichiaratiDa = new Map();
-for (const file of fs.readdirSync(CARTELLA).filter((f) => f.endsWith('.js'))) {
-    const testo = fs.readFileSync(path.join(CARTELLA, file), 'utf8');
-    dichiaratiDa.set(
-        file,
-        [...testo.matchAll(DICHIARAZIONE)].map((t) => t[1]),
-    );
-}
-
-function tuttiINostriNomi() {
-    const nomi = {};
-    for (const elenco of dichiaratiDa.values()) {
-        for (const nome of elenco) nomi[nome] = 'readonly';
-    }
-    return nomi;
-}
 
 const REGOLE = {
     // Le tre che trovano i guasti veri di questa pagina.
@@ -65,11 +42,7 @@ const REGOLE = {
     'no-func-assign': 'error',
     'no-import-assign': 'error',
 
-    // Solo le variabili locali: una funzione globale mai chiamata da un altro
-    // file non e' morta — la chiama un `onclick` nel markup, che ESLint non
-    // vede. Quel controllo lo fa una guardia in `test_interfaccia.py`, che il
-    // markup ce l'ha sotto gli occhi.
-    'no-unused-vars': ['warn', { vars: 'local', args: 'none' }],
+    'no-unused-vars': ['warn', { args: 'none' }],
 };
 
 const AMBIENTE = {
@@ -80,43 +53,24 @@ const AMBIENTE = {
 };
 
 export default [
-    ...[...dichiaratiDa.keys()].map((file) => {
-        const altrui = {};
-        for (const [altro, nomi] of dichiaratiDa) {
-            if (altro === file) continue;
-            for (const nome of nomi) {
-                // "writable": un'area puo' assegnare una variabile dichiarata altrove.
-                altrui[nome] = 'writable';
-            }
-        }
-        // I nomi che il file dichiara da se' non vanno dati come globali:
-        // sarebbero una ridichiarazione di qualcosa che ESLint crede predefinito.
-        for (const nome of dichiaratiDa.get(file)) delete altrui[nome];
-
-        return {
-            files: [`${CARTELLA}/${file}`],
-            languageOptions: {
-                ecmaVersion: 2022,
-                sourceType: 'script',
-                globals: { ...AMBIENTE, ...altrui },
-            },
-            rules: REGOLE,
-        };
-    }),
+    {
+        files: [`${CARTELLA}/*.js`],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: 'module',
+            globals: AMBIENTE,
+        },
+        rules: REGOLE,
+    },
     {
         // La configurazione e il banco dei gesti: moduli ES che girano in
-        // node. Dentro un `page.evaluate()`, pero', il codice gira nel
-        // browser e parla ai nomi della dashboard — quindi qui valgono i
-        // nomi di node, quelli del browser e i nostri.
-        //
-        // Darglieli non e' una comodita': vuol dire che un test non puo'
-        // nominare una funzione che non esiste piu'. Se qualcuno rinomina
-        // `_canvasState`, il banco dei gesti se ne accorge prima di girare.
+        // node. Dentro un `page.evaluate()` il codice gira nel browser e
+        // importa i moduli della dashboard con `import('/static/js/...')`.
         files: ['eslint.config.js', 'playwright.config.mjs', 'tests/gesti/*.mjs'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'module',
-            globals: { ...globals.node, ...globals.browser, ...tuttiINostriNomi() },
+            globals: { ...globals.node, ...globals.browser },
         },
         rules: {
             'no-undef': 'error',

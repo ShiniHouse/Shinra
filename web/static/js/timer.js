@@ -1,5 +1,13 @@
 // ==================== CHIME AUDIO & TIMER ENGINE ====================
-function playChimeAlert() {
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _args, _grezzo, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { getAuthHeaders } from './accesso.js';
+import { speakText } from './voce.js';
+import { closeModal, showModal } from './impostazioni.js';
+
+export function playChimeAlert() {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const now = ctx.currentTime;
@@ -32,7 +40,7 @@ function playChimeAlert() {
 
 let _timerInterval = null;
 
-async function loadTimers() {
+export async function loadTimers() {
     try {
         const res = await fetch('/api/timers', { headers: getAuthHeaders() });
         Stato.timerAttivi = await res.json();
@@ -133,7 +141,7 @@ async function saveNewTimerManual() {
 // anche sull'Echo. Se il collegamento agli eventi non c'e' (rete giu',
 // versione vecchia del server) il ticker torna a suonare da solo:
 // meglio un avviso locale che nessun avviso.
-function startTimerTick() {
+export function startTimerTick() {
     if (_timerInterval) clearInterval(_timerInterval);
     _timerInterval = setInterval(() => {
         let cambiato = false;
@@ -157,7 +165,7 @@ function startTimerTick() {
 // ============ PROMEMORIA ============
 let _promemoria = [];
 
-async function loadReminders() {
+export async function loadReminders() {
     try {
         const res = await fetch('/api/reminders', { headers: getAuthHeaders() });
         if (!res.ok) return;
@@ -216,7 +224,7 @@ async function deleteReminder(id) {
 // non cambiano da un'ora all'altra — la colonna della console dice
 // cosa sta per fare la casa. Il prossimo scatto lo sa gia' il server:
 // `/api/regole` lo calcola per ogni regola e lo chiama `prossimo`.
-async function caricaProssimiScatti() {
+export async function caricaProssimiScatti() {
     const contenitore = document.getElementById('prossimi-scatti');
     if (!contenitore) return;
     try {
@@ -230,7 +238,7 @@ async function caricaProssimiScatti() {
     }
 }
 
-function disegnaProssimiScatti(regole) {
+export function disegnaProssimiScatti(regole) {
     const contenitore = document.getElementById('prossimi-scatti');
     if (!contenitore) return;
 

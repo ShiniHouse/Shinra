@@ -23,7 +23,7 @@
 //
 // Riferimento: issue #34.
 
-const Stato = {
+export const Stato = {
     // --- chi sta usando la dashboard -------------------------------------
 
     /** L'identificativo del profilo a cui appartiene la sessione aperta.

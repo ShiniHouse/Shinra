@@ -1,4 +1,20 @@
 // ==================== SETTINGS ====================
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _grezzo, _html } from './sicurezza.js';
+import { applyTheme, initPalette, initTheme, safeCreateIcons } from './avvio.js';
+import {
+    checkAuthStatus,
+    getAuthHeaders,
+    updateEmpatheticGreeting,
+    updateLivingCoreState,
+} from './accesso.js';
+import { initTabs, loadUsersDropdown } from './navigazione.js';
+import { initVoiceEngine } from './voce.js';
+import { annunciaQuestoDispositivo, riempiStanzeNote } from './conversazione.js';
+import { caricaProssimiScatti, loadReminders, loadTimers, startTimerTick } from './timer.js';
+import { caricaPresenza, collegaEventi } from './eventi.js';
+
 function updateMaxTokensLabel(val) {
     const v = parseInt(val);
     let desc = `${v} token`;
@@ -31,7 +47,7 @@ async function loadOllamaModels(selectedModel = null) {
     }
 }
 
-async function loadSettings() {
+export async function loadSettings() {
     try {
         const res = await fetch('/api/settings', { headers: getAuthHeaders() });
         const cfg = await res.json();
@@ -303,7 +319,7 @@ async function testHaConnection() {
 }
 
 // Modal Helpers
-function showModal(contentHtml, isWide = false) {
+export function showModal(contentHtml, isWide = false) {
     const modal = document.getElementById('modal-container');
     if (isWide) {
         // Niente `overflow-hidden`: serve a far sporgere la X di
@@ -322,12 +338,12 @@ function showModal(contentHtml, isWide = false) {
     safeCreateIcons();
 }
 
-function closeModal() {
+export function closeModal() {
     document.getElementById('modal-backdrop').style.display = 'none';
 }
 
 // Status Health Check
-async function checkSystemHealth() {
+export async function checkSystemHealth() {
     try {
         const res = await fetch('/api/status', { headers: getAuthHeaders() });
         const data = await res.json();

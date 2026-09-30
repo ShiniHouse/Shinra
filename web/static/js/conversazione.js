@@ -1,5 +1,14 @@
 // Messages Handling
 
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _args, _grezzo, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { getAuthHeaders, updateLivingCoreState } from './accesso.js';
+import { speakText } from './voce.js';
+import { _testoDelDettaglio } from './ruoli.js';
+import { showModal } from './impostazioni.js';
+
 function appendUserMessage(text) {
     const container = document.getElementById('messages-container');
     const div = document.createElement('div');
@@ -143,7 +152,7 @@ function hideTypingIndicator() {
     if (el) el.remove();
 }
 
-async function handleSend(e) {
+export async function handleSend(e) {
     if (e) e.preventDefault();
     const input = document.getElementById('user-input');
     const text = input ? input.value.trim() : '';
@@ -238,7 +247,7 @@ function stanzaDiQuestoDispositivo() {
     }
 }
 
-async function annunciaQuestoDispositivo() {
+export async function annunciaQuestoDispositivo() {
     const id = satelliteDiQuestoDispositivo();
     if (!id) return;
     try {
@@ -278,7 +287,7 @@ function mostraStanzaScelta() {
     campo.classList.toggle('border-slate-700', !stanza);
 }
 
-async function riempiStanzeNote() {
+export async function riempiStanzeNote() {
     // Le stanze non sono un elenco a parte: sono quelle già scritte
     // sugli alias dei dispositivi. Un secondo elenco divergerebbe dal
     // primo, e «Cucina» contro «cucina » sono due stanze che non si

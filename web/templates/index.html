@@ -128,33 +128,12 @@
 {% include "parti/modali.html" %}
 
     <!-- Script Logico Dashboard -->
-    <!-- Il copione sta in file suoi dalla #34, uno per area. Restano
-         copioni normali, non moduli: le funzioni devono stare nello
-         spazio globale perche' la pagina le chiama dagli onclick.
-         L'ordine e' quello del file unico da cui vengono: avvio.js
-         per primo, impostazioni.js per ultimo. -->
-    <script src="/static/js/stato.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/gesti.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/sicurezza.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/avvio.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/accesso.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/navigazione.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/voce.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/conversazione.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/conoscenza.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/istruisci.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/fonti.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/dispositivi.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/timer.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/eventi.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/routine.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/tela.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/tela_disegno.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/tela_nodi.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/regole.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/utenti.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/ruoli.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/passkey.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
-    <script src="/static/js/impostazioni.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
+    <!-- Moduli ES nativi dalla #34 (ADR 0006), serviti come stanno sul disco:
+         nessun bundler, nessun passo di costruzione. La pagina carica un
+         punto d'ingresso solo; le dipendenze fra un'area e l'altra stanno
+         negli `import` di ciascun file. La versione sta solo qui: gli
+         `import` non la portano, e per questo il server risponde a
+         /static/ con `Cache-Control: no-cache` (vedi api/app.py). -->
+    <script type="module" src="/static/js/principale.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
 </body>
 </html>

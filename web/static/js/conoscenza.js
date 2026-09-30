@@ -1,4 +1,10 @@
 // ==================== KNOWLEDGE TEMPLATES ====================
+import { Gesti } from './gesti.js';
+import { _args, _grezzo, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { getAuthHeaders } from './accesso.js';
+import { closeModal, showModal } from './impostazioni.js';
+
 const KNOWLEDGE_TEMPLATES = [
     {
         id: 'casa',
@@ -167,7 +173,7 @@ const KNOWLEDGE_TEMPLATES = [
 
 let _allKnowledgeItems = [];
 
-async function loadKnowledge() {
+export async function loadKnowledge() {
     try {
         const res = await fetch('/api/knowledge', { headers: getAuthHeaders() });
         const items = await res.json();

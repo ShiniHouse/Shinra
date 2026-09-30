@@ -53,12 +53,43 @@ def _parti() -> list[Path]:
     return sorted(CARTELLA_PARTI.glob("*.html"))
 
 
+# Il punto d'ingresso dei moduli: importa le aree per i loro effetti e non
+# contiene codice suo. Le guardie "per area" non lo contano fra le aree.
+INGRESSO = "principale.js"
+
+
 def _copioni() -> list[Path]:
-    return sorted(CARTELLA_JS.glob("*.js"))
+    """Le aree: i moduli della dashboard, senza il punto d'ingresso."""
+    return sorted(p for p in CARTELLA_JS.glob("*.js") if p.name != INGRESSO)
+
+
+_IMPORT = re.compile(r"^import\s+(?:\{[^}]*\}\s+from\s+)?'[^']+';\n", re.M)
+
+
+def _testo_grezzo(percorso: Path) -> str:
+    return percorso.read_text(encoding="utf-8")
 
 
 def _testo(percorso: Path) -> str:
-    return percorso.read_text(encoding="utf-8")
+    """Il testo di un file. Per i moduli, come se fossero copioni.
+
+    Dalla #34 le aree sono moduli ES: `import` in cima, `export` davanti a cio'
+    che condividono. Le guardie di questo file cercano funzioni, dichiarazioni
+    e pezzi di markup nel sorgente, e molte mandano in esecuzione una funzione
+    estratta per nome con un mondo finto attorno: per tutte, `import` ed
+    `export` sono rumore che non cambia cio' che il codice fa. Si tolgono qui,
+    una volta sola, invece che in cento espressioni regolari.
+
+    Le guardie che parlano proprio dei moduli — `_testo_grezzo` — leggono il
+    file com'e'.
+    """
+    testo = _testo_grezzo(percorso)
+    if percorso.suffix == ".js" and percorso.parent == CARTELLA_JS:
+        testo = _IMPORT.sub("", testo)
+        testo = re.sub(
+            r"^export\s+(?=(?:async\s+)?(?:function|const|let|var|class)\b)", "", testo, flags=re.M
+        )
+    return testo
 
 
 def _senza_commenti(testo: str) -> str:
@@ -2339,54 +2370,94 @@ def _collegamenti(pagina: str) -> list[str]:
 
 
 def test_la_pagina_collega_tutti_i_pezzi_e_nessun_altro():
-    """Un pezzo nuovo che nessuno collega e' codice morto; un pezzo tolto e
+    """Un foglio nuovo che nessuno collega e' codice morto; un pezzo tolto e
     lasciato collegato e' un 404 a ogni apertura.
 
-    Il modo di sbagliare e' sempre lo stesso: si spezza un file, si scrive il
-    pezzo nuovo, e ci si dimentica della riga nel `<head>`. Il sintomo e' una
-    meta' della dashboard che smette di rispondere ai clic, senza un errore
-    in console che lo dica.
+    I fogli di stile stanno tutti nella pagina. Il JavaScript, dalla #34, ci
+    sta con **un solo** collegamento — il punto d'ingresso dei moduli — e le
+    aree si raggiungono per `import` (vedi `test_ogni_modulo_e_raggiungibile`).
 
     Riferimento: issue #34.
     """
     collegati = _collegamenti(_testo(PAGINA))
-    sul_disco = [f"/static/css/{p.name}" for p in _fogli()] + [f"/static/js/{p.name}" for p in _copioni()]
+    sul_disco = [f"/static/css/{p.name}" for p in _fogli()] + [f"/static/js/{INGRESSO}"]
 
     assert sorted(collegati) == sorted(sul_disco), (
         f"scollegati (esistono ma la pagina non li carica): {sorted(set(sul_disco) - set(collegati))}\n"
         f"fantasmi (collegati ma non esistono): {sorted(set(collegati) - set(sul_disco))}"
     )
+    assert re.search(
+        rf'<script type="module" src="/static/js/{re.escape(INGRESSO)}\?v=',
+        _senza_commenti_html(_testo(PAGINA)),
+    ), "il punto d'ingresso non e' caricato come modulo: senza type=\"module\" gli `import` sono errori di sintassi"
 
 
-def test_i_copioni_si_caricano_nell_ordine_in_cui_furono_scritti():
-    """L'ordine non e' un dettaglio estetico.
+def _importazioni(percorso: Path) -> list[tuple[list[str], str]]:
+    """Gli `import` di un modulo: i nomi chiesti e il file da cui arrivano."""
+    trovati = []
+    for m in re.finditer(r"^import\s+(?:\{([^}]*)\}\s+from\s+)?'\./([^']+)';", _testo_grezzo(percorso), re.M):
+        nomi = [n.strip() for n in (m.group(1) or "").split(",") if n.strip()]
+        trovati.append((nomi, m.group(2)))
+    return trovati
 
-    Sono copioni normali, non moduli: il codice in cima a ognuno gira quando
-    il file arriva. `avvio.js` legge la palette e la applica prima che il
-    resto esista; `impostazioni.js` in coda registra l'ascolto del `load`.
-    Invertirli non da' un errore di sintassi — da' una pagina che si disegna
-    col tema sbagliato per un istante, o che non si disegna affatto.
+
+def test_il_punto_d_ingresso_importa_ogni_area_una_volta_sola():
+    """L'ordine degli `import` in `principale.js` non e' piu' l'ordine di
+    caricamento dei copioni: le dipendenze stanno negli `import` di ciascun
+    file. Resta da garantire che nessuna area sia dimenticata — un'area non
+    importata da nessuno non gira, e non da' nessun errore — e che nessuna sia
+    messa due volte.
     """
-    ordine = [p.split("/")[-1] for p in _collegamenti(_testo(PAGINA)) if p.endswith(".js")]
+    importate = [sorgente for _, sorgente in _importazioni(CARTELLA_JS / INGRESSO)]
 
-    # `stato.js` sta davanti a tutti: e' una sola dichiarazione, e ogni altra
-    # area ne legge i campi. Un file che arrivasse prima e leggesse `Stato`
-    # in cima troverebbe un nome che non esiste ancora.
-    # Poi `sicurezza.js`, che dichiara `_html` — usato da tutti per disegnare.
-    # Nessuno dei due esegue niente al caricamento.
-    assert ordine[0] == "stato.js", f"il primo copione e' {ordine[0]}"
-    # `gesti.js` subito dopo: ogni area, in fondo, chiama `Gesti.registra(...)`
-    # al caricamento. Se arrivasse dopo di loro, `Gesti` non esisterebbe
-    # ancora e nessun gesto verrebbe registrato — cioe' nessun pulsante della
-    # dashboard farebbe niente.
-    assert ordine[1] == "gesti.js", f"il secondo copione e' {ordine[1]}"
-    assert ordine[2] == "sicurezza.js", f"il terzo copione e' {ordine[2]}"
-    assert ordine[3] == "avvio.js", f"il quarto copione e' {ordine[3]}"
-    assert ordine[-1] == "impostazioni.js", f"l'ultimo copione e' {ordine[-1]}"
-    assert ordine.index("navigazione.js") < ordine.index("tela.js"), (
-        "navigazione.js dichiara le costanti delle schede che gli altri leggono: " "deve arrivare prima"
+    assert sorted(importate) == sorted(p.name for p in _copioni()), (
+        f"aree non importate: {sorted({p.name for p in _copioni()} - set(importate))}; "
+        f"importate ma inesistenti: {sorted(set(importate) - {p.name for p in _copioni()})}"
     )
-    assert len(ordine) == len(set(ordine)), f"un copione e' collegato due volte: {ordine}"
+    assert len(importate) == len(set(importate)), f"un'area e' importata due volte: {importate}"
+    assert not any(nomi for nomi, _ in _importazioni(CARTELLA_JS / INGRESSO)), (
+        "il punto d'ingresso importa dei nomi: dovrebbe importare solo per gli effetti, " "senza codice suo"
+    )
+
+
+def test_ogni_modulo_e_raggiungibile_e_ogni_nome_importato_esiste():
+    """La guardia che `type="module"` rende necessaria.
+
+    Un copione classico che nomina una funzione inesistente fallisce quando la
+    chiama. Un modulo che importa un nome che l'altro **non esporta** non si
+    carica affatto: il browser rifiuta l'intero grafo, e la dashboard resta
+    come l'ha lasciata il server — con lo stile e senza nessun comportamento.
+    ESLint non lo vede, perche' guarda un file per volta.
+    """
+    esportati = {}
+    for p in _copioni():
+        esportati[p.name] = set(
+            re.findall(
+                r"^export\s+(?:async\s+)?(?:function\*?|const|let|var|class)\s+([A-Za-z_$][\w$]*)",
+                _testo_grezzo(p),
+                re.M,
+            )
+        )
+
+    mancanti = []
+    for p in _copioni():
+        for nomi, sorgente in _importazioni(p):
+            assert sorgente in esportati, f"{p.name} importa da {sorgente}, che non esiste"
+            for nome in nomi:
+                if nome not in esportati[sorgente]:
+                    mancanti.append(f"{p.name} importa «{nome}» da {sorgente}, che non lo esporta")
+    assert mancanti == [], mancanti
+
+    # E ogni area si raggiunge dall'ingresso, direttamente o per altre aree.
+    raggiunte = {sorgente for _, sorgente in _importazioni(CARTELLA_JS / INGRESSO)}
+    assert raggiunte == {p.name for p in _copioni()}, "aree che l'ingresso non raggiunge"
+
+    # Un'esportazione che nessuno importa e' un nome che qualcuno ha reso
+    # pubblico senza un lettore: o serve a una registrazione di gesti (e
+    # allora non occorre `export`), o e' codice morto.
+    importati = {(sorgente, nome) for p in _copioni() for nomi, sorgente in _importazioni(p) for nome in nomi}
+    inutili = sorted(f"{f}:{n}" for f, nomi in esportati.items() for n in nomi if (f, n) not in importati)
+    assert inutili == [], f"esportato e mai importato: {inutili}"
 
 
 def test_la_pagina_li_collega_con_la_versione_attaccata():
@@ -2398,11 +2469,14 @@ def test_la_pagina_li_collega_con_la_versione_attaccata():
     aggiornamento e' esattamente il genere di guasto che fa perdere un
     pomeriggio — e' gia' successo con la pagina intera.
 
-    La versione cambia a ogni commit: attaccarla all'indirizzo basta.
+    La versione cambia a ogni commit: attaccarla all'indirizzo basta per i
+    fogli e per il punto d'ingresso. Per i moduli che quello importa non
+    basta — un `import` non porta la versione — e ci pensa il server
+    (vedi `test_il_server_fa_rivalidare_i_moduli`).
     """
     pagina = _testo(PAGINA)
     indirizzi = _collegamenti(pagina)
-    assert len(indirizzi) > 15, f"collegamenti trovati: {indirizzi}"
+    assert len(indirizzi) >= 6, f"collegamenti trovati: {indirizzi}"
 
     for indirizzo in indirizzi:
         collegamento = re.search(rf'{re.escape(indirizzo)}\?v=([^"]+)"', pagina)
@@ -2456,8 +2530,8 @@ def test_il_server_serve_davvero_il_foglio_e_il_copione(cliente_autenticato):
     assert pagina.status_code == 200
 
     indirizzi = re.findall(r'(?:href|src)="(/static/(?:css|js)/[^"]+)"', pagina.text)
-    attesi = len(_fogli()) + len(_copioni())
-    assert len(indirizzi) == attesi, f"collegamenti trovati: {len(indirizzi)}, file sul disco: {attesi}"
+    attesi = len(_fogli()) + 1  # i fogli, e il punto d'ingresso dei moduli
+    assert len(indirizzi) == attesi, f"collegamenti trovati: {len(indirizzi)}, attesi: {attesi}"
 
     for indirizzo in indirizzi:
         risposta = cliente_autenticato.get(indirizzo)
@@ -2472,6 +2546,36 @@ def test_il_server_serve_davvero_il_foglio_e_il_copione(cliente_autenticato):
             "",
             "dev",
         ), f"la versione non e' stata riempita: {versione}"
+
+    # Le aree non sono nella pagina: le raggiunge l'ingresso per `import`.
+    # Se una risponde 404, il browser rifiuta tutto il grafo dei moduli.
+    for p in [*_copioni(), CARTELLA_JS / INGRESSO]:
+        risposta = cliente_autenticato.get(f"/static/js/{p.name}")
+        assert risposta.status_code == 200, f"/static/js/{p.name} risponde {risposta.status_code}"
+
+
+def test_il_server_fa_rivalidare_i_moduli(cliente_autenticato):
+    """Un `import` non porta il numero di versione.
+
+    `principale.js?v=...` cambia a ogni rilascio, ma `./stato.js` dentro di
+    lui resta lo stesso indirizzo. Senza `Cache-Control: no-cache` un browser
+    puo' tenere un modulo vecchio per ore (la cache euristica e' una frazione
+    dell'eta' del file) e dopo un aggiornamento la pagina girerebbe con
+    un'area nuova e una vecchia insieme. `no-cache` non vuol dire non
+    tenerlo: vuol dire chiedere prima; con l'ETag la risposta a un file
+    invariato e' un 304 senza corpo.
+    """
+    risposta = cliente_autenticato.get("/static/js/stato.js")
+    assert risposta.status_code == 200
+    assert risposta.headers.get("cache-control") == "no-cache", (
+        "i moduli vengono serviti senza l'ordine di rivalidare: "
+        f"cache-control = {risposta.headers.get('cache-control')}"
+    )
+
+    etag = risposta.headers.get("etag")
+    assert etag, "senza ETag ogni rivalidazione riscarica il file intero"
+    invariato = cliente_autenticato.get("/static/js/stato.js", headers={"If-None-Match": etag})
+    assert invariato.status_code == 304, f"un file invariato risponde {invariato.status_code}, non 304"
 
 
 def test_avviare_un_timer_a_mano_non_muore_su_un_nome_che_non_esiste():
@@ -2585,36 +2689,32 @@ def test_eslint_non_ha_niente_da_ridire():
     assert esito.returncode == 0, f"ESLint ha da ridire:\n{esito.stdout}\n{esito.stderr}"
 
 
-def test_eslint_impara_i_nomi_globali_dalla_cartella():
-    """La configurazione non tiene un elenco di nomi scritto a mano.
+def test_eslint_tratta_i_copioni_come_moduli():
+    """La configurazione non ha piu' un elenco di nomi globali.
 
-    I copioni sono file separati che si chiamano fra loro passando per lo
-    spazio globale: ESLint, che guarda un file per volta, va informato di
-    quali sono i nostri nomi. Se l'elenco fosse fisso, il giorno dopo
-    sarebbe vecchio — e il modo in cui invecchia e' il peggiore: `no-undef`
-    comincia a gridare su codice giusto, qualcuno la spegne per far passare
-    la CI, e da quel momento non guarda piu' niente.
+    Quando i copioni si chiamavano fra loro passando per lo spazio globale,
+    ESLint andava informato di quali fossero i nostri nomi, e la
+    configurazione li imparava leggendo la cartella. Adesso ogni file dichiara
+    `import` ed `export`, e ESLint li segue da se': un nome che non e' ne'
+    locale, ne' importato, ne' del browser e' un errore.
 
-    La guardia **esegue** la configurazione e le chiede cosa ha imparato,
-    invece di cercare `readdirSync` nel sorgente.
+    La guardia **esegue** la configurazione e le chiede cosa applica ai moduli,
+    invece di cercare parole nel sorgente: deve essere `module` — con `script`
+    un `import` e' un errore di sintassi — e non deve regalare nomi nostri
+    come globali, perche' sarebbe il modo di far tacere `no-undef`.
     """
     if shutil.which("node") is None:
         pytest.skip("node non disponibile: in CI c'e'")
-    # La configurazione importa `globals`, che sta negli attrezzi.
     if not (RADICE / "node_modules").exists():
         pytest.skip("attrezzi del frontend non installati: `npm install` per averli. In CI ci sono")
 
-    # `timer.js` deve conoscere un nome dichiarato da un altro file: `Stato`,
-    # che sta in `stato.js` e da cui `timer.js` legge i timer accesi. Prima
-    # della #34 qui c'era `activeUserId`, che era il nome che mancava davvero
-    # quando questa guardia e' nata.
     lettura = """
 import config from './eslint.config.js';
-const per = (f) => config.find(c => c.files && c.files.includes('web/static/js/' + f));
-const nomi = (f) => Object.keys(per(f).languageOptions.globals);
+const blocco = config.find(c => c.files && c.files.includes('web/static/js/*.js'));
 console.log(JSON.stringify({
-    timer: nomi('timer.js'),
-    quanti: config.filter(c => c.files && c.files[0].startsWith('web/static/js/')).length,
+    tipo: blocco.languageOptions.sourceType,
+    globali: Object.keys(blocco.languageOptions.globals),
+    regole: blocco.rules,
 }));
 """
     prova = RADICE / "_prova_eslint.mjs"
@@ -2627,14 +2727,21 @@ console.log(JSON.stringify({
     assert esito.returncode == 0, esito.stderr
     visto = json.loads(esito.stdout.strip())
 
-    assert visto["quanti"] == len(_copioni()), (
-        f"la configurazione copre {visto['quanti']} copioni, sul disco ce ne sono " f"{len(_copioni())}"
-    )
-    for nome in ("Stato", "getAuthHeaders", "document", "fetch"):
-        assert nome in visto["timer"], f"ESLint non sa che `{nome}` esiste: gridera' su codice giusto"
-    assert "saveNewTimerManual" not in visto["timer"], (
-        "i nomi che timer.js dichiara da se' gli vengono dati anche come globali: " "e' una ridichiarazione"
-    )
+    assert (
+        visto["tipo"] == "module"
+    ), f"i copioni sono letti come «{visto['tipo']}»: gli `import` non compilano"
+    for nome in ("document", "fetch", "lucide", "tailwind"):
+        assert nome in visto["globali"], f"ESLint non sa che `{nome}` esiste: gridera' su codice giusto"
+    nostri = {
+        n
+        for p in _copioni()
+        for n in re.findall(r"^export\s+(?:async\s+)?(?:function|const|let)\s+(\w+)", _testo_grezzo(p), re.M)
+    }
+    regalati = sorted(nostri & set(visto["globali"]))
+    assert regalati == [], f"nomi nostri regalati come globali: {regalati}"
+    assert (
+        visto["regole"].get("no-import-assign") == "error"
+    ), "un'area puo' riassegnare una variabile di un'altra"
 
 
 def test_le_regole_di_eslint_sono_accese_davvero():
@@ -3944,6 +4051,7 @@ function safeCreateIcons() {}
 const detto = [];
 function speakText(testo) { detto.push(testo); }
 function loadKnowledge() {}
+let lastLearningQuestion = '';
 
 function elemento() {
     return {
@@ -4248,7 +4356,9 @@ def test_ogni_gesto_registrato_e_una_funzione_che_esiste():
     """L'altro verso, che ESLint gia' controlla — ma solo se il nome sta in
     un file che lui guarda. Scriverlo qui costa una riga e vale il giorno che
     qualcuno rinomina una funzione e dimentica la registrazione."""
-    dichiarate = set(re.findall(r"^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)", _comportamento(), re.M))
+    dichiarate = set(
+        re.findall(r"^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)", _comportamento(), re.M)
+    )
     inesistenti = sorted(_gesti_registrati() - dichiarate)
     assert inesistenti == [], f"gesti registrati che non sono funzioni: {inesistenti}"
 

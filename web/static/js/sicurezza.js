@@ -63,11 +63,11 @@ function _scappa(valore) {
 // Dice «questo pezzo e' markup, lascialo stare». Si usa quando l'HTML
 // lo abbiamo scritto noi: un ramo di un ternario, un pezzo costruito
 // prima. Mai su qualcosa che arriva dal server.
-function _grezzo(html) {
+export function _grezzo(html) {
     return new Sicuro(String(html ?? ''));
 }
 
-function _html(pezzi, ...valori) {
+export function _html(pezzi, ...valori) {
     let fuori = pezzi[0];
     for (let i = 0; i < valori.length; i++) {
         fuori += _scappa(valori[i]) + pezzi[i + 1];
@@ -83,6 +83,6 @@ function _html(pezzi, ...valori) {
 // soltanto JSON, e `Gesti` lo legge con `JSON.parse`: nessun valore e' mai
 // codice, qualunque cosa contenga. Le fughe dell'HTML le mette `_html`,
 // come per ogni altro valore interpolato.
-function _args(...valori) {
+export function _args(...valori) {
     return JSON.stringify(valori);
 }

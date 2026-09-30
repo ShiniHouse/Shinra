@@ -4,14 +4,22 @@
 // parte — un pulsante che risponde sempre 403 non protegge, sembra un
 // guasto. Riferimento: issue #46 e #47, ADR 0004.
 
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _args, _grezzo, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { getAuthHeaders } from './accesso.js';
+import { loadUsers } from './utenti.js';
+import { closeModal, showModal } from './impostazioni.js';
+
 let permessiCatalogo = [];
 let _permessiCorrenti = [];
 
-function posso(permesso) {
+export function posso(permesso) {
     return _permessiCorrenti.includes(permesso);
 }
 
-async function caricaPermessiCorrenti() {
+export async function caricaPermessiCorrenti() {
     try {
         const res = await fetch('/api/auth/status', { headers: getAuthHeaders() });
         if (!res.ok) {
@@ -29,7 +37,7 @@ async function caricaPermessiCorrenti() {
 // («il ruolo e' assegnato a Thomas: cambia prima il suo»), e buttarlo
 // via per mostrare «errore» lascerebbe l'utente senza la sola cosa
 // che gli serve sapere.
-async function _dettaglioErrore(res) {
+export async function _dettaglioErrore(res) {
     try {
         const corpo = await res.json();
         return _testoDelDettaglio(corpo.detail || corpo.message, res.status);
@@ -44,7 +52,7 @@ async function _dettaglioErrore(res) {
 // stampa «[object Object]», che non dice ne' cosa e' successo ne' dove
 // guardare — ed e' quello che la casa ha visto per giorni ogni volta
 // che si premeva il microfono.
-function _testoDelDettaglio(dettaglio, stato) {
+export function _testoDelDettaglio(dettaglio, stato) {
     if (typeof dettaglio === 'string' && dettaglio) return dettaglio;
     if (Array.isArray(dettaglio)) {
         const righe = dettaglio
@@ -62,12 +70,12 @@ function _testoDelDettaglio(dettaglio, stato) {
     return `Errore ${stato}`;
 }
 
-function nomeDelRuolo(idRuolo) {
+export function nomeDelRuolo(idRuolo) {
     const r = Stato.ruoli.find((x) => x.id === idRuolo);
     return r ? r.nome : idRuolo || 'senza ruolo';
 }
 
-async function loadRuoli() {
+export async function loadRuoli() {
     // I ruoli servono anche al modale del profilo, quindi si leggono
     // sempre; e' la sezione che si mostra solo a chi puo' modificarli.
     try {
@@ -235,7 +243,7 @@ async function cancellaRuolo(idRuolo) {
 
 // ---------------------------------------------------- dispositivi fidati
 
-function _quando(iso) {
+export function _quando(iso) {
     if (!iso) return 'mai';
     const d = new Date(iso);
     if (isNaN(d.getTime())) return 'mai';
@@ -247,7 +255,7 @@ function _quando(iso) {
     });
 }
 
-async function loadDispositivi() {
+export async function loadDispositivi() {
     const container = document.getElementById('dispositivi-lista');
     if (!container) return;
 

@@ -6,7 +6,17 @@
 // regole non si vedevano l'unico modo di chiedere «perché non è
 // successo niente?» era leggere i log del server.
 
-async function loadRegole() {
+import { Stato } from './stato.js';
+import { Gesti } from './gesti.js';
+import { _args, _grezzo, _html } from './sicurezza.js';
+import { safeCreateIcons } from './avvio.js';
+import { getAuthHeaders } from './accesso.js';
+import { switchTab } from './navigazione.js';
+import { disegnaProssimiScatti } from './timer.js';
+import { openModularModeBuilder, renderFlowCanvasModal } from './tela.js';
+import { _testoDelDettaglio } from './ruoli.js';
+
+export async function loadRegole() {
     const contenitore = document.getElementById('regole-lista');
     if (!contenitore) return;
     try {
@@ -97,7 +107,7 @@ function _campiCosaScorciatoia(tipo) {
     return _html`<input type="text" id="scorciatoia-testo" placeholder="es. Ricordati di chiudere il gas" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
 }
 
-function disegnaScorciatoia() {
+export function disegnaScorciatoia() {
     const quando = document.getElementById('scorciatoia-quando');
     const cosa = document.getElementById('scorciatoia-cosa');
     if (!quando || !cosa) return;
