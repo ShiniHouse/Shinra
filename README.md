@@ -6,7 +6,7 @@ Il nome *Shinra* nasce dall'unione concettuale con **Shinigami** (死神 — ent
 
 ---
 
-## 🚧 Stato del progetto — beta, in lavorazione verso la `0.5.0`
+## 🚧 Stato del progetto — beta, la `0.5.0` è pronta e non ancora rilasciata
 
 Shinra è in **beta** e procede per fasi verso la `1.0.0`. Ogni versione minor
 corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino
@@ -24,24 +24,34 @@ scattare in una casa vera.
 
 Note complete: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.md).
 
-**La `0.5.0` è in lavorazione** — prodotto: quello che serve perché Shinra lo
-installi qualcuno che non sei tu. Quello che è già dentro il ramo principale:
+**La `0.5.0` è chiusa e non ancora rilasciata** — prodotto: quello che serve
+perché Shinra lo installi qualcuno che non sei tu. Il codice è tutto nel ramo
+principale; mancano il numero di versione, le note e il tag. Fino ad allora si
+installa da `main` ([`docs/DEPLOY.md`](docs/DEPLOY.md)), non dall'ultimo tag.
+Quello che c'è dentro:
 
 - **L'interfaccia rifatta** (#123–#128, #134, #139): da otto ingressi a tre,
   impostazioni a sezioni, e la colonna di destra che racconta cosa sta per
   succedere in casa invece della diagnostica.
-- **Il frontend scomposto** (#144–#151, #176): `index.html` è passato da 7.438
+- **Il frontend in moduli ES** (#34, chiusa): `index.html` è passato da 7.438
   righe a **139**; il markup delle schede sta in nove file inclusi, il
-  JavaScript in ventitré file, uno per area, il più lungo di **460** righe; il
-  CSS in cinque; ESLint e Prettier girano in CI. Nessun file del frontend
-  supera le cinquecento righe, ed è un test a dirlo. E lo stato che attraversa
-  le aree — undici variabili, una girava per cinque file — sta in un
-  contenitore solo (#177). E ogni
-  valore che finisce nella pagina viene scappato: prima bastava un dispositivo
-  chiamato `<img onerror=...>` in Home Assistant.
-- **I gesti dell'editor a nodi in CI** (#156): sette gesti veri, con un
-  browser vero, perché un test che legge il sorgente non sa se un clic arriva
-  o se se lo mangia un antenato.
+  JavaScript in ventitré moduli nativi con un punto d'ingresso,
+  il più lungo di **460** righe; il CSS in cinque. Nessun bundler: il codice servito è
+  quello del repository ([ADR 0006](docs/adr/0006-niente-bundler.md)). Il
+  markup non esegue più stringhe — nomina un gesto — e ogni valore che finisce
+  nella pagina viene scappato: prima bastava un dispositivo chiamato
+  `<img onerror=...>` in Home Assistant. Il server dice ai browser di
+  rivalidare i moduli a ogni richiesta, così dopo un aggiornamento la pagina
+  non gira con metà vecchia e metà nuova.
+- **Due lingue, e una per persona** (#36, in parte): gli schemi con cui
+  Shinra capisce una frase, le frasi che dice e il prompt di sistema stanno in
+  un file per lingua — `italiano` e `English` — e la lingua si sceglie nel
+  profilo. Due persone della stessa casa possono parlare lingue diverse.
+  Aggiungere una lingua è un file, non una modifica al codice.
+- **I gesti in CI** (#156): diciassette prove con un browser vero — l'editor
+  a nodi, la barra, le finestre, il tema, il caricamento dei moduli — perché
+  un test che legge il sorgente non sa se un clic arriva o se se lo mangia un
+  antenato.
 - **Lo spegnimento** (#118): il servizio si ferma in pochi secondi invece di
   aspettare il SIGKILL di systemd dopo novanta.
 - **Backup e ripristino** (#35): un archivio con tutto quello che serve a
@@ -50,11 +60,13 @@ installi qualcuno che non sei tu. Quello che è già dentro il ramo principale:
   escono mai in chiaro — `scripts/esporta_json.py` li scriveva su disco.
 - **La distribuzione** (#37, in parte): immagine Docker a due stadi che gira
   come utente non privilegiato, `docker-compose.yml`, e la pubblicazione su
-  GHCR per `amd64` e `arm64` a ogni tag. Resta l'add-on per Home Assistant OS.
-- **L'installazione verificata** (#38, in parte): la CI costruisce l'immagine,
-  la avvia e controlla di riuscire davvero a entrare. È così che si è scoperto
-  che l'immagine partiva senza `data/examples/`: rispondeva 200 e nessuno
-  poteva accedere.
+  GHCR per `amd64` e `arm64` a ogni tag.
+- **La documentazione** (#38, in parte): guida all'installazione, guida allo
+  sviluppo con una ricetta che un test esegue, e un riferimento delle API
+  **generato dalle rotte vere**. La CI costruisce l'immagine, la avvia e
+  controlla di riuscire davvero a entrare: è così che si è scoperto che
+  l'immagine partiva senza `data/examples/`, rispondeva 200 e nessuno poteva
+  accedere.
 - **La dashboard che dice cosa sta succedendo** (#152, #153, #159, #161): il
   canale degli eventi accetta i dispositivi fidati invece di rifiutarli dopo
   ogni riavvio, una sessione scaduta viene detta invece di ritentare in
@@ -65,10 +77,13 @@ installi qualcuno che non sei tu. Quello che è già dentro il ramo principale:
   prima di salvare fa vedere cosa ha capito, così un'interpretazione sbagliata
   non diventa conoscenza permanente in silenzio.
 
-Restano la parola di attivazione, i moduli ES veri con lo stato in un posto
-solo, l'internazionalizzazione, l'add-on per Home Assistant OS e il resto
-della documentazione utente. Il quadro completo è nella
-[ROADMAP](docs/ROADMAP.md).
+**Cosa la `0.5.0` non fa, e dove è scritto.** Non c'è la parola di attivazione
+(#211), non c'è l'add-on per Home Assistant OS (#212), timer e promemoria
+capiscono solo l'italiano (#205), le etichette della dashboard sono solo
+italiane (#206), e nessuna persona che non ha scritto le guide le ha ancora
+seguite da sola (#208). Sono tutte nella `0.6.0`, insieme a *Il Cervello*: il
+grafo vivo della casa e gli agenti che si dividono il lavoro. Il quadro
+completo è nella [ROADMAP](docs/ROADMAP.md).
 
 | Documento | Cosa contiene |
 | :--- | :--- |
@@ -94,6 +109,12 @@ della documentazione utente. Il quadro completo è nella
 >   rifiuta ogni richiesta.
 > - I segreti rimasti in `config/config.yaml` vengono spostati in `.env` al
 >   primo avvio e cancellati da lì.
+> - **Dalla `0.4.0` alla `0.5.0` il database si aggiorna da solo** al primo
+>   avvio (una colonna nuova nei profili, la lingua): i profili restano, e
+>   quella scelta vale «come la casa» finché non ne scegli un'altra. Il
+>   servizio fa un backup prima, se lo aggiorni con `scripts/deploy.sh`.
+> - **Dopo l'aggiornamento non serve svuotare la cache del browser**: la
+>   dashboard si rivalida da sola.
 
 ---
 
