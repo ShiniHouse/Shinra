@@ -6,29 +6,25 @@ Il nome *Shinra* nasce dall'unione concettuale con **Shinigami** (死神 — ent
 
 ---
 
-## 🚧 Stato del progetto — beta, la `0.5.0` è pronta e non ancora rilasciata
+## 🚧 Stato del progetto — beta, all'ultima release: la `0.5.0`
 
 Shinra è in **beta** e procede per fasi verso la `1.0.0`. Ogni versione minor
 corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino
 alla `1.0.0` una minor può introdurre modifiche incompatibili.
 
-**L'ultima release è la `0.4.0`**: la casa smette di aspettare la domanda.
-Le routine partono da sole — a un orario, all'alba, su una soglia — quello che
-dici al microfono della dashboard resta in casa, e la casa sa da quale stanza
-le stai parlando. Più passkey al posto del PIN, notifiche push, e identità sul
-canale vocale.
+**L'ultima release è la `0.5.0`**: il prodotto. Quello che serve perché
+Shinra lo installi qualcuno che non sei tu — un'interfaccia da tre ingressi,
+un frontend in moduli che si può modificare senza romperlo, due lingue e una
+per persona, il backup, l'immagine Docker e una documentazione che si difende
+da sola. Note complete: [`docs/release/v0.5.0.md`](docs/release/v0.5.0.md).
 
-Due cose che quella release **non** dichiara risolte, e le dice: da un Echo
+La `0.4.0` aveva fatto smettere alla casa di aspettare la domanda: routine che
+partono da sole, la voce che resta in casa, passkey e notifiche push.
+Due cose quelle release **non** dichiarano risolte, e le dicono: da un Echo
 l'audio va ad Amazon per costruzione, e nessuno ha ancora guardato una regola
-scattare in una casa vera.
+scattare in una casa vera. Note: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.md).
 
-Note complete: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.md).
-
-**La `0.5.0` è chiusa e non ancora rilasciata** — prodotto: quello che serve
-perché Shinra lo installi qualcuno che non sei tu. Il codice è tutto nel ramo
-principale; mancano il numero di versione, le note e il tag. Fino ad allora si
-installa da `main` ([`docs/DEPLOY.md`](docs/DEPLOY.md)), non dall'ultimo tag.
-Quello che c'è dentro:
+**Dentro la `0.5.0`:**
 
 - **L'interfaccia rifatta** (#123–#128, #134, #139): da otto ingressi a tre,
   impostazioni a sezioni, e la colonna di destra che racconta cosa sta per
@@ -77,7 +73,7 @@ Quello che c'è dentro:
   prima di salvare fa vedere cosa ha capito, così un'interpretazione sbagliata
   non diventa conoscenza permanente in silenzio.
 
-**Cosa la `0.5.0` non fa, e dove è scritto.** Non c'è la parola di attivazione
+**Cosa la `0.5.0` non fa, e dove è scritto.** La `0.6.0` è in lavorazione. Non c'è la parola di attivazione
 (#211), non c'è l'add-on per Home Assistant OS (#212), timer e promemoria
 capiscono solo l'italiano (#205), le etichette della dashboard sono solo
 italiane (#206), e nessuna persona che non ha scritto le guide le ha ancora

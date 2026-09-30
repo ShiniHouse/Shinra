@@ -16,6 +16,73 @@ installabile e utilizzabile.
 
 ---
 
+## [0.5.0] - 2026-10-01 - Prodotto
+
+Note complete: [`docs/release/v0.5.0.md`](docs/release/v0.5.0.md).
+
+### Aggiunto
+- **Due lingue, e una per persona.** `it.yaml` e `en.yaml`, con gli schemi di
+  comprensione, le frasi che Shinra dice, il prompt di sistema e i nomi di
+  giorni e mesi. Il profilo ha un campo `lingua` (migrazione 0014; vuota =
+  quella dell'installazione) e un menu nella sua scheda. `GET /api/lingue`.
+- **Backup e ripristino** della configurazione della casa, con la versione
+  dello schema scritta dentro, rotazione delle copie e un backup automatico.
+- **Immagine Docker** a due stadi, `docker-compose.yml` e pubblicazione su GHCR
+  per `amd64` e `arm64` al tag.
+- **Documentazione**: `docs/INSTALLAZIONE.md`, `docs/SVILUPPO.md`,
+  `docs/PRIMI-PASSI.md`, `docs/PROBLEMI.md` e `docs/API.md`, quest'ultimo
+  generato da `scripts/genera_api.py` dalle rotte vere.
+- **Le automazioni hanno una scorciatoia** («a quest'ora fai questo») e le
+  routine che partono solo se le chiami.
+- **Prove dei gesti con un browser vero in CI** (17), per l'editor a nodi, la
+  barra, le finestre, il tema e il caricamento dei moduli.
+
+### Modificato
+- **L'interfaccia passa da otto ingressi a tre**, le impostazioni sono a
+  sezioni, ogni lista vuota insegna la mossa successiva e la colonna della
+  console racconta cosa sta per succedere invece della diagnostica.
+- **Il frontend e' fatto di moduli ES** (ADR 0006): `index.html` da 7.438
+  righe a 139, ventitre moduli nativi con un punto d'ingresso, nessuno sopra
+  le 460 righe, nessun bundler. Il markup nomina i gesti invece di eseguire
+  stringhe. Il server risponde a `/static/` con `Cache-Control: no-cache`.
+- L'intervista di apprendimento dice quando non ha capito e mostra cosa ha
+  capito prima di salvarlo.
+- Il client degli intenti legge la lingua di chi ha scritto
+  (`richiesta.schemi`); `get_system_prompt` vuole `lingua` come primo argomento.
+
+### Corretto
+- **Un nome di dispositivo con HTML dentro eseguiva codice** nella sessione
+  dell'amministratore: il markup si costruiva attaccando stringhe. `_html`
+  ripulisce ogni valore e gli argomenti dei gesti sono JSON.
+- Le chiamate all'API partivano senza intestazioni di autenticazione (#125).
+- Il canale degli eventi rifiutava i dispositivi fidati dopo ogni riavvio
+  (#159); una sessione scaduta ritentava in silenzio all'infinito (#161).
+- La crocetta di un nodo lo trascinava invece di toglierlo (#154) e quella che
+  stacca un cavo non si poteva premere (#155).
+- Una scheda inesistente svuotava la pagina (#153); il fondo ambientale
+  restava scuro in tema chiaro (#152); il tema si applicava dopo il primo
+  disegno (#164); un nome d'icona sbagliato dava un buco (#139).
+- Lo spegnimento si piantava su una websocket aperta e durava novanta secondi
+  (#118).
+- Il microfono mandava l'audio con l'etichetta sbagliata e trascrivere poteva
+  fermare la casa; i pesi di Whisper sul disco si aprivano passando da
+  internet.
+- La pulizia quotidiana del registro non e' mai stata eseguita; le migrazioni
+  spegnevano il log dell'applicazione.
+- Test che dipendevano dal giorno in cui giravano (#136, #201).
+
+### Sicurezza
+- I PIN non finiscono piu' in chiaro su disco nell'esportazione dei dati.
+- L'immagine Docker non gira da root.
+
+### Rimandato alla 0.6.0
+Timer e promemoria in piu' lingue (#205), le etichette della dashboard
+(#206), i messaggi degli strumenti (#207), il collaudo della documentazione
+(#208), l'intervista a domande singole e con routine complete (#209, #210), la
+parola di attivazione (#211), l'add-on per Home Assistant OS (#212).
+
+---
+
 ## [0.4.0] - 2026-09-11 - Proattivita'
 
 ### Corretto
