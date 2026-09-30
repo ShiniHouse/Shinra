@@ -12,7 +12,7 @@ browser: il browser riceve `attivo`, `fermo` o `non_raggiungibile`, con il
 motivo.
 
 **La rete ha un tetto.** L'unica domanda che esce dal programma e' a Ollama, e
-ha un secondo per rispondere: con un modello spento la scheda non deve
+ha quattro decimi di secondo per rispondere: con un modello spento la scheda non deve
 aspettare il timeout del client (trenta secondi) per dire che e' spento. La
 risposta si tiene venti secondi, cosi' una dashboard che si aggiorna da sola non
 bombarda Ollama.
@@ -37,7 +37,7 @@ from shinra.services import eventi_casa, permessi
 
 logger = logging.getLogger("Shinra.Cervello")
 
-ATTESA_OLLAMA = 1.0
+ATTESA_OLLAMA = 0.4
 DURATA_CACHE = 20.0
 
 _cache_modello: Optional[Tuple[float, Dict[str, Any]]] = None
