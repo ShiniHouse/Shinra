@@ -14,6 +14,7 @@ from shinra.api import sicurezza
 from shinra.api.routes_attivita import router as attivita_router
 from shinra.api.routes_auth import router as auth_router
 from shinra.api.routes_casa import router as casa_router
+from shinra.api.routes_cervello import router as cervello_router
 from shinra.api.routes_conoscenza import router as conoscenza_router
 from shinra.api.routes_impostazioni import router as impostazioni_router
 from shinra.api.routes_notifiche import router as notifiche_router
@@ -149,6 +150,7 @@ async def errore_non_gestito(request: Request, exc: Exception):
 app.include_router(auth_router)  # pubblico: e' l'accesso stesso
 app.include_router(utenti_router)  # protetto per difetto
 app.include_router(casa_router)  # protetto per difetto
+app.include_router(cervello_router)  # protetto per difetto
 app.include_router(impostazioni_router)  # protetto per difetto
 app.include_router(attivita_router)  # protetto per difetto
 app.include_router(notifiche_router)  # protetto per difetto

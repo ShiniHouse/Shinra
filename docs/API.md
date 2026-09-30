@@ -38,7 +38,7 @@ I dettagli del flusso con le passkey e dei dispositivi fidati stanno nell'ADR
 l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 `/openapi.json`.
 
-## Le rotte (90)
+## Le rotte (91)
 
 ### `alexa`
 
@@ -70,6 +70,12 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 | DELETE | `/api/auth/passkey/{identificativo:path}` | sessione aperta | Toglie una passkey: da quel dispositivo non si entra piu' con quella. |
 | GET | `/api/auth/profili` | pubblica | Chi puo' accedere, per la schermata di scelta. |
 | GET | `/api/auth/status` | pubblica | Dice al client se deve autenticarsi, chi e', e cosa puo' fare. |
+
+### `cervello`
+
+| Metodo | Percorso | Chi | Cosa fa |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/cervello` | sessione aperta | Nodi, collegamenti, cluster, stato dei sistemi e contatori della casa, per chi chiede. |
 
 ### `chat`
 
