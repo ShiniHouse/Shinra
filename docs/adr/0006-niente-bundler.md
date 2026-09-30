@@ -138,4 +138,3 @@ vere, perche' e' li' che si capisce chi dipende da chi.
   prende una guardia che legge gli `export`, non ESLint.
 - Nessun bundler, come deciso. Il codice servito e' ancora quello del
   repository.
-
