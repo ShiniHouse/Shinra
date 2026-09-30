@@ -136,6 +136,7 @@ class DepositoUtenti(Deposito):
         "preferred_news_categories",
         "restricted_topics",
         "notes",
+        "lingua",
     )
     ordine = "name"
 
