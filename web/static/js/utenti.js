@@ -53,6 +53,14 @@ export async function loadUsers() {
         const res = await fetch('/api/users', { headers: getAuthHeaders() });
         const items = await res.json();
         Stato.utenti = items;
+        // Le lingue servono al menu della scheda del profilo; se non arrivano
+        // il menu offre solo «come la casa» e il resto funziona.
+        try {
+            const lingue = await fetch('/api/lingue', { headers: getAuthHeaders() });
+            if (lingue.ok) Stato.lingue = await lingue.json();
+        } catch (errore) {
+            console.warn('loadUsers: elenco lingue non disponibile', errore);
+        }
         const container = document.getElementById('users-list');
         if (!container) return;
 
@@ -147,6 +155,20 @@ function openUserModal(userId = null) {
             _html`<option value="${r.id}" ${r.id === ruoloAttuale ? _grezzo('selected') : ''}>${r.nome}</option>`,
     );
 
+    // La lingua: vuota vuol dire «come la casa», cioe' quella
+    // dell'installazione. Il profilo sceglie la propria solo se serve.
+    const linguaAttuale = user ? user.lingua || '' : '';
+    const nomeInstallazione =
+        (Stato.lingue.lingue.find((l) => l.codice === Stato.lingue.installazione) || {}).nome ||
+        Stato.lingue.installazione;
+    const opzioniLingua = [
+        _html`<option value="" ${linguaAttuale === '' ? _grezzo('selected') : ''}>Come la casa (${nomeInstallazione})</option>`,
+        ...Stato.lingue.lingue.map(
+            (l) =>
+                _html`<option value="${l.codice}" ${l.codice === linguaAttuale ? _grezzo('selected') : ''}>${l.nome}</option>`,
+        ),
+    ];
+
     showModal(
         _html`
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -213,7 +235,17 @@ function openUserModal(userId = null) {
             </div>
 
             <div>
-                <label class="text-[11px] font-semibold text-slate-300 block mb-1">5. Note o Preferenze (opzionale):</label>
+                <label class="text-[11px] font-semibold text-slate-300 block mb-1">5. Lingua:</label>
+                <select id="new-u-lingua" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                    ${opzioniLingua}
+                </select>
+                <p class="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                    La lingua in cui questa persona parla con Shinra e riceve risposta. Due persone della stessa casa possono sceglierne due diverse.
+                </p>
+            </div>
+
+            <div>
+                <label class="text-[11px] font-semibold text-slate-300 block mb-1">6. Note o Preferenze (opzionale):</label>
                 <input type="text" id="new-u-notes" value="${defaultNotes}" placeholder="es. Moglie, camera da letto, appassionata di giardinaggio" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
             </div>
         </div>
@@ -248,6 +280,8 @@ async function saveUserForm(existingUserId = '') {
         : ['generale'];
     const campoRuolo = document.getElementById('new-u-role');
     const role = campoRuolo ? campoRuolo.value : userToUpdate ? userToUpdate.role : 'guest';
+    const campoLingua = document.getElementById('new-u-lingua');
+    const lingua = campoLingua ? campoLingua.value : userToUpdate ? userToUpdate.lingua || '' : '';
 
     const res = await fetch('/api/users', {
         method: 'POST',
@@ -261,6 +295,7 @@ async function saveUserForm(existingUserId = '') {
             avatar_type: _selectedAvatarType,
             preferred_news_categories,
             notes,
+            lingua,
         }),
     });
     // Declassare l'ultimo amministratore e' l'errore che chiude fuori

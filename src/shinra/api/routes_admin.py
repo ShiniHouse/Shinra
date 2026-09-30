@@ -50,6 +50,14 @@ async def list_users():
     return user_manager.get_users()
 
 
+@router.get("/lingue")
+async def list_lingue():
+    """Le lingue che Shinra sa parlare, per il menu del profilo (issue #36)."""
+    from shinra.services.intenti.lingue import elenco_lingue
+
+    return elenco_lingue()
+
+
 @router.post("/users", dependencies=[Depends(richiedi_permesso(permessi.GESTISCI_UTENTI))])
 async def save_user(user: UserProfile):
     """Crea o aggiorna un profilo. Declassare l'ultimo amministratore e' rifiutato."""

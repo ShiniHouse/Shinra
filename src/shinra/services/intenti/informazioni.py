@@ -24,10 +24,11 @@ class Meteo(Intento):
     priorita = 50
 
     def applicabile(self, richiesta: Richiesta) -> bool:
-        return any(p in richiesta.minuscolo for p in schemi().parole_meteo)
+        return any(p in richiesta.minuscolo for p in richiesta.schemi.parole_meteo)
 
     async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
-        citta = self.citta(richiesta.testo)
+        lingua = richiesta.schemi
+        citta = self.citta(richiesta.testo, lingua)
         argomenti = {"location": citta, "days": 2}
         esito = await execute_tool("get_weather", argomenti)
         richiesta.annota("get_weather", argomenti, esito)
@@ -47,11 +48,11 @@ class Meteo(Intento):
             if not esito.get("success"):
                 return None
 
-        return Risposta(self._frase(esito, richiesta.minuscolo))
+        return Risposta(self._frase(esito, richiesta.minuscolo, lingua))
 
     @staticmethod
-    def citta(testo: str) -> str:
-        trovata = schemi().citta.search(testo)
+    def citta(testo: str, lingua=None) -> str:
+        trovata = (lingua or schemi()).citta.search(testo)
         if trovata:
             candidata = " ".join(trovata.group(1).split()).strip(" .,?!")
             if candidata:
@@ -59,20 +60,28 @@ class Meteo(Intento):
         return settings.assistant.default_city or "Roma"
 
     @staticmethod
-    def _frase(esito: dict, testo: str) -> str:
+    def _frase(esito: dict, testo: str, lingua) -> str:
         localita = esito.get("localita", "")
         previsioni = esito.get("previsioni", [])
-        if schemi().domani in testo and len(previsioni) > 1:
+        if lingua.domani in testo and len(previsioni) > 1:
             domani = previsioni[1]
-            return (
-                f"Domani a {localita} {domani.get('condizione', 'variabile').lower()}, "
-                f"max {domani.get('temp_max')} gradi e min {domani.get('temp_min')}."
+            return lingua.dice(
+                "meteo_domani",
+                localita=localita,
+                condizione=(domani.get("condizione") or lingua.dice("condizione_variabile")).lower(),
+                massima=domani.get("temp_max"),
+                minima=domani.get("temp_min"),
             )
 
         adesso = esito.get("adesso", {})
-        frase = f"A {localita} attualmente {adesso.get('temperatura', '')}, {(adesso.get('condizione') or '').lower()}."
+        frase = lingua.dice(
+            "meteo_adesso",
+            localita=localita,
+            temperatura=adesso.get("temperatura", ""),
+            condizione=(adesso.get("condizione") or "").lower(),
+        )
         if previsioni:
-            frase += f" Massima prevista di {previsioni[0].get('temp_max')} gradi."
+            frase += lingua.dice("meteo_massima", massima=previsioni[0].get("temp_max"))
         return frase
 
 
@@ -81,9 +90,7 @@ class Notizie(Intento):
     priorita = 60
 
     def applicabile(self, richiesta: Richiesta) -> bool:
-        return any(
-            p in richiesta.minuscolo for p in ("notizie", "ultime notizie", "rassegna stampa", "cosa succede")
-        )
+        return any(p in richiesta.minuscolo for p in richiesta.schemi.inneschi_notizie)
 
     async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
         # Le categorie preferite del profilo che ha parlato. Erano salvate
@@ -107,7 +114,7 @@ class Notizie(Intento):
         titoli = [n.get("titolo", "") for n in esito.get("notizie", [])[:2] if n.get("titolo")]
         if not titoli:
             return None
-        return Risposta("Ultime notizie: " + ". ".join(titoli))
+        return Risposta(richiesta.schemi.dice("notizie_ultime", titoli=". ".join(titoli)))
 
 
 class Enciclopedia(Intento):
@@ -123,10 +130,10 @@ class Enciclopedia(Intento):
     priorita = 70
 
     def applicabile(self, richiesta: Richiesta) -> bool:
-        return any(p in richiesta.minuscolo for p in schemi().inneschi_enciclopedia)
+        return any(p in richiesta.minuscolo for p in richiesta.schemi.inneschi_enciclopedia)
 
     async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
-        termine = schemi().pulizia_enciclopedia.sub("", richiesta.testo).strip(" ?.,\"'")
+        termine = richiesta.schemi.pulizia_enciclopedia.sub("", richiesta.testo).strip(" ?.,\"'")
         if not termine:
             return None
 

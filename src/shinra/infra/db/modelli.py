@@ -47,6 +47,8 @@ class Utente(Base):
     preferred_news_categories: Mapped[list[str]] = mapped_column(JSON, default=list)
     restricted_topics: Mapped[list[str]] = mapped_column(JSON, default=list)
     notes: Mapped[Optional[str]] = mapped_column(Text, default="")
+    # Vuota: la lingua dell'installazione (issue #36).
+    lingua: Mapped[str] = mapped_column(String(16), default="", server_default="")
     creato_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
     aggiornato_il: Mapped[datetime] = mapped_column(DateTime, default=adesso, onupdate=adesso)
 

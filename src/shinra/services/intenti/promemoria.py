@@ -6,7 +6,6 @@ import logging
 from typing import Optional
 
 from shinra.services.intenti.base import Intento, Richiesta, Risposta, registra
-from shinra.services.intenti.lingue import schemi
 
 logger = logging.getLogger("Shinra.Intenti")
 
@@ -20,7 +19,7 @@ class Apprendimento(Intento):
     def applicabile(self, richiesta: Richiesta) -> bool:
         from shinra.services.interview_engine import interview_engine
 
-        if any(t in richiesta.minuscolo for t in schemi().avvii_apprendimento):
+        if any(t in richiesta.minuscolo for t in richiesta.schemi.avvii_apprendimento):
             return True
         return interview_engine.is_session_active(richiesta.id_utente)
 
@@ -29,14 +28,15 @@ class Apprendimento(Intento):
 
         utente = richiesta.id_utente
 
-        if any(t in richiesta.minuscolo for t in schemi().avvii_apprendimento):
+        lingua = richiesta.schemi
+        if any(t in richiesta.minuscolo for t in lingua.avvii_apprendimento):
             esito = interview_engine.start_session(utente)
             richiesta.annota("learning_interview", {"action": "start"}, esito)
             return Risposta(esito["message"], extra={"learning_session": esito})
 
-        if any(p in richiesta.minuscolo for p in schemi().interruzioni_apprendimento):
+        if any(p in richiesta.minuscolo for p in lingua.interruzioni_apprendimento):
             interview_engine.stop_session(utente)
-            return Risposta("Modalità Apprendimento interrotta. Possiamo riprendere quando vuoi.")
+            return Risposta(lingua.dice("apprendimento_interrotto"))
 
         esito = await interview_engine.process_answer(utente, richiesta.testo)
         richiesta.annota("learning_interview", {"action": "answer", "answer": richiesta.testo}, esito)
@@ -68,13 +68,19 @@ class TimerEPromemoria(Intento):
                 user_id=richiesta.id_utente,
             )
             richiesta.annota("set_timer", letto, voce)
-            return Risposta(f"Timer di {letto['amount']} {letto['unit']} impostato per {letto['label']}.")
+            return Risposta(
+                richiesta.schemi.dice(
+                    "timer_impostato", quantita=letto["amount"], unita=letto["unit"], etichetta=letto["label"]
+                )
+            )
 
         voce = timer_engine.add_reminder(
             text=letto["text"], remind_at_iso=letto["remind_at"], user_id=richiesta.id_utente
         )
         richiesta.annota("set_reminder", letto, voce)
-        return Risposta(f"Perfetto, ti ricorderò di {letto['text']} {letto['formatted_time']}.")
+        return Risposta(
+            richiesta.schemi.dice("promemoria_impostato", testo=letto["text"], quando=letto["formatted_time"])
+        )
 
 
 registra(Apprendimento())

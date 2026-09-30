@@ -47,6 +47,16 @@ casa:
     - accendi
     - attiva
 
+  # Le parole che fanno pensare a un sensore di casa: «che temperatura c'e'».
+  parole_temperatura:
+    - temperatura
+    - che caldo
+    - che freddo
+    - gradi
+
+  # «in salotto», «nella taverna»: la preposizione e poi il nome della stanza.
+  preposizioni_stanza: "\\b(?:in|nel|nella|del|della|al|alla)\\s+([a-zàèéìòù]+)"
+
 meteo:
   parole:
     - meteo
@@ -109,3 +119,107 @@ apprendimento:
     - esci da apprendimento
     - stop intervista
     - annulla
+
+notizie:
+  inneschi:
+    - notizie
+    - ultime notizie
+    - rassegna stampa
+    - cosa succede
+
+# Le parole che fanno passare al modello gli strumenti. Senza una di queste
+# la frase va al modello senza tool: serve a non dargli il catalogo intero
+# per una chiacchierata.
+agente:
+  parole_azione:
+    - accend
+    - spegn
+    - attiva
+    - disattiva
+    - imposta
+    - regola
+    - alza
+    - abbassa
+    - chiudi
+    - apri
+    - luce
+    - luci
+    - lampad
+    - termostato
+    - presa
+    - interruttore
+    - modalità
+    - routine
+    - stato casa
+    - cerca sul web
+    - cerca su internet
+    - trova online
+    - dispositivi
+    - entità
+
+# I nomi dei giorni e dei mesi stanno qui e non nel locale del sistema:
+# altrimenti la data nel prompt dipenderebbe da come e' configurata la
+# macchina, e una macchina in inglese farebbe parlare l'assistente in
+# italiano con la data in inglese.
+calendario:
+  giorni: [lunedì, martedì, mercoledì, giovedì, venerdì, sabato, domenica]
+  mesi: [gennaio, febbraio, marzo, aprile, maggio, giugno, luglio, agosto, settembre, ottobre, novembre, dicembre]
+  formato_data: "{giorno} {numero} {mese} {anno}, ore {ore}:{minuti}"
+
+# Le frasi che Shinra dice senza passare dal modello: le risposte degli
+# intenti, il rifiuto, i messaggi di errore. Ogni chiave e' nell'elenco
+# `CHIAVI_MESSAGGI` del caricatore, che dice per nome quale manca.
+messaggi:
+  temperatura_sensori_illeggibili: "Non riesco a leggere i sensori di casa."
+  temperatura_nessun_sensore: "Non trovo un sensore di temperatura in casa."
+  temperatura_nessun_sensore_in: "Non trovo un sensore di temperatura in {stanza}."
+  temperatura_una_lettura: "{nome}: {valore} gradi."
+  temperatura_piu_letture: "Temperature in casa: {elenco} gradi."
+  dispositivo_negato: "Non hai il permesso di comandare questo dispositivo."
+  dispositivo_non_comandato: "Non sono riuscito a comandare {nome}."
+  dispositivo_acceso: "{nome} acceso."
+  dispositivo_spento: "{nome} spento."
+  modalita_attivata: "Modalità {nome} attivata."
+  meteo_domani: "Domani a {localita} {condizione}, max {massima} gradi e min {minima}."
+  meteo_adesso: "A {localita} attualmente {temperatura}, {condizione}."
+  meteo_massima: " Massima prevista di {massima} gradi."
+  condizione_variabile: "variabile"
+  notizie_ultime: "Ultime notizie: {titoli}"
+  apprendimento_interrotto: "Modalità Apprendimento interrotta. Possiamo riprendere quando vuoi."
+  timer_impostato: "Timer di {quantita} {unita} impostato per {etichetta}."
+  promemoria_impostato: "Perfetto, ti ricorderò di {testo} {quando}."
+  argomento_vietato: "Di questo preferisco non parlare. Se ti serve, chiedilo a un adulto di casa."
+  errore_ollama: "Si è verificato un problema di comunicazione con il motore IA: {errore}. Assicurati che Ollama sia avviato e il modello sia pronto."
+  operazione_completata: "Operazione completata."
+  dati_verificati: "Ho elaborato la tua richiesta e verificato i dati."
+  risultato_operazione: "Risultato operazione {tool}: {risultato}. Formula ora una risposta breve e naturale per l'utente."
+
+# Il prompt di sistema, a pezzi. La lingua in cui il modello risponde si
+# decide qui: risponde in quella in cui gli si parla.
+prompt:
+  intro: "Sei {assistente}, assistente domestico intelligente. Oggi è {adesso}. Città di riferimento: {citta}."
+  utente_anonimo: "Utente"
+  persona_bambino: "Parli con il bambino {nome}. Usa linguaggio semplice, allegro e rassicurante. Niente contenuti violenti o complessi."
+  persona_ragazzo: "Parli con il ragazzo {nome}. Sii pratico, diretto e chiaro."
+  persona_adulto: "Parli con {nome} ({ruolo}). Stile Jarvis: cordiale, riservato, preciso, risposte brevi e naturali in italiano. Evita frasi verbose."
+  ruolo_admin: "Amministratore"
+  ruolo_adulto: "Adulto"
+  titolo_conoscenza: "CONOSCENZA CASA"
+  titolo_alias: "ALIAS DISPOSITIVI"
+  titolo_modalita: "MODALITÀ"
+  titolo_dispositivi: "DISPOSITIVI ATTIVI"
+  informazioni_in_tempo_reale: "### INFORMAZIONI IN TEMPO REALE:"
+  informazioni_chiusura: "Rispondi direttamente alla domanda dell'utente comunicando questi dati in modo sintetico e naturale (1-2 frasi). Non menzionare API o funzioni tecniche."
+  regole: |-
+    REGOLE SUI TOOL (Usa sempre i tool per dati in tempo reale o azioni):
+    - METEO: Per qualsiasi domanda sul meteo o temperature, chiama SEMPRE il tool `get_weather` (default location: "{citta}").
+    - DOMOTICA: Per accendere/spegnere/regolare luci o verificare lo stato di casa, chiama `control_device` o `get_home_status`.
+    - CLIMA: Per modalita' (riscaldamento, raffrescamento, deumidificazione, ventilazione), temperatura, ventola, umidita' o profili, chiama `comanda_clima`; per sapere come e' impostato, `stato_clima`. La temperatura IMPOSTATA e quella MISURATA sono due cose diverse: non spacciare l'una per l'altra.
+    - TAPPARELLE: Per aprire, chiudere, fermare a meta' corsa, portare a una percentuale o orientare le lamelle, chiama `comanda_tapparella`. La percentuale dice quanto e' APERTA: 0 chiusa, 100 aperta, quindi "abbassala al 40%" significa posizione 40.
+    - ENERGIA: Per consumi e costi chiama `consumo_energia`; per «in che fascia siamo» `fascia_corrente`; per «quanto mi costa tenere acceso questo» `costo_dispositivo`. Se il tool dice che non ha letture, riferiscilo: non inventare un numero e non rispondere zero.
+    - LISTE: Per la spesa e le cose da fare chiama `aggiungi_a_lista`, `leggi_lista`, `togli_da_lista`. Piu' articoli in una frase sono piu' voci: passali tutti insieme, ci pensa il tool a separarli.
+    - CALENDARIO: Per «cosa ho oggi/domani/sabato» chiama `impegni`; per i prossimi giorni `prossimi_impegni`; per segnare qualcosa `aggiungi_impegno`.
+    - SCADENZE: Per filtri, revisione, bollo e garanzie chiama `aggiungi_scadenza`, `scadenze_in_arrivo`, `segna_fatta`. Se un tool risponde che gli serve sapere QUANDO, chiedilo alla persona: non inventare una data e non dire che hai segnato.
+    - NOTIZIE: Per notizie del giorno o rassegna stampa, chiama `get_latest_news` o `search_web`.
+    - CULTURA & DEFINIZIONI: Per definizioni o concetti, chiama `search_wikipedia`.
+    Non dire mai che non puoi accedere a dati in tempo reale: invoca sempre il tool appropriato. Quando ricevi i dati dal tool, formula una risposta breve, chiara e naturale per l'utente in 1-2 frasi.
