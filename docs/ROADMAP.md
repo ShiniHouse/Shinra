@@ -122,7 +122,7 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 
 ---
 
-## v0.5.0 — Prodotto
+## v0.5.0 — Prodotto — rilasciata il 1 ottobre 2026
 
 > Quello che serve perche' lo installi qualcuno che non sei tu.
 
@@ -150,32 +150,34 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | 38 | Documentazione utente e guida all'installazione verificata | chiusa in parte (#167, #204): le guide sono scritte. Il collaudo di chi non le ha scritte alla `v0.6.0` (#208) |
 | 170 | L'intervista di apprendimento impara poco | chiusa in parte (#171, #174): dice quando non ha capito e mostra cosa ha capito. Il resto alla `v0.6.0` (#209, #210) |
 
-Tre voci sono **in corso** e vale la pena dire cosa manca a ciascuna, invece
-di lasciarlo dedurre dal numero:
+Quattro voci sono **chiuse in parte**, e vale la pena dire cosa manca a
+ciascuna invece di lasciarlo dedurre dal numero. Il resto e' nella `v0.6.0`:
 
 - **#37** — l'immagine Docker, il `docker-compose.yml` e la pubblicazione su
-  GHCR per `amd64` e `arm64` ci sono. Manca l'add-on per Home Assistant OS, ed
-  e' fermo per una ragione: chi sviluppa qui usa Home Assistant Container, non
-  HA OS, quindi l'add-on non sarebbe provabile in casa; e l'ingress
-  riscriverebbe il percorso di base, che oggi novantadue riferimenti assoluti
-  della pagina non sopportano — cioe' e' lavoro della **#34**, non di questa.
+  GHCR per `amd64` e `arm64` ci sono. Manca l'add-on per Home Assistant OS
+  (#212): chi sviluppa qui usa Home Assistant Container, non HA OS, quindi
+  l'add-on non sarebbe provabile in casa. L'ostacolo dell'*ingress* — novantadue
+  riferimenti assoluti nella pagina — e' adesso lavoro di quella scheda, non
+  piu' della #34.
 - **#38** — la CI costruisce l'immagine, la avvia e verifica di riuscire
   davvero a entrare: e' cosi' che si e' scoperto che l'immagine partiva senza
-  `data/examples/` e nessuno poteva accedere. Dalla #204 ci sono la guida
-  all'installazione, la guida allo sviluppo e il riferimento delle API (generato
-  dal codice). Manca il collaudo: nessuno che non le abbia scritte le ha ancora
-  seguite.
-- **#36** — gli schemi con cui Shinra **capisce** una frase stanno in un file
-  per lingua, e aggiungerne una non richiede di toccare il codice: lo prova un
-  test che ne inventa una. Dalla #203 anche le frasi che Shinra **dice**, il
-  prompt di sistema e la lingua per persona sono fuori dal codice, e c'e'
-  l'inglese: due persone della stessa casa ricevono risposta ciascuna nella
-  propria. Restano timer e promemoria (il parser del «quando» e' italiano) e
-  le etichette della dashboard.
-- **#170** — l'intervista adesso dice quando non ha capito e fa vedere cosa ha
-  capito prima di salvarlo. Mancano le domande singole al posto di quelle
-  triple, il non chiedere cio' che e' gia' nel database, e tutta la tappa due:
-  gli alias dalle entita' vere di Home Assistant e le routine complete.
+  `data/examples/` e nessuno poteva accedere. Con la #204 ci sono la guida
+  all'installazione, la guida allo sviluppo e il riferimento delle API
+  (generato dal codice). Manca il collaudo (#208): nessuno che non le abbia
+  scritte le ha ancora seguite.
+- **#36** — gli schemi con cui Shinra **capisce** una frase, le frasi che
+  **dice**, il prompt di sistema e la lingua per persona sono fuori dal codice,
+  e c'e' l'inglese: due persone della stessa casa ricevono risposta ciascuna
+  nella propria. Restano timer e promemoria (#205), le etichette della
+  dashboard (#206) e i messaggi degli strumenti (#207).
+- **#170** — l'intervista dice quando non ha capito e fa vedere cosa ha capito
+  prima di salvarlo. Mancano le domande singole, il non chiedere cio' che e'
+  gia' nel database (#209) e la tappa due: gli alias dalle entita' vere di
+  Home Assistant e le routine complete (#210).
+
+La **#34** e la **#30** hanno avuto esiti opposti: la prima e' **fatta per
+intero** (moduli ES nativi, vedi sotto); la seconda e' **spostata** alla `v0.6.0`
+(#211) senza codice, con la decisione su dove gira (ADR 0007).
 
 ### L'interfaccia, prima della 1.0.0 — fatta
 
@@ -228,7 +230,7 @@ e' passato da 6.600 a **7.438 righe** proprio facendo queste sei. Su un file
 cosi' ogni modifica all'interfaccia costa piu' del dovuto. E' per questo che e'
 stata la prima cosa affrontata dopo — ed e' a meta' strada.
 
-### Il frontend scomposto — a meta' strada
+### Il frontend scomposto — fatto
 
 Otto PR unite (#144, #145, #146, #147, #148, #149, #150, #151) hanno tolto CSS
 e JavaScript da `index.html` e li hanno divisi per area.
@@ -237,7 +239,7 @@ e JavaScript da `index.html` e li hanno divisi per area.
 | :--- | :-- | :-- |
 | `web/templates/index.html` | 7.438 righe | **139** |
 | File di markup | 1 | 10: l'ossatura e nove pezzi inclusi |
-| File JavaScript | 1, dentro l'HTML | 23, il piu' lungo di **460** righe |
+| File JavaScript | 1, dentro l'HTML | 23 moduli ES, il piu' lungo di **460** righe |
 | File CSS | 1, dentro l'HTML | 5 |
 | ESLint e Prettier | non esistevano | in CI, obbligatori |
 | HTML costruito concatenando stringhe | ovunque | **zero**, con guardia |
@@ -260,10 +262,12 @@ Il **bundler** e' stato valutato e scartato: [ADR 0006](adr/0006-niente-bundler.
 I moduli saranno nativi, serviti come stanno — l'aggiornamento in casa resta
 `deploy.sh` e basta, senza node sul server.
 
-Restano i **moduli ES veri**: i ventidue file sono ancora copioni classici
-caricati in ordine, e devono restarlo finche' la pagina chiama le funzioni
-dagli `onclick` — 149 fra attributi nel markup e stringhe generate. Vedi la
-scheda della #34 per l'ordine in cui si toglieranno.
+Gli **attributi in linea** erano l'ostacolo vero ai moduli: 149 fra il markup
+e le stringhe generate dal JavaScript. Sono diventati gesti con nome (#179,
+#200), gli argomenti viaggiano come JSON, e solo allora i ventitre copioni sono
+diventati **moduli ES nativi** con un punto d'ingresso (#202). Il prezzo non
+previsto era la cache: un `import` non porta la versione, e il server risponde
+adesso a `/static/` con `Cache-Control: no-cache`.
 
 La scomposizione ha prodotto **due regressioni**, tutte e due trovate in casa e
 chiuse (#154, #155). Da li' e' nata la **#156**: sette gesti dell'editor a nodi
