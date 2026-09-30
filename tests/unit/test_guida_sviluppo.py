@@ -108,6 +108,9 @@ def test_i_nomi_che_la_guida_cita_esistono():
     assert "TOOL_HANDLERS" in testo and "TOOLS_SCHEMA" in testo
     assert hasattr(registry, "TOOL_HANDLERS") and hasattr(registry, "TOOLS_SCHEMA")
 
+    # Il catalogo: la guida manda a un modulo per dominio.
+    assert "skills/catalogo" in testo and "GESTORI" in testo and "SCHEMI" in testo
+
     radice = GUIDA.parent.parent
     for percorso in (
         "src/shinra/skills/registry.py",
@@ -142,3 +145,30 @@ def test_ogni_test_nominato_dalla_guida_esiste():
     assert len(nominati) >= 8, f"test nominati dalla guida: {sorted(nominati)}"
     mancanti = sorted(n for n in nominati if n not in stem and f"def {n}(" not in sorgenti)
     assert mancanti == [], f"la guida nomina test che non esistono: {mancanti}"
+
+
+def test_ogni_modulo_del_catalogo_e_nel_registro():
+    """La guida dice che un dominio nuovo si aggiunge anche a `registry.py`.
+    Se ci si dimentica, gli strumenti esistono e il modello non li vede mai."""
+    import importlib
+    import pkgutil
+
+    from shinra.skills import catalogo
+
+    moduli = [
+        importlib.import_module(f"shinra.skills.catalogo.{m.name}")
+        for m in pkgutil.iter_modules(catalogo.__path__)
+    ]
+    assert len(moduli) >= 8, f"moduli del catalogo: {[m.__name__ for m in moduli]}"
+
+    nel_registro = {s["function"]["name"] for s in registry.TOOLS_SCHEMA}
+    for modulo in moduli:
+        assert hasattr(modulo, "GESTORI") and hasattr(
+            modulo, "SCHEMI"
+        ), f"{modulo.__name__} non dichiara i due elenchi"
+        for nome in modulo.GESTORI:
+            assert nome in registry.TOOL_HANDLERS, f"{nome} ({modulo.__name__}) non e' nel registro"
+        for schema in modulo.SCHEMI:
+            assert (
+                schema["function"]["name"] in nel_registro
+            ), f"schema {schema['function']['name']} non e' nel registro"

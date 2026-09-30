@@ -68,14 +68,19 @@ async def saluta(nome: str) -> Dict[str, Any]:
     return {"success": True, "message": f"Ciao {nome}!"}
 ```
 
-**2. La registrazione — in `src/shinra/skills/registry.py`, tre punti.** Non e'
-vero, come diceva una versione vecchia di `ARCHITECTURE.md`, che «nessun altro
-file va modificato»: il registro e' un file solo, ma va toccato tre volte.
+**2. La registrazione — nel modulo del tuo dominio in
+`src/shinra/skills/catalogo/`, tre punti.** Gli strumenti sono divisi per
+dominio (`casa`, `clima_e_tapparelle`, `energia`, `agenda`, `informazioni`…):
+scegli quello giusto, o creane uno nuovo e aggiungilo a `skills/registry.py`,
+che li mette insieme. In quel file:
 
 - l'`import` della funzione in cima;
-- una voce in `TOOL_HANDLERS` (nome che il modello usa → funzione);
-- uno schema in `TOOLS_SCHEMA` (il formato delle funzioni di Ollama/OpenAI):
+- una voce in `GESTORI` (nome che il modello usa → funzione);
+- uno schema in `SCHEMI` (il formato delle funzioni di Ollama/OpenAI):
   nome, descrizione, parametri, e quali sono obbligatori.
+
+`TOOL_HANDLERS` e `TOOLS_SCHEMA` in `registry.py` sono la somma di tutti i
+domini: sono quelli che l'agente e i test leggono.
 
 La **descrizione** dello schema e' la cosa piu' importante: e' l'unica che il
 modello legge per decidere *quando* chiamarti. Scrivila come a una persona
@@ -144,8 +149,9 @@ promemoria, le etichette della dashboard e i messaggi degli strumenti.
 
 ## 4. Aggiungere una rotta HTTP
 
-**1.** In uno dei file `src/shinra/api/routes_*.py` (o in uno nuovo, incluso con
-`app.include_router(...)` in `app.py`).
+**1.** In uno dei file `src/shinra/api/routes_*.py` — per area: `routes_utenti`,
+`routes_casa`, `routes_impostazioni`, `routes_attivita`… — o in uno nuovo, incluso
+con `app.include_router(...)` in `app.py`.
 
 **2. Protetta per difetto.** I router si dichiarano con la dipendenza di
 autenticazione; una rotta e' pubblica solo se lo dici. Per limitarla a chi ha

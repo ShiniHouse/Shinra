@@ -138,7 +138,7 @@ def test_nessun_modulo_del_percorso_di_richiesta_rilegge_il_disco():
     """`reload_settings()` puo' comparire solo dove la rilettura e' voluta:
     in config/settings.py, che la definisce, e nel pannello impostazioni, che
     deve mostrare cosa c'e' davvero sul file. Ovunque altro e' il difetto."""
-    consentiti = {"src/shinra/config/settings.py", "src/shinra/api/routes_admin.py"}
+    consentiti = {"src/shinra/config/settings.py", "src/shinra/api/routes_impostazioni.py"}
     colpevoli = []
     for percorso in (RADICE / "src" / "shinra").rglob("*.py"):
         if "__pycache__" in percorso.parts:

@@ -42,7 +42,7 @@ def test_le_fonti_rss_configurate_sono_usate() -> None:
     issue #26, che e' il modo in cui questo progetto dichiara risolto un
     difetto: quando la correzione arriva, il test diventa rosso finche' non
     si toglie la dichiarazione di resa."""
-    assert occorrenze("get_sources", escludi=("data_store.py", "routes_admin.py")), (
+    assert occorrenze("get_sources", escludi=("data_store.py", "routes_impostazioni.py")), (
         "data/sources.json e il gestore fonti dell'interfaccia non hanno alcun effetto: "
         "src/shinra/skills/news_search.py usa un dizionario RSS_FEEDS scritto nel codice"
     )
@@ -116,7 +116,7 @@ def test_nessuna_dipendenza_dichiarata_e_inutilizzata() -> None:
 
 MODULI_CHE_IMPORTANO_SETTINGS = (
     "shinra.api.sicurezza",
-    "shinra.api.routes_admin",
+    "shinra.api.routes_impostazioni",
     "shinra.services.agent",
     "shinra.services.consegna",
     "shinra.config.prompt_templates",

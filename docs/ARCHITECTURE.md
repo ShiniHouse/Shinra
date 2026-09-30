@@ -45,7 +45,7 @@ Shinra/
 │   │   └── intenti/         timer, intervista, consegna — e il router
 │   ├── skills/          Le capacita' invocabili dal modello
 │   ├── channels/alexa/  Adattatore per l'Echo
-│   └── api/             FastAPI: app, rotte, sicurezza, dispositivi
+│   └── api/             FastAPI: app, ciclo di vita, rotte per area, sicurezza, dispositivi
 ├── web/             Interfaccia
 │   ├── templates/       index.html: solo markup
 │   └── static/          js/ un file per area, css/ i fogli
@@ -126,9 +126,10 @@ quattro passi meccanici, sempre gli stessi.
 1. **Il modulo.** Un file in `src/shinra/skills/`, per esempio `vacuum.py`, che
    espone funzioni asincrone tipizzate e uno schema di tool. Non conosce ne'
    FastAPI ne' Alexa.
-2. **La registrazione.** Il modulo si dichiara nel registro dei tool, in
-   `skills/registry.py`: l'`import`, una voce in `TOOL_HANDLERS` e uno schema
-   in `TOOLS_SCHEMA`. Un file solo, tre punti. Il resto — il registro delle
+2. **La registrazione.** Il modulo si dichiara nel catalogo dei tool, in
+   `skills/catalogo/<dominio>.py`: l'`import`, una voce in `GESTORI` e uno
+   schema in `SCHEMI`. Un file solo, tre punti; `skills/registry.py` li mette
+   insieme e non si tocca. Il resto — il registro delle
    azioni, il controllo dei permessi, la traduzione degli errori — lo fa
    `execute_tool` senza che il modulo debba ricordarsene.
 3. **I test.** Almeno un test per il caso felice e uno per l'errore, con le
