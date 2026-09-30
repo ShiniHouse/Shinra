@@ -111,6 +111,35 @@ test.describe('i gesti delegati', () => {
         expect(dopo, `la tavolozza e' rimasta «${prima}»`).toBe('aurora');
     });
 
+    test('gli argomenti disegnati dal JavaScript arrivano come valori, anche ostili', async ({ page }) => {
+        // Il markup che il JavaScript genera passa i valori con
+        // `data-args="${_args(...)}"`. Prima erano `onclick="fai('${x}')"`,
+        // e un apice nel valore chiudeva la stringa. Qui un valore pieno di
+        // apici, virgolette e tag attraversa `_html`, l'attributo e
+        // `JSON.parse`, e deve arrivare identico alla funzione.
+        await page.goto('/index.html');
+        const visto = await page.evaluate(() => {
+            let ricevuto = null;
+            Gesti.registra({ proba: (...argomenti) => (ricevuto = argomenti) });
+            const ostile = `x'y"z <img src=x onerror=window.__rubato=1> \`${'$'}{1}\``;
+            document.body.insertAdjacentHTML(
+                'beforeend',
+                _html`<button id="proba" data-gesto="proba" data-args="${_args(ostile, 5, true, null)}" data-argomento="vero">p</button>`,
+            );
+            document.getElementById('proba').click();
+            return { ricevuto, ostile, rubato: window.__rubato === 1 };
+        });
+
+        expect(visto.rubato, 'il valore è diventato codice').toBe(false);
+        expect(visto.ricevuto, 'il gesto non ha ricevuto gli argomenti scritti').toEqual([
+            visto.ostile,
+            5,
+            true,
+            null,
+            true,
+        ]);
+    });
+
     test('nessun gesto resta senza chi lo sappia fare', async ({ page }) => {
         // Il guardiano stampa in console quando gli chiedono un nome che non
         // conosce. Qui si preme tutto quello che la pagina offre e si guarda

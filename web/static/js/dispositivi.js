@@ -13,7 +13,7 @@ async function loadAliases() {
             <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5 group">
                 <div class="flex justify-between items-start">
                     <span class="font-bold text-xs text-indigo-300">"${a.alias}"</span>
-                    <button onclick="deleteAlias(${_grezzo(_perAttributoJs(a.id))})" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    <button data-gesto="deleteAlias" data-args="${_args(a.id)}" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                 </div>
                 <div class="text-[11px] text-slate-400 font-mono truncate">→ ${a.entity_id}</div>
                 <div class="flex items-center gap-2">
@@ -143,7 +143,7 @@ function renderHAEntities(data, filterText = '') {
                                 }
                                 ${
                                     e.controllable
-                                        ? _html`<button onclick="openAliasModalForEntity(${_grezzo(_perAttributoJs(e.entity_id))}, ${_grezzo(_perAttributoJs(e.friendly_name))}, ${_grezzo(_perAttributoJs(e.alias || ''))})"
+                                        ? _html`<button data-gesto="openAliasModalForEntity" data-args="${_args(e.entity_id, e.friendly_name, e.alias || '')}"
                                         class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border
                                         ${
                                             e.alias
@@ -210,8 +210,8 @@ function openAliasModalForEntity(entityId, friendlyName, currentAlias) {
         <input type="hidden" id="new-a-entity" value="${entityId}">
 
         <div class="flex justify-end gap-2">
-            <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300 hover:bg-slate-700">Annulla</button>
-            <button onclick="saveNewAlias()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold">Salva Alias</button>
+            <button data-gesto="closeModal" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300 hover:bg-slate-700">Annulla</button>
+            <button data-gesto="saveNewAlias" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold">Salva Alias</button>
         </div>
     `);
     setTimeout(() => document.getElementById('new-a-alias')?.focus(), 100);
@@ -257,4 +257,7 @@ async function deleteAlias(id) {
 Gesti.registra({
     discoverHAEntities,
     filterEntities,
+    deleteAlias,
+    openAliasModalForEntity,
+    saveNewAlias,
 });

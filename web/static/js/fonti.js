@@ -182,10 +182,10 @@ async function loadSources() {
                         <p class="text-[11px] text-slate-500 truncate mt-1">${s.url}</p>
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
-                        <button onclick="toggleSingleSource(${_grezzo(_perAttributoJs(s.id))}, ${!isEnabled})" class="text-slate-500 hover:text-indigo-400 p-1 transition" title="${isEnabled ? 'Disattiva' : 'Attiva'}">
+                        <button data-gesto="toggleSingleSource" data-args="${_args(s.id, !isEnabled)}" class="text-slate-500 hover:text-indigo-400 p-1 transition" title="${isEnabled ? 'Disattiva' : 'Attiva'}">
                             <i data-lucide="${isEnabled ? 'toggle-right' : 'toggle-left'}" class="w-4 h-4 ${isEnabled ? 'text-indigo-400' : 'text-slate-600'}"></i>
                         </button>
-                        <button onclick="deleteSource(${_grezzo(_perAttributoJs(s.id))})" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition" title="Elimina fonte">
+                        <button data-gesto="deleteSource" data-args="${_args(s.id)}" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition" title="Elimina fonte">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
@@ -239,7 +239,7 @@ function renderSourcesCatalog(activeUrls) {
 
         return _html`
         <div class="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm">
-            <button type="button" onclick="toggleSourceCategory(${idx})" class="w-full bg-slate-800/40 hover:bg-slate-800/70 px-4 py-3 text-xs font-semibold text-slate-200 flex items-center justify-between transition">
+            <button type="button" data-gesto="toggleSourceCategory" data-args="${_args(idx)}" class="w-full bg-slate-800/40 hover:bg-slate-800/70 px-4 py-3 text-xs font-semibold text-slate-200 flex items-center justify-between transition">
                 <div class="flex items-center gap-2">
                     <span>${group.category}</span>
                     <span class="px-2 py-0.5 rounded-full text-[10px] ${activeCount > 0 ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800' : 'bg-slate-800 text-slate-400'}">${activeCount}/${total} attive</span>
@@ -258,7 +258,7 @@ function renderSourcesCatalog(activeUrls) {
                         ${
                             added
                                 ? _html`<span class="text-[11px] text-emerald-400 font-semibold px-2.5 py-1 bg-emerald-950/40 border border-emerald-800 rounded-full flex items-center gap-1">✓ Attiva</span>`
-                                : _html`<button onclick="addCatalogSource(${_grezzo(_perAttributoJs(src.id))},${_grezzo(_perAttributoJs(src.name))},${_grezzo(_perAttributoJs(src.cat))},${_grezzo(_perAttributoJs(src.url))})"
+                                : _html`<button data-gesto="addCatalogSource" data-args="${_args(src.id, src.name, src.cat, src.url)}"
                                 class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-indigo-600/20 border border-indigo-600/40 text-indigo-300 hover:bg-indigo-600 hover:text-white transition">
                                 + Aggiungi
                                </button>`
@@ -291,8 +291,8 @@ function openAddSourceModal() {
         <label class="text-xs text-slate-400 block mb-1">URL Feed RSS</label>
         <input type="url" id="new-s-url" placeholder="https://..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-4 focus:outline-none focus:border-indigo-500">
         <div class="flex justify-end gap-2">
-            <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300 hover:bg-slate-700">Annulla</button>
-            <button onclick="saveNewSource()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold">Salva Fonte</button>
+            <button data-gesto="closeModal" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300 hover:bg-slate-700">Annulla</button>
+            <button data-gesto="saveNewSource" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold">Salva Fonte</button>
         </div>
     `);
     setTimeout(() => document.getElementById('new-s-name')?.focus(), 100);
@@ -323,4 +323,9 @@ async function deleteSource(id) {
 Gesti.registra({
     bulkToggleSources,
     openAddSourceModal,
+    addCatalogSource,
+    deleteSource,
+    saveNewSource,
+    toggleSingleSource,
+    toggleSourceCategory,
 });

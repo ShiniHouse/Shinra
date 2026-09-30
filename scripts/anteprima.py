@@ -30,7 +30,9 @@ sarebbe anche vero.
 
 from __future__ import annotations
 
+import os
 import shutil
+import stat
 import sys
 from types import SimpleNamespace
 
@@ -79,9 +81,21 @@ window.addEventListener('load', function () {
 </body>"""
 
 
+def _sblocca(funzione, percorso, _errore) -> None:
+    """Toglie la sola lettura e riprova.
+
+    Su Windows, in una cartella sincronizzata da Google Drive, `web/static` ha
+    l'attributo di sola lettura, e `copytree` lo porta nella copia: la
+    seconda esecuzione non riusciva piu' a cancellare la prima e i test dei
+    gesti non partivano. Sugli altri sistemi questo non scatta mai.
+    """
+    os.chmod(percorso, stat.S_IWRITE)
+    funzione(percorso)
+
+
 def prepara() -> None:
     if FUORI.exists():
-        shutil.rmtree(FUORI)
+        shutil.rmtree(FUORI, onexc=_sblocca)
     FUORI.mkdir()
 
     ambiente = Environment(loader=FileSystemLoader(str(percorsi.MODELLI_HTML)), autoescape=True)

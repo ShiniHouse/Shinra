@@ -40,7 +40,7 @@ function appendAssistantMessage(text, actions = []) {
                         <span class="soundwave-bar" style="animation-delay: 0.4s"></span>
                     </span>
                 </p>
-                <button onclick="speakText(${_grezzo(_perAttributoJs(text))})" class="text-slate-400 hover:text-amber-400 p-1 transition" title="Riascolta">
+                <button data-gesto="speakText" data-args="${_args(text)}" class="text-slate-400 hover:text-amber-400 p-1 transition" title="Riascolta">
                     <i data-lucide="volume-2" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -108,7 +108,7 @@ function apriFinestraTool() {
         <p class="text-xs text-slate-400">Gli strumenti che ha usato per rispondere, dal piu' recente. Si guarda quando una risposta non torna.</p>
         <div id="tool-logs" class="max-h-[50vh] overflow-y-auto font-mono text-[11px] p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 text-slate-400 space-y-2"></div>
         <div class="flex justify-end">
-            <button type="button" onclick="closeModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-semibold">Chiudi</button>
+            <button type="button" data-gesto="closeModal" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-semibold">Chiudi</button>
         </div>
     `);
     _disegnaToolInvocati();

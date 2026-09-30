@@ -60,7 +60,7 @@ async function loadUsers() {
                         ${
                             amministra
                                 ? _html`
-                        <button onclick="openEditUserModal(${_grezzo(_perAttributoJs(u.id))})" class="px-2.5 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition" title="Modifica profilo e avatar">
+                        <button data-gesto="openEditUserModal" data-args="${_args(u.id)}" class="px-2.5 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition" title="Modifica profilo e avatar">
                             <i data-lucide="edit-3" class="w-3 h-3"></i> Modifica
                         </button>`
                                 : ''
@@ -68,7 +68,7 @@ async function loadUsers() {
                         ${
                             amministra && u.id !== 'alessio'
                                 ? _html`
-                        <button onclick="deleteUser(${_grezzo(_perAttributoJs(u.id))})" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition" title="Elimina profilo">
+                        <button data-gesto="deleteUser" data-args="${_args(u.id)}" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition" title="Elimina profilo">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                         </button>`
                                 : u.id === 'alessio'
@@ -137,34 +137,34 @@ function openUserModal(userId = null) {
                 <i data-lucide="${isEdit ? 'user-cog' : 'user-plus'}" class="w-4 h-4 text-indigo-400"></i>
                 ${isEdit ? _html`Modifica Profilo di ${user.name}` : 'Registra Membro della Famiglia'}
             </h3>
-            <button onclick="closeModal()" class="text-slate-500 hover:text-slate-300 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <button data-gesto="closeModal" class="text-slate-500 hover:text-slate-300 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
 
         <div class="space-y-4 pt-3">
             <div>
                 <label class="text-[11px] font-semibold text-slate-400 block mb-1.5">1. Scegli l'Icona / Avatar:</label>
                 <div class="grid grid-cols-3 gap-2">
-                    <button type="button" id="av-btn-male_adult" onclick="selectUserAvatar('male_adult')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center transition flex flex-col items-center gap-1 hover:border-slate-700">
+                    <button type="button" id="av-btn-male_adult" data-gesto="selectUserAvatar" data-args="${_args('male_adult')}" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center transition flex flex-col items-center gap-1 hover:border-slate-700">
                         <span class="text-2xl">👨</span>
                         <span class="text-[10px] font-bold text-indigo-300">Uomo</span>
                     </button>
-                    <button type="button" id="av-btn-female_adult" onclick="selectUserAvatar('female_adult')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center transition flex flex-col items-center gap-1 hover:border-slate-700">
+                    <button type="button" id="av-btn-female_adult" data-gesto="selectUserAvatar" data-args="${_args('female_adult')}" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center transition flex flex-col items-center gap-1 hover:border-slate-700">
                         <span class="text-2xl">👩</span>
                         <span class="text-[10px] font-bold text-rose-300">Donna</span>
                     </button>
-                    <button type="button" id="av-btn-male_child" onclick="selectUserAvatar('male_child')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center transition flex flex-col items-center gap-1 hover:border-slate-700">
+                    <button type="button" id="av-btn-male_child" data-gesto="selectUserAvatar" data-args="${_args('male_child')}" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center transition flex flex-col items-center gap-1 hover:border-slate-700">
                         <span class="text-2xl">👦</span>
                         <span class="text-[10px] font-bold text-cyan-300">Bambino</span>
                     </button>
-                    <button type="button" id="av-btn-female_child" onclick="selectUserAvatar('female_child')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center transition flex flex-col items-center gap-1 hover:border-slate-700">
+                    <button type="button" id="av-btn-female_child" data-gesto="selectUserAvatar" data-args="${_args('female_child')}" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center transition flex flex-col items-center gap-1 hover:border-slate-700">
                         <span class="text-2xl">👧</span>
                         <span class="text-[10px] font-bold text-pink-300">Bambina</span>
                     </button>
-                    <button type="button" id="av-btn-neutral" onclick="selectUserAvatar('neutral')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center transition flex flex-col items-center gap-1 hover:border-slate-700">
+                    <button type="button" id="av-btn-neutral" data-gesto="selectUserAvatar" data-args="${_args('neutral')}" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center transition flex flex-col items-center gap-1 hover:border-slate-700">
                         <span class="text-2xl">🧑</span>
                         <span class="text-[10px] font-bold text-amber-300">Neutro</span>
                     </button>
-                    <button type="button" id="av-btn-guest" onclick="selectUserAvatar('guest')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center transition flex flex-col items-center gap-1 hover:border-slate-700">
+                    <button type="button" id="av-btn-guest" data-gesto="selectUserAvatar" data-args="${_args('guest')}" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-center transition flex flex-col items-center gap-1 hover:border-slate-700">
                         <span class="text-2xl">🤖</span>
                         <span class="text-[10px] font-bold text-slate-400">Ospite</span>
                     </button>
@@ -202,8 +202,8 @@ function openUserModal(userId = null) {
         </div>
 
         <div class="flex justify-end gap-2 pt-4 border-t border-slate-800 mt-4">
-            <button onclick="closeModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 transition">Annulla</button>
-            <button onclick="saveUserForm(${_grezzo(_perAttributoJs(userId || ''))})" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/30">
+            <button data-gesto="closeModal" class="px-3.5 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 transition">Annulla</button>
+            <button data-gesto="saveUserForm" data-args="${_args(userId || '')}" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/30">
                 <i data-lucide="check" class="w-3.5 h-3.5"></i> ${isEdit ? 'Salva Modifiche' : 'Crea Profilo'}
             </button>
         </div>
@@ -275,4 +275,8 @@ async function deleteUser(id) {
 // la stessa forma che avra' la lista di `export` il giorno dei moduli.
 Gesti.registra({
     openAddUserModal,
+    deleteUser,
+    openEditUserModal,
+    saveUserForm,
+    selectUserAvatar,
 });

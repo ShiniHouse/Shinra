@@ -457,4 +457,5 @@ Gesti.registra({
     setVoiceRate,
     testVoicePreview,
     toggleSpeechRecognition,
+    speakText,
 });

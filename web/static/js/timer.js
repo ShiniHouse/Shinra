@@ -78,7 +78,7 @@ function renderTimers() {
                         </div>
                     </div>
                 </div>
-                <button onclick="deleteTimer(${_grezzo(_perAttributoJs(t.id))})" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Cancella timer">
+                <button data-gesto="deleteTimer" data-args="${_args(t.id)}" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Cancella timer">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -105,8 +105,8 @@ function openAddTimerModal() {
         <input type="number" id="new-timer-min" min="1" max="180" value="5" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 mb-4 focus:outline-none focus:border-amber-500">
 
         <div class="flex justify-end gap-2">
-            <button onclick="closeModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Annulla</button>
-            <button onclick="saveNewTimerManual()" class="px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-xs text-white font-semibold">Avvia Timer</button>
+            <button data-gesto="closeModal" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Annulla</button>
+            <button data-gesto="saveNewTimerManual" class="px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-xs text-white font-semibold">Avvia Timer</button>
         </div>
     `);
     setTimeout(() => document.getElementById('new-timer-label')?.focus(), 100);
@@ -196,7 +196,7 @@ function renderReminders() {
                     <span class="text-[11px] text-slate-400">${_quandoLeggibile(r.remind_at)}</span>
                 </div>
             </div>
-            <button onclick="deleteReminder(${_grezzo(_perAttributoJs(r.id))})" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Cancella promemoria">
+            <button data-gesto="deleteReminder" data-args="${_args(r.id)}" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Cancella promemoria">
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
@@ -252,7 +252,7 @@ function disegnaProssimiScatti(regole) {
         contenitore.innerHTML = _html`${etichetta}
             <div class="text-[11px] text-slate-500 py-1 leading-relaxed">
                 Niente in programma: nelle prossime ore la casa aspetta te.
-                <button type="button" onclick="switchTab('automazioni')" class="text-indigo-400 hover:text-indigo-300 font-semibold underline decoration-dotted">Vedi le automazioni</button>
+                <button type="button" data-gesto="switchTab" data-args="${_args('automazioni')}" class="text-indigo-400 hover:text-indigo-300 font-semibold underline decoration-dotted">Vedi le automazioni</button>
             </div>`;
         return;
     }
@@ -279,4 +279,7 @@ function disegnaProssimiScatti(regole) {
 // la stessa forma che avra' la lista di `export` il giorno dei moduli.
 Gesti.registra({
     openAddTimerModal,
+    deleteReminder,
+    deleteTimer,
+    saveNewTimerManual,
 });

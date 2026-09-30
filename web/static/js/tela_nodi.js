@@ -35,7 +35,7 @@ function startDragNode(nodeId, e) {
     };
 }
 
-function onPinMouseDown(sourceNodeId, e, ramo = null) {
+function onPinMouseDown(sourceNodeId, ramo, e) {
     e.stopPropagation();
     Stato.tela.connectingSourceId = sourceNodeId;
     // Da quale uscita parte il cavo. Solo le condizioni ne hanno due,
@@ -214,7 +214,7 @@ function renderCanvasWires(draftPos = null) {
                     <!-- Main line -->
                     <path id="wire-${edge.from}-${edge.to}" d="${pathD}" class="flow-wire" stroke="url(#wireGradient)" stroke-width="3" fill="none" />
                     <!-- Wire Delete Button -->
-                    <circle cx="${midX}" cy="${midY}" r="7" fill="#0f172a" stroke="#6366f1" stroke-width="1.5" class="pointer-events-auto cursor-pointer hover:fill-rose-600" onclick="deleteCanvasEdge(${idx})" />
+                    <circle cx="${midX}" cy="${midY}" r="7" fill="#0f172a" stroke="#6366f1" stroke-width="1.5" class="pointer-events-auto cursor-pointer hover:fill-rose-600" data-gesto="deleteCanvasEdge" data-args="${_args(idx)}" />
                     <text x="${midX}" y="${midY + 3}" fill="#cbd5e1" font-size="9" text-anchor="middle" font-weight="bold" class="pointer-events-none">×</text>
                 </g>
             `);
@@ -418,3 +418,24 @@ async function deleteMode(id) {
     await fetch(`/api/modes/${id}`, { headers: getAuthHeaders(), method: 'DELETE' });
     loadModes();
 }
+
+// I gesti che il markup di quest'area puo' chiedere (#34).
+Gesti.registra({
+    addCanvasNode,
+    alternaGiorno,
+    alternaGiornoInnesco,
+    deleteCanvasEdge,
+    deleteCanvasNode,
+    deleteMode,
+    onPinMouseDown,
+    onPinMouseUp,
+    saveCanvasMode,
+    setDatoCondizione,
+    setDatoInnesco,
+    setQuickDelay,
+    setTipoCondizione,
+    setTipoInnesco,
+    simulateCanvasFlow,
+    startDragNode,
+    updateNodeData,
+});

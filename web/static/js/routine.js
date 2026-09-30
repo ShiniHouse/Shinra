@@ -87,10 +87,10 @@ async function loadModes() {
                                 </div>
                             </div>
                             <div class="flex items-center gap-1">
-                                <button onclick="openModularModeBuilder('${m.id}')" class="p-1.5 text-slate-400 hover:text-indigo-300 rounded-lg hover:bg-slate-800 transition" title="Modifica nel Visual Flow">
+                                <button data-gesto="openModularModeBuilder" data-args="${_args(m.id)}" class="p-1.5 text-slate-400 hover:text-indigo-300 rounded-lg hover:bg-slate-800 transition" title="Modifica nel Visual Flow">
                                     <i data-lucide="edit-3" class="w-4 h-4"></i>
                                 </button>
-                                <button onclick="deleteMode('${m.id}')" class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Elimina routine">
+                                <button data-gesto="deleteMode" data-args="${_args(m.id)}" class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Elimina routine">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
                             </div>
@@ -105,7 +105,7 @@ async function loadModes() {
 
                         <!-- Pipeline Moduli (Collapsible) -->
                         <div class="mt-3 pt-2 border-t border-slate-800/60">
-                            <button type="button" onclick="toggleModeSteps('${m.id}')" id="mode-steps-toggle-${m.id}" class="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition block mb-2">
+                            <button type="button" data-gesto="toggleModeSteps" data-args="${_args(m.id)}" id="mode-steps-toggle-${m.id}" class="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition block mb-2">
                                 ${isOpen ? 'Nascondi Moduli ▲' : 'Vedi Moduli ▼'}
                             </button>
                             <div id="mode-steps-${m.id}" class="${isOpen ? '' : 'hidden'} space-y-1">
@@ -116,10 +116,10 @@ async function loadModes() {
 
                     <!-- Footer / Test & Flow Edit -->
                     <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
-                        <button onclick="openModularModeBuilder('${m.id}')" class="text-xs text-slate-400 hover:text-indigo-300 flex items-center gap-1 transition">
+                        <button data-gesto="openModularModeBuilder" data-args="${_args(m.id)}" class="text-xs text-slate-400 hover:text-indigo-300 flex items-center gap-1 transition">
                             <i data-lucide="workflow" class="w-3.5 h-3.5"></i> Editor Visivo
                         </button>
-                        <button onclick="triggerModularMode(${_grezzo(_perAttributoJs(m.name))}, ${_grezzo(_perAttributoJs(m.id))})" id="btn-run-mode-${m.id}" class="px-3.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                        <button data-gesto="triggerModularMode" data-args="${_args(m.name, m.id)}" id="btn-run-mode-${m.id}" class="px-3.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
                             <i data-lucide="play" class="w-3.5 h-3.5"></i> Esegui
                         </button>
                     </div>
@@ -155,3 +155,9 @@ async function triggerModularMode(name, modeId) {
         safeCreateIcons();
     }, 1200);
 }
+
+// I gesti che il markup di quest'area puo' chiedere (#34).
+Gesti.registra({
+    toggleModeSteps,
+    triggerModularMode,
+});

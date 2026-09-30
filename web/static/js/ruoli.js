@@ -111,14 +111,14 @@ async function loadRuoli() {
                     <p class="text-[11px] text-slate-400 leading-relaxed mt-0.5">${r.descrizione || 'Nessuna descrizione.'}</p>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                    <button onclick="apriModaleRuolo(${_grezzo(_perAttributoJs(encodeURIComponent(r.id)))})" class="px-2.5 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition" title="Modifica i permessi">
+                    <button data-gesto="apriModaleRuolo" data-args="${_args(encodeURIComponent(r.id))}" class="px-2.5 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-600/40 text-indigo-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition" title="Modifica i permessi">
                         <i data-lucide="edit-3" class="w-3 h-3"></i> Permessi
                     </button>
                     ${
                         r.predefinito
                             ? ''
                             : _html`
-                    <button onclick="cancellaRuolo(${_grezzo(_perAttributoJs(encodeURIComponent(r.id)))})" class="text-slate-600 hover:text-rose-400 p-1 transition" title="Cancella il ruolo">
+                    <button data-gesto="cancellaRuolo" data-args="${_args(encodeURIComponent(r.id))}" class="text-slate-600 hover:text-rose-400 p-1 transition" title="Cancella il ruolo">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     </button>`
                     }
@@ -158,7 +158,7 @@ function apriModaleRuolo(idRuolo) {
                 <i data-lucide="shield-check" class="w-4 h-4 text-indigo-400"></i>
                 ${modifica ? _html`Permessi di ${ruolo.nome}` : 'Nuovo Ruolo'}
             </h3>
-            <button onclick="closeModal()" class="text-slate-500 hover:text-slate-300 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <button data-gesto="closeModal" class="text-slate-500 hover:text-slate-300 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
 
         <div class="space-y-4 pt-3">
@@ -177,8 +177,8 @@ function apriModaleRuolo(idRuolo) {
         </div>
 
         <div class="flex justify-end gap-2 pt-4 border-t border-slate-800 mt-4">
-            <button onclick="closeModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 transition">Annulla</button>
-            <button onclick="salvaRuolo(${_grezzo(_perAttributoJs(identificativo ? encodeURIComponent(identificativo) : ''))})" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/30">
+            <button data-gesto="closeModal" class="px-3.5 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 transition">Annulla</button>
+            <button data-gesto="salvaRuolo" data-args="${_args(identificativo ? encodeURIComponent(identificativo) : '')}" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold flex items-center gap-1.5 transition shadow-md shadow-indigo-600/30">
                 <i data-lucide="check" class="w-3.5 h-3.5"></i> ${modifica ? 'Salva Permessi' : 'Crea Ruolo'}
             </button>
         </div>
@@ -299,7 +299,7 @@ async function loadDispositivi() {
                     </p>
                 </div>
             </div>
-            <button onclick="revocaDispositivo(${_grezzo(_perAttributoJs(encodeURIComponent(d.id)))}, ${_grezzo(_perAttributoJs(d.nome))}, ${d.questo ? 'true' : 'false'})" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold shrink-0 transition">
+            <button data-gesto="revocaDispositivo" data-args="${_args(encodeURIComponent(d.id), d.nome, !!d.questo)}" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-500 text-[11px] text-slate-300 hover:text-white font-semibold shrink-0 transition">
                 Revoca
             </button>
         </div>`,
@@ -351,4 +351,7 @@ async function revocaTuttiDispositivi() {
 Gesti.registra({
     apriModaleRuolo,
     revocaTuttiDispositivi,
+    cancellaRuolo,
+    revocaDispositivo,
+    salvaRuolo,
 });
