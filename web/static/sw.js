@@ -1,5 +1,10 @@
 const CACHE_NAME = 'shinra-v3';
-const ASSETS = ['/', '/static/manifest.json', '/static/vendor/lucide-0.344.0.min.js', 'https://cdn.tailwindcss.com'];
+const ASSETS = [
+    '/',
+    '/static/manifest.json',
+    '/static/vendor/lucide-0.344.0.min.js',
+    'https://cdn.tailwindcss.com',
+];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
