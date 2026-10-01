@@ -36,12 +36,15 @@ import {
     ZOOM_MIN,
     movimentoRidotto,
 } from './cervello_stile.js';
+import { disegnaAttivita } from './cervello_attivita.js';
 
 export class Lavagna {
     constructor(canvas, eventi = {}) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.eventi = eventi;
+        // Cosa sta facendo Shinra in questo momento (#189): se manca, il grafo e' quello di prima.
+        this.attivita = eventi.attivita || null;
         this.sim = null;
         this.clusters = [];
         this.sistemi = [];
@@ -213,7 +216,11 @@ export class Lavagna {
             this._passi++;
             if (!this._vistaManuale && (this._passi % 12 === 0 || quieta(this.sim))) this.inquadra();
             this.disegna();
-            if (!quieta(this.sim) || this._trascinando) this._frame = requestAnimationFrame(ciclo);
+            // Il ciclo gira finche' c'e' qualcosa che si muove o che e' acceso; poi si ferma del tutto.
+            const continua = !quieta(this.sim) || this._trascinando || this.attivita?.accesa();
+            if (continua) this._frame = requestAnimationFrame(ciclo);
+            // Per chi guarda da fuori (i test): il ciclo di disegno e' fermo davvero?
+            this.canvas.dataset.animando = continua ? 'si' : 'no';
         };
         this._frame = requestAnimationFrame(ciclo);
     }
@@ -333,6 +340,9 @@ export class Lavagna {
             }
         }
         ctx.globalAlpha = 1;
+        if (this.attivita) {
+            disegnaAttivita(ctx, sim, this.attivita, { k, scuro, visibile: (p) => this.visibile(p) });
+        }
 
         // Le etichette dei nodi: tutte da vicino, solo quelle utili da lontano.
         ctx.textAlign = 'left';
@@ -340,7 +350,10 @@ export class Lavagna {
         for (const p of sim.punti) {
             if (!this.visibile(p)) continue;
             const inPrimoPiano =
-                p.id === this.selezionato || p.id === this.sopra || (this.cerca && this.corrisponde(p));
+                p.id === this.selezionato ||
+                p.id === this.sopra ||
+                (this.cerca && this.corrisponde(p)) ||
+                this.attivita?.intensita(p.id) > 0;
             if (!inPrimoPiano && k < 1.15) continue;
             if (!this.corrisponde(p)) continue;
             ctx.fillStyle = scuro ? '#e2e8f0' : '#0f172a';

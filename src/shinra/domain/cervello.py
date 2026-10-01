@@ -194,9 +194,12 @@ def costruisci(
             continue
         pronto = bool(voce.get("pronto", True))
         agenti_pronti += 1 if pronto else 0
-        nodo(f"agente:{nome_agente}", "agente", nome_agente, "agenti", stato=ATTIVO if pronto else FERMO)
+        # L'identificativo e' stabile anche se il nome mostrato cambia: gli eventi
+        # dell'agente (#188) si riferiscono ai nodi per id.
+        id_agente = f"agente:{str(voce.get('id') or nome_agente).strip()}"
+        nodo(id_agente, "agente", nome_agente, "agenti", stato=ATTIVO if pronto else FERMO)
         for nome_strumento in voce.get("strumenti") or ():
-            cavo(f"agente:{nome_agente}", f"strumento:{nome_strumento}", "usa")
+            cavo(id_agente, f"strumento:{nome_strumento}", "usa")
 
     # --- conoscenza: il contenuto non esce ----------------------------------
     if vede_conoscenza:

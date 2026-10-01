@@ -24,6 +24,7 @@ import { getAuthHeaders } from './accesso.js';
 import { safeCreateIcons } from './avvio.js';
 import { FORZE_PREDEFINITE, creaSimulazione } from './cervello_fisica.js';
 import { Lavagna } from './cervello_disegno.js';
+import { attivita, disegnaRegistro } from './cervello_attivita.js';
 
 const MEMORIA = 'shinra.cervello';
 const AGGIORNA_OGNI_MS = 30000;
@@ -153,6 +154,12 @@ function _preparaLavagna() {
         alSelezionare: _seleziona,
         alApri: _apri,
         alSopra: _suggerimento,
+        attivita,
+    });
+    // Un evento dell'agente accende il grafo e scrive nel registro; a grafo spento non fa niente.
+    attivita.alCambiare(() => {
+        _registro();
+        lavagna?.avvia();
     });
     const contenitore = $('cervello-contenitore');
     _osservatore = new ResizeObserver(() => _adatta());
@@ -171,6 +178,7 @@ function _adatta() {
 function _disegna() {
     const nodi = _dati.nodi || [];
     _contatori();
+    _registro();
     _sistemi();
     _legenda();
     _elenco();
@@ -231,6 +239,14 @@ function _errore(testo) {
     _mostra('cervello-errore');
     const el = $('cervello-errore-testo');
     if (el) el.textContent = testo;
+}
+
+function _nomeDelNodo(id) {
+    return lavagna?.sim?.perId.get(id)?.nodo.nome || id.slice(id.indexOf(':') + 1);
+}
+
+function _registro() {
+    disegnaRegistro($('cervello-registro'), attivita.voci, _nomeDelNodo);
 }
 
 function _contatori() {
