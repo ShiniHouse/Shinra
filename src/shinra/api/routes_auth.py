@@ -157,7 +157,6 @@ async def accedi(req: RichiestaAccesso, request: Request, response: Response):
 
     return {
         "success": True,
-        "token": token,  # per i client che non usano i cookie
         "utente": profilo.model_dump(exclude={"pin"}),
         "dispositivo_ricordato": ricordato,
     }
@@ -313,7 +312,6 @@ async def concludi_accesso_passkey(dati: AccessoPasskey, request: Request, respo
 
     return {
         "success": True,
-        "token": token,
         "utente": profilo.model_dump(exclude={"pin"}),
         "dispositivo_ricordato": ricordato,
     }
