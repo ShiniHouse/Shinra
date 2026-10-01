@@ -37,6 +37,8 @@ MILESTONE = {
     "v0.4.0": "Proattivita' — motore di regole, notifiche push, voce interamente locale",
     "v0.5.0": "Prodotto — frontend modulare, backup, internazionalizzazione, distribuzione",
     "v0.6.0": "Il Cervello — il grafo vivo della casa, agenti per dominio, piani a piu' passaggi con conferma",
+    "v0.7.0": "Rifinitura — lingue, intervista, voce, plugin; il modello su una macchina dedicata; aiutanti locali",
+    "v0.8.0": "Memoria viva — ricordi visibili e correggibili, storia compressa, il sogno notturno, canali esterni opzionali",
 }
 
 LABEL = {
@@ -105,7 +107,8 @@ def annota_numero(percorso: Path, numero: int) -> None:
     if aggiornato == testo:
         print(f"    ! non sono riuscito ad annotare il numero in {percorso.name}", file=sys.stderr)
         return
-    percorso.write_text(aggiornato, encoding="utf-8")
+    # `newline` esplicito: su Windows il testo si scriverebbe con CRLF, e la guardia sugli a capo lo rifiuta.
+    percorso.write_text(aggiornato, encoding="utf-8", newline="\n")
 
 
 def assicura_etichette(dry: bool) -> None:

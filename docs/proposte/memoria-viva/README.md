@@ -1,9 +1,8 @@
 # Proposta — «Memoria viva» (v0.8.0)
 
-> **Stato: proposta, non accettata.** Nessuna issue e' stata aperta e la `ROADMAP.md` non e' stata
-> toccata. Questo documento e le ventinove schede in [`schede/`](schede/) sono la base su cui decidere.
-> Quando la proposta e' accettata le schede passano in `docs/backlog/v0.8.0/` e si importano come
-> tutte le altre (vedi «Come si procede», in fondo).
+> **Stato: accettata (2 ottobre 2026).** E' la `0.8.0` della [ROADMAP](../../ROADMAP.md). Le ventinove
+> schede sono diventate le issue **#243–#271** e stanno in [`docs/backlog/v0.8.0/`](../../backlog/v0.8.0/). Questo
+> documento resta come **motivazione**: l'analisi d'impatto e i rilievi critici dietro le schede.
 
 L'idea di partenza: l'assistente non ha **continuita'**. Un RAG statico e una finestra di contesto che
 si riempie lo rendono un chatbot che ogni volta ricomincia. Si vuole un compagno che ricorda, che si
@@ -170,7 +169,7 @@ toccano la promessa della `0.6.0` sulla rete locale.
   abbinata non fa niente e una conferma di una chat non vale per un'altra.
 ```
 
-## Le schede
+## Le schede (issue #243–#271)
 
 Fase **A** — le fondamenta (01–06): privacy, budget del contesto, schema, ranking, rinforzo, ricerca a scala.
 Fase **B** — trasparenza (07–11): API, vista, Markdown, indicatore di contesto, cancellazione.
@@ -181,11 +180,9 @@ Ogni scheda ha etichette, contesto, cosa fare e criteri di accettazione, e dice 
 Le schede 01, 06, 12 e 23 sono **decisioni** (ADR): vanno prese prima del codice che ne dipende.
 L'ordine di dipendenza essenziale: `02 → 03 → 04/05 → 07 → 08/09/10/11`, e `12 → 13 → 14`, e `16 → 17 → 18/19 → 20 → 21`, con `22` prima di `17`.
 
-## Come si procede
+## Com'e' andata
 
-1. **Decidere** la collocazione (A, B o C) e se la proposta entra. Le schede 01 e 02 si possono fare comunque:
-   migliorano Shinra anche senza il resto.
-2. Se entra: spostare le schede in `docs/backlog/v0.8.0/`, aggiungere la milestone `v0.8.0` all'elenco di
-   `scripts/import_backlog.py`, importare (`python scripts/import_backlog.py --milestone v0.8.0`) e rinominare i
-   file con i numeri che GitHub assegna, come per le altre fasi. Aggiungere la sezione alla `ROADMAP.md`.
-3. Aggiornare la tabella «Dopo la 1.0.0».
+La proposta e' stata accettata con la collocazione **prima della `1.0.0`**: la `0.7.0` raccoglie il residuo della
+`0.6.0`, la `0.8.0` e' questa fase, poi la `1.0.0` «se non ci sono intoppi». Le schede sono state importate come
+issue (milestone `v0.8.0`) e la sezione e' nella `ROADMAP.md`. La scheda **#243** (l'ADR sulla privacy della memoria)
+e' il punto di partenza; la **#244** (il budget del contesto) dipende dalle misure della `#183`.

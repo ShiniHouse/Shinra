@@ -1803,7 +1803,7 @@ dimenticato.
 
 #### Chiusa alla 0.5.0, il resto alla 0.6.0
 
-Chiusa con il meccanismo (#181, #203). Il lavoro che resta ha tre schede nella `v0.6.0`: [#205](backlog/v0.6.0/205-timer-e-promemoria-in-piu-lingue.md) (timer e promemoria), [#206](backlog/v0.6.0/206-etichette-della-dashboard-tradotte.md) (le etichette della dashboard) e [#207](backlog/v0.6.0/207-messaggi-delle-skill-tradotti.md) (i messaggi degli strumenti e dell'intervista). Il criterio «nessuna stringa visibile resta nel codice» e' della #206 e della #207.
+Chiusa con il meccanismo (#181, #203). Il lavoro che resta ha tre schede nella `v0.6.0`: [#205](backlog/v0.7.0/205-timer-e-promemoria-in-piu-lingue.md) (timer e promemoria), [#206](backlog/v0.7.0/206-etichette-della-dashboard-tradotte.md) (le etichette della dashboard) e [#207](backlog/v0.7.0/207-messaggi-delle-skill-tradotti.md) (i messaggi degli strumenti e dell'intervista). Il criterio «nessuna stringa visibile resta nel codice» e' della #206 e della #207.
 
 ### #37 — feat(distribuzione): immagine Docker e add-on per Home Assistant OS
 
@@ -1908,4 +1908,4 @@ sono lavoro a se'.
 
 #### Chiusa alla 0.5.0, il collaudo alla 0.6.0
 
-Le guide sono scritte e difese da test (#204). Il collaudo di chi non le ha scritte — l'unica cosa che un documento non puo' fare — e' la [#208](backlog/v0.6.0/208-collaudo-della-documentazione.md).
+Le guide sono scritte e difese da test (#204). Il collaudo di chi non le ha scritte — l'unica cosa che un documento non puo' fare — e' la [#208](backlog/v0.7.0/208-collaudo-della-documentazione.md).
