@@ -199,8 +199,26 @@ scritto qui perché non dirlo manda a cercarlo.
 ### Ho aggiornato e la dashboard si comporta come prima
 
 Il browser tiene i file statici finché non cambia l'indirizzo. Shinra attacca
-la versione a ogni indirizzo apposta, quindi non dovrebbe succedere; se
+la versione a ogni indirizzo apposta — all'ingresso della dashboard e, con un
+*import map*, a ogni modulo che importa — quindi non dovrebbe succedere; se
 succede, un ricaricamento forzato (`Ctrl+F5`) lo conferma in un secondo.
+
+**Sintomo tipico di un modulo vecchio:** un pulsante che non fa niente, o la
+console del browser che dice che un nome importato non esiste, subito dopo un
+aggiornamento. Dalla `0.5.0` a Cloudflare bastava lasciare le impostazioni di
+fabbrica per averlo: **Browser Cache TTL** a quattro ore riscrive
+`Cache-Control: no-cache` in `max-age=14400`, e per quattro ore i moduli
+importati restano quelli di prima. Lo si vede così:
+
+```bash
+curl -sI https://tuo-dominio/static/js/stato.js | grep -i cache-control
+```
+
+Se risponde `max-age=14400` (o qualunque durata) invece di `no-cache`, un proxy
+sta riscrivendo l'intestazione. Dopo la correzione che mette la versione negli
+indirizzi dei moduli non è più un guasto, ma se vuoi che il browser chieda
+sempre: Cloudflare → Caching → Configuration → **Browser Cache TTL** →
+*Respect Existing Headers*.
 
 Se invece è il **server** a essere rimasto indietro, il deploy non è arrivato:
 

@@ -30,7 +30,7 @@ scattare in una casa vera. Note: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.
   impostazioni a sezioni, e la colonna di destra che racconta cosa sta per
   succedere in casa invece della diagnostica.
 - **Il frontend in moduli ES** (#34, chiusa): `index.html` è passato da 7.438
-  righe a **139**; il markup delle schede sta in nove file inclusi, il
+  righe a **141**; il markup delle schede sta in nove file inclusi, il
   JavaScript in ventitré moduli nativi con un punto d'ingresso,
   il più lungo di **460** righe; il CSS in cinque. Nessun bundler: il codice servito è
   quello del repository ([ADR 0006](docs/adr/0006-niente-bundler.md)). Il

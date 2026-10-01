@@ -138,3 +138,11 @@ vere, perche' e' li' che si capisce chi dipende da chi.
   prende una guardia che legge gli `export`, non ESLint.
 - Nessun bundler, come deciso. Il codice servito e' ancora quello del
   repository.
+- **Il rimedio per la cache non bastava, e si e' visto in produzione.** Dietro
+  Cloudflare `Cache-Control: no-cache` arriva al browser come `max-age=14400`:
+  quattro ore in cui `./stato.js` si legge dalla cache anche dopo un
+  aggiornamento. Lo si e' scoperto guardando le intestazioni del server vero,
+  non dai test. Adesso la pagina porta un *import map* che mette `?v=<versione>`
+  all'indirizzo di ogni modulo (`api/moduli_web.py`): cambia la versione,
+  cambiano tutti gli indirizzi, e nessuna cache in mezzo conta piu'. Il
+  `no-cache` del server resta come seconda difesa.

@@ -131,9 +131,11 @@
     <!-- Moduli ES nativi dalla #34 (ADR 0006), serviti come stanno sul disco:
          nessun bundler, nessun passo di costruzione. La pagina carica un
          punto d'ingresso solo; le dipendenze fra un'area e l'altra stanno
-         negli `import` di ciascun file. La versione sta solo qui: gli
-         `import` non la portano, e per questo il server risponde a
-         /static/ con `Cache-Control: no-cache` (vedi api/app.py). -->
+         negli `import` di ciascun file. Gli `import` non portano la
+         versione, e dietro Cloudflare nemmeno `Cache-Control: no-cache`
+         arriva al browser: per questo l'import map qui sotto mette
+         `?v=<versione>` agli indirizzi di tutti i moduli (api/moduli_web.py). -->
+    {% if mappa_moduli %}<script type="importmap">{{ mappa_moduli|safe }}</script>{% endif %}
     <script type="module" src="/static/js/principale.js?v={{ (versione.descrizione if versione else 'dev') | urlencode }}"></script>
 </body>
 </html>

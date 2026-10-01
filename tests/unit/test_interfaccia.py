@@ -169,8 +169,12 @@ def _gesto(nome: str, testo: str | None = None, quando: str = "gesto") -> str:
 
 
 def _script_inline(testo: str) -> list[str]:
-    """Solo gli script scritti nella pagina: quelli con `src` non sono nostri."""
-    return re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", testo, re.S)
+    """Solo gli script scritti nella pagina: quelli con `src` non sono nostri.
+
+    Nemmeno l'import map lo e': e' JSON dentro un `<script type="importmap">`,
+    non codice che gira, e `node --check` lo rifiuterebbe. Ha i suoi test.
+    """
+    return re.findall(r'<script(?![^>]*\bsrc=)(?![^>]*type="importmap")[^>]*>(.*?)</script>', testo, re.S)
 
 
 # ------------------------------------------------------------------ sintassi
@@ -4411,3 +4415,62 @@ def test_il_guardiano_dei_gesti_ascolta_i_quattro_eventi():
     usati = {q for q, nomi in _gesti_nel_markup().items() if nomi}
     assert usati, "il markup non chiede piu' nessun gesto"
     assert usati <= set(QUANDO), f"il markup usa attributi che nessuno ascolta: {sorted(usati - set(QUANDO))}"
+
+
+# ------------------------- i moduli hanno la versione negli indirizzi (import map)
+
+
+def _mappa_della_pagina(html: str) -> dict[str, str]:
+    trovata = re.search(r'<script type="importmap">(.*?)</script>', html, re.S)
+    assert trovata, "la pagina non ha un import map: i moduli si importano senza versione"
+    return json.loads(trovata.group(1))["imports"]
+
+
+def test_la_pagina_servita_mappa_ogni_modulo_con_la_versione(cliente_autenticato):
+    """Dietro Cloudflare l'intestazione `no-cache` arriva al browser come
+    `max-age=14400`: quattro ore in cui `./stato.js` si legge dalla cache anche
+    dopo un aggiornamento, e la dashboard gira mezza nuova e mezza vecchia.
+    L'import map cambia l'indirizzo di ogni modulo a ogni versione, e nessuna
+    cache in mezzo puo' piu' servire il file di prima.
+    """
+    pagina = cliente_autenticato.get("/")
+    assert pagina.status_code == 200
+
+    mappa = _mappa_della_pagina(pagina.text)
+    moduli = sorted(p.name for p in _copioni())  # senza il punto d'ingresso
+
+    assert sorted(m.rsplit("/", 1)[1] for m in mappa) == moduli, "l'import map non elenca tutti i moduli"
+    for origine, destinazione in mappa.items():
+        assert destinazione.startswith(origine + "?v="), f"{origine} -> {destinazione}"
+        versione = destinazione.split("?v=", 1)[1]
+        assert versione and "{{" not in versione and versione != "dev", f"versione non riempita: {versione!r}"
+    assert len({d.split("?v=", 1)[1] for d in mappa.values()}) == 1, "moduli con versioni diverse"
+
+
+def test_l_import_map_non_rimappa_il_punto_d_ingresso(cliente_autenticato):
+    """L'ingresso ha gia' il suo `?v=` scritto dal template: rimapparlo lo
+    farebbe caricare con due indirizzi diversi, cioe' due volte."""
+    pagina = cliente_autenticato.get("/")
+
+    assert f"/static/js/{INGRESSO}" not in _mappa_della_pagina(pagina.text)
+    assert re.search(rf'<script type="module" src="/static/js/{INGRESSO}\?v=', pagina.text)
+
+
+def test_l_import_map_viene_prima_dei_moduli(cliente_autenticato):
+    """Un import map dopo il primo modulo e' ignorato dal browser, con un
+    avviso in console e nessun errore: i moduli si caricherebbero senza
+    versione e il difetto tornerebbe in silenzio."""
+    pagina = cliente_autenticato.get("/").text
+
+    assert pagina.index('type="importmap"') < pagina.index('type="module"')
+
+
+def test_un_valore_ostile_non_chiude_il_blocco_dell_import_map(monkeypatch):
+    from shinra.api import moduli_web
+
+    moduli_web.mappa_dei_moduli.cache_clear()
+    mappa = moduli_web.mappa_dei_moduli("0.5.0</script><img src=x onerror=alert(1)>")
+
+    assert "</script>" not in mappa and "<img" not in mappa
+    assert json.loads(mappa)["imports"], "l'escape ha rotto il JSON"
+    moduli_web.mappa_dei_moduli.cache_clear()

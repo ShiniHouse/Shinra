@@ -14,6 +14,13 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Corretto
+- **Dopo un aggiornamento la dashboard poteva girare mezza vecchia, dietro Cloudflare.**
+  Cloudflare riscrive `Cache-Control: no-cache` in `max-age=14400`, quindi per
+  quattro ore il browser teneva i moduli importati (`stato.js`, `gesti.js`…) anche
+  con l'ingresso nuovo. La pagina ha adesso un import map che mette la versione
+  nell'indirizzo di ogni modulo. Visto su un server vero, non dai test.
+
 ---
 
 ## [0.5.0] - 2026-10-01 - Prodotto
