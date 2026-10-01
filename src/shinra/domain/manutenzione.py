@@ -47,10 +47,6 @@ class Scadenza:
     preavviso: int = PREAVVISO_PREDEFINITO
     documento: str = ""
 
-    @property
-    def ricorrente(self) -> bool:
-        return self.ogni > 0
-
     def giorni_mancanti(self, oggi: Optional[date] = None) -> int:
         return (self.prossima - (oggi or date.today())).days
 

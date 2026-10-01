@@ -89,10 +89,6 @@ def evento(
     return Evento(tipo=tipo, dati=dati)
 
 
-def e_dell_agente(ev: Evento) -> bool:
-    return ev.tipo in TIPI
-
-
 def per_il_profilo(ev: Evento, profilo: Optional[str]) -> bool:
     """Questo evento va mostrato a `profilo`?
 

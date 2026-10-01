@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 from shinra.domain.eventi import PROMEMORIA_SCADUTO, TIMER_SCADUTO, BusEventi, Evento, bus
-from shinra.infra.db import importazione
+from shinra.infra.db import depositi, importazione
 from shinra.infra.scheduler import motore as modulo_scheduler
 from shinra.infra.scheduler.motore import (
     PREFISSO_PROMEMORIA,
@@ -227,7 +227,7 @@ async def test_l_archivio_dei_job_e_un_file_su_disco(servizio, archivio):
 
 
 async def test_alla_scadenza_il_timer_viene_marcato_e_l_evento_pubblicato(archivio):
-    modulo_timer.timer_engine.save_timers(
+    depositi.timer.sostituisci_tutto(
         [{"id": "timer_abc", "label": "pasta", "expires_at": _fra(-1), "completed": False}]
     )
     ricevuti = []
@@ -242,7 +242,7 @@ async def test_alla_scadenza_il_timer_viene_marcato_e_l_evento_pubblicato(archiv
 
 
 async def test_alla_scadenza_il_promemoria_viene_marcato_e_l_evento_pubblicato(archivio):
-    modulo_timer.timer_engine.save_reminders(
+    depositi.promemoria.sostituisci_tutto(
         [{"id": "rem_1", "text": "medicine", "remind_at": _iso_fra(-1), "completed": False}]
     )
     ricevuti = []
@@ -264,13 +264,13 @@ async def test_ripristina_job_riprogramma_solo_cio_che_e_ancora_in_attesa(archiv
     nessun job: all'avvio vanno ricreati, ma non quelli gia' completati."""
     modulo_scheduler.scheduler.avvia()
     try:
-        modulo_timer.timer_engine.save_timers(
+        depositi.timer.sostituisci_tutto(
             [
                 {"id": "t_attivo", "label": "pasta", "expires_at": _fra(3600), "completed": False},
                 {"id": "t_finito", "label": "forno", "expires_at": _fra(-99999), "completed": True},
             ]
         )
-        modulo_timer.timer_engine.save_reminders(
+        depositi.promemoria.sostituisci_tutto(
             [
                 {"id": "r_attivo", "text": "medicine", "remind_at": _iso_fra(3600), "completed": False},
                 {"id": "r_finito", "text": "spesa", "remind_at": _iso_fra(-99999), "completed": True},
@@ -287,7 +287,7 @@ async def test_ripristina_job_riprogramma_solo_cio_che_e_ancora_in_attesa(archiv
 
 
 def test_pulisci_scaduti_toglie_solo_i_completati_vecchi(archivio):
-    modulo_timer.timer_engine.save_timers(
+    depositi.timer.sostituisci_tutto(
         [
             {"id": "vecchio", "expires_at": time.time() - 48 * 3600, "completed": True},
             {"id": "recente", "expires_at": time.time() - 60, "completed": True},

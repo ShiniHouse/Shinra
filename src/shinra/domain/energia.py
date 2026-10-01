@@ -112,10 +112,6 @@ class Consumo:
         return max(self.per_fascia.items(), key=lambda voce: voce[1])[0]
 
 
-def consumo_vuoto() -> Consumo:
-    return Consumo(dict.fromkeys(fasce.FASCE, 0.0))
-
-
 @dataclass(frozen=True)
 class Lettura:
     """Un contatore a un istante: il valore che segna e quando."""

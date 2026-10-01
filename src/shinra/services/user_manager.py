@@ -145,15 +145,6 @@ class UserManager:
             utenti.append(profilo)
         return utenti
 
-    def save_users(self, users: List[UserProfile]) -> None:
-        """Riscrive l'intera anagrafica.
-
-        Resta per compatibilita' con il codice che la usava quando i profili
-        stavano in un file. Preferisci `upsert_user` e `imposta_pin`: toccano
-        una riga sola e non cancellano cio' che ha appena fatto qualcun altro.
-        """
-        depositi.utenti.sostituisci_tutto([u.model_dump() for u in users])
-
     def get_user_by_id(self, user_id: str) -> Optional[UserProfile]:
         for u in self.get_users():
             if u.id.lower() == user_id.lower():

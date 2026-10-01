@@ -7,9 +7,9 @@ l'interfaccia e l'agente, e la migrazione doveva spostare i dati, non
 riscrivere meta' applicazione.
 
 Cio' che e' cambiato davvero sono i metodi `salva_*`/`cancella_*`: toccano
-una riga sola. I vecchi `save_*(elenco)` restano perche' qualcuno li usa
-ancora, ma riscrivono l'intera tabella — con due richieste sovrapposte, una
-delle due modifiche sparisce lo stesso. Sono da considerarsi in uscita.
+una riga sola. I vecchi `save_*(elenco)`, che riscrivevano l'intera tabella
+(con due richieste sovrapposte, una delle due modifiche spariva), sono stati
+tolti: non li usava piu' nessuno.
 """
 
 from __future__ import annotations
@@ -117,9 +117,6 @@ class DataStore:
     def get_knowledge(self) -> List[Dict[str, Any]]:
         return depositi.fatti.elenco()
 
-    def save_knowledge(self, items: List[Dict[str, Any]]) -> None:
-        depositi.fatti.sostituisci_tutto(items)
-
     def salva_fatto(self, item: Dict[str, Any]) -> Dict[str, Any]:
         dati = dict(item)
         dati["id"] = _identificativo(dati, "k")
@@ -148,9 +145,6 @@ class DataStore:
     def get_sources(self) -> List[Dict[str, Any]]:
         return depositi.fonti.elenco()
 
-    def save_sources(self, items: List[Dict[str, Any]]) -> None:
-        depositi.fonti.sostituisci_tutto(items)
-
     def salva_fonte(self, fonte: Dict[str, Any]) -> Dict[str, Any]:
         dati = dict(fonte)
         dati["id"] = _identificativo(dati, "src")
@@ -169,9 +163,6 @@ class DataStore:
 
     def get_aliases(self) -> List[Dict[str, Any]]:
         return depositi.alias.elenco()
-
-    def save_aliases(self, items: List[Dict[str, Any]]) -> None:
-        depositi.alias.sostituisci_tutto(items)
 
     def salva_alias(self, alias: Dict[str, Any]) -> Dict[str, Any]:
         dati = dict(alias)
@@ -215,9 +206,6 @@ class DataStore:
 
     def get_modes(self) -> List[Dict[str, Any]]:
         return depositi.modalita.elenco()
-
-    def save_modes(self, items: List[Dict[str, Any]]) -> None:
-        depositi.modalita.sostituisci_tutto(items)
 
     def salva_modalita(self, modalita: Dict[str, Any]) -> Dict[str, Any]:
         dati = dict(modalita)

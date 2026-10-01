@@ -31,7 +31,7 @@ Riferimento: issue #27.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, time, timedelta
 from typing import Any, Mapping, Optional, Sequence
 
 # --------------------------------------------------------------- i trigger
@@ -273,15 +273,6 @@ def perche_no(
     return None
 
 
-def condizioni_soddisfatte(
-    regola: Regola,
-    adesso: datetime,
-    stati: Optional[Mapping[str, str]] = None,
-    casa_abitata: Optional[bool] = None,
-) -> bool:
-    return perche_no(regola, adesso, stati, casa_abitata) is None
-
-
 # ------------------------------------------------------------- i cicli
 
 
@@ -368,7 +359,3 @@ def descrivi(regola: Regola) -> str:
     quando_detto = descrivi_trigger(regola.trigger or {})
     quante = len(regola.azioni or ())
     return f"{regola.nome}: {quando_detto}, {quante} azion{'e' if quante == 1 else 'i'}"
-
-
-def oggi_e(adesso: datetime) -> date:
-    return adesso.date()

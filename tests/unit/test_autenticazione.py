@@ -24,6 +24,7 @@ from shinra.api import app as app_modulo
 from shinra.api import sicurezza
 from shinra.api.app import app
 from shinra.config.settings import settings
+from shinra.infra.db import depositi
 from shinra.services.user_manager import user_manager
 
 PIN_DI_PROVA = "482913"
@@ -91,7 +92,7 @@ def casa_chiusa():
     for i, u in enumerate(utenti):
         if u.id == amministratore.id:
             utenti[i].pin = pin_originale
-    user_manager.save_users(utenti)
+    depositi.utenti.sostituisci_tutto([u.model_dump() for u in utenti])
     sicurezza.azzera_stato()
 
 
@@ -207,7 +208,7 @@ def test_il_pin_di_un_familiare_non_apre_la_sessione_di_un_altro(casa_chiusa) ->
     """Il punto dell'identita' per persona: il PIN vale per chi lo possiede."""
     utenti = user_manager.get_users()
     utenti.append(type(casa_chiusa)(id="figlio_prova", name="Figlio", role="teen", age_group="teen"))
-    user_manager.save_users(utenti)
+    depositi.utenti.sostituisci_tutto([u.model_dump() for u in utenti])
     user_manager.imposta_pin("figlio_prova", "111111")
     try:
         with TestClient(app) as c:
@@ -306,7 +307,7 @@ def test_un_pin_in_chiaro_non_chiude_fuori_la_famiglia() -> None:
     try:
         utenti = user_manager.get_users()
         utenti[0].pin = "1234"  # in chiaro, come lo lasciava una versione vecchia
-        user_manager.save_users(utenti)
+        depositi.utenti.sostituisci_tutto([u.model_dump() for u in utenti])
 
         # Un PIN non cifrato non deve valere come "qualcuno puo' accedere".
         assert not sicurezza.autenticazione_attiva()
@@ -318,7 +319,7 @@ def test_un_pin_in_chiaro_non_chiude_fuori_la_famiglia() -> None:
         assert sicurezza.verifica_pin("1234", dopo.pin), "il PIN di prima non funziona piu'"
         assert sicurezza.autenticazione_attiva()
     finally:
-        user_manager.save_users(salvati)
+        depositi.utenti.sostituisci_tutto([u.model_dump() for u in salvati])
         settings.security.auth_enabled = era_attiva
         sicurezza.azzera_stato()
 
@@ -335,7 +336,7 @@ def test_senza_alcun_pin_ne_viene_generato_uno() -> None:
         utenti = user_manager.get_users()
         for u in utenti:
             u.pin = None
-        user_manager.save_users(utenti)
+        depositi.utenti.sostituisci_tutto([u.model_dump() for u in utenti])
         assert not sicurezza.autenticazione_attiva()
 
         _prepara_accesso()
@@ -343,7 +344,7 @@ def test_senza_alcun_pin_ne_viene_generato_uno() -> None:
         assert any(sicurezza.e_cifrato(u.pin) for u in user_manager.get_users())
         assert sicurezza.autenticazione_attiva()
     finally:
-        user_manager.save_users(salvati)
+        depositi.utenti.sostituisci_tutto([u.model_dump() for u in salvati])
         settings.security.auth_enabled = era_attiva
         sicurezza.azzera_stato()
 
