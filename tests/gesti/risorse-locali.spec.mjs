@@ -6,8 +6,8 @@
 
 import { test, expect } from '@playwright/test';
 
-// Ancora in elenco: Tailwind (script da CDN). Si toglie quando passa al CSS precompilato.
-const ANCORA_ESTERNI = ['cdn.tailwindcss.com'];
+// Nessun host esterno ammesso: la pagina si disegna con quello che il nostro server le da'.
+const ANCORA_ESTERNI = [];
 
 test.describe('le risorse della pagina', () => {
     test('i caratteri e le icone vengono dal nostro server, non da terzi', async ({ page }) => {

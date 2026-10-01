@@ -8,12 +8,15 @@
     "formato": "prettier --check web/static/ tests/gesti/ playwright.config.mjs eslint.config.js",
     "formatta": "prettier --write web/static/ tests/gesti/ playwright.config.mjs eslint.config.js",
     "gesti": "playwright test",
-    "lint": "eslint web/static/js/ tests/gesti/ playwright.config.mjs"
+    "lint": "eslint web/static/js/ tests/gesti/ playwright.config.mjs",
+    "css": "node scripts/tailwind.mjs",
+    "css:verifica": "node scripts/tailwind.mjs --verifica"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
     "eslint": "10.10.0",
     "globals": "17.12.0",
-    "prettier": "3.9.7"
+    "prettier": "3.9.7",
+    "tailwindcss": "3.4.17"
   }
 }

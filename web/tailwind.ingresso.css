@@ -1,0 +1,4 @@
+/* Ingresso di Tailwind: tre direttive, il resto lo genera `npm run css`. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

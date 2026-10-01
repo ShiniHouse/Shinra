@@ -74,6 +74,11 @@ jobs:
       - name: Prettier
         run: npx prettier --check web/static/ tests/gesti/ playwright.config.mjs eslint.config.js
 
+      # `web/static/css/tailwind.css` e' generato e committato. Se si cambia una classe e non lo si
+      # rigenera, la pagina perde quello stile senza nessun errore: qui lo si rigenera e si confronta.
+      - name: Tailwind — il CSS generato e' aggiornato
+        run: npm run css:verifica
+
   gesti:
     name: Frontend — gesti
     runs-on: ubuntu-latest

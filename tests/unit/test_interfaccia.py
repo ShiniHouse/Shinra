@@ -2246,14 +2246,14 @@ def test_la_pagina_non_porta_piu_dentro_il_copione_e_il_foglio():
     cosa e' tutto, e che ogni modifica all'interfaccia costa piu' del dovuto.
     E' il freno principale alle altre schede rimaste.
 
-    Restano in linea due copioni, e devono restarci: decidono il tema e
-    configurano Tailwind — tutti e due **prima** che la pagina si disegni. Un file esterno arriverebbe troppo
+    Resta in linea un solo copione, e deve restarci: decide il tema
+    **prima** che la pagina si disegni. Un file esterno arriverebbe troppo
     tardi, ed e' esattamente il difetto della #152: il tema stava in un file,
     veniva deciso su `load`, e per mezzo secondo la pagina era scura anche a
     mezzogiorno.
 
     Il numero e' fissato apposta. Ogni copione in linea in piu' e' codice che
-    nessun linter guarda e nessun file raccoglie: se ne serve un terzo, lo si
+    nessun linter guarda e nessun file raccoglie: se ne serve un secondo, lo si
     aggiunge qui con la sua ragione scritta, invece di lasciarlo crescere.
     """
     pagina = _testo(PAGINA)
@@ -2261,15 +2261,15 @@ def test_la_pagina_non_porta_piu_dentro_il_copione_e_il_foglio():
     assert "<style>" not in _markup(), "il foglio di stile e' tornato dentro la pagina"
 
     inline = _script_inline(pagina)
-    assert len(inline) == 2, (
-        f"i copioni in linea sono {len(inline)}: devono restare solo i due del "
-        "`<head>`, che girano prima del disegno"
+    assert len(inline) == 1, (
+        f"i copioni in linea sono {len(inline)}: deve restare solo quello del "
+        "`<head>`, che gira prima del disegno"
     )
     for blocco in inline:
         assert len(blocco) < 2000, "un copione in linea e' cresciuto: va in un file suo"
 
     # I pezzi inclusi sono markup e basta: un copione in linea li' dentro non
-    # sta nel `<head>`, quindi non ha la ragione che giustifica gli altri tre,
+    # sta nel `<head>`, quindi non ha la ragione che giustifica quello del tema,
     # e nessun linter lo guarderebbe.
     intrusi = {p.name: len(_script_inline(_testo(p))) for p in _parti() if _script_inline(_testo(p))}
     assert not intrusi, f"copioni in linea dentro i pezzi del markup: {intrusi}"
@@ -2290,6 +2290,10 @@ def test_i_fogli_e_i_copioni_esistono_e_non_sono_vuoti():
     assert len(copioni) >= 15, f"copioni trovati: {[p.name for p in copioni]}"
 
     for percorso in [*fogli, *copioni]:
+        if percorso.name == "tailwind.css":
+            # Generato e compresso su una riga (`npm run css`): lo guarda `npm run css:verifica`.
+            assert len(_testo(percorso)) > 10000, "tailwind.css e' quasi vuoto: rigeneralo con `npm run css`"
+            continue
         righe = len(_testo(percorso).splitlines())
         assert righe > 30, f"{percorso.name} ha {righe} righe: o e' vuoto, o non doveva nascere"
 
@@ -2733,7 +2737,7 @@ console.log(JSON.stringify({
     assert (
         visto["tipo"] == "module"
     ), f"i copioni sono letti come «{visto['tipo']}»: gli `import` non compilano"
-    for nome in ("document", "fetch", "lucide", "tailwind"):
+    for nome in ("document", "fetch", "lucide"):
         assert nome in visto["globali"], f"ESLint non sa che `{nome}` esiste: gridera' su codice giusto"
     nostri = {
         n
@@ -3894,7 +3898,7 @@ def test_il_tema_si_decide_prima_dei_copioni():
     """
     pagina = _testo(PAGINA)
     tema = pagina.index("shinra_theme_mode")
-    for piu_lento in ('<link rel="stylesheet"', "cdn.tailwindcss.com", 'rel="preload"', "<body"):
+    for piu_lento in ('<link rel="stylesheet"', "tailwind.css", 'rel="preload"', "<body"):
         assert pagina.index(piu_lento) > tema, (
             f"«{piu_lento}» viene prima della decisione sul tema: "
             "la pagina si disegna scura e poi cambia colore."

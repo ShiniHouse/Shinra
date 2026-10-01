@@ -245,6 +245,25 @@ nel sorgente).
 
 ---
 
+## 6 bis. Cambiare lo stile (le classi Tailwind)
+
+Le classi Tailwind dei template e dei copioni non vengono costruite nel browser: il foglio
+`web/static/css/tailwind.css` e' **generato e committato**. Se aggiungi o cambi una classe
+(`bg-indigo-600`, `w-[137px]`, `md:grid-cols-3`...) devi rigenerarlo:
+
+```bash
+npm ci          # una volta
+npm run css     # riscrive web/static/css/tailwind.css
+```
+
+Se te ne dimentichi la pagina perde quello stile **senza nessun errore** — la classe c'e' nel
+sorgente e non nel CSS — e per questo la CI esegue `npm run css:verifica`, che rigenera il file e
+lo confronta: fallisce dicendo di eseguire `npm run css`. La configurazione (colori `brand` e
+`amber`, i caratteri, `darkMode: 'class'`) sta in `tailwind.config.js`. Una classe costruita a
+pezzi (`'bg-' + colore + '-500'`) non si vede: scrivila intera.
+
+---
+
 ## 7. Decisioni e documenti
 
 - **Una scelta difficile da invertire**, o con alternative scartate: un ADR in
@@ -272,3 +291,4 @@ nel sorgente).
 | Una dipendenza che viola i livelli | `test_nessuna_dipendenza_nuova_fra_livelli` |
 | Un a capo finale in fondo a un file | `test_stile.py` |
 | Un file del frontend sopra le cinquecento righe | `test_nessun_pezzo_del_frontend_supera_le_cinquecento_righe` |
+| Di rigenerare il CSS dopo aver cambiato delle classi | `npm run css:verifica` (in CI, nel job ESLint) |

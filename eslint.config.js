@@ -49,7 +49,6 @@ const AMBIENTE = {
     ...globals.browser,
     // Caricate dalla pagina prima dei nostri copioni.
     lucide: 'readonly',
-    tailwind: 'readonly',
 };
 
 export default [

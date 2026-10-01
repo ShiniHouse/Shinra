@@ -55,37 +55,6 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="alternate icon" href="/static/icons/icon-192.png">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                        mono: ['"JetBrains Mono"', 'monospace'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            400: '#818cf8',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#1e1b4b',
-                        },
-                        amber: {
-                            400: '#fbbf24',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     <!-- Le icone: lucide, in locale e a versione fissata (la versione sta nel nome del file).
          Prima veniva da un CDN, con un ripiego su `lucide@latest`: se il CDN cambiava o
          cadeva, la dashboard di casa cambiava o restava senza icone. Vedi web/static/vendor/. -->
@@ -99,6 +68,11 @@
     <link rel="stylesheet" href="/static/css/tema-chiaro.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
     <link rel="stylesheet" href="/static/css/tinte-chiare.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
     <link rel="stylesheet" href="/static/css/avatar.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
+    <!-- Tailwind, precompilato: `npm run css` genera questo file da tailwind.config.js. Prima era
+         uno script da CDN che lo costruiva nel browser a ogni apertura e metteva i suoi stili
+         per ultimi nella pagina, vincendo a parita' di specificita': per questo sta ULTIMO,
+         dopo i fogli del progetto — stessa cascata di prima. -->
+    <link rel="stylesheet" href="/static/css/tailwind.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
 </head>
 <body class="min-h-screen flex flex-col font-sans antialiased ambient-mesh selection:bg-amber-500 selection:text-white">
 
