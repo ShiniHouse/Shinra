@@ -9,8 +9,8 @@
     "formatta": "prettier --write web/static/ tests/gesti/ playwright.config.mjs eslint.config.js",
     "gesti": "playwright test",
     "lint": "eslint web/static/js/ tests/gesti/ playwright.config.mjs",
-    "css": "tailwindcss -c tailwind.config.js -i web/tailwind.ingresso.css -o web/static/css/tailwind.css --minify",
-    "css:verifica": "node scripts/verifica-tailwind.mjs"
+    "css": "node scripts/tailwind.mjs",
+    "css:verifica": "node scripts/tailwind.mjs --verifica"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
