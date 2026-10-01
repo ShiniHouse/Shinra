@@ -83,7 +83,6 @@ AVVIO = {
     "scripts/esporta_json.py",
     "scripts/imposta_pin.py",
     "scripts/import_backlog.py",
-    "scripts/migra_da_json.py",
     "scripts/salvataggio.py",
 }
 

@@ -1,12 +1,16 @@
-"""Il passaggio dei dati dai file JSON al database, una volta sola.
+"""Lo schema del database e il seme di una casa nuova.
 
-Sta qui e non dentro lo script perche' lo usano in due: `scripts/migra_da_json.py`,
-quando lo lanci a mano, e l'avvio del servizio, che lo esegue da se' se trova
-un database vuoto accanto a file JSON pieni. Duplicarlo avrebbe voluto dire
-due comportamenti che divergono al primo ritocco.
+Due compiti, e basta:
 
-**I file JSON non vengono mai toccati.** Ne' modificati ne' cancellati ne'
-rinominati: restano il modo di tornare indietro.
+ - **portare lo schema all'ultima revisione** (`applica_migrazioni`), all'avvio e quando serve
+   far nascere un database (`crea_vuoto`);
+ - **seminare una casa nuova** (`semina_se_vuoto`): se il database non ha ancora niente, ci
+   mette i dati di esempio di `data/examples/`, cosi' una installazione nuova ha almeno un
+   profilo amministratore e qualche fonte di notizie.
+
+Il passaggio dai file JSON al database — che qui stava, e che l'avvio eseguiva da solo —
+e' finito con la v0.5: il database esiste dalla 0.2.0 e le case che avevano ancora file JSON
+si sono migrate. Per chi parte da una versione anteprima 0.1 serve la 0.5.x, che sa ancora farlo.
 """
 
 from __future__ import annotations
@@ -19,8 +23,6 @@ from typing import Any
 from shinra import percorsi
 
 logger = logging.getLogger("Shinra.Archivio")
-
-DATA_DIR = percorsi.DATI
 
 # nome del file JSON -> nome della tabella
 SORGENTI: dict[str, str] = {
@@ -45,7 +47,7 @@ def leggi(percorso: Path) -> list[dict[str, Any]]:
 
 
 def leggi_tutto(cartella: Path | None = None) -> dict[str, list[dict[str, Any]]]:
-    base = cartella or DATA_DIR
+    base = cartella or percorsi.ESEMPI
     return {tabella: leggi(base / nome) for nome, tabella in SORGENTI.items()}
 
 
@@ -99,23 +101,8 @@ def importa(letti: dict[str, list[dict[str, Any]]]) -> dict[str, int]:
     return scritti
 
 
-def verifica(letti: dict[str, list[dict[str, Any]]]) -> dict[str, tuple[int, int, int]]:
-    """Per ogni tabella: quante voci nel file, quante distinte, quante nel database.
-
-    Le voci distinte servono a distinguere una perdita da un file che
-    conteneva due volte lo stesso identificativo — nel database la chiave
-    primaria ne tiene una sola. Non e' una perdita, ma va detto.
-    """
-    from shinra.infra.db.depositi import DEPOSITI
-
-    esito: dict[str, tuple[int, int, int]] = {}
-    for tabella, voci in letti.items():
-        esito[tabella] = (len(voci), len({v.get("id") for v in voci}), DEPOSITI[tabella].conta())
-    return esito
-
-
-def importa_se_vuoto() -> dict[str, int]:
-    """Chiamata all'avvio: migra i JSON solo se il database non ha ancora niente.
+def semina_se_vuoto() -> dict[str, int]:
+    """Chiamata all'avvio: mette i dati di esempio solo se il database non ha ancora niente.
 
     E' la condizione che rende l'operazione ripetibile senza danno. Un
     database gia' popolato non viene toccato, quindi riavviare il servizio
@@ -124,16 +111,15 @@ def importa_se_vuoto() -> dict[str, int]:
     if not archivio_vuoto():
         return {}
 
-    letti = leggi_tutto()
+    letti = leggi_tutto(percorsi.ESEMPI)
     if not any(letti.values()):
         return {}
 
     scritti = importa(letti)
     totale = sum(scritti.values())
     logger.info(
-        "Dati importati dai file JSON: %d voci (%s). Gli originali restano in %s.",
+        "Casa nuova: seminate %d voci dai dati di esempio (%s).",
         totale,
         ", ".join(f"{t}={n}" for t, n in scritti.items() if n),
-        DATA_DIR,
     )
     return scritti

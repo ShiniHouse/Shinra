@@ -18,8 +18,8 @@ fi
 # l'esempio. Crearlo vorrebbe dire che ogni aggiornamento dell'esempio
 # smette di arrivare a chi non l'ha mai toccato.
 
-# Gli esempi da cui nasce la prima casa. `assicura_dati_iniziali()` li cerca
-# in `data/examples/` e da li' crea il profilo amministratore: senza, non
+# Gli esempi da cui nasce la prima casa. All'avvio `semina_se_vuoto()` li legge
+# da `data/examples/` e da li' crea il profilo amministratore: senza, non
 # c'e' nessun utente, il PIN del primo accesso non viene generato, e la
 # dashboard resta chiusa per sempre — con l'applicazione che risponde 200 e
 # sembra a posto.

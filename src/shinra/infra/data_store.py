@@ -15,47 +15,15 @@ tolti: non li usava piu' nessuno.
 from __future__ import annotations
 
 import logging
-import shutil
 import uuid
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-from shinra import percorsi
 from shinra.domain import stanze
 from shinra.infra.db import depositi
 
 logger = logging.getLogger(__name__)
-
-DATA_DIR = percorsi.DATI
-EXAMPLES_DIR = percorsi.ESEMPI
-
-
-def assicura_dati_iniziali() -> list[str]:
-    """Crea i file di esempio mancanti in data/.
-
-    Serve ancora: un'installazione nuova parte da questi file, che l'avvio
-    importa poi nel database. Un'installazione esistente non viene toccata,
-    e i file di una casa vera restano dove sono — sono il backup.
-    """
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    if not EXAMPLES_DIR.is_dir():
-        return []
-
-    creati: list[str] = []
-    for esempio in sorted(EXAMPLES_DIR.glob("*.json")):
-        destinazione = DATA_DIR / esempio.name
-        if destinazione.exists():
-            continue
-        try:
-            shutil.copyfile(esempio, destinazione)
-            creati.append(esempio.name)
-        except OSError as e:
-            logger.error("Impossibile creare %s: %s", destinazione, e)
-
-    if creati:
-        logger.info("Creati da data/examples/: %s", ", ".join(creati))
-    return creati
 
 
 class KnowledgeItem(BaseModel):

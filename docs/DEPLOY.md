@@ -281,7 +281,7 @@ sudo /opt/Shinra/.venv/bin/python /opt/Shinra/scripts/imposta_pin.py alessio --g
 ```
 
 Il PIN viene salvato cifrato e riletto dal disco per conferma: scriverlo a
-mano in `data/users.json` **non funziona**, perche' li' dentro sta l'hash.
+mano nel database **non funziona**, perche' li' dentro sta l'hash.
 
 Non serve fermare il servizio. Per chiudere subito le sessioni gia' aperte,
 `sudo systemctl restart shinra`.
@@ -342,9 +342,8 @@ installa l'ultimo tag, che oggi e' ancora `v0.1.0`.
 # 1. il servizio risponde
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8000/health   # atteso: 200
 
-# 2. i dati sono stati importati, e i JSON sono ancora al loro posto
-sudo journalctl -u shinra -n 50 --no-pager | grep -i "migrazione a SQLite"
-ls -l /opt/Shinra/data/*.json
+# 2. il database c'e' ed e' pieno
+ls -l /opt/Shinra/data/shinra.db
 
 # 3. i ruoli predefiniti sono nati
 sudo journalctl -u shinra -n 50 --no-pager | grep -i "ruoli predefiniti"
@@ -357,8 +356,8 @@ rilancia.
 
 Se qualcosa va storto dopo, lo script torna indietro da solo quando il servizio
 non risponde. Per farlo a mano: `sudo ./scripts/deploy.sh --rollback`. I
-file JSON non vengono toccati in nessun caso, quindi anche il ritorno alla
-v0.1.0 ritrova i dati di casa dove erano.
+database non viene toccato dal ritorno indietro; l'istantanea fatta all'inizio
+(`/var/backups/shinra/`) e' li' se serve tornare allo stato di prima.
 
 **Cosa cambia per chi usa la casa**, e conviene saperlo prima: da questo
 aggiornamento ogni persona ha un ruolo con i suoi permessi. I ruoli
@@ -371,12 +370,11 @@ impostazioni, `teen` e `child` non aprono serrature. Si modificano da
 
 ## Il database (dalla v0.2.0)
 
-Dalla `v0.2.0` i dati di casa hanno una destinazione nuova: `data/shinra.db`,
-un file SQLite. I sette file JSON in `data/` **restano dove sono** e non
-vengono ne' modificati ne' cancellati: sono il backup con cui tornare
-indietro finche' non ti sei convinto che il database funziona.
+I dati di casa stanno in `data/shinra.db`, un file SQLite: profili, conoscenza, alias,
+modalita', fonti, regole, registro delle azioni. Non ci sono piu' file JSON da tenere
+allineati.
 
-`scripts/deploy.sh` fa da solo due cose in piu':
+`scripts/deploy.sh` fa da solo due cose:
 
 1. **Un'istantanea coerente del database** prima di toccare qualsiasi cosa,
    in `/var/backups/shinra/shinra-db-AAAAMMGG-HHMMSS.db`. Non e' il file
@@ -386,34 +384,17 @@ indietro finche' non ti sei convinto che il database funziona.
    un backup su cui non si puo' contare e' peggio di nessun backup.
 2. **`alembic upgrade head`**, che allinea lo schema prima del riavvio.
 
-**La migrazione avviene da sola al primo avvio**, se il database e' vuoto e i
-file JSON ci sono. Non devi lanciare niente: aggiorni, il servizio riparte e
-nel log trovi quante voci ha importato. Un database gia' pieno non viene mai
-toccato, quindi riavviare non riporta indietro dati cancellati nel frattempo.
+**Una casa nuova** (database vuoto) viene seminata da sola all'avvio con i dati di esempio di
+`data/examples/`: un profilo amministratore, qualche fonte di notizie. Un database gia' pieno
+non viene mai toccato, quindi riavviare non riporta indietro dati cancellati nel frattempo.
 
-Se preferisci farla a mano prima di riavviare, o vuoi solo controllare:
+**Se hai ancora una installazione con i file JSON (precedente alla `0.2.0`)**: la migrazione al
+database non e' piu' in questa versione. Passa prima dalla `v0.5.x`, che la fa da sola al primo
+avvio (`git checkout v0.5.0`, avvia una volta, controlla `data/shinra.db`), poi aggiorna.
 
-```bash
-cd /opt/Shinra
-sudo -u shinra .venv/bin/python scripts/migra_da_json.py --prova   # cosa farebbe
-sudo -u shinra .venv/bin/python scripts/migra_da_json.py           # esegue
-sudo -u shinra .venv/bin/python scripts/migra_da_json.py --verifica  # ricontrolla
-```
-
-Per tornare ai file leggibili in qualsiasi momento:
-
-```bash
-sudo -u shinra .venv/bin/python scripts/esporta_json.py
-```
-
-Scrive in `data/esportazione/` e **non** sovrascrive i JSON originali, che
-restano la copia di sicurezza pre-migrazione.
-
-Lo script di migrazione confronta, entita' per entita', quante voci c'erano nei file e
-quante sono nel database. Se un solo numero non torna lo dice e restituisce
-un codice d'errore: i JSON sono intatti, si cancella il database e si
-riprova. Lo script si rifiuta di scrivere sopra un database che contiene
-gia' dati, cosi' eseguirlo due volte per distrazione non duplica niente.
+Per avere i dati in forma leggibile, e per rimetterli in piedi, c'e' il salvataggio:
+`scripts/salvataggio.py`; lo script `scripts/esporta_json.py` scrive una cartella di
+file JSON con dentro le tabelle, ma **senza i segreti** e senza un numero di versione.
 
 ---
 
