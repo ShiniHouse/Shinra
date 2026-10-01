@@ -30,5 +30,6 @@ import './passkey.js';
 import './impostazioni.js';
 import './cervello_fisica.js';
 import './cervello_stile.js';
+import './cervello_attivita.js';
 import './cervello_disegno.js';
 import './cervello.js';

@@ -41,9 +41,9 @@ TIPI = (
     ERRORE,
 )
 
-# Il nodo del modello: cio' che riceve la richiesta e che da' la risposta. E'
-# l'`id` che `services/cervello.py` gia' da' al sistema Ollama.
-NODO_MODELLO = "sistema:modello"
+# Il nodo del modello: cio' che riceve la richiesta e che da' la risposta. Sta nel
+# grafo come agente (`services/cervello.py`, `modello_come_agente`).
+NODO_MODELLO = "agente:modello"
 
 # Gli strumenti che **comandano** qualcosa. Gli altri leggono: «com'e' il
 # salotto» non e' un comando, e il grafo non deve lampeggiare come se lo fosse.

@@ -23,6 +23,7 @@ import { Stato } from './stato.js';
 import { getAuthHeaders, mostraRifiuto } from './accesso.js';
 import { speakText } from './voce.js';
 import { loadReminders, loadTimers, playChimeAlert } from './timer.js';
+import { attivita } from './cervello_attivita.js';
 
 let _eventiSocket = null;
 
@@ -140,6 +141,9 @@ function gestisciEvento(evento) {
         aggiornaStatoCasa(evento.dati);
     } else if (evento.tipo.startsWith('persona.') || evento.tipo.startsWith('casa.')) {
         caricaPresenza();
+    } else if (evento.tipo.startsWith('agente.')) {
+        // Il ciclo dell'agente che si racconta: il Cervello lo mostra (#189).
+        attivita.registra(evento);
     }
 }
 

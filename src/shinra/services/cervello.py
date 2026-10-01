@@ -69,6 +69,21 @@ def agenti_noti() -> List[Dict[str, Any]]:
     return []
 
 
+def modello_come_agente(modello: Dict[str, Any], strumenti: List[Dict[str, str]]) -> Dict[str, Any]:
+    """Il modello di Ollama come nodo del grafo: e' lui che riceve la richiesta e sceglie gli strumenti.
+
+    Senza questo nodo gli eventi dell'agente (#188) non avrebbero un punto da cui
+    partire, e un errore del modello non avrebbe un posto in cui farsi vedere.
+    Usa tutti gli strumenti, ed e' vero: li vede tutti a ogni richiesta con azione.
+    """
+    return {
+        "id": "modello",
+        "nome": "Modello (Ollama)",
+        "pronto": modello.get("stato") == dominio.ATTIVO,
+        "strumenti": [s["nome"] for s in strumenti],
+    }
+
+
 async def _stato_del_modello() -> Dict[str, Any]:
     global _cache_modello
     adesso = time.monotonic()
@@ -157,14 +172,15 @@ async def genera(profilo: Any = None) -> Dict[str, Any]:
     """
     regole = depositi.regole.elenco()
     modello = await _stato_del_modello()
+    strumenti = strumenti_noti()
 
     return dominio.costruisci(
         alias=depositi.alias.elenco(),
         routine=depositi.modalita.elenco(),
         regole=regole,
         fatti=depositi.fatti.elenco(),
-        strumenti=strumenti_noti(),
-        agenti=agenti_noti(),
+        strumenti=strumenti,
+        agenti=[modello_come_agente(modello, strumenti), *agenti_noti()],
         sistemi=[
             _stato_di_home_assistant(),
             modello,

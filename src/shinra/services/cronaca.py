@@ -45,6 +45,10 @@ class Cronaca:
         # Ancora non si sa chi rispondera': un intento o il modello. Nessun nodo.
         self._pubblica(ev.RICHIESTA_RICEVUTA)
 
+    def richiesta_al_modello(self) -> None:
+        """La richiesta non l'ha risolta un intento: passa al modello. Da qui parte il percorso."""
+        self._pubblica(ev.RICHIESTA_RICEVUTA, [ev.NODO_MODELLO], al_modello=True)
+
     def conoscenza_consultata(self, fatti: Iterable[Mapping[str, Any]]) -> None:
         nodi = ev.nodi_dei_fatti(fatti)
         if nodi:
@@ -56,11 +60,17 @@ class Cronaca:
         """Lo strumento scelto e, se comanda qualcosa, il dispositivo toccato."""
         if not nome:
             return
-        self._pubblica(ev.SKILL_SCELTA, [ev.nodo_strumento(nome)])
+        nodo = ev.nodo_strumento(nome)
+        self._pubblica(ev.SKILL_SCELTA, [nodo])
+        riuscito = not (isinstance(esito, dict) and (esito.get("error") or esito.get("success") is False))
         entita = (argomenti or {}).get("entity_id") if isinstance(argomenti, dict) else None
+        dispositivo: list[str] = []
         if nome in ev.STRUMENTI_CHE_COMANDANO and isinstance(entita, str) and entita.strip():
-            riuscito = not (isinstance(esito, dict) and (esito.get("error") or esito.get("success") is False))
-            self._pubblica(ev.DISPOSITIVO_COMANDATO, [ev.nodo_dispositivo(entita.strip())], riuscito=riuscito)
+            dispositivo = [ev.nodo_dispositivo(entita.strip())]
+            self._pubblica(ev.DISPOSITIVO_COMANDATO, dispositivo, riuscito=riuscito)
+        if not riuscito:
+            # Un fallimento si vede: lo strumento, e il dispositivo se c'era (#189).
+            self._pubblica(ev.ERRORE, [nodo, *dispositivo], motivo=ev.MOTIVO_STRUMENTO)
 
     def azioni(self, azioni: Iterable[Dict[str, Any]]) -> None:
         """Le azioni che un intento ha gia' compiuto senza passare dal modello."""

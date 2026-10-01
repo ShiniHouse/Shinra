@@ -113,6 +113,7 @@ class ShinraAgent:
         if settings.home_assistant.enabled:
             ha_summary = await self.ha.get_relevant_entities_summary()
 
+        cronaca.richiesta_al_modello()
         conoscenza = await servizio_conoscenza.per_la_domanda(richiesta.testo)
         cronaca.conoscenza_consultata(servizio_conoscenza.fatti_usati())
 

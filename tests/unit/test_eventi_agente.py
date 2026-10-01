@@ -94,15 +94,17 @@ async def test_una_richiesta_vera_racconta_la_sequenza(agente, raccolta):
     assert esito["response"] == RISPOSTA
     assert [e.tipo for e in raccolta] == [
         ea.RICHIESTA_RICEVUTA,
+        ea.RICHIESTA_RICEVUTA,  # la seconda: passata al modello, da qui parte il percorso
         ea.SKILL_SCELTA,
         ea.DISPOSITIVO_COMANDATO,
         ea.RISPOSTA_DATA,
     ]
-    skill, dispositivo = raccolta[1], raccolta[2]
+    assert raccolta[1].dati["nodi"] == [ea.NODO_MODELLO] and raccolta[1].dati["al_modello"] is True
+    skill, dispositivo = raccolta[2], raccolta[3]
     assert skill.dati["nodi"] == ["strumento:comanda_tapparella"]
     assert dispositivo.dati["nodi"] == ["dispositivo:cover.salotto"]
     assert dispositivo.dati["riuscito"] is True
-    assert raccolta[3].dati["nodi"] == [ea.NODO_MODELLO]
+    assert raccolta[4].dati["nodi"] == [ea.NODO_MODELLO]
     # Una sola richiesta, un solo identificativo, e il proprietario e' chi ha chiesto.
     assert len({e.dati["richiesta"] for e in raccolta}) == 1
     assert {e.dati["profilo"] for e in raccolta} == {"alessio"}
@@ -242,3 +244,31 @@ def test_il_secondo_profilo_non_riceve_gli_eventi_del_primo(casa_chiusa):
 
     assert ricevuto["dati"]["nodi"] == ["strumento:mio"]
     assert "profilo" not in ricevuto["dati"]
+
+
+async def test_uno_strumento_fallito_e_un_errore_sul_suo_nodo(agente, raccolta, monkeypatch):
+    """Il grafo vivo (#189) mostra in rosso lo strumento e il dispositivo che non hanno funzionato."""
+
+    async def fallisce(nome, argomenti):
+        return {"success": False, "error": "non risponde"}
+
+    monkeypatch.setattr(modulo_agente, "execute_tool", fallisce)
+    await _chiedi(agente)
+    await _lascia_consegnare()
+
+    errori = [e for e in raccolta if e.tipo == ea.ERRORE]
+    assert len(errori) == 1
+    assert errori[0].dati["nodi"] == ["strumento:comanda_tapparella", "dispositivo:cover.salotto"]
+    assert errori[0].dati["motivo"] == ea.MOTIVO_STRUMENTO
+    assert "non risponde" not in json.dumps(errori[0].come_json())
+
+
+async def test_il_modello_e_un_nodo_del_grafo_e_usa_gli_strumenti():
+    """Gli eventi lo nominano (`agente:modello`): deve esistere, altrimenti non si accende niente."""
+    from shinra.services import cervello
+
+    cervello.dimentica_il_modello()
+    grafo = await cervello.genera()
+    nodi = {n["id"]: n for n in grafo["nodi"]}
+    assert ea.NODO_MODELLO in nodi and nodi[ea.NODO_MODELLO]["tipo"] == "agente"
+    assert any(c["da"] == ea.NODO_MODELLO and c["tipo"] == "usa" for c in grafo["collegamenti"])

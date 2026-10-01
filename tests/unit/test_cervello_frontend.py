@@ -23,7 +23,13 @@ import pytest
 
 RADICE = Path(__file__).resolve().parent.parent.parent
 JS = RADICE / "web" / "static" / "js"
-FILE_DEL_CERVELLO = ("cervello.js", "cervello_disegno.js", "cervello_fisica.js", "cervello_stile.js")
+FILE_DEL_CERVELLO = (
+    "cervello.js",
+    "cervello_disegno.js",
+    "cervello_fisica.js",
+    "cervello_stile.js",
+    "cervello_attivita.js",
+)
 
 
 def _node(programma: str) -> dict:
@@ -156,3 +162,92 @@ def test_nessun_file_del_cervello_supera_le_cinquecento_righe():
     lunghi = {n: len((JS / n).read_text(encoding="utf-8").splitlines()) for n in FILE_DEL_CERVELLO}
 
     assert all(righe <= 500 for righe in lunghi.values()), lunghi
+
+
+# ------------------------------------------------------- il grafo vivo (#189)
+
+
+def _attivita(programma: str) -> dict:
+    if shutil.which("node") is None:
+        pytest.skip("node non disponibile: in CI c'e'")
+    modulo = (JS / "cervello_attivita.js").as_uri()
+    codice = f"import * as m from {json.dumps(modulo)};" + chr(10) + programma
+    esito = subprocess.run(
+        ["node", "--input-type=module", "-e", codice], capture_output=True, text=True, check=False, timeout=60
+    )
+    assert esito.returncode == 0, esito.stderr
+    return json.loads(esito.stdout.strip().splitlines()[-1])
+
+
+def test_un_nodo_acceso_svanisce_e_un_errore_resta_di_piu():
+    visto = _attivita("""
+const a = new m.attivita.constructor();
+a.registra({ tipo: 'agente.skill', dati: { richiesta: 'r', nodi: ['s'] } }, 0);
+a.registra({ tipo: 'agente.errore', dati: { richiesta: 'r', nodi: ['e'] } }, 0);
+console.log(JSON.stringify({
+  inizio: a.intensita('s', 0, false), meta: a.intensita('s', 2000, false), dopo: a.intensita('s', 4001, false),
+  erroreDopo: a.intensita('e', 5000, false), erroreFine: a.intensita('e', 20001, false),
+}));
+a.azzera();
+""")
+    assert visto["inizio"] == 1 and 0 < visto["meta"] < 1 and visto["dopo"] == 0
+    assert visto["erroreDopo"] > 0 and visto["erroreFine"] == 0
+
+
+def test_con_il_movimento_ridotto_un_nodo_e_acceso_o_spento():
+    visto = _attivita("""
+const a = new m.attivita.constructor();
+a.registra({ tipo: 'agente.skill', dati: { richiesta: 'r', nodi: ['s'] } }, 0);
+console.log(JSON.stringify({ a: a.intensita('s', 10, true), b: a.intensita('s', 3900, true), c: a.intensita('s', 4001, true) }));
+a.azzera();
+""")
+    assert visto == {"a": 1, "b": 1, "c": 0}
+
+
+def test_il_percorso_va_dal_modello_alla_skill_al_dispositivo_e_i_fatti_sono_in_parallelo():
+    visto = _attivita("""
+const a = new m.attivita.constructor();
+const ev = (tipo, nodi) => a.registra({ tipo, dati: { richiesta: 'r', nodi } }, 0);
+ev('agente.richiesta', []);
+ev('agente.richiesta', ['agente:modello']);
+ev('agente.conoscenza', ['fatto:1', 'fatto:2']);
+ev('agente.skill', ['strumento:x']);
+ev('agente.dispositivo', ['dispositivo:d']);
+console.log(JSON.stringify(a.segmenti(100, false).map(([da, al]) => da + '>' + al)));
+a.azzera();
+""")
+    assert visto == [
+        "agente:modello>fatto:1",
+        "agente:modello>fatto:2",
+        "fatto:1>strumento:x",
+        "fatto:2>strumento:x",
+        "strumento:x>dispositivo:d",
+    ]
+
+
+def test_senza_eventi_non_c_e_niente_di_acceso_e_gli_eventi_altrui_si_ignorano():
+    visto = _attivita("""
+const a = new m.attivita.constructor();
+const ignorato = a.registra({ tipo: 'timer.scaduto', dati: { nodi: ['x'] } }, 0);
+console.log(JSON.stringify({ ignorato, acceso: a.accesa(0, false), voci: a.voci.length }));
+""")
+    assert visto == {"ignorato": None, "acceso": False, "voci": 0}
+
+
+def test_una_voce_di_registro_dice_la_stessa_cosa_dell_evento():
+    visto = _attivita("""
+const nome = (id) => ({ 'dispositivo:d': 'luce cucina' })[id] || id;
+const v = (tipo, dati) => ({ ora: new Date(2026, 9, 1, 10, 5, 7), tipo, nodi: dati.nodi || [], errore: tipo === 'agente.errore',
+  riuscito: dati.riuscito, motivo: dati.motivo || '', alModello: Boolean(dati.al_modello) });
+const el = {};
+m.disegnaRegistro(el, [
+  v('agente.dispositivo', { nodi: ['dispositivo:d'], riuscito: false }),
+  v('agente.errore', { nodi: ['dispositivo:d'], motivo: 'strumento' }),
+  v('agente.richiesta', { nodi: ['agente:modello'], al_modello: true }),
+], nome);
+console.log(JSON.stringify({ html: String(el.innerHTML) }));
+""")["html"]
+    assert "10:05:07" in visto
+    assert "Dispositivo comandato: luce cucina (non riuscito)" in visto
+    assert "Errore (strumento): luce cucina" in visto
+    assert "Passata al modello" in visto
