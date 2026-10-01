@@ -10,14 +10,16 @@ import { loadReminders, loadTimers } from './timer.js';
 import { caricaPresenza, collegaEventi } from './eventi.js';
 import { checkSystemHealth, loadSettings } from './impostazioni.js';
 
+// La sessione sta in un cookie `HttpOnly`: il browser lo manda da solo a ogni richiesta
+// allo stesso indirizzo, e JavaScript non puo' leggerlo. E' il punto: se il token fosse
+// anche in `sessionStorage` o in un'intestazione scritta da qui, un solo script iniettato
+// (XSS) lo copierebbe, e l'`HttpOnly` non servirebbe a niente. Per questo qui non c'e'.
 export function getAuthHeaders(customHeaders = {}) {
-    const token = sessionStorage.getItem('shinra_auth_token') || '';
-    const headers = { 'Content-Type': 'application/json', ...customHeaders };
-    if (token) {
-        headers['X-Shinra-Auth'] = `Bearer ${token}`;
-    }
-    return headers;
+    return { 'Content-Type': 'application/json', ...customHeaders };
 }
+
+// Si e' entrati in questa scheda? Lo sa solo questa pagina, non il cookie (che non si legge).
+let _sessioneAperta = false;
 
 // Un corpo `FormData` porta con se' il proprio Content-Type, e dentro
 // c'e' il «boundary»: la stringa che separa i pezzi del caricamento.
@@ -229,7 +231,7 @@ async function handleUnlockSubmit(e) {
 
         if (res.ok) {
             const data = await res.json();
-            sessionStorage.setItem('shinra_auth_token', data.token);
+            _sessioneAperta = true;
             // L'utente attivo non e' piu' una scelta da menu: e' chi
             // ha appena dimostrato di essere se stesso con il PIN.
             if (data.utente && data.utente.id) {
@@ -281,7 +283,7 @@ async function lockSession() {
             headers: getAuthHeaders(),
         });
     } catch {}
-    sessionStorage.removeItem('shinra_auth_token');
+    _sessioneAperta = false;
     await checkAuthStatus();
 }
 
@@ -308,8 +310,7 @@ function resetInactivityTimer() {
     inactivityTimer = setTimeout(
         async () => {
             const isAuthEnabled = document.getElementById('cfg-sec-auth-enabled')?.checked;
-            const token = sessionStorage.getItem('shinra_auth_token');
-            if (isAuthEnabled || token) {
+            if (isAuthEnabled || _sessioneAperta) {
                 console.log(
                     `[Shinra Security] Auto-lock attivato dopo ${inactivityTimeoutMinutes} min di inattività.`,
                 );

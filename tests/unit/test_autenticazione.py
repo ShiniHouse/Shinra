@@ -444,7 +444,26 @@ def test_dietro_un_proxy_fidato_i_client_sono_distinti(casa_chiusa) -> None:
 
 def test_un_token_inventato_non_apre_nulla(casa_chiusa) -> None:
     with TestClient(app) as c:
-        r = c.get("/api/modes", headers={"X-Shinra-Auth": "Bearer un-token-inventato"})
+        c.cookies.set(sicurezza.NOME_COOKIE, "un-token-inventato")
+        assert c.get("/api/modes").status_code == 401
+
+
+def test_il_token_non_viaggia_nel_corpo_ne_nell_intestazione(casa_chiusa) -> None:
+    """Il token sta solo nel cookie `HttpOnly`: nessuno script lo puo' leggere o rimandare.
+
+    La risposta del login non lo contiene, e un token valido mandato come intestazione —
+    com'era possibile fino alla 0.5.x — non apre piu' niente.
+    """
+    with TestClient(app) as c:
+        entrato = c.post("/api/auth/login", json={"pin": PIN_DI_PROVA, "user_id": casa_chiusa.id})
+        assert entrato.status_code == 200
+        assert "token" not in entrato.json()
+        assert "httponly" in entrato.headers["set-cookie"].lower()
+        valido = c.cookies.get(sicurezza.NOME_COOKIE)
+        assert valido
+
+    with TestClient(app) as altro:  # nessun cookie: solo l'intestazione di una volta
+        r = altro.get("/api/modes", headers={"X-Shinra-Auth": f"Bearer {valido}"})
         assert r.status_code == 401
 
 

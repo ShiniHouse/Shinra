@@ -137,11 +137,14 @@ per difetto: una rotta e' pubblica solo se lo dice il codice.
 ## Come si autentica un client
 
 1. `POST /api/auth/login` con `{"user_id": "...", "pin": "..."}`. Risponde con
-   `{"success": true, "token": "...", "utente": {...}}` e imposta il cookie di
-   sessione `shinra_sessione` (non leggibile da JavaScript). Dopo cinque PIN
+   `{"success": true, "utente": {...}}` e imposta il cookie di sessione
+   `shinra_sessione` (`HttpOnly`: non leggibile da JavaScript). Dopo cinque PIN
    errati in cinque minuti risponde `429`.
-2. Il browser rimanda il cookie da solo. Un client che non usa i cookie manda
-   il token nell'intestazione `x-shinra-auth: Bearer <token>`.
+2. Il browser rimanda il cookie da solo. Il token **non** viene restituito nel
+   corpo e non si accetta in un'intestazione: un client esterno tiene un cookie
+   jar (`curl -c cookie.txt ...` al login, poi `curl -b cookie.txt ...`). Fino
+   alla 0.5.x c'era anche l'intestazione `x-shinra-auth`: l'`HttpOnly` non
+   serviva a niente se lo stesso token era leggibile da uno script.
 3. La sessione dura trenta giorni. Una sessione scaduta risponde `401`; la
    dashboard lo dice e riporta all'accesso invece di ritentare.
 4. `POST /api/auth/logout` la chiude.

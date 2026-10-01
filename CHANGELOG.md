@@ -38,6 +38,9 @@ installabile e utilizzabile.
 
 ---
 
+### Modificato
+- **Il token di sessione viaggia solo nel cookie `HttpOnly`.** Prima tornava anche nel corpo del login, finiva in `sessionStorage` e si rimandava nell'intestazione `x-shinra-auth`: leggibile da uno script, quindi un XSS lo avrebbe rubato e l'`HttpOnly` non serviva a niente. Ora il corpo non lo contiene, l'interfaccia non lo conserva e il server non accetta piu' l'intestazione. **Cambia per i client esterni**: vanno usati con un cookie jar (`curl -c`/`-b`).
+
 ## [0.5.0] - 2026-10-01 - Prodotto
 
 Note complete: [`docs/release/v0.5.0.md`](docs/release/v0.5.0.md).

@@ -38,7 +38,6 @@ from shinra.services.user_manager import UserProfile, user_manager
 logger = logging.getLogger("Shinra.Sicurezza")
 
 NOME_COOKIE = "shinra_sessione"
-INTESTAZIONE_LEGACY = "x-shinra-auth"
 
 DURATA_SESSIONE = 30 * 24 * 3600  # 30 giorni — vedi ADR 0004
 MAX_SESSIONI = 200
@@ -353,19 +352,15 @@ def rimuovi_cookie_sessione(response: Response) -> None:
 
 
 def token_dalla_richiesta(request: HTTPConnection) -> Optional[str]:
-    """Cookie prima, intestazione poi.
+    """Il token di sessione: solo dal cookie.
 
-    L'intestazione resta accettata perche' l'interfaccia attuale la usa e i
-    client esterni ne hanno bisogno; il cookie e' preferibile perche' non e'
-    leggibile da JavaScript.
+    Prima si accettava anche l'intestazione `x-shinra-auth`, e l'interfaccia teneva il
+    token in `sessionStorage` per mandarla: cosi' il token era leggibile da JavaScript, e
+    un solo script iniettato (XSS) lo avrebbe rubato — il cookie `HttpOnly` non serviva
+    a niente. Ora il token viaggia solo nel cookie, che il browser manda da solo e che
+    nessuno script puo' leggere. Un client esterno usa un cookie jar (`curl -c/-b`).
     """
-    dal_cookie = request.cookies.get(NOME_COOKIE)
-    if dal_cookie:
-        return dal_cookie
-    grezza = request.headers.get(INTESTAZIONE_LEGACY)
-    if grezza:
-        return grezza.replace("Bearer ", "").strip()
-    return None
+    return request.cookies.get(NOME_COOKIE) or None
 
 
 # --------------------------------------------------------------------------
