@@ -3894,7 +3894,7 @@ def test_il_tema_si_decide_prima_dei_copioni():
     """
     pagina = _testo(PAGINA)
     tema = pagina.index("shinra_theme_mode")
-    for piu_lento in ('<link rel="stylesheet"', "cdn.tailwindcss.com", "fonts.googleapis.com", "<body"):
+    for piu_lento in ('<link rel="stylesheet"', "cdn.tailwindcss.com", 'rel="preload"', "<body"):
         assert pagina.index(piu_lento) > tema, (
             f"«{piu_lento}» viene prima della decisione sul tema: "
             "la pagina si disegna scura e poi cambia colore."

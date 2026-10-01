@@ -32,7 +32,7 @@ scattare in una casa vera. Note: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.
 - **Il frontend in moduli ES** (#34, chiusa): `index.html` è passato da 7.438
   righe a un'ossatura di poche righe; il markup delle schede sta in nove file inclusi, il
   JavaScript in ventitré moduli nativi con un punto d'ingresso,
-  nessuno oltre le cinquecento righe (c'è una guardia); il CSS in cinque. Nessun bundler: il codice servito è
+  nessuno oltre le cinquecento righe (c'è una guardia); il CSS diviso per area. Nessun bundler: il codice servito è
   quello del repository ([ADR 0006](docs/adr/0006-niente-bundler.md)). Il
   markup non esegue più stringhe — nomina un gesto — e ogni valore che finisce
   nella pagina viene scappato: prima bastava un dispositivo chiamato

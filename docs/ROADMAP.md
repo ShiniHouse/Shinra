@@ -240,7 +240,7 @@ e JavaScript da `index.html` e li hanno divisi per area.
 | `web/templates/index.html` | 7.438 righe | un'ossatura di poche righe |
 | File di markup | 1 | 10: l'ossatura e nove pezzi inclusi |
 | File JavaScript | 1, dentro l'HTML | decine di moduli ES, nessuno oltre le cinquecento righe (con guardia) |
-| File CSS | 1, dentro l'HTML | 5 |
+| File CSS | 1, dentro l'HTML | uno per area |
 | ESLint e Prettier | non esistevano | in CI, obbligatori |
 | HTML costruito concatenando stringhe | ovunque | **zero**, con guardia |
 
