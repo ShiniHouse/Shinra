@@ -11,7 +11,7 @@ difetto e' stato visto guardando la schermata.
 
 La versione di lucide e' **fissata** nella pagina, quindi esiste un elenco
 esatto dei nomi validi: questo script lo estrae, e
-`tests/unit/test_interfaccia.py` lo usa come oracolo.
+`tests/unit/test_frontend_sintassi.py` lo usa come oracolo.
 
 ## Quando rieseguirlo
 

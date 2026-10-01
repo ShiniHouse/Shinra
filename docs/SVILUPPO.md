@@ -239,7 +239,7 @@ con `_grezzo(...)`. Mai `innerHTML = \`...${valore}...\``.
 **5. Un file non supera le cinquecento righe.** Lo dice un test.
 
 **6. Verifica:** `npm run lint`, `npm run formato`, i test Python del frontend
-(`tests/unit/test_interfaccia.py`) e, se tocchi un gesto, un test in
+(`tests/unit/test_frontend_*.py`, uno per area) e, se tocchi un gesto, un test in
 `tests/gesti/` (un browser vero: un clic che un antenato si mangia non si vede
 nel sorgente).
 

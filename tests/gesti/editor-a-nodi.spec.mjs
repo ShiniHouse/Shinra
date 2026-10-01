@@ -10,7 +10,7 @@
 //      piano dei nodi copriva tutta la tela e si prendeva il clic.
 //
 // Nessuna delle due si vede leggendo il sorgente: la prima vive negli
-// eventi, la seconda nel disegno. Le guardie di `test_interfaccia.py`
+// eventi, la seconda nel disegno. Le guardie di `test_frontend_*.py`
 // leggono il sorgente, quindi erano cieche per costruzione — e
 // aggiungerne una che legge le classi con piu' attenzione non basta,
 // perche' un elemento puo' coprirne un altro in mille modi.
