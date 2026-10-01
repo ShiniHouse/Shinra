@@ -9,6 +9,7 @@ from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.llm.ollama import OllamaClient
 from shinra.services.conoscenza import servizio_conoscenza
+from shinra.services.cronaca import Cronaca
 from shinra.services.intenti import Richiesta, instrada
 from shinra.services.intenti.lingue import schemi
 from shinra.services.memory import ConversationMemory, gestore_memorie
@@ -53,6 +54,10 @@ class ShinraAgent:
         # memoria propria — un test, un canale separato — la passa e vince.
         mem = session_memory or gestore_memorie.per_utente(profile.id if profile else user_id)
 
+        # Il racconto della richiesta, per il grafo del Cervello (issue #188).
+        cronaca = Cronaca(profile.id if profile else user_id)
+        cronaca.richiesta_ricevuta()
+
         # 1b. Argomenti vietati al profilo: si controlla prima di qualunque
         # altra cosa, altrimenti il fast-path potrebbe agire su una richiesta
         # che questo utente non ha il diritto di fare.
@@ -67,6 +72,7 @@ class ShinraAgent:
             rifiuto = lingua.dice("argomento_vietato")
             mem.add_user_message(user_text)
             mem.add_assistant_message(rifiuto)
+            cronaca.risposta_data(dal_modello=False)
             return {
                 "response": rifiuto,
                 "actions": [],
@@ -86,6 +92,8 @@ class ShinraAgent:
         if risposta is not None:
             mem.add_user_message(user_text)
             mem.add_assistant_message(risposta.testo)
+            cronaca.azioni(richiesta.azioni)
+            cronaca.risposta_data(dal_modello=False)
             return {
                 "response": risposta.testo,
                 "actions": richiesta.azioni,
@@ -105,6 +113,9 @@ class ShinraAgent:
         if settings.home_assistant.enabled:
             ha_summary = await self.ha.get_relevant_entities_summary()
 
+        conoscenza = await servizio_conoscenza.per_la_domanda(richiesta.testo)
+        cronaca.conoscenza_consultata(servizio_conoscenza.fatti_usati())
+
         system_prompt = get_system_prompt(
             lingua=lingua,
             home_context_summary=ha_summary,
@@ -113,7 +124,7 @@ class ShinraAgent:
             # Il recupero al posto dell'iniezione totale (issue #32). Sotto
             # i venticinque fatti manda tutto come prima: il problema esiste
             # a duecento fatti, non a venti.
-            custom_knowledge=await servizio_conoscenza.per_la_domanda(richiesta.testo),
+            custom_knowledge=conoscenza,
             device_aliases=data_store.get_aliases_summary(),
             modes_summary=data_store.get_modes_summary(),
         )
@@ -156,6 +167,7 @@ class ShinraAgent:
             if not response.get("success"):
                 err_msg = response.get("error") or "Ollama"
                 logger.error(f"[Shinra] Errore Ollama: {err_msg}")
+                cronaca.errore("modello")
                 fallback = lingua.dice("errore_ollama", errore=err_msg)
                 return {
                     "response": fallback,
@@ -181,6 +193,7 @@ class ShinraAgent:
 
                     logger.info(f"[Shinra] Rilevato tool testuale: '{t_name}' con {t_args}")
                     t_res = await execute_tool(t_name, t_args)
+                    cronaca.strumento(t_name, t_args, t_res)
                     actions_taken.append({"tool": t_name, "args": t_args, "result": t_res})
                     mem.add_tool_interaction(t_name, t_args, t_res)
 
@@ -200,6 +213,7 @@ class ShinraAgent:
                 else:
                     final_text = content.strip() or lingua.dice("operazione_completata")
                     mem.add_assistant_message(final_text)
+                    cronaca.risposta_data(dal_modello=True)
                     return {
                         "response": final_text,
                         "actions": actions_taken,
@@ -224,6 +238,7 @@ class ShinraAgent:
 
                 logger.info(f"Esecuzione tool '{tool_name}' con parametri: {args}")
                 tool_result = await execute_tool(tool_name, args)
+                cronaca.strumento(str(tool_name or ""), args, tool_result)
 
                 actions_taken.append({"tool": tool_name, "args": args, "result": tool_result})
                 mem.add_tool_interaction(tool_name, args, tool_result)
@@ -238,6 +253,7 @@ class ShinraAgent:
 
         fallback = lingua.dice("dati_verificati")
         mem.add_assistant_message(fallback)
+        cronaca.risposta_data(dal_modello=True)
         return {
             "response": fallback,
             "actions": actions_taken,
