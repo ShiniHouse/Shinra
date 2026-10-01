@@ -86,13 +86,10 @@
             }
         }
     </script>
-    <!-- Lucide Icons with CDN Fallback -->
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
-    <script>
-        if (typeof lucide === 'undefined') {
-            document.write('<script src="https://unpkg.com/lucide@latest"><\/script>');
-        }
-    </script>
+    <!-- Le icone: lucide, in locale e a versione fissata (la versione sta nel nome del file).
+         Prima veniva da un CDN, con un ripiego su `lucide@latest`: se il CDN cambiava o
+         cadeva, la dashboard di casa cambiava o restava senza icone. Vedi web/static/vendor/. -->
+    <script src="/static/vendor/lucide-0.344.0.min.js"></script>
     <!-- Il foglio di stile sta in file suoi dalla #34, uno per area.
          L'ordine conta: le atmosfere definiscono le variabili che il
          tema chiaro poi sovrascrive. -->

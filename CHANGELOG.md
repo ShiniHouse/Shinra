@@ -39,6 +39,7 @@ installabile e utilizzabile.
 ---
 
 ### Modificato
+- **Le icone (lucide) vengono dal nostro server, a versione fissata.** Prima la pagina le caricava da un CDN, con un ripiego su `lucide@latest`: se il CDN cadeva la dashboard restava senza icone, e se cambiava cambiava la dashboard. Il file sta in `web/static/vendor/` (verificato identico fra jsDelivr e npm), la versione e' nel nome. Anche l'aggiornamento dell'elenco delle icone valide ora non richiede la rete.
 - **L'avvio non copia piu' file JSON.** Una casa nuova (database vuoto) viene seminata direttamente dai dati di `data/examples/`; spariti la copia in `data/`, l'importazione dei JSON all'avvio e `scripts/migra_da_json.py`. Chi ha ancora una installazione precedente alla 0.2.0 passa prima dalla 0.5.x, che sa ancora migrare.
 - **Il token di sessione viaggia solo nel cookie `HttpOnly`.** Prima tornava anche nel corpo del login, finiva in `sessionStorage` e si rimandava nell'intestazione `x-shinra-auth`: leggibile da uno script, quindi un XSS lo avrebbe rubato e l'`HttpOnly` non serviva a niente. Ora il corpo non lo contiene, l'interfaccia non lo conserva e il server non accetta piu' l'intestazione. **Cambia per i client esterni**: vanno usati con un cookie jar (`curl -c`/`-b`).
 

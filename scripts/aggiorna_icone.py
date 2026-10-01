@@ -15,7 +15,8 @@ esatto dei nomi validi: questo script lo estrae, e
 
 ## Quando rieseguirlo
 
-Quando cambia la versione di lucide in `web/templates/index.html`. C'e' una
+Quando cambia la versione di lucide (il file in `web/static/vendor/` e il suo
+nome in `web/templates/index.html`). C'e' una
 guardia che fallisce se l'elenco parla di una versione diversa da quella
 fissata: un elenco che parla di un'altra versione e' peggio di nessun elenco.
 
@@ -23,14 +24,13 @@ fissata: un elenco che parla di un'altra versione e' peggio di nessun elenco.
 
     python scripts/aggiorna_icone.py
 
-Serve la rete: scarica il bundle da jsDelivr.
+Non serve la rete: legge il file di lucide che sta nel repository.
 """
 
 from __future__ import annotations
 
 import re
 import sys
-import urllib.request
 
 from shinra import percorsi
 
@@ -48,7 +48,7 @@ SBAGLIATI = ("House", "WandSparkles")
 
 
 def versione_fissata() -> str:
-    trovato = re.search(r"lucide@([\d.]+)/dist/umd/lucide\.min\.js", PAGINA.read_text(encoding="utf-8"))
+    trovato = re.search(r"/static/vendor/lucide-([\d.]+)\.min\.js", PAGINA.read_text(encoding="utf-8"))
     if not trovato:
         raise SystemExit("Non trovo la versione di lucide fissata nella pagina.")
     return trovato.group(1)
@@ -67,11 +67,9 @@ def nomi_dal_bundle(sorgente: str) -> list[str]:
 
 def main() -> int:
     versione = versione_fissata()
-    indirizzo = f"https://cdn.jsdelivr.net/npm/lucide@{versione}/dist/umd/lucide.min.js"
-    print(f"Scarico {indirizzo}")
-
-    with urllib.request.urlopen(indirizzo, timeout=60) as risposta:
-        sorgente = risposta.read().decode("utf-8")
+    file = percorsi.RADICE / "web" / "static" / "vendor" / f"lucide-{versione}.min.js"
+    print(f"Leggo {file.relative_to(percorsi.RADICE)}")
+    sorgente = file.read_text(encoding="utf-8")
 
     nomi = nomi_dal_bundle(sorgente)
 
