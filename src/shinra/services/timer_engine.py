@@ -53,10 +53,6 @@ class TimerEngine:
             t["remaining_seconds"] = max(0, int(t.get("expires_at", adesso) - adesso))
         return timers
 
-    def save_timers(self, items: List[Dict[str, Any]]) -> None:
-        """Riscrive tutti i timer. Resta per compatibilita': preferisci add/delete."""
-        depositi.timer.sostituisci_tutto(items)
-
     def add_timer(self, label: str, duration_seconds: int, user_id: str = "alessio") -> Dict[str, Any]:
         adesso = time.time()
         t_id = f"timer_{uuid.uuid4().hex[:6]}"
@@ -103,9 +99,6 @@ class TimerEngine:
 
     def get_reminders(self) -> List[Dict[str, Any]]:
         return depositi.promemoria.elenco()
-
-    def save_reminders(self, items: List[Dict[str, Any]]) -> None:
-        depositi.promemoria.sostituisci_tutto(items)
 
     def add_reminder(self, text: str, remind_at_iso: str, user_id: str = "alessio") -> Dict[str, Any]:
         """Crea un promemoria. La primitiva sta in `skills/reminders.py`.

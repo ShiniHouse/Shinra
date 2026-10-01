@@ -245,12 +245,6 @@ def imposta_cookie_dispositivo(response: Response, credenziale: str) -> None:
     )
 
 
-def rimuovi_cookie_dispositivo(response: Response) -> None:
-    from shinra.api import dispositivi
-
-    response.delete_cookie(key=dispositivi.NOME_COOKIE, path="/")
-
-
 def chiudi_sessione(token: Optional[str]) -> None:
     if token:
         _stato.sessioni.pop(token, None)

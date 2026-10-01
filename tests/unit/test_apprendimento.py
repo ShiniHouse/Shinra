@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from shinra.infra.data_store import DataStore
-from shinra.infra.db import importazione
+from shinra.infra.db import depositi, importazione
 from shinra.infra.llm.ollama import OllamaClient
 from shinra.services.interview_engine import (
     INTERVIEW_STEPS,
@@ -61,7 +61,7 @@ def test_gli_identificativi_restano_unici_dopo_una_cancellazione(archivio: DataS
     nuovo sovrascriverebbe un fatto diverso."""
     a = archivio.add_knowledge_item("Primo fatto")
     b = archivio.add_knowledge_item("Secondo fatto")
-    archivio.save_knowledge([f for f in archivio.get_knowledge() if f["id"] != a["id"]])
+    depositi.fatti.sostituisci_tutto([f for f in archivio.get_knowledge() if f["id"] != a["id"]])
     c = archivio.add_knowledge_item("Terzo fatto")
     assert len({a["id"], b["id"], c["id"]}) == 3
 

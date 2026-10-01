@@ -19,6 +19,7 @@ from shinra.api.app import app
 from shinra.config.settings import settings
 from shinra.domain import eventi_agente as ea
 from shinra.domain.eventi import bus
+from shinra.infra.db import depositi
 from shinra.services import agent as modulo_agente
 from shinra.services.agent import ShinraAgent
 from shinra.services.memory import ConversationMemory
@@ -222,7 +223,7 @@ def casa_chiusa():
     for u in utenti:
         if u.id == amministratore.id:
             u.pin = pin_originale
-    user_manager.save_users(utenti)
+    depositi.utenti.sostituisci_tutto([u.model_dump() for u in utenti])
     sicurezza.azzera_stato()
 
 
