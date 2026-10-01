@@ -93,6 +93,9 @@ def test_ogni_copione_nominato_dalle_guide_esiste():
     mancanti = []
     trovati = 0
     for guida in _tutti_i_documenti():
+        # Il CHANGELOG e' una cronaca: racconta anche gli script che c'erano e non ci sono piu'.
+        if guida.name == "CHANGELOG.md":
+            continue
         for nome in COPIONE.findall(guida.read_text(encoding="utf-8")):
             trovati += 1
             if not (RADICE / "scripts" / nome).is_file():

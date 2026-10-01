@@ -240,133 +240,41 @@ def test_le_migrazioni_producono_esattamente_i_modelli(tmp_path):
     )
 
 
-# ---------------------------------------------------------------- migrazione
-
-
-def _carica_script():
-    import importlib.util
-
-    percorso = RADICE / "scripts" / "migra_da_json.py"
-    spec = importlib.util.spec_from_file_location("migra_da_json", percorso)
-    modulo = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(modulo)
-    return modulo
-
-
-def test_la_migrazione_importa_tutto_e_non_tocca_i_json(tmp_path, monkeypatch):
-    """Il criterio di accettazione della issue #12, provato sul serio."""
-    sorgente = tmp_path / "data"
-    sorgente.mkdir()
-    contenuti = {
-        "users.json": [{"id": "alessio", "name": "Alessio", "role": "admin", "pin": None}],
-        "knowledge.json": [{"id": "k1", "text": "un fatto", "category": "casa", "enabled": True}],
-        "device_aliases.json": [{"id": "a1", "alias": "luce cucina", "entity_id": "light.cucina"}],
-        "modes.json": [{"id": "m1", "name": "Cinema", "trigger_phrases": ["cinema"], "actions": []}],
-        "sources.json": [{"id": "s1", "name": "ANSA", "category": "mondo", "url": "https://x.it/rss"}],
-        "timers.json": [],
-        "reminders.json": [{"id": "r1", "text": "medicine", "remind_at": "2026-09-04T18:00:00"}],
-    }
-    impronte = {}
-    for nome, dati in contenuti.items():
-        (sorgente / nome).write_text(json.dumps(dati, ensure_ascii=False), encoding="utf-8")
-        impronte[nome] = (sorgente / nome).read_bytes()
-
-    from shinra.infra.db import importazione
-
-    script = _carica_script()
-    monkeypatch.setattr(importazione, "DATA_DIR", sorgente)
-
-    destinazione = tmp_path / "migrato.db"
-    esito = script.migra(destinazione, prova=False)
-
-    assert esito == 0
-    for nome, contenuto in impronte.items():
-        assert (sorgente / nome).read_bytes() == contenuto, f"{nome} e' stato modificato"
-
-    motore.reimposta(destinazione)
-    assert depositi.utenti.conta() == 1
-    assert depositi.fatti.conta() == 1
-    assert depositi.promemoria.conta() == 1
-    assert depositi.timer.conta() == 0
-    assert depositi.modalita.per_id("m1")["trigger_phrases"] == ["cinema"]
-
-
-def test_la_migrazione_si_rifiuta_di_scrivere_sopra_dati_esistenti(tmp_path, monkeypatch):
-    sorgente = tmp_path / "data"
-    sorgente.mkdir()
-    for nome in (
-        "users.json",
-        "knowledge.json",
-        "device_aliases.json",
-        "modes.json",
-        "sources.json",
-        "timers.json",
-        "reminders.json",
-    ):
-        (sorgente / nome).write_text("[]", encoding="utf-8")
-    (sorgente / "knowledge.json").write_text(json.dumps([{"id": "k1", "text": "primo"}]), encoding="utf-8")
-
-    from shinra.infra.db import importazione
-
-    script = _carica_script()
-    monkeypatch.setattr(importazione, "DATA_DIR", sorgente)
-    destinazione = tmp_path / "migrato.db"
-
-    assert script.migra(destinazione, prova=False) == 0
-    assert script.migra(destinazione, prova=False) == 2  # la seconda volta si ferma
-
-
 # ------------------------------------------------------------- primo avvio
 
 
-def test_al_primo_avvio_i_dati_di_esempio_finiscono_nel_database(tmp_path, monkeypatch):
+def test_al_primo_avvio_i_dati_di_esempio_finiscono_nel_database(tmp_path):
     """Un'installazione nuova deve trovarsi una casa d'esempio funzionante,
-    senza che nessuno lanci niente a mano."""
-    import shutil as _shutil
-
+    senza che nessuno lanci niente a mano — e senza copiare file in `data/`:
+    il seme va dagli esempi al database, e basta."""
     from shinra.api import app as modulo_app
-    from shinra.infra import data_store as modulo_dati
-    from shinra.infra.db import importazione
 
-    cartella = tmp_path / "data"
-    cartella.mkdir()
-    _shutil.copytree(RADICE / "data" / "examples", cartella / "examples")
-
-    monkeypatch.setattr(modulo_dati, "DATA_DIR", cartella)
-    monkeypatch.setattr(modulo_dati, "EXAMPLES_DIR", cartella / "examples")
-    monkeypatch.setattr(importazione, "DATA_DIR", cartella)
     motore.reimposta(tmp_path / "nuovo.db")
 
     modulo_app._prepara_archivio()
 
-    assert depositi.utenti.conta() >= 1
+    assert depositi.utenti.conta() >= 1, "senza un profilo non c'e' nessuno che possa entrare"
     assert depositi.fonti.conta() >= 1
-    # E i file JSON esistono: sono il backup, e la sorgente se si ricomincia.
-    assert (cartella / "users.json").exists()
+    assert not list(tmp_path.glob("*.json")), "la semina non deve lasciare file JSON in giro"
 
 
-def test_un_riavvio_non_riporta_indietro_cio_che_e_stato_cancellato(tmp_path, monkeypatch):
-    """`importa_se_vuoto` importa solo su un database completamente vuoto.
+def test_un_riavvio_non_riporta_indietro_cio_che_e_stato_cancellato():
+    """`semina_se_vuoto` semina solo un database completamente vuoto.
 
     Senza questa condizione, ogni riavvio del servizio rimetterebbe dentro i
-    profili e i fatti cancellati dalle impostazioni: l'utente li toglie, il
-    servizio riparte, e sono di nuovo li'.
+    profili e i fatti di esempio cancellati dalle impostazioni: l'utente li
+    toglie, il servizio riparte, e sono di nuovo li'.
     """
     from shinra.infra.db import importazione
-
-    cartella = tmp_path / "data"
-    cartella.mkdir()
-    (cartella / "knowledge.json").write_text(
-        json.dumps([{"id": "k_vecchio", "text": "cancellato dall'utente"}]), encoding="utf-8"
-    )
-    monkeypatch.setattr(importazione, "DATA_DIR", cartella)
 
     # Il database di questo test non e' vuoto: la fixture lo riempie con la
     # casa d'esempio, esattamente come lo sarebbe quello di una casa vera.
     assert not importazione.archivio_vuoto()
+    fatto = depositi.fatti.elenco()[0]
+    depositi.fatti.cancella(fatto["id"])
 
-    assert importazione.importa_se_vuoto() == {}
-    assert depositi.fatti.per_id("k_vecchio") is None
+    assert importazione.semina_se_vuoto() == {}
+    assert depositi.fatti.per_id(fatto["id"]) is None
 
 
 def test_l_esportazione_rende_i_dati_leggibili_senza_shinra(tmp_path):

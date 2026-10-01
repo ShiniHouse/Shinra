@@ -69,7 +69,6 @@ DEBITO: frozenset[str] = frozenset(
         "api/app.py -> shinra.infra.homeassistant.client",
         "api/app.py -> shinra.infra.llm.ollama",
         "api/app.py -> shinra.infra.tts",
-        "api/ciclo_di_vita.py -> shinra.infra.data_store",
         "api/ciclo_di_vita.py -> shinra.infra.db",
         "api/ciclo_di_vita.py -> shinra.infra.homeassistant.client",
         "api/ciclo_di_vita.py -> shinra.infra.scheduler.motore",

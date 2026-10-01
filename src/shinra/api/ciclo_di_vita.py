@@ -21,7 +21,6 @@ from shinra.config.settings import (
     settings,
     verifica_configurazione,
 )
-from shinra.infra.data_store import assicura_dati_iniziali
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.scheduler.motore import scheduler
 from shinra.services import eventi_casa, permessi, registro
@@ -128,12 +127,11 @@ def _pulisci_registro() -> None:
 
 
 def _prepara_archivio() -> None:
-    """Allinea lo schema e, la prima volta, porta dentro i dati dai file JSON.
+    """Allinea lo schema e, la prima volta, semina la casa con i dati di esempio.
 
-    L'importazione avviene solo se il database e' completamente vuoto: cosi'
+    La semina avviene solo se il database e' completamente vuoto: cosi'
     riavviare il servizio non riporta mai indietro dati cancellati nel
-    frattempo. I file JSON non vengono toccati — restano il modo di tornare
-    indietro finche' non ci si fida del database.
+    frattempo.
 
     Se qualcosa va storto non si blocca l'avvio: una casa senza controllo e'
     peggio di una casa con l'anagrafica vecchia. Il problema finisce nel log
@@ -142,21 +140,16 @@ def _prepara_archivio() -> None:
     from shinra.infra.db import importazione
 
     try:
-        assicura_dati_iniziali()
         importazione.applica_migrazioni()
-        importati = importazione.importa_se_vuoto()
-        # I ruoli nascono qui, dopo lo schema e dopo l'eventuale importazione:
+        importati = importazione.semina_se_vuoto()
+        # I ruoli nascono qui, dopo lo schema e dopo l'eventuale semina:
         # i loro identificativi coincidono con i valori che il campo `role` ha
         # gia' nei profili, quindi chi aggiorna si ritrova gia' assegnato.
         creati = permessi.assicura_ruoli_predefiniti()
         if creati:
             logger.info("Ruoli predefiniti creati: %s", ", ".join(creati))
         if importati:
-            logger.warning(
-                "Prima migrazione a SQLite: importate %d voci dai file JSON, "
-                "che restano intatti in data/ come backup.",
-                sum(importati.values()),
-            )
+            logger.info("Casa nuova: seminate %d voci dai dati di esempio.", sum(importati.values()))
     except Exception as e:
         logger.error("Preparazione del database non riuscita: %s", e, exc_info=True)
 
