@@ -16,4 +16,5 @@ deploy/
 migrazioni/
 web/templates/
 web/static/vendor/
+web/static/fonts/
 package-lock.json
