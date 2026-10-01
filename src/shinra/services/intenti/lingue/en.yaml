@@ -143,6 +143,44 @@ agente:
     - find online
     - devices
     - entities
+    # --- added by #183: the benchmark showed that half the requests that have a
+    # tool reached the model without any tool, so it could only make an answer up.
+    - put
+    - start
+    - stop
+    - pause
+    - resume
+    - volume
+    - weather
+    - forecast
+    - news
+    - who was
+    - what does
+    - list
+    - shopping
+    - remind
+    - reminder
+    - deadline
+    - due
+    - appointment
+    - schedule
+    - calendar
+    - energy
+    - consumption
+    - tariff
+    - how much does it cost
+    - climate
+    - air conditioning
+    - blind
+    - shutter
+    - window
+    - lock
+    - alarm
+    - vacuum
+    - television
+    - tv
+    - fan
+    - how is the house
 
 calendario:
   giorni: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]

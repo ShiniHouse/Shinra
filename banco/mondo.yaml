@@ -1,0 +1,80 @@
+# La casa finta in cui gira il banco di prova (issue #183).
+#
+# Il modello non deve parlare con una casa vera: deve scegliere uno strumento e
+# passargli gli argomenti giusti. Qui sta tutto cio' che il prompt di produzione
+# racconta al modello — gli alias, le modalita' — e le risposte finte che gli
+# strumenti danno quando vengono chiamati, cosi' un ciclo a piu' passaggi si
+# puo' eseguire per intero.
+#
+# Un `entity_id` che non e' in `entita` e' un'invenzione del modello, e il banco
+# lo conta a parte: e' il difetto piu' grave, perche' un comando verso un
+# dispositivo che non esiste non da' un errore chiaro.
+
+citta: Bologna
+
+alias:
+  - { alias: luce cucina, entity_id: light.cucina, room: Cucina }
+  - { alias: luce salotto, entity_id: light.salotto, room: Salotto }
+  - { alias: luce camera, entity_id: light.camera, room: Camera }
+  - { alias: luce studio, entity_id: light.studio, room: Studio }
+  - { alias: luce corridoio, entity_id: light.corridoio, room: Corridoio }
+  - { alias: luce bagno, entity_id: light.bagno, room: Bagno }
+  - { alias: caffettiera, entity_id: switch.caffettiera, room: Cucina }
+  - { alias: clima salotto, entity_id: climate.salotto, room: Salotto }
+  - { alias: clima camera, entity_id: climate.camera, room: Camera }
+  - { alias: tapparella salotto, entity_id: cover.salotto, room: Salotto }
+  - { alias: tapparella camera, entity_id: cover.camera, room: Camera }
+  - { alias: serratura ingresso, entity_id: lock.ingresso, room: Ingresso }
+  - { alias: allarme casa, entity_id: alarm_control_panel.casa, room: Generale }
+  - { alias: aspirapolvere, entity_id: vacuum.robot, room: Generale }
+  - { alias: tv salotto, entity_id: media_player.tv_salotto, room: Salotto }
+  - { alias: ventilatore studio, entity_id: fan.studio, room: Studio }
+
+modalita:
+  - { name: Cinema, frasi: ["modalità cinema", "mettiamo su un film"], descrizione: "Luci basse e tapparelle chiuse." }
+  - { name: Notte, frasi: ["vado a dormire", "buonanotte"], descrizione: "Spegne le luci e arma l'allarme." }
+
+# Il riassunto della casa che il programma mette nel contesto.
+riassunto_casa: "luce cucina: spenta; luce salotto: accesa; clima salotto: 21 gradi; tapparella salotto: aperta"
+
+# Cosa rispondono gli strumenti. Chiave: nome dello strumento. Un valore e' il
+# risultato che il modello rilegge; senza voce, risponde `{success: true}`.
+risposte:
+  get_weather:
+    success: true
+    localita: Bologna
+    adesso: { temperatura: "18", condizione: Sereno }
+    previsioni: [{ temp_max: 22, temp_min: 11, condizione: Sereno }, { temp_max: 20, temp_min: 10, condizione: Nuvoloso }]
+  get_latest_news:
+    success: true
+    notizie: [{ titolo: "Titolo di prova uno" }, { titolo: "Titolo di prova due" }]
+  search_wikipedia:
+    success: true
+    estratto: "Estratto di enciclopedia di prova."
+  search_web:
+    success: true
+    risultati: [{ titolo: "Risultato di prova", sintesi: "Sintesi di prova." }]
+  get_home_status:
+    success: true
+    stati: [{ entity_id: light.salotto, stato: "on" }, { entity_id: climate.salotto, stato: heat }]
+  stato_aperture:
+    success: true
+    aperte: []
+  fascia_corrente:
+    success: true
+    fascia: F2
+  consumo_energia:
+    success: true
+    kwh: 6.4
+  leggi_lista:
+    success: true
+    voci: [pane, uova]
+  impegni:
+    success: true
+    impegni: []
+  scadenze_in_arrivo:
+    success: true
+    scadenze: []
+  list_reminders:
+    success: true
+    promemoria: []

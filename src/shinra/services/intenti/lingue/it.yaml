@@ -156,6 +156,48 @@ agente:
     - trova online
     - dispositivi
     - entità
+    # --- aggiunte dalla #183: il banco di prova ha mostrato che meta' delle
+    # richieste che hanno uno strumento arrivavano al modello senza strumenti,
+    # e il modello non poteva che inventare la risposta.
+    - metti
+    - porta
+    - avvia
+    - ferma
+    - pausa
+    - riprendi
+    - volume
+    - meteo
+    - che tempo
+    - notizie
+    - chi era
+    - cosa significa
+    - lista
+    - spesa
+    - ricordami
+    - promemoria
+    - scadenz
+    - scade
+    - appuntament
+    - impegn
+    - programma
+    - agenda
+    - consum
+    - energia
+    - fascia
+    - quanto costa
+    - quanto mi costa
+    - clima
+    - condizionatore
+    - tapparell
+    - finestr
+    - serratura
+    - allarme
+    - aspirapolvere
+    - televisione
+    - tv
+    - ventilatore
+    - com'è la casa
+    - stato della casa
 
 # I nomi dei giorni e dei mesi stanno qui e non nel locale del sistema:
 # altrimenti la data nel prompt dipenderebbe da come e' configurata la
