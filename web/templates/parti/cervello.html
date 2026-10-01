@@ -1,0 +1,88 @@
+        <!-- ==================== TAB: IL CERVELLO ==================== -->
+        <!-- Cosa sa e cosa fa la casa, come grafo (issue #186). Sta dietro
+             «Configurazione», non e' un quarto ingresso: i tre di ogni giorno
+             restano tre. Il disegno e' un canvas (cervello_disegno.js); tutto
+             quello che si legge sta anche nell'elenco in chiaro qui sotto, per
+             la tastiera e per i lettori di schermo. -->
+        <div id="tab-cervello" class="tab-content hidden space-y-4">
+            <div class="flex flex-wrap justify-between items-center gap-4 bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="brain-circuit" class="w-5 h-5 text-indigo-400"></i> Il Cervello
+                    </h2>
+                    <p class="text-xs text-slate-400">Cosa sa e cosa fa la casa: stanze, dispositivi, routine, regole e strumenti, e come sono collegati.</p>
+                </div>
+                <div id="cervello-contatori" class="flex gap-6 text-center">
+                    <div><div id="cv-nodi" class="text-xl font-bold text-slate-100">0</div><div class="text-[10px] uppercase tracking-wider text-slate-500">nodi</div></div>
+                    <div><div id="cv-collegamenti" class="text-xl font-bold text-slate-100">0</div><div class="text-[10px] uppercase tracking-wider text-slate-500">collegamenti</div></div>
+                    <div><div id="cv-sistemi" class="text-xl font-bold text-amber-300">0/0</div><div class="text-[10px] uppercase tracking-wider text-slate-500">sistemi attivi</div></div>
+                    <div><div id="cv-agenti" class="text-xl font-bold text-slate-100">0</div><div class="text-[10px] uppercase tracking-wider text-slate-500">agenti pronti</div></div>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" data-gesto="cervelloAggiorna" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 flex items-center gap-1.5">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Aggiorna
+                    </button>
+                    <button type="button" id="cervello-schermo-intero" data-gesto="cervelloSchermoIntero" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 flex items-center gap-1.5">
+                        <i data-lucide="maximize" class="w-3.5 h-3.5"></i> Schermo intero
+                    </button>
+                </div>
+            </div>
+
+            <div id="cervello-area" class="grid grid-cols-1 lg:grid-cols-[1fr_20rem] gap-4">
+                <div id="cervello-contenitore" class="relative h-[65vh] min-h-[320px] rounded-2xl border border-slate-800 bg-slate-950/60 overflow-hidden">
+                    <canvas id="cervello-canvas" tabindex="0" role="application" aria-label="Grafo della casa" class="absolute inset-0 cursor-grab outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"></canvas>
+                    <div id="cervello-caricamento" class="hidden absolute inset-0 flex items-center justify-center text-xs text-slate-500">Un momento: leggo la casa…</div>
+                    <div id="cervello-vuoto" class="hidden absolute inset-0 flex items-center justify-center p-6 text-center">
+                        <div class="max-w-sm space-y-3">
+                            <p class="text-sm font-semibold text-slate-200">La casa non ha ancora niente da mostrare.</p>
+                            <p class="text-xs text-slate-400">Il grafo si riempie da solo: dai un nome ai dispositivi, disegna una routine o racconta a Shinra qualcosa della casa.</p>
+                            <button type="button" data-gesto="switchTab" data-testo="aliases" class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Dai un nome ai dispositivi</button>
+                        </div>
+                    </div>
+                    <div id="cervello-errore" class="hidden absolute inset-0 flex items-center justify-center p-6 text-center">
+                        <div class="max-w-sm space-y-3">
+                            <p id="cervello-errore-testo" class="text-sm text-rose-300"></p>
+                            <button type="button" data-gesto="cervelloAggiorna" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-200">Riprova</button>
+                        </div>
+                    </div>
+                    <div id="cervello-suggerimento" class="hidden absolute pointer-events-none px-2 py-1 rounded-lg bg-slate-900/95 border border-slate-700 text-[11px] text-slate-200 whitespace-nowrap"></div>
+                    <div class="absolute bottom-3 right-3 flex gap-1">
+                        <button type="button" data-gesto="cervelloZoom" data-args="[1.25]" aria-label="Ingrandisci" class="w-8 h-8 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-slate-200 text-sm">+</button>
+                        <button type="button" data-gesto="cervelloZoom" data-args="[0.8]" aria-label="Riduci" class="w-8 h-8 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-slate-200 text-sm">−</button>
+                        <button type="button" data-gesto="cervelloInquadra" aria-label="Inquadra tutto" class="w-8 h-8 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-slate-200 flex items-center justify-center"><i data-lucide="scan" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                </div>
+
+                <aside id="cervello-pannello" class="space-y-4 text-xs">
+                    <section class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+                        <label for="cervello-cerca" class="block text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">Cerca un nodo</label>
+                        <input id="cervello-cerca" type="search" placeholder="es. luce cucina" data-mentre-scrivi="cervelloCerca" data-argomento="valore" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+                    </section>
+                    <section id="cervello-dettaglio" class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4" aria-live="polite"></section>
+                    <section class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+                        <h3 class="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Sistemi</h3>
+                        <ul id="cervello-sistemi" class="divide-y divide-slate-800"></ul>
+                    </section>
+                    <section class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+                        <h3 class="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Cosa mostrare</h3>
+                        <div id="cervello-legenda"></div>
+                    </section>
+                    <section class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-2">
+                        <h3 class="text-[11px] uppercase tracking-wider text-slate-500">Forze del grafo</h3>
+                        <label class="block text-slate-300">Distanza dei collegamenti
+                            <input id="cervello-forza-distanza" type="range" min="20" max="120" step="2" value="46" data-mentre-scrivi="cervelloForza" data-args='["distanza"]' data-argomento="valore" class="w-full">
+                        </label>
+                        <label class="block text-slate-300">Attrazione dei gruppi
+                            <input id="cervello-forza-attrazione" type="range" min="0" max="1" step="0.05" value="0.5" data-mentre-scrivi="cervelloForza" data-args='["attrazione"]' data-argomento="valore" class="w-full">
+                        </label>
+                        <button type="button" data-gesto="cervelloRipristina" class="text-[11px] text-indigo-300 hover:text-indigo-200">Ripristina</button>
+                    </section>
+                </aside>
+            </div>
+
+            <details id="cervello-elenco-box" class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+                <summary class="cursor-pointer text-xs font-semibold text-slate-300">Tutti i nodi, in elenco</summary>
+                <div id="cervello-elenco" class="mt-3 text-xs"></div>
+            </details>
+            <p id="cervello-annuncio" class="sr-only" aria-live="polite"></p>
+        </div>

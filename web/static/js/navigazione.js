@@ -11,6 +11,7 @@ import { loadModes } from './routine.js';
 import { disegnaScorciatoia, loadRegole } from './regole.js';
 import { loadUsers } from './utenti.js';
 import { loadSettings } from './impostazioni.js';
+import { fermaCervello, loadCervello } from './cervello.js';
 
 const tabDisplayMap = {
     console: 'grid',
@@ -20,6 +21,7 @@ const tabDisplayMap = {
     automazioni: 'block',
     users: 'block',
     settings: 'block',
+    cervello: 'block',
 };
 
 // Le destinazioni di prima che adesso sono la stessa schermata.
@@ -36,10 +38,10 @@ const SCHEDE_UNITE = {
 // scheda che c'e' sempre, ed e' quella da cui si parla alla casa.
 const SCHEDA_DI_RIPIEGO = 'console';
 
-// Le quattro che stanno dietro «Configurazione». Il pulsante di primo
+// Le cinque che stanno dietro «Configurazione». Il pulsante di primo
 // livello si accende per tutte e quattro: chi e' dentro deve vedere da
 // dove ci e' entrato, altrimenti la barra non dice piu' dov'e'.
-const SCHEDE_DI_CONFIGURAZIONE = ['knowledge', 'sources', 'users', 'settings'];
+const SCHEDE_DI_CONFIGURAZIONE = ['knowledge', 'sources', 'users', 'settings', 'cervello'];
 
 // ==================== MOBILE MENU HAMBURGER CONTROLLER ====================
 let isMobileMenuOpen = false;
@@ -180,6 +182,9 @@ export function switchTab(tabId) {
         disegnaScorciatoia();
     }
     if (tabId === 'users') loadUsers();
+    // Il Cervello si rinnova da solo mentre e' aperto; uscendo smette.
+    if (tabId === 'cervello') loadCervello();
+    else fermaCervello();
     if (tabId === 'settings') {
         loadSettings();
         preparaSezioniImpostazioni();
