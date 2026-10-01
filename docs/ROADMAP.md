@@ -352,10 +352,10 @@ e le schede, stanno in [`docs/proposte/v0.7.0/`](proposte/v0.7.0/README.md).
 | 209 | Intervista: una domanda per volta, niente domande su cio' che la casa sa — *residuo della #170* | apprendimento |
 | 210 | Intervista: dalle entita' vere alle routine complete — *residuo della #170* | apprendimento |
 | 211 | La parola di attivazione nel browser — *residuo della #30* | voce |
-| 212 | L'add-on per Home Assistant OS e la prova su Raspberry Pi 4 — *residuo della #37, da valutare* | distribuzione |
-| — | Ollama su un'altra macchina della rete: configurazione, protezione, misura | infrastruttura |
-| — | Il banco di prova sull'hardware candidato, misurato e non stimato | misura |
-| — | Aiutanti locali per il lavoro di sviluppo, con il guadagno misurato | strumenti |
+| 212 | L'add-on per Home Assistant OS e la prova su Raspberry Pi 4 — *residuo della #37, da valutare. **L'issue risulta cancellata su GitHub**: la scheda resta in `docs/backlog/v0.6.0/`, da riaprire o da togliere* | distribuzione |
+| 240 | Ollama su un'altra macchina della rete: configurazione, protezione, misura | infrastruttura |
+| 241 | Il banco di prova sull'hardware candidato, misurato e non stimato | misura |
+| 242 | Aiutanti locali per il lavoro di sviluppo, con il guadagno misurato | strumenti |
 
 **Criteri di uscita**
 - Shinra usa un Ollama su un'altra macchina della rete locale, scelto da
@@ -386,39 +386,39 @@ si costruisce lo schema, poi si rende visibile, poi si comprime la storia. Il so
 viene dopo perche' ha bisogno di materiale e di fiducia: tutto cio' che scrive nasce
 **proposto**. I canali esterni vengono per ultimi e dopo una decisione scritta, perche'
 toccano la promessa della `0.6.0` sulla rete locale. La proposta completa, con le
-ventinove schede, sta in [`docs/proposte/memoria-viva/`](proposte/memoria-viva/README.md).
+ventinove schede (issue `#243`–`#271`), sta in [`docs/proposte/memoria-viva/`](proposte/memoria-viva/README.md).
 
 | # | Lavoro | Area |
 | :-- | :--- | :--- |
-| — | ADR: chi vede e chi puo' cambiare cio' che Shinra ricorda | decisione |
-| — | Misura e budget del contesto | contesto |
-| — | Un ricordo ha proprietario, origine, importanza e storia | memoria |
-| — | Il recupero pesa importanza, recenza e uso | memoria |
-| — | Quali ricordi hanno contribuito, per richiesta | memoria |
-| — | ADR: la ricerca per vettori regge la casa? (misura) | decisione |
-| — | API della memoria per profilo | memoria |
-| — | La memoria in chiaro nell'interfaccia | trasparenza |
-| — | Esporta e importa i ricordi in Markdown | trasparenza |
-| — | «Ho usato questi ricordi» sotto la risposta | trasparenza |
-| — | Cancellare e' cancellare, dappertutto | privacy |
-| — | ADR: si conserva la conversazione? | decisione |
-| — | Riassunti persistenti e finestra mobile | storia |
-| — | Compressione in background con Ollama | storia |
-| — | Finestra adattiva al budget | storia |
-| — | Materiali della giornata | sogno |
-| — | Il compito notturno | sogno |
-| — | Fusione dei ricordi in proposte | sogno |
-| — | Abitudini contate dal codice, raccontate dal modello | sogno |
-| — | Da intuizione a bozza di regola, spenta | sogno |
-| — | Interfaccia delle intuizioni | sogno |
-| — | Guardie contro l'avvelenamento della memoria | sicurezza |
-| — | ADR: canali esterni | decisione |
-| — | Astrazione del canale bidirezionale | canali |
-| — | Il primo connettore esterno, spento di default | canali |
-| — | Interfaccia dei canali e dell'abbinamento | canali |
-| — | Banco di valutazione della memoria | misura |
-| — | Guardie di CI della fase | verifica |
-| — | Guida alla memoria | documentazione |
+| 243 | ADR: chi vede e chi puo' cambiare cio' che Shinra ricorda | decisione |
+| 244 | Misura e budget del contesto | contesto |
+| 245 | Un ricordo ha proprietario, origine, importanza e storia | memoria |
+| 246 | Il recupero pesa importanza, recenza e uso | memoria |
+| 247 | Quali ricordi hanno contribuito, per richiesta | memoria |
+| 248 | ADR: la ricerca per vettori regge la casa? (misura) | decisione |
+| 249 | API della memoria per profilo | memoria |
+| 250 | La memoria in chiaro nell'interfaccia | trasparenza |
+| 251 | Esporta e importa i ricordi in Markdown | trasparenza |
+| 252 | «Ho usato questi ricordi» sotto la risposta | trasparenza |
+| 253 | Cancellare e' cancellare, dappertutto | privacy |
+| 254 | ADR: si conserva la conversazione? | decisione |
+| 255 | Riassunti persistenti e finestra mobile | storia |
+| 256 | Compressione in background con Ollama | storia |
+| 257 | Finestra adattiva al budget | storia |
+| 258 | Materiali della giornata | sogno |
+| 259 | Il compito notturno | sogno |
+| 260 | Fusione dei ricordi in proposte | sogno |
+| 261 | Abitudini contate dal codice, raccontate dal modello | sogno |
+| 262 | Da intuizione a bozza di regola, spenta | sogno |
+| 263 | Interfaccia delle intuizioni | sogno |
+| 264 | Guardie contro l'avvelenamento della memoria | sicurezza |
+| 265 | ADR: canali esterni | decisione |
+| 266 | Astrazione del canale bidirezionale | canali |
+| 267 | Il primo connettore esterno, spento di default | canali |
+| 268 | Interfaccia dei canali e dell'abbinamento | canali |
+| 269 | Banco di valutazione della memoria | misura |
+| 270 | Guardie di CI della fase | verifica |
+| 271 | Guida alla memoria | documentazione |
 
 **Criteri di uscita**
 - Il banco della `#183` riporta **«Troncati = 0»** con il `num_ctx` di produzione: nessun prompt

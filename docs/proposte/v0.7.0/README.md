@@ -1,8 +1,9 @@
 # Proposta — hardware per l'inferenza e aiutanti locali (v0.7.0)
 
-> **Stato: proposta.** Due lavori nuovi per la `0.7.0`, nati da due domande: *quale hardware serve per far
-> girare bene il modello?* e *possono dei piccoli agenti locali fare il lavoro ripetitivo al posto di Claude,
-> risparmiando token?* Le schede sono in [`schede/`](schede/). Nessuna issue e' stata aperta.
+> **Stato: accettata (2 ottobre 2026).** Lavori nuovi della `0.7.0`, nati da due domande: *quale hardware serve
+> per far girare bene il modello?* e *possono dei piccoli agenti locali fare il lavoro ripetitivo al posto di Claude,
+> risparmiando token?* Le schede sono le issue **#240, #241, #242** in
+> [`docs/backlog/v0.7.0/`](../../backlog/v0.7.0/). Questo documento resta come ricerca e motivazione.
 
 ## 1. L'hardware
 
@@ -70,9 +71,9 @@ registrato nelle impostazioni dell'assistente e lo decidi tu. Si parte dallo scr
 
 ## 3. Le schede
 
-1. [Ollama su un'altra macchina della rete](schede/01-ollama-su-un-server-dedicato.md)
-2. [Il banco di prova sull'hardware candidato](schede/02-banco-sull-hardware-candidato.md)
-3. [Aiutanti locali per il lavoro di sviluppo](schede/03-aiutanti-locali-di-sviluppo.md)
+1. [#240 — Ollama su un'altra macchina della rete](../../backlog/v0.7.0/240-ollama-su-un-server-dedicato.md)
+2. [#241 — Il banco di prova sull'hardware candidato](../../backlog/v0.7.0/241-banco-sull-hardware-candidato.md)
+3. [#242 — Aiutanti locali per il lavoro di sviluppo](../../backlog/v0.7.0/242-aiutanti-locali-di-sviluppo.md)
 
 Fonti della ricerca: confronti pubblicati da
 [LocalAIMaster](https://localaimaster.com/blog/apple-silicon-ai-buying-guide),
