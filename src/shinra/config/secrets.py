@@ -14,7 +14,7 @@ L'ultimo gradino serve a non rompere le installazioni esistenti: il valore
 viene letto, ma `migra_segreti_su_env()` lo sposta al primo avvio e lo
 cancella dal file di configurazione.
 
-Riferimento: docs/backlog/v0.1.0/07-sec-05-segreti-fuori-da-git.md
+Riferimento: docs/storia-delle-fasi.md (#7)
 """
 
 from __future__ import annotations

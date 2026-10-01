@@ -14,7 +14,7 @@ va storto. Cinque problemi concreti, in ordine di gravita'.
 Questo e' il punto urgente. `config/config.yaml` e' **tracciato da git** e sul
 server contiene il token reale di Home Assistant.
 
-La issue [#07 della v0.1.0](backlog/v0.1.0/07-sec-05-segreti-fuori-da-git.md)
+La issue [#7 della v0.1.0](storia-delle-fasi.md)
 esegue `git rm --cached config/config.yaml`. Per il repository e' la cosa
 giusta; ma per **ogni copia che fa `git pull`** quel commit dice «questo file
 non fa piu' parte del progetto», e git lo **elimina dalla cartella di lavoro**.

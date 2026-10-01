@@ -19,7 +19,7 @@ saltarne uno la rende inutile:
 4. il timestamp deve essere recente, altrimenti una richiesta intercettata
    resta riutilizzabile per sempre.
 
-Riferimento: docs/backlog/v0.1.0/04-sec-02-firma-alexa.md
+Riferimento: docs/storia-delle-fasi.md (#4)
 """
 
 from __future__ import annotations

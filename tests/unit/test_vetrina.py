@@ -21,9 +21,9 @@ from pathlib import Path
 RADICE = Path(__file__).resolve().parent.parent.parent
 README = RADICE / "README.md"
 ROADMAP = RADICE / "docs" / "ROADMAP.md"
-SCHEDA_34 = RADICE / "docs" / "backlog" / "v0.5.0" / "34-frontend-modulare.md"
+STORIA = RADICE / "docs" / "storia-delle-fasi.md"
 
-DOCUMENTI = (README, ROADMAP, SCHEDA_34)
+DOCUMENTI = (README, ROADMAP, STORIA)
 
 
 # Sia `<img src="...">` sia `![...](...)`.

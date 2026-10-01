@@ -3,6 +3,10 @@
 Ogni file di questa cartella e' una issue pronta da aprire su GitHub: titolo,
 etichette, milestone, contesto, lavoro da fare e criteri di accettazione.
 
+Qui stanno solo le schede **delle fasi aperte**. A fase chiusa le sue schede si uniscono
+in [`docs/storia-delle-fasi.md`](../storia-delle-fasi.md) (le cinque chiuse fino alla 0.5.0 ci
+sono gia') e i file si tolgono: erano lavoro da importare, e il lavoro e' finito.
+
 Il backlog e' versionato nel repository per due ragioni: resta leggibile senza
 accedere a GitHub, e le modifiche al piano di lavoro passano da una PR come
 tutto il resto.
