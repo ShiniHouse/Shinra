@@ -10,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from shinra import percorsi, versione
-from shinra.api import sicurezza
+from shinra.api import moduli_web, sicurezza
 from shinra.api.routes_attivita import router as attivita_router
 from shinra.api.routes_auth import router as auth_router
 from shinra.api.routes_casa import router as casa_router
@@ -197,7 +197,12 @@ async def index(request: Request):
         name="index.html",
         # La versione arriva col disegno della pagina: nessuna chiamata in
         # piu', e resta corretta anche se il resto non risponde.
-        context={"settings": settings, "versione": versione.dettaglio()},
+        context={
+            "settings": settings,
+            "versione": versione.dettaglio(),
+            # Gli indirizzi dei moduli con la versione dentro (vedi `moduli_web`).
+            "mappa_moduli": moduli_web.mappa_dei_moduli(versione.dettaglio().get("descrizione", "")),
+        },
     )
 
 

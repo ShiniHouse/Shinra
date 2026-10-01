@@ -168,6 +168,30 @@ test.describe('i gesti delegati', () => {
         expect(errori, 'la pagina ha scritto errori in console al caricamento').toEqual([]);
     });
 
+    test("i moduli si caricano con la versione nell'indirizzo, anche quelli importati", async ({ page }) => {
+        // Il server mette un import map nella pagina: `./stato.js` dentro un
+        // altro modulo deve diventare `/static/js/stato.js?v=<versione>`.
+        // Solo un browser vero sa dire che la mappa e' stata applicata, e che
+        // vale anche per gli `import()` dinamici.
+        await page.goto('/index.html');
+        const risultato = await page.evaluate(async () => {
+            await import('/static/js/principale.js');
+            const caricati = performance
+                .getEntriesByType('resource')
+                .map((r) => new URL(r.name).pathname + new URL(r.name).search)
+                .filter((u) => u.startsWith('/static/js/'));
+            const dinamico = await import('/static/js/stato.js');
+            return { caricati, haStato: typeof dinamico.Stato };
+        });
+
+        const senzaVersione = risultato.caricati.filter(
+            (u) => !u.includes('?v=') && !u.includes('principale'),
+        );
+        expect(senzaVersione, "moduli caricati senza versione nell'indirizzo").toEqual([]);
+        expect(risultato.caricati.some((u) => u === '/static/js/stato.js?v=anteprima')).toBe(true);
+        expect(risultato.haStato, "l'import dinamico non vede lo stesso modulo").toBe('object');
+    });
+
     test('nessun gesto resta senza chi lo sappia fare', async ({ page }) => {
         // Il guardiano stampa in console quando gli chiedono un nome che non
         // conosce. Qui si preme tutto quello che la pagina offre e si guarda

@@ -39,6 +39,7 @@ from types import SimpleNamespace
 from jinja2 import Environment, FileSystemLoader
 
 from shinra import percorsi
+from shinra.api import moduli_web
 
 FUORI = percorsi.RADICE / ".anteprima"
 
@@ -98,7 +99,9 @@ def prepara() -> None:
     FUORI.mkdir()
 
     ambiente = Environment(loader=FileSystemLoader(str(percorsi.MODELLI_HTML)), autoescape=True)
-    pagina = ambiente.get_template("index.html").render(versione=VERSIONE)
+    pagina = ambiente.get_template("index.html").render(
+        versione=VERSIONE, mappa_moduli=moduli_web.mappa_dei_moduli(VERSIONE.descrizione)
+    )
 
     if "{% include" in pagina:
         raise SystemExit("la pagina composta porta ancora un include: qualcosa non e' stato reso")
