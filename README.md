@@ -73,13 +73,15 @@ scattare in una casa vera. Note: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.
   prima di salvare fa vedere cosa ha capito, così un'interpretazione sbagliata
   non diventa conoscenza permanente in silenzio.
 
-**Cosa la `0.5.0` non fa, e dove è scritto.** La `0.6.0` è in lavorazione. Non c'è la parola di attivazione
+**Cosa la `0.5.0` non fa, e dove è scritto.** Non c'è la parola di attivazione
 (#211), non c'è l'add-on per Home Assistant OS (#212), timer e promemoria
 capiscono solo l'italiano (#205), le etichette della dashboard sono solo
 italiane (#206), e nessuna persona che non ha scritto le guide le ha ancora
-seguite da sola (#208). Sono tutte nella `0.6.0`, insieme a *Il Cervello*: il
-grafo vivo della casa e gli agenti che si dividono il lavoro. Il quadro
-completo è nella [ROADMAP](docs/ROADMAP.md).
+seguite da sola (#208). Sono nella **`0.7.0`**. La `0.6.0`, *Il Cervello*, è in
+lavorazione: il grafo vivo della casa e le conferme per le azioni sensibili sono
+già nel codice; mancano gli agenti che si dividono il lavoro e le misure sul
+modello. Il quadro completo è nella [ROADMAP](docs/ROADMAP.md), e
+[qui sotto](#-dove-sta-andando) in breve.
 
 | Documento | Cosa contiene |
 | :--- | :--- |
@@ -87,7 +89,7 @@ completo è nella [ROADMAP](docs/ROADMAP.md).
 | [`docs/PRIMI-PASSI.md`](docs/PRIMI-PASSI.md) | Dal primo accesso alla prima automazione: profili, Home Assistant, alias, routine |
 | [`docs/PROBLEMI.md`](docs/PROBLEMI.md) | Cosa fare quando qualcosa non funziona, guasto per guasto — tutti successi davvero |
 | [`docs/ALEXA.md`](docs/ALEXA.md) | Come configurare la skill Alexa (Interaction Model, endpoint HTTPS, test) |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le cinque fasi da `0.1.0` a `1.0.0` e i criteri di uscita di ciascuna |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le fasi da `0.1.0` a `1.0.0` — con la `0.7.0` e la `0.8.0` — e i criteri di uscita di ciascuna |
 | [`docs/storia-delle-fasi.md`](docs/storia-delle-fasi.md) | Le schede di lavoro delle fasi chiuse (0.1.0–0.5.0): perché, cosa, com'è andata |
 | [`docs/SVILUPPO.md`](docs/SVILUPPO.md) | Come si aggiunge uno strumento, un intento, una lingua, una rotta, una colonna, un'area della dashboard — e quale test ti dice cosa hai dimenticato |
 | [`docs/API.md`](docs/API.md) | Le rotte HTTP e chi le può chiamare. Generato dal codice: non invecchia |
@@ -119,14 +121,46 @@ completo è nella [ROADMAP](docs/ROADMAP.md).
 ## 📸 Anteprima Dashboard
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="La console vocale di Shinra: chat con l'assistente a sinistra, timer e prossimi scatti a destra" width="100%">
+  <img src="docs/screenshots/console.png" alt="La console vocale di Shinra: la chat con l'assistente a sinistra, a destra i timer attivi e cosa succede adesso in casa" width="100%">
 </p>
 
-<p align="center"><sub>La console vocale sulla <code>0.5.0</code> in lavorazione, dopo la scomposizione del frontend.</sub></p>
+<p align="center"><sub><b>La console vocale.</b> Si parla o si scrive; a destra la colonna dice cosa sta per succedere in casa, non la diagnostica.</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/cervello.png" alt="Il Cervello: il grafo della casa con stanze, dispositivi, alias, routine, conoscenza, strumenti e agenti, e a destra lo stato dei sistemi" width="100%">
+</p>
+
+<p align="center"><sub><b>Il Cervello</b> — cosa sa e cosa fa la casa, come grafo interattivo: 81 nodi e 97 collegamenti in questa casa, con lo stato di ogni sistema (Home Assistant, modello, regole, notizie). <i>Fa parte della <code>0.6.0</code>, in lavorazione: non è nella release <code>0.5.0</code>.</i></sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/automazioni.png" alt="Le routine che si disegnano: Buonanotte, Buongiorno, Cinema, Lavoro e Studio, ciascuna con le frasi che la attivano e il pulsante Esegui" width="100%">
+</p>
+
+<p align="center"><sub><b>Automazioni e routine.</b> Blocchi collegati — un innesco, poi azioni, attese e risposte vocali — con le frasi che le attivano e un pulsante per eseguirle.</sub></p>
+
+<p align="center"><sub>Le schermate sono della versione di sviluppo (<code>0.6.0.dev0</code>) su una casa di prova.</sub></p>
+
+---
+
+## 🧭 Dove sta andando
+
+Il traguardo è la `1.0.0`, e il cammino ha un ordine. Ogni fase è rilasciabile e si apre solo quando la precedente è finita
+([ROADMAP](docs/ROADMAP.md) per i criteri di uscita).
+
+| Fase | Tema | Cosa porta |
+| :--- | :--- | :--- |
+| **`0.6.0`** *(in lavorazione)* | **Il Cervello** | Il grafo vivo della casa (già nel codice), le azioni sensibili — serrature, allarme, garage — che chiedono sempre conferma (già nel codice), un banco di prova che misura quale modello sceglie lo strumento giusto, e gli agenti di dominio |
+| **`0.7.0`** | **Rifinitura** | Le lingue (dashboard, timer, messaggi), un'intervista che fa una domanda per volta, la parola di attivazione, i plugin con permessi dichiarati; il modello su una macchina dedicata della rete, e piccoli aiutanti locali per il lavoro ripetitivo dello sviluppo |
+| **`0.8.0`** | **Memoria viva** | Shinra ricorda — e tu vedi cosa, lo correggi, glielo fai dimenticare. La storia vecchia diventa un riassunto, di notte la casa «ci ripensa» **proponendo** (mai decidendo), e un canale di messaggistica esterno è un'opzione spenta di default |
+| **`1.0.0`** | **Stabile** | Se non ci sono intoppi, subito dopo: trenta giorni di esercizio reale senza regressioni, installazione da zero verificata, nessun difetto grave aperto |
+
+Le idee non ancora accettate stanno in [`docs/proposte/`](docs/proposte/memoria-viva/README.md) con le loro schede, e dicono
+anche dove l'idea va corretta prima di costruirla.
 
 ---
 
 ## 🌟 Indice dei Contenuti
+- [🧭 Dove sta andando](#-dove-sta-andando)
 - [🔒 Cosa resta in casa, e cosa no](#-cosa-resta-in-casa-e-cosa-no)
 - [✨ Funzionalità Principali](#-funzionalità-principali)
 - [🏗️ Architettura del Sistema](#️-architettura-del-sistema)
