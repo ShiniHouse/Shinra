@@ -37,7 +37,7 @@ from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from cryptography.x509.oid import ExtensionOID, NameOID
+from cryptography.x509.oid import NameOID
 
 logger = logging.getLogger("Shinra.Alexa.Firma")
 
@@ -134,7 +134,7 @@ def valida_catena(catena: list[x509.Certificate], adesso: Optional[datetime] = N
         raise FirmaNonValida("Certificato scaduto o non ancora valido.")
 
     try:
-        san = foglia.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+        san = foglia.extensions.get_extension_for_class(x509.SubjectAlternativeName)
         nomi = san.value.get_values_for_type(x509.DNSName)
     except x509.ExtensionNotFound:
         nomi = []
@@ -154,13 +154,15 @@ def valida_catena(catena: list[x509.Certificate], adesso: Optional[datetime] = N
         chiave = genitore.public_key()
         if not isinstance(chiave, rsa.RSAPublicKey):
             raise FirmaNonValida("Chiave del certificato non RSA.")
+        # Un certificato firmato con un algoritmo senza hash separato (Ed25519, per
+        # esempio) non ha `signature_hash_algorithm`: passare `None` a `verify`
+        # solleverebbe un `TypeError` che nessuno qui sa gestire, e una richiesta
+        # a un endpoint pubblico non deve poter far uscire un'eccezione da li'.
+        algoritmo = figlio.signature_hash_algorithm
+        if algoritmo is None:
+            raise FirmaNonValida("Algoritmo di firma del certificato non supportato.")
         try:
-            chiave.verify(
-                figlio.signature,
-                figlio.tbs_certificate_bytes,
-                padding.PKCS1v15(),
-                figlio.signature_hash_algorithm,
-            )
+            chiave.verify(figlio.signature, figlio.tbs_certificate_bytes, padding.PKCS1v15(), algoritmo)
         except InvalidSignature as e:
             raise FirmaNonValida("Un certificato della catena non e' firmato dal successivo.") from e
 
