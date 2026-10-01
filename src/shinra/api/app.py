@@ -27,7 +27,7 @@ from shinra.channels.alexa.verifica_firma import FirmaNonValida, verifica_richie
 from shinra.config.settings import (
     settings,
 )
-from shinra.domain import contesto
+from shinra.domain import contesto, eventi_agente
 from shinra.domain.eventi import (
     AVVISO,
     CASA_ABITATA,
@@ -356,6 +356,10 @@ async def eventi_websocket(websocket: WebSocket):
 
     Sostituisce l'interrogazione periodica: la dashboard non chiede piu' «e'
     scaduto qualcosa?», riceve l'avviso nel momento in cui accade.
+
+    Gli eventi `agente.*` raccontano il ciclo dell'agente e arrivano solo al
+    profilo che ha fatto la richiesta: portano il tipo e i nodi del grafo
+    toccati, mai il contenuto.
     """
     # Si chiede a `sessione_dalla_richiesta` come fa tutto il resto, invece di
     # guardare il solo cookie di sessione. Le sessioni stanno in memoria: dopo
@@ -375,8 +379,18 @@ async def eventi_websocket(websocket: WebSocket):
     await websocket.accept()
     coda: asyncio.Queue = asyncio.Queue()
 
+    # Chi e' connesso: serve a consegnare gli eventi dell'agente solo a chi ha
+    # fatto la richiesta (issue #188). Senza autenticazione non lo si sa, e la
+    # casa e' di tutti.
+    sessione = sicurezza.sessione_dalla_richiesta(websocket) if sicurezza.autenticazione_attiva() else None
+    profilo = sessione.user_id if sessione else None
+
     def accoda(evento: Evento) -> None:
         coda.put_nowait(descrivi(evento))
+
+    def accoda_agente(evento: Evento) -> None:
+        if eventi_agente.per_il_profilo(evento, profilo):
+            coda.put_nowait(eventi_agente.per_il_browser(evento))
 
     annulla = [
         bus.sottoscrivi(t, accoda)
@@ -396,7 +410,7 @@ async def eventi_websocket(websocket: WebSocket):
             AVVISO,
             CASA_INTRUSIONE,
         )
-    ]
+    ] + [bus.sottoscrivi(t, accoda_agente) for t in eventi_agente.TIPI]
     # Questa rotta parlava e basta: restava ferma su `coda.get()` e non
     # leggeva mai dal socket. Un canale che non ascolta non si accorge di
     # niente — ne' del browser che chiude la scheda, ne' del server che
