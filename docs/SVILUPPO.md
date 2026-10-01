@@ -99,11 +99,20 @@ qualcos'altro di sensibile, chiama `esigi(profilo_corrente(), permesso)` da
 `shinra.services.permessi`: solleva `PermessoNegato` e scrive il rifiuto nel
 registro; `execute_tool` lo traduce in una risposta leggibile.
 
-**5. Gratis.** Ogni chiamata passa da `execute_tool`, che la scrive nel
+**5. Di' se puo' scegliere da solo.** Aggiungi il nome del tool a `TOOL_SICURI`
+in `src/shinra/domain/sensibilita.py` se non apre e non disarma niente, qualunque
+argomento riceva; a `TOOL_CONDIZIONATI` (e a `classifica`) se dipende dagli
+argomenti, come una tapparella che puo' essere un garage. **Uno strumento che
+non e' in nessuno dei due elenchi e' sensibile**: non parte finche' una persona
+non risponde «si'» (issue #192), e `test_ogni_strumento_del_registro_e_classificato`
+fallisce finche' non decidi. Il modello non e' fidato: su serrature, allarme e
+garage quello che ha scelto non basta.
+
+**6. Gratis.** Ogni chiamata passa da `execute_tool`, che la scrive nel
 registro delle azioni (chi, cosa, quando, da quale canale, con che esito). Non
 devi farlo tu, ed e' per questo che non va aggirata.
 
-**6. I test.** Un caso riuscito e uno d'errore, con le chiamate di rete
+**7. I test.** Un caso riuscito e uno d'errore, con le chiamate di rete
 simulate: nessuna rete nei test unitari. Esempio da copiare:
 `tests/unit/test_domini_casa.py`. Due guardie ti dicono se hai dimenticato
 qualcosa: `test_ogni_schema_ha_il_suo_gestore` (uno schema senza funzione) e

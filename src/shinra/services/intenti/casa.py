@@ -97,6 +97,9 @@ class ControlloDispositivo(Intento):
             # cronologia non resterebbe scritto quale luce e' stata accesa.
             richiesta.memoria.add_tool_interaction("control_device", argomenti, esito)
 
+        if esito.get("conferma_richiesta") or esito.get("rifiutata"):
+            # Una serratura, l'allarme: prima serve il si' di chi ha chiesto (#192).
+            return Risposta(esito["message"])
         if esito.get("permesso_negato"):
             return Risposta(esito.get("spiegazione", lingua.dice("dispositivo_negato")))
         if esito.get("error") or esito.get("success") is False:

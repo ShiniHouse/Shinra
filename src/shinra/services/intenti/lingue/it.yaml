@@ -199,6 +199,13 @@ agente:
     - com'è la casa
     - stato della casa
 
+# Le risposte a una domanda di conferma (issue #192). Solo frasi **intere**: «si'» e
+# «no» da soli, o poco piu'. «si' ma prima chiudi la finestra» e' un'altra richiesta,
+# non una conferma — e un «si'» che apre una porta deve essere inequivocabile.
+conferma:
+  accetta: ["sì", "si", "sì grazie", "si grazie", "confermo", "conferma", "ok", "va bene", "certo", "procedi", "fallo", "sì confermo", "si confermo"]
+  rifiuta: ["no", "no grazie", "annulla", "lascia stare", "non farlo", "fermati", "rifiuto", "negativo", "stop"]
+
 # I nomi dei giorni e dei mesi stanno qui e non nel locale del sistema:
 # altrimenti la data nel prompt dipenderebbe da come e' configurata la
 # macchina, e una macchina in inglese farebbe parlare l'assistente in
@@ -235,6 +242,14 @@ messaggi:
   operazione_completata: "Operazione completata."
   dati_verificati: "Ho elaborato la tua richiesta e verificato i dati."
   risultato_operazione: "Risultato operazione {tool}: {risultato}. Formula ora una risposta breve e naturale per l'utente."
+  conferma_richiesta: "Sto per eseguire: {azione}. Confermi? Rispondi «sì» o «no» entro {minuti} minuti."
+  conferma_vietata: "Questa azione non può partire da un assistente: va fatta da una persona, dalla dashboard."
+  conferma_senza_identita: "Non lo faccio: non so chi sta parlando. Associa la tua voce a un profilo dalle impostazioni, oppure fallo dalla dashboard."
+  conferma_senza_canale: "Non lo faccio: non c'è nessuno a cui chiedere conferma. Va richiesta da una persona, dalla dashboard o a voce."
+  conferma_nessuna: "Non c'è niente da confermare."
+  conferma_scaduta: "La conferma è scaduta: non ho fatto niente. Se vuoi, richiedilo."
+  conferma_rifiutata: "Va bene, non faccio niente."
+  conferma_eseguita: "Fatto."
 
 # Il prompt di sistema, a pezzi. La lingua in cui il modello risponde si
 # decide qui: risponde in quella in cui gli si parla.

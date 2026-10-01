@@ -51,9 +51,7 @@ def casa(monkeypatch):
             return [dict(s) for s in stati]
 
     monkeypatch.setattr("shinra.infra.homeassistant.client.client_home_assistant", lambda: FintoClient())
-    sicurezza_casa.azzera_conferme()
     yield chiamate, stati, esito
-    sicurezza_casa.azzera_conferme()
 
 
 @pytest.fixture
@@ -215,33 +213,7 @@ async def test_dal_web_il_disarmo_e_immediato(casa, da_web):
     assert chiamate[0][1] == "alarm_disarm"
 
 
-async def test_da_alexa_il_disarmo_chiede_conferma(casa):
-    from shinra.services import registro
-
-    chiamate, _, _ = casa
-    registro.apri_contesto(attore="alessio", canale="alexa")
-
-    esito = await sicurezza_casa.comanda_allarme("disarma")
-
-    assert esito["success"] is False
-    assert esito["conferma_richiesta"] is True
-    assert chiamate == []
-
-
-async def test_da_alexa_la_seconda_richiesta_disarma(casa):
-    from shinra.services import registro
-
-    chiamate, _, _ = casa
-    registro.apri_contesto(attore="alessio", canale="alexa")
-    await sicurezza_casa.comanda_allarme("disarma")
-
-    esito = await sicurezza_casa.comanda_allarme("disarma")
-
-    assert esito["success"] is True
-    assert chiamate[0][1] == "alarm_disarm"
-
-
-async def test_una_voce_sconosciuta_non_disinserisce_nemmeno_confermando(casa):
+async def test_una_voce_sconosciuta_non_disinserisce(casa):
     """Prima della issue #48 bastava ripetere la richiesta.
 
     Il controllo era una conferma parlata e nient'altro: `sicurezza.comanda`
@@ -255,7 +227,6 @@ async def test_una_voce_sconosciuta_non_disinserisce_nemmeno_confermando(casa):
     contesto = registro.apri_contesto(attore=None, canale="alexa")
     contesto.identita_ignota = True
 
-    await sicurezza_casa.comanda_allarme("disarma")
     esito = await sicurezza_casa.comanda_allarme("disarma")
 
     assert esito["success"] is False

@@ -27,7 +27,6 @@ Riferimento: issue #23, ADR 0004.
 from __future__ import annotations
 
 import logging
-import time
 from typing import Any, Dict, Optional
 
 from shinra.domain import aperture as dominio
@@ -57,10 +56,6 @@ STATI_LEGGIBILI = {
     "pending": "in attesa",
     "triggered": "in allarme",
 }
-
-# Quanto resta valida una richiesta di disarmo in attesa di conferma.
-ATTESA_CONFERMA = 60.0
-_disarmi_in_attesa: Dict[str, float] = {}
 
 
 def _riuscito(messaggio: str, **extra: Any) -> Dict[str, Any]:
@@ -193,21 +188,11 @@ async def _disarma(entita: str, nome: str, codice: Optional[str]) -> Dict[str, A
             "voce a un profilo dalle impostazioni, oppure fallo dalla dashboard."
         )
 
-    # La scheda chiede una conferma aggiuntiva da Alexa, e questa la
-    # implementa. Ma il limite va scritto dove si legge il codice: una
-    # conferma parlata non protegge da chi e' gia' dentro casa a parlare —
-    # e' un attrito contro il fraintendimento, non contro un intruso. Contro
-    # quello c'e' il codice dell'allarme, che Home Assistant verifica, e il
-    # permesso `sicurezza.comanda` di chi ha parlato.
-    if canale == CANALE_ALEXA:
-        adesso = time.monotonic()
-        if _disarmi_in_attesa.get(entita, 0.0) < adesso:
-            _disarmi_in_attesa[entita] = adesso + ATTESA_CONFERMA
-            return _fallito(
-                f"Sto per disinserire {nome}. Confermi? Ripeti la richiesta entro un minuto.",
-                conferma_richiesta=True,
-            )
-        _disarmi_in_attesa.pop(entita, None)
+    # La conferma di una persona non sta piu' qui: la chiede `execute_tool` per ogni
+    # azione sensibile, su ogni canale, legata a chi ha chiesto (`services/conferme.py`,
+    # issue #192). Il limite resta quello di sempre: una conferma parlata non protegge da chi
+    # e' gia' dentro casa a parlare. Contro quello c'e' il codice dell'allarme, che Home
+    # Assistant verifica, e il permesso `sicurezza.comanda` di chi ha parlato.
 
     dati: Dict[str, Any] = {"entity_id": entita}
     if codice:
@@ -220,8 +205,3 @@ async def _disarma(entita: str, nome: str, codice: Optional[str]) -> Dict[str, A
         )
     logger.warning("Allarme disinserito: %s (canale %s)", entita, canale or "non indicato")
     return _riuscito(f"{nome} disinserito.")
-
-
-def azzera_conferme() -> None:
-    """Solo per i test."""
-    _disarmi_in_attesa.clear()

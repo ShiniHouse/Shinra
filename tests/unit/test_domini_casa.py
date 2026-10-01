@@ -52,9 +52,7 @@ def casa(monkeypatch):
     depositi.alias.sostituisci_tutto(
         [{"id": "a1", "alias": "porta d'ingresso", "entity_id": "lock.porta_ingresso"}]
     )
-    domini_casa.azzera_conferme()
     yield chiamate, esito
-    domini_casa.azzera_conferme()
 
 
 @pytest.fixture
@@ -135,52 +133,18 @@ async def test_chiudere_una_serratura_non_chiede_conferma(casa, da_web):
     assert chiamate == [("lock", "lock", {"entity_id": "lock.porta_ingresso"})]
 
 
-async def test_il_primo_sblocco_chiede_conferma_e_non_apre(casa, da_web):
+async def test_lo_strumento_apre_quando_arriva_dopo_la_conferma(casa, da_web):
+    """La conferma non sta piu' qui: la chiede `execute_tool` (`test_conferme.py`).
+
+    Quando lo strumento viene chiamato — dopo il si' di chi ha chiesto — apre e basta, senza
+    ripetere una domanda che e' gia' stata fatta e a cui si e' gia' risposto.
+    """
     chiamate, _ = casa
-
-    esito = await domini_casa.comanda_serratura("lock.porta_ingresso", "sblocca")
-
-    assert esito["success"] is False
-    assert esito["conferma_richiesta"] is True
-    assert chiamate == [], "la porta non deve essersi aperta"
-
-
-async def test_la_seconda_richiesta_entro_un_minuto_apre(casa, da_web):
-    chiamate, _ = casa
-    await domini_casa.comanda_serratura("lock.porta_ingresso", "sblocca")
 
     esito = await domini_casa.comanda_serratura("lock.porta_ingresso", "sblocca")
 
     assert esito["success"] is True
     assert chiamate == [("lock", "unlock", {"entity_id": "lock.porta_ingresso"})]
-
-
-async def test_la_conferma_scade(casa, da_web, monkeypatch):
-    """Un «si'» detto piu' tardi, per altro, non deve aprire la porta."""
-    chiamate, _ = casa
-    adesso = [1000.0]
-    monkeypatch.setattr(domini_casa.time, "monotonic", lambda: adesso[0])
-
-    await domini_casa.comanda_serratura("lock.porta_ingresso", "sblocca")
-    adesso[0] += domini_casa.ATTESA_CONFERMA + 1
-
-    esito = await domini_casa.comanda_serratura("lock.porta_ingresso", "sblocca")
-
-    assert esito["success"] is False
-    assert esito["conferma_richiesta"] is True
-    assert chiamate == []
-
-
-async def test_chiudere_annulla_una_conferma_in_sospeso(casa, da_web):
-    """Altrimenti «chiudi... anzi apri» aprirebbe senza chiedere niente."""
-    chiamate, _ = casa
-    await domini_casa.comanda_serratura("lock.porta_ingresso", "sblocca")
-    await domini_casa.comanda_serratura("lock.porta_ingresso", "blocca")
-
-    esito = await domini_casa.comanda_serratura("lock.porta_ingresso", "sblocca")
-
-    assert esito["conferma_richiesta"] is True
-    assert ("lock", "unlock", {"entity_id": "lock.porta_ingresso"}) not in chiamate
 
 
 async def test_da_una_voce_sconosciuta_non_si_apre(casa):
@@ -201,24 +165,6 @@ async def test_da_una_voce_sconosciuta_non_si_apre(casa):
     assert esito["success"] is False
     assert chiamate == []
     assert "non so chi sta parlando" in esito["error"].lower()
-
-
-async def test_una_voce_riconosciuta_apre_ma_solo_dopo_conferma(casa):
-    """Il permesso e la conferma, non piu' il divieto in blocco."""
-    from shinra.services import registro
-
-    chiamate, _ = casa
-    registro.apri_contesto(attore="alessio", canale="alexa")
-
-    primo = await domini_casa.comanda_serratura("lock.porta_ingresso", "sblocca")
-    assert primo["success"] is False
-    assert primo["conferma_richiesta"] is True
-    assert chiamate == []
-
-    secondo = await domini_casa.comanda_serratura("lock.porta_ingresso", "sblocca")
-
-    assert secondo["success"] is True
-    assert chiamate == [("lock", "unlock", {"entity_id": "lock.porta_ingresso"})]
 
 
 async def test_dalla_voce_si_chiude_eccome(casa):

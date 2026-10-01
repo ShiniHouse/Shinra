@@ -15,6 +15,14 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **Le azioni sensibili chiedono sempre conferma** (#192). Aprire una serratura, disinserire
+  l'allarme, alzare il garage o una porta, lanciare uno script: se a sceglierlo e' il modello
+  non parte finche' la persona che ha chiesto, sullo stesso canale, non risponde «si'» entro
+  tre minuti. La conferma e' di una persona e di un'azione sola, scade, e si scrive nel registro
+  (richiesta, conferma, rifiuto, scadenza). Una voce che nessun profilo riconosce non puo'
+  riceverla: l'azione viene rifiutata e lo dice. In fondo a ogni chiamata a Home Assistant, una
+  rete di sicurezza ferma cio' che il modello apre senza passare di li' (un passo dentro una
+  modalita'). Uno strumento nuovo non classificato e' sensibile per difetto.
 - **La scheda «Il Cervello»** (dietro Configurazione): cosa sa e cosa fa la casa come grafo
   — stanze, dispositivi, alias, routine, regole, conoscenza e strumenti — con il nome
   di ogni gruppo sul grafo, lo stato dei sistemi (attivo, fermo, non raggiungibile), una

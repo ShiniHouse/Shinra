@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from shinra.config.prompt_templates import get_system_prompt
 from shinra.config.settings import settings
+from shinra.domain.contesto import come_modello
 from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.llm.ollama import OllamaClient
@@ -193,7 +194,8 @@ class ShinraAgent:
                         t_args = {}
 
                     logger.info(f"[Shinra] Rilevato tool testuale: '{t_name}' con {t_args}")
-                    t_res = await execute_tool(t_name, t_args)
+                    with come_modello():
+                        t_res = await execute_tool(t_name, t_args)
                     cronaca.strumento(t_name, t_args, t_res)
                     actions_taken.append({"tool": t_name, "args": t_args, "result": t_res})
                     mem.add_tool_interaction(t_name, t_args, t_res)
@@ -238,7 +240,8 @@ class ShinraAgent:
                     args = raw_args
 
                 logger.info(f"Esecuzione tool '{tool_name}' con parametri: {args}")
-                tool_result = await execute_tool(tool_name, args)
+                with come_modello():
+                    tool_result = await execute_tool(tool_name, args)
                 cronaca.strumento(str(tool_name or ""), args, tool_result)
 
                 actions_taken.append({"tool": tool_name, "args": args, "result": tool_result})

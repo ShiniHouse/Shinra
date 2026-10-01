@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 
+from shinra.domain import sensibilita
 from shinra.services import registro
 from shinra.services.permessi import PermessoNegato
 from shinra.skills import registry
@@ -46,6 +47,8 @@ def strumento_nuovo(monkeypatch):
         },
     }
     monkeypatch.setitem(registry.TOOL_HANDLERS, "saluta", saluta)
+    # Il punto 5 della guida: dire che lo strumento non apre niente e puo' scegliere da solo.
+    monkeypatch.setattr(sensibilita, "TOOL_SICURI", sensibilita.TOOL_SICURI | {"saluta"})
     monkeypatch.setattr(registry, "TOOLS_SCHEMA", [*registry.TOOLS_SCHEMA, schema])
     return saluta
 

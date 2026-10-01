@@ -43,8 +43,16 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
 ]
 
 
-async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+async def execute_tool(
+    tool_name: str, arguments: Dict[str, Any], *, _confermata: bool = False
+) -> Dict[str, Any]:
     """Esegue un tool registrato passando gli argomenti forniti dal modello LLM.
+
+    **Le azioni sensibili passano prima dal varco delle conferme** (issue #192): una
+    serratura, l'allarme, il garage non partono finche' una persona non ha detto di si'.
+    `_confermata` lo salta, ed e' per questo che e' solo-parola-chiave, col trattino basso
+    e usato da un posto solo (`services/conferme.py`): gli argomenti del modello vanno al
+    gestore, mai qui, e un test conta chi lo passa.
 
     E' il passaggio obbligato di ogni azione: comandi ai dispositivi,
     attivazione di modalita', meteo, notizie, promemoria. Per questo il
@@ -53,6 +61,15 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, A
     ricordare.
     """
     handler = TOOL_HANDLERS.get(tool_name)
+
+    # Uno strumento che non esiste non ha niente da confermare: cade nell'errore qui sotto.
+    if handler and not _confermata:
+        from shinra.services import conferme
+
+        in_attesa = conferme.filtra(tool_name, arguments)
+        if in_attesa is not None:
+            return in_attesa
+
     if not handler:
         registro.registra(
             f"tool.{tool_name}", esito=registro.ESITO_ERRORE, dettagli={"errore": "tool sconosciuto"}

@@ -53,6 +53,8 @@ RICHIESTE: Tuple[Tuple[str, ...], ...] = (
     ("casa", "preposizioni_stanza"),
     ("notizie", "inneschi"),
     ("agente", "parole_azione"),
+    ("conferma", "accetta"),
+    ("conferma", "rifiuta"),
     ("calendario", "giorni"),
     ("calendario", "mesi"),
     ("calendario", "formato_data"),
@@ -87,6 +89,14 @@ CHIAVI_MESSAGGI: Tuple[str, ...] = (
     "operazione_completata",
     "dati_verificati",
     "risultato_operazione",
+    "conferma_richiesta",
+    "conferma_vietata",
+    "conferma_senza_identita",
+    "conferma_senza_canale",
+    "conferma_nessuna",
+    "conferma_scaduta",
+    "conferma_rifiutata",
+    "conferma_eseguita",
 )
 
 # I pezzi del prompt di sistema. Lo stesso ragionamento: il prompt e' il
@@ -135,6 +145,8 @@ class Schemi:
     stanza: re.Pattern
     inneschi_notizie: Tuple[str, ...]
     parole_azione: Tuple[str, ...]
+    conferma_accetta: Tuple[str, ...]
+    conferma_rifiuta: Tuple[str, ...]
     giorni: Tuple[str, ...]
     mesi: Tuple[str, ...]
     formato_data: str
@@ -214,6 +226,8 @@ def _compila(lingua: str) -> Schemi:
         stanza=re.compile(dati["casa"]["preposizioni_stanza"], re.IGNORECASE),
         inneschi_notizie=tuple(dati["notizie"]["inneschi"]),
         parole_azione=tuple(dati["agente"]["parole_azione"]),
+        conferma_accetta=tuple(p.lower() for p in dati["conferma"]["accetta"]),
+        conferma_rifiuta=tuple(p.lower() for p in dati["conferma"]["rifiuta"]),
         giorni=tuple(dati["calendario"]["giorni"]),
         mesi=tuple(dati["calendario"]["mesi"]),
         formato_data=str(dati["calendario"]["formato_data"]),
