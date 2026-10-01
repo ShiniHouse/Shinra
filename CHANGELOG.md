@@ -14,6 +14,13 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Aggiunto
+- **La scheda «Il Cervello»** (dietro Configurazione): cosa sa e cosa fa la casa come grafo
+  — stanze, dispositivi, alias, routine, regole, conoscenza e strumenti — con il nome
+  di ogni gruppo sul grafo, lo stato dei sistemi (attivo, fermo, non raggiungibile), una
+  ricerca, filtri per tipo, le forze regolabili e la modalita' a schermo intero.
+  Nessuna libreria esterna; si usa anche con la tastiera.
+
 ### Corretto
 - **Dopo un aggiornamento la dashboard poteva girare mezza vecchia, dietro Cloudflare.**
   Cloudflare riscrive `Cache-Control: no-cache` in `max-age=14400`, quindi per

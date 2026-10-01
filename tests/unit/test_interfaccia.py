@@ -1467,7 +1467,7 @@ def test_la_colonna_della_console_resta_leggera():
 # quattro si aprono una volta e poi quasi mai, e trattarle come voci gemelle
 # e' la scelta che generava piu' affaticamento di qualunque altra.
 PRIMO_LIVELLO = ["console", "automazioni", "aliases"]
-DIETRO_LA_CONFIGURAZIONE = ["knowledge", "sources", "users", "settings"]
+DIETRO_LA_CONFIGURAZIONE = ["knowledge", "sources", "users", "settings", "cervello"]
 
 
 def _barra_desktop(testo: str) -> str:
@@ -3680,7 +3680,7 @@ globalThis.document = {
 globalThis.chiudiMenuConfigurazione = () => {};
 for (const caricatore of ['loadKnowledge', 'loadSources', 'loadAliases', 'loadRegole',
                           'loadModes', 'disegnaScorciatoia', 'loadUsers', 'loadSettings',
-                          'preparaSezioniImpostazioni']) {
+                          'preparaSezioniImpostazioni', 'loadCervello', 'fermaCervello']) {
     globalThis[caricatore] = () => {};
 }
 
