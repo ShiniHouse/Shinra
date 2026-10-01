@@ -187,6 +187,13 @@ calendario:
   mesi: [January, February, March, April, May, June, July, August, September, October, November, December]
   formato_data: "{giorno}, {mese} {numero}, {anno}, {ore}:{minuti}"
 
+# Answers to a confirmation question (issue #192). Whole phrases only: a bare "yes" or
+# "no", or little more. "yes but first close the window" is another request, not a
+# confirmation — and a "yes" that opens a door must be unambiguous.
+conferma:
+  accetta: ["yes", "yes please", "yeah", "confirm", "confirmed", "ok", "okay", "go ahead", "do it", "sure", "yes confirm"]
+  rifiuta: ["no", "no thanks", "cancel", "never mind", "don't", "stop", "do not do it", "refuse"]
+
 messaggi:
   temperatura_sensori_illeggibili: "I can't read the home sensors."
   temperatura_nessun_sensore: "I can't find a temperature sensor in the house."
@@ -209,6 +216,14 @@ messaggi:
   argomento_vietato: "I'd rather not talk about that. If you need it, ask an adult at home."
   errore_ollama: "There was a problem talking to the AI engine: {errore}. Make sure Ollama is running and the model is ready."
   operazione_completata: "Done."
+  conferma_richiesta: "I'm about to do this: {azione}. Do you confirm? Answer yes or no within {minuti} minutes."
+  conferma_vietata: "This action can't be started by an assistant: it has to be done by a person, from the dashboard."
+  conferma_senza_identita: "I won't do it: I don't know who is speaking. Link your voice to a profile in the settings, or do it from the dashboard."
+  conferma_senza_canale: "I won't do it: there is nobody to ask for confirmation. It has to be requested by a person, from the dashboard or by voice."
+  conferma_nessuna: "There is nothing to confirm."
+  conferma_scaduta: "The confirmation has expired: I did nothing. Ask again if you still want it."
+  conferma_rifiutata: "All right, I'll do nothing."
+  conferma_eseguita: "Done."
   dati_verificati: "I've processed your request and checked the data."
   risultato_operazione: "Result of {tool}: {risultato}. Now write a short, natural reply for the user."
 

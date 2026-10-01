@@ -6,7 +6,12 @@ uno vuol dire scrivere una classe e registrarla — `process_user_input` non
 si tocca.
 """
 
-from shinra.services.intenti import casa, informazioni, promemoria  # noqa: F401  (registrano gli intenti)
+from shinra.services.intenti import (  # noqa: F401  (registrano gli intenti)
+    casa,
+    conferma,
+    informazioni,
+    promemoria,
+)
 from shinra.services.intenti.base import Intento, Richiesta, Risposta, azzera, instrada, intenti, registra
 
 __all__ = ["Intento", "Richiesta", "Risposta", "azzera", "instrada", "intenti", "registra"]

@@ -23,20 +23,12 @@ Riferimento: issue #20, ADR 0004.
 from __future__ import annotations
 
 import logging
-import time
 from typing import Any, Dict, Optional
 
 from shinra.domain.contesto import CANALE_ALEXA, canale_corrente, identita_e_ignota
 from shinra.skills.entita import EntitaSconosciuta, nome_di, stati_noti, stato_di, verifica
 
 logger = logging.getLogger("Shinra.DominiCasa")
-
-# Quanto resta valida una richiesta di sblocco in attesa di conferma.
-# Abbastanza perche' una persona risponda «si'», troppo poco perche' un «si'»
-# detto piu' tardi, per altro, apra la porta di casa.
-ATTESA_CONFERMA = 60.0
-
-_sblocchi_in_attesa: Dict[str, float] = {}
 
 
 def _riuscito(messaggio: str, **extra: Any) -> Dict[str, Any]:
@@ -93,7 +85,6 @@ async def comanda_serratura(entity_id: str, azione: str) -> Dict[str, Any]:
         return _riuscito(f"{nome} e' {leggibile}.", stato=valore)
 
     if azione in ("blocca", "chiudi", "lock"):
-        _sblocchi_in_attesa.pop(entita, None)
         esito = await _chiama("lock", "lock", {"entity_id": entita})
         if esito.get("success"):
             return _riuscito(f"{nome} chiusa.")
@@ -118,16 +109,9 @@ async def comanda_serratura(entity_id: str, azione: str) -> Dict[str, Any]:
             "impostazioni, potro' farlo. Intanto puoi aprirla dalla dashboard."
         )
 
-    adesso = time.monotonic()
-    scade = _sblocchi_in_attesa.get(entita, 0.0)
-    if scade < adesso:
-        _sblocchi_in_attesa[entita] = adesso + ATTESA_CONFERMA
-        return _fallito(
-            f"Sto per aprire {nome}. Confermi? Ripeti la richiesta entro un minuto.",
-            conferma_richiesta=True,
-        )
-
-    _sblocchi_in_attesa.pop(entita, None)
+    # Qui si arriva solo dopo la conferma di chi ha chiesto: la chiede `execute_tool` per ogni
+    # azione sensibile (`services/conferme.py`, issue #192), legata alla persona e al canale e
+    # non al dispositivo come faceva la conferma che stava in questo punto.
     esito = await _chiama("lock", "unlock", {"entity_id": entita})
     if esito.get("success"):
         logger.warning("Serratura aperta: %s (canale %s)", entita, canale or "non indicato")
@@ -318,8 +302,3 @@ async def comanda_ventilatore(
         )
 
     return _fallito(f"Azione «{azione}» non prevista per un ventilatore.")
-
-
-def azzera_conferme() -> None:
-    """Solo per i test."""
-    _sblocchi_in_attesa.clear()

@@ -27,6 +27,27 @@ def client_home_assistant() -> "HomeAssistantClient":
     return _client_condiviso
 
 
+def _bloccata_se_sensibile(
+    domain: str, service: str, dati: Optional[Dict[str, Any]]
+) -> Optional[Dict[str, Any]]:
+    """La rete di sicurezza di #192, per ogni porta verso Home Assistant.
+
+    Se a scegliere questa chiamata e' stato il modello e apre una serratura, disarma l'allarme o
+    alza il garage, qui non passa. Le conferme stanno piu' in alto (`execute_tool`); questo ferma
+    cio' che da li' non si vede, come un passo scritto dentro una modalita' attivata dal modello.
+    """
+    from shinra.domain import sensibilita
+    from shinra.domain.contesto import dal_modello
+
+    if dal_modello() and sensibilita.servizio_sensibile(domain, service, dati):
+        logger.warning("Chiamata %s.%s bloccata: scelta dal modello, senza conferma.", domain, service)
+        return {
+            "success": False,
+            "error": "Azione sensibile: non parte su scelta del modello. Va confermata da una persona.",
+        }
+    return None
+
+
 class HomeAssistantClient:
     def __init__(self, base_url: Optional[str] = None, token: Optional[str] = None):
         self._base_url = base_url
@@ -156,6 +177,9 @@ class HomeAssistantClient:
         from shinra.services.permessi import esigi_per_dominio
 
         esigi_per_dominio(domain)
+        bloccata = _bloccata_se_sensibile(domain, service, service_data)
+        if bloccata is not None:
+            return bloccata
 
         if not self.token or self.token.startswith("INSERISCI_QUI"):
             return {"success": False, "error": "Token Home Assistant non configurato."}
@@ -206,6 +230,9 @@ class HomeAssistantClient:
         from shinra.services.permessi import esigi_per_dominio
 
         esigi_per_dominio(domain)
+        bloccata = _bloccata_se_sensibile(domain, service, service_data)
+        if bloccata is not None:
+            return bloccata
 
         if not self.token or self.token.startswith("INSERISCI_QUI"):
             return {"success": False, "error": "Token Home Assistant non configurato."}

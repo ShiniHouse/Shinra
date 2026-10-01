@@ -20,9 +20,10 @@ Riferimento: issue #20, ADR 0004, docs/ARCHITECTURE.md §3.
 from __future__ import annotations
 
 import uuid
+from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Iterator, Optional
 
 # Canali noti. Elencarli qui evita che un confronto con una stringa scritta
 # a mano fallisca in silenzio, lasciando passare cio' che doveva fermarsi.
@@ -143,3 +144,30 @@ def dichiara_stanza(stanza: str) -> None:
 
 def stanza_corrente() -> str:
     return contesto().stanza or ""
+
+
+# ---------------------------------------------------------------- da chi viene
+#
+# Un comando puo' nascere da una persona che ha detto una frase («spegni la luce
+# della cucina»: lo capisce un intento, deterministico) oppure dal **modello**, che
+# ha scelto uno strumento da solo (issue #192). Il modello non e' fidato: su
+# alcune azioni — la serratura, l'allarme, il garage — quello che ha scelto non
+# basta, serve la conferma di una persona. Questa distinzione viaggia con la
+# richiesta, come l'attore e il canale, perche' deve essere visibile anche in
+# fondo, dove si chiama Home Assistant.
+
+_dal_modello: ContextVar[bool] = ContextVar("comando_dal_modello", default=False)
+
+
+@contextmanager
+def come_modello() -> Iterator[None]:
+    """Dentro questo blocco i comandi li ha scelti il modello, non una persona."""
+    segno = _dal_modello.set(True)
+    try:
+        yield
+    finally:
+        _dal_modello.reset(segno)
+
+
+def dal_modello() -> bool:
+    return _dal_modello.get()
