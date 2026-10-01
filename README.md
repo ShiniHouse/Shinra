@@ -86,6 +86,7 @@ completo è nella [ROADMAP](docs/ROADMAP.md).
 | [`docs/INSTALLAZIONE.md`](docs/INSTALLAZIONE.md) | Docker o a mano su Debian, il token di Home Assistant, cosa sopravvive a un aggiornamento |
 | [`docs/PRIMI-PASSI.md`](docs/PRIMI-PASSI.md) | Dal primo accesso alla prima automazione: profili, Home Assistant, alias, routine |
 | [`docs/PROBLEMI.md`](docs/PROBLEMI.md) | Cosa fare quando qualcosa non funziona, guasto per guasto — tutti successi davvero |
+| [`docs/ALEXA.md`](docs/ALEXA.md) | Come configurare la skill Alexa (Interaction Model, endpoint HTTPS, test) |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le cinque fasi da `0.1.0` a `1.0.0` e i criteri di uscita di ciascuna |
 | [`docs/storia-delle-fasi.md`](docs/storia-delle-fasi.md) | Le schede di lavoro delle fasi chiuse (0.1.0–0.5.0): perché, cosa, com'è andata |
 | [`docs/SVILUPPO.md`](docs/SVILUPPO.md) | Come si aggiunge uno strumento, un intento, una lingua, una rotta, una colonna, un'area della dashboard — e quale test ti dice cosa hai dimenticato |
@@ -287,11 +288,11 @@ l'add-on per Home Assistant OS non c'e' ancora — sta in
 
 ## 📡 Guida Integrazione Amazon Alexa (Echo)
 
-Per la guida completa dettagliata alla creazione della Skill, consulta il file dedicato: **[ALEXA_SETUP_GUIDE.md](ALEXA_SETUP_GUIDE.md)**.
+Per la guida completa dettagliata alla creazione della Skill, consulta il file dedicato: **[docs/ALEXA.md](docs/ALEXA.md)**.
 
 ### Riepilogo Rapido:
 1. Accedi a **[developer.amazon.com/alexa/console/ask](https://developer.amazon.com/alexa/console/ask)** e crea una Skill Custom denominata `Shinra`.
-2. Incolla l'Interaction Model da `ALEXA_SETUP_GUIDE.md` nella sezione **JSON Editor**.
+2. Incolla l'Interaction Model da `docs/ALEXA.md` nella sezione **JSON Editor**.
 3. Configura l'endpoint HTTPS: `https://tuodominio.com/api/alexa`.
 4. Seleziona il certificato SSL Wildcard e clicca su **Build Model**.
 
