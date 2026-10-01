@@ -15,4 +15,5 @@ config/
 deploy/
 migrazioni/
 web/templates/
+web/static/vendor/
 package-lock.json

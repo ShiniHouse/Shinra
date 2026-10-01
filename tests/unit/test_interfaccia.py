@@ -2184,7 +2184,7 @@ def test_l_elenco_delle_icone_parla_della_versione_fissata():
 
     assert len(nomi) > 800, f"l'elenco ha solo {len(nomi)} nomi: rigeneralo"
 
-    trovato = re.search(r"lucide@([\d.]+)/dist/umd/lucide\.min\.js", _frontend())
+    trovato = re.search(r"/static/vendor/lucide-([\d.]+)\.min\.js", _frontend())
     assert trovato, "la pagina non fissa piu' una versione di lucide"
 
     assert trovato.group(1) == versione_elenco, (
@@ -2246,15 +2246,14 @@ def test_la_pagina_non_porta_piu_dentro_il_copione_e_il_foglio():
     cosa e' tutto, e che ogni modifica all'interfaccia costa piu' del dovuto.
     E' il freno principale alle altre schede rimaste.
 
-    Restano in linea tre copioni, e devono restarci: decidono il tema,
-    configurano Tailwind e rimediano a lucide che non carica — tutti e tre
-    **prima** che la pagina si disegni. Un file esterno arriverebbe troppo
+    Restano in linea due copioni, e devono restarci: decidono il tema e
+    configurano Tailwind — tutti e due **prima** che la pagina si disegni. Un file esterno arriverebbe troppo
     tardi, ed e' esattamente il difetto della #152: il tema stava in un file,
     veniva deciso su `load`, e per mezzo secondo la pagina era scura anche a
     mezzogiorno.
 
     Il numero e' fissato apposta. Ogni copione in linea in piu' e' codice che
-    nessun linter guarda e nessun file raccoglie: se ne serve un quarto, lo si
+    nessun linter guarda e nessun file raccoglie: se ne serve un terzo, lo si
     aggiunge qui con la sua ragione scritta, invece di lasciarlo crescere.
     """
     pagina = _testo(PAGINA)
@@ -2262,8 +2261,8 @@ def test_la_pagina_non_porta_piu_dentro_il_copione_e_il_foglio():
     assert "<style>" not in _markup(), "il foglio di stile e' tornato dentro la pagina"
 
     inline = _script_inline(pagina)
-    assert len(inline) == 3, (
-        f"i copioni in linea sono {len(inline)}: devono restare solo i tre del "
+    assert len(inline) == 2, (
+        f"i copioni in linea sono {len(inline)}: devono restare solo i due del "
         "`<head>`, che girano prima del disegno"
     )
     for blocco in inline:
