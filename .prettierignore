@@ -17,4 +17,5 @@ migrazioni/
 web/templates/
 web/static/vendor/
 web/static/fonts/
+web/static/css/tailwind.css
 package-lock.json

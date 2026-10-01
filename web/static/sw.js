@@ -1,9 +1,9 @@
-const CACHE_NAME = 'shinra-v3';
+const CACHE_NAME = 'shinra-v4';
 const ASSETS = [
     '/',
     '/static/manifest.json',
     '/static/vendor/lucide-0.344.0.min.js',
-    'https://cdn.tailwindcss.com',
+    '/static/css/tailwind.css',
 ];
 
 self.addEventListener('install', (event) => {
