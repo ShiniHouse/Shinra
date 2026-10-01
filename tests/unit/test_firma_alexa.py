@@ -294,3 +294,33 @@ async def test_la_catena_non_viene_scaricata_se_i_controlli_a_costo_zero_fallisc
             skill_id_atteso=SKILL_ID,
         )
     assert scaricamenti == []
+
+
+def test_un_certificato_firmato_senza_hash_si_rifiuta_senza_sollevare_altro(amazon_finto) -> None:
+    """Un certificato firmato con Ed25519 non ha `signature_hash_algorithm`.
+
+    Passare `None` a `verify` sollevava un `TypeError`: su un endpoint pubblico
+    un'eccezione che nessuno gestisce e' un 500, e il 500 racconta che la
+    verifica e' arrivata fin li'. Adesso e' un rifiuto come gli altri. Lo ha
+    trovato mypy, quando e' diventato obbligatorio anche su `channels` (#197).
+    """
+    from cryptography.hazmat.primitives.asymmetric import ed25519
+
+    radice = amazon_finto["radice"]
+    adesso = datetime.now(timezone.utc)
+    firmatario = ed25519.Ed25519PrivateKey.generate()
+    figlio = (
+        x509.CertificateBuilder()
+        .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "echo-api.amazon.com")]))
+        .issuer_name(radice.subject)
+        .public_key(firmatario.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(adesso - timedelta(days=1))
+        .not_valid_after(adesso + timedelta(days=30))
+        .add_extension(x509.SubjectAlternativeName([x509.DNSName("echo-api.amazon.com")]), critical=False)
+        .sign(firmatario, None)
+    )
+    assert figlio.signature_hash_algorithm is None
+
+    with pytest.raises(FirmaNonValida, match="non supportato"):
+        vf.valida_catena([figlio, radice])

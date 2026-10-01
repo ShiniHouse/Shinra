@@ -21,7 +21,7 @@ Le stesse verifiche che fa la CI, in locale:
 
 ```bash
 ruff check . && black --check .                 # stile
-mypy src/shinra/config src/shinra/domain src/shinra/infra src/shinra/services src/shinra/skills
+mypy src/shinra
 python -m pytest tests/unit -q                  # i test
 npm run lint && npm run formato && npm run gesti   # frontend (gesti: serve un browser)
 ```

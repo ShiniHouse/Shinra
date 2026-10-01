@@ -170,7 +170,6 @@ ignore = [
 # L'agente importa alcuni moduli dentro le funzioni per evitare import
 # circolari. Sara' risolto dall'intent router (issue v0.2.0 #17).
 "src/shinra/services/agent.py" = ["E402"]
-"src/shinra/api/routes_admin.py" = ["E402"]
 "src/shinra/api/app.py" = ["E402"]
 
 # --------------------------------- Black ----------------------------------
