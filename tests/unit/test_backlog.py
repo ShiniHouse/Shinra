@@ -6,7 +6,7 @@ nome del file, che pero' e' soltanto un ordinamento: coincideva con quello
 della issue solo perche' la prima importazione era andata in ordine.
 
 Poi sono stati aggiunti tre file dopo quella importazione, e i numeri si sono
-separati. `docs/backlog/v0.2.0/19-ruoli-e-permessi.md` e' diventata la issue
+separati. La scheda `19-ruoli-e-permessi.md` della v0.2.0 (ora in `docs/storia-delle-fasi.md`) e' diventata la issue
 **#46**, mentre la #19 era gia' un'altra cosa: la connessione WebSocket a Home
 Assistant, della v0.3.0. Due commit hanno scritto `Closes #19` e `Closes #20`
 intendendo i file, e hanno chiuso come completate due issue della v0.3.0 che
@@ -46,7 +46,7 @@ def intestazione(percorso: Path) -> dict[str, str]:
 
 def test_ci_sono_delle_schede():
     """Se la cartella cambia nome, tutto il resto smette di guardare."""
-    assert len(schede()) > 30
+    assert len(schede()) > 15
 
 
 def test_ogni_scheda_dichiara_il_numero_della_sua_issue():

@@ -15,7 +15,7 @@ Due cambiamenti sostanziali:
    cui poggeranno i permessi della v0.2.0: un permesso vale quanto l'identita'
    su cui si basa.
 
-Riferimenti: docs/backlog/v0.1.0/03-sec-01-auth-su-tutti-gli-endpoint.md,
+Riferimenti: docs/storia-delle-fasi.md (#3),
 docs/adr/0004-identita-ruoli-e-permessi.md
 """
 

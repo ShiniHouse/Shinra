@@ -87,6 +87,7 @@ completo è nella [ROADMAP](docs/ROADMAP.md).
 | [`docs/PRIMI-PASSI.md`](docs/PRIMI-PASSI.md) | Dal primo accesso alla prima automazione: profili, Home Assistant, alias, routine |
 | [`docs/PROBLEMI.md`](docs/PROBLEMI.md) | Cosa fare quando qualcosa non funziona, guasto per guasto — tutti successi davvero |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le cinque fasi da `0.1.0` a `1.0.0` e i criteri di uscita di ciascuna |
+| [`docs/storia-delle-fasi.md`](docs/storia-delle-fasi.md) | Le schede di lavoro delle fasi chiuse (0.1.0–0.5.0): perché, cosa, com'è andata |
 | [`docs/SVILUPPO.md`](docs/SVILUPPO.md) | Come si aggiunge uno strumento, un intento, una lingua, una rotta, una colonna, un'area della dashboard — e quale test ti dice cosa hai dimenticato |
 | [`docs/API.md`](docs/API.md) | Le rotte HTTP e chi le può chiamare. Generato dal codice: non invecchia |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Struttura attuale, struttura target e come si aggiunge un modulo nuovo |
