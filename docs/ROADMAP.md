@@ -309,20 +309,10 @@ e' una demo.
 | 190 | Router e agenti di dominio | agenti |
 | 191 | Piani a piu' passaggi, con correzione | agenti |
 | 192 | Le azioni sensibili chiedono sempre conferma | sicurezza |
-| 193 | Manifesto e permessi dei plugin | plugin |
-| 194 | Modello esterno opzionale, spento di default — *da valutare* | integrazioni |
 | 195 | Una regola e un piano scattano davvero in una casa vera | verifica |
 | 196 | Nessun file del backend sopra le cinquecento righe | debito |
 | 197 | mypy obbligatorio anche su api e channels | debito |
 | 198 | Guida al Cervello, agli agenti e ai piani | documentazione |
-| 205 | Timer e promemoria capiscono piu' di una lingua — *residuo della #36* | i18n |
-| 206 | Le etichette della dashboard escono dal codice — *residuo della #36* | i18n |
-| 207 | I messaggi degli strumenti e dell'intervista nella lingua di chi parla — *residuo della #36* | i18n |
-| 208 | Collaudo della documentazione da parte di chi non l'ha scritta — *residuo della #38* | documentazione |
-| 209 | Intervista: una domanda per volta, niente domande su cio' che la casa sa — *residuo della #170* | apprendimento |
-| 210 | Intervista: dalle entita' vere alle routine complete — *residuo della #170* | apprendimento |
-| 211 | La parola di attivazione nel browser — *residuo della #30* | voce |
-| 212 | L'add-on per Home Assistant OS e la prova su Raspberry Pi 4 — *residuo della #37, da valutare* | distribuzione |
 
 **Criteri di uscita**
 - Il banco di prova (#183) ha numeri per almeno due modelli, e gli agenti di
@@ -336,7 +326,121 @@ e' una demo.
 
 ---
 
+## v0.7.0 — Rifinitura
+
+> Si finisce quello che la `0.6.0` ha lasciato aperto — le lingue, l'intervista,
+> la voce, i plugin — e si prepara il terreno alla fase che viene dopo: Shinra
+> impara a usare un **server di inferenza dedicato** (un'altra macchina della rete
+> locale) e si misura se piccoli agenti locali possono fare il lavoro ripetitivo
+> dello sviluppo. Resta locale.
+
+**Perche' in questo ordine.** La `0.8.0` aggiunge al prompt ricordi e riassunti, e
+un modello su una CPU senza scheda grafica e' gia' al limite (la `#183` lo ha
+misurato). Prima si decide *dove* gira il modello e *con che velocita'*, poi si
+costruisce sopra. Il residuo della `0.6.0` — lingue, intervista, voce — non ha
+dipendenze fra loro e si fa in parallelo. I tre lavori nuovi, con la ricerca sull'hardware
+e le schede, stanno in [`docs/proposte/v0.7.0/`](proposte/v0.7.0/README.md).
+
+| # | Lavoro | Area |
+| :-- | :--- | :--- |
+| 193 | Manifesto e permessi dei plugin | plugin |
+| 194 | Modello esterno opzionale, spento di default — *da valutare* | integrazioni |
+| 205 | Timer e promemoria capiscono piu' di una lingua — *residuo della #36* | i18n |
+| 206 | Le etichette della dashboard escono dal codice — *residuo della #36* | i18n |
+| 207 | I messaggi degli strumenti e dell'intervista nella lingua di chi parla — *residuo della #36* | i18n |
+| 208 | Collaudo della documentazione da parte di chi non l'ha scritta — *residuo della #38* | documentazione |
+| 209 | Intervista: una domanda per volta, niente domande su cio' che la casa sa — *residuo della #170* | apprendimento |
+| 210 | Intervista: dalle entita' vere alle routine complete — *residuo della #170* | apprendimento |
+| 211 | La parola di attivazione nel browser — *residuo della #30* | voce |
+| 212 | L'add-on per Home Assistant OS e la prova su Raspberry Pi 4 — *residuo della #37, da valutare* | distribuzione |
+| — | Ollama su un'altra macchina della rete: configurazione, protezione, misura | infrastruttura |
+| — | Il banco di prova sull'hardware candidato, misurato e non stimato | misura |
+| — | Aiutanti locali per il lavoro di sviluppo, con il guadagno misurato | strumenti |
+
+**Criteri di uscita**
+- Shinra usa un Ollama su un'altra macchina della rete locale, scelto da
+  configurazione; l'endpoint **non** e' raggiungibile da fuori la rete di casa e la
+  guida dice come proteggerlo (Ollama non ha autenticazione).
+- Il banco della `#183` ha numeri sull'hardware attuale e su **almeno un
+  candidato**, misurati; la guida dice quale hardware serve per quale modello.
+- Le etichette della dashboard e i messaggi degli strumenti sono in due lingue, con
+  la guardia di parita' (`#206`, `#207`, `#205`).
+- L'intervista fa una domanda per volta e produce routine complete (`#209`, `#210`).
+- La documentazione e' stata seguita da una persona che non l'ha scritta (`#208`).
+- Gli aiutanti locali hanno un esito **per tipo di compito** — si usano, oppure la
+  scheda dice che non convengono — e nessun loro output si applica senza una
+  verifica meccanica (test, linter, confronto).
+
+---
+
+## v0.8.0 — Memoria viva
+
+> Shinra ricorda, e chi abita la casa puo' vedere cosa ricorda, correggerlo e
+> farglielo dimenticare. La storia vecchia diventa un riassunto invece di sparire,
+> e di notte la casa «ci ripensa» — **proponendo**, mai decidendo. Resta locale:
+> un canale esterno e' un'opzione, spenta di default, e puo' non nascere.
+
+**Perche' in questo ordine.** Prima si sistema il contesto (oggi il prompt supera
+la finestra e Ollama taglia in silenzio), poi si decide la privacy della memoria e
+si costruisce lo schema, poi si rende visibile, poi si comprime la storia. Il sogno
+viene dopo perche' ha bisogno di materiale e di fiducia: tutto cio' che scrive nasce
+**proposto**. I canali esterni vengono per ultimi e dopo una decisione scritta, perche'
+toccano la promessa della `0.6.0` sulla rete locale. La proposta completa, con le
+ventinove schede, sta in [`docs/proposte/memoria-viva/`](proposte/memoria-viva/README.md).
+
+| # | Lavoro | Area |
+| :-- | :--- | :--- |
+| — | ADR: chi vede e chi puo' cambiare cio' che Shinra ricorda | decisione |
+| — | Misura e budget del contesto | contesto |
+| — | Un ricordo ha proprietario, origine, importanza e storia | memoria |
+| — | Il recupero pesa importanza, recenza e uso | memoria |
+| — | Quali ricordi hanno contribuito, per richiesta | memoria |
+| — | ADR: la ricerca per vettori regge la casa? (misura) | decisione |
+| — | API della memoria per profilo | memoria |
+| — | La memoria in chiaro nell'interfaccia | trasparenza |
+| — | Esporta e importa i ricordi in Markdown | trasparenza |
+| — | «Ho usato questi ricordi» sotto la risposta | trasparenza |
+| — | Cancellare e' cancellare, dappertutto | privacy |
+| — | ADR: si conserva la conversazione? | decisione |
+| — | Riassunti persistenti e finestra mobile | storia |
+| — | Compressione in background con Ollama | storia |
+| — | Finestra adattiva al budget | storia |
+| — | Materiali della giornata | sogno |
+| — | Il compito notturno | sogno |
+| — | Fusione dei ricordi in proposte | sogno |
+| — | Abitudini contate dal codice, raccontate dal modello | sogno |
+| — | Da intuizione a bozza di regola, spenta | sogno |
+| — | Interfaccia delle intuizioni | sogno |
+| — | Guardie contro l'avvelenamento della memoria | sicurezza |
+| — | ADR: canali esterni | decisione |
+| — | Astrazione del canale bidirezionale | canali |
+| — | Il primo connettore esterno, spento di default | canali |
+| — | Interfaccia dei canali e dell'abbinamento | canali |
+| — | Banco di valutazione della memoria | misura |
+| — | Guardie di CI della fase | verifica |
+| — | Guida alla memoria | documentazione |
+
+**Criteri di uscita**
+- Il banco della `#183` riporta **«Troncati = 0»** con il `num_ctx` di produzione: nessun prompt
+  supera la finestra senza traccia.
+- Il ranking a tre fattori **migliora** recall@k e MRR sul banco di valutazione, oppure la scheda dice
+  che non migliora e i pesi restano a zero.
+- Ogni ricordo e' visibile, correggibile e cancellabile dal suo proprietario; **un profilo non legge,
+  non modifica e non cancella i ricordi privati di un altro** (guardia su tutte le rotte).
+- Dopo una cancellazione il testo non e' piu' in nessuna tabella ne' nel backup successivo.
+- La compressione della storia conserva i fatti chiave sul banco, e la latenza della risposta e' invariata.
+- Il compito notturno gira entro il tetto di tempo sull'hardware della casa, **non scrive mai** un ricordo
+  attivo, una regola attiva o un'azione, e due esecuzioni nella stessa notte non duplicano niente.
+- Un corpus di almeno venti tentativi di iniezione non produce nessuno stato attivo.
+- Con i canali esterni spenti, nessuna richiesta esce dalla rete locale; con uno acceso, una chat non
+  abbinata non fa niente e una conferma di una chat non vale per un'altra.
+
+---
+
 ## v1.0.0 — Stabile
+
+Si arriva qui dalla `0.8.0`, **se non ci sono intoppi**: nessuna fase nuova in mezzo. Se la `0.8.0`
+sposta troppo, i trenta giorni di esercizio (punto 4) la riconoscono prima di un utente.
 
 Criteri di uscita, tutti obbligatori:
 
@@ -362,7 +466,7 @@ poggia su infrastruttura costruita nelle fasi precedenti.
 | Consulente energetico a fasce F1/F2/F3 | v0.3.0 (energia) |
 | Modalita' presenza e check-in per anziani | v0.3.0 (presenza) + v0.4.0 (push) |
 | Registro di casa (scadenze, garanzie, contatori) | v0.2.0 (database) |
-| Briefing personale per profilo | v0.2.0 (scheduler) + v0.3.0 (config collegata) |
-| Spiegabilita': «perche' l'hai fatto?» | v0.2.0 (registro azioni) |
+| Briefing personale per profilo — *il riepilogo del mattino e' in parte nella `0.8.0`* | v0.2.0 (scheduler) + v0.3.0 (config collegata) |
+| Spiegabilita': «perche' l'hai fatto?» — *«che ricordi hai usato» e' nella `0.8.0`; resta il perche' di un'azione* | v0.2.0 (registro azioni) |
 | Cucina come contesto (ricette, timer, lista) | v0.2.0 (scheduler) + v0.3.0 (liste) |
-| Diario della casa | v0.2.0 (database) + v0.3.0 (eventi) |
+| Diario della casa — *le proposte del sogno sono un primo pezzo, nella `0.8.0`* | v0.2.0 (database) + v0.3.0 (eventi) |
