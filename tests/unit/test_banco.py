@@ -408,12 +408,36 @@ def test_con_strumenti_sempre_si_passano_a_ogni_giro(banco, mondo):
 def test_un_contesto_pieno_si_segnala_come_troncato(banco, mondo):
     luce = {"id": "l", "categoria": "casa", "frase": "accendi la luce", "attesi": []}
     pieno = {"message": {"role": "assistant", "content": "ok"}, "prompt_eval_count": 1024}
+    intero = len(json.dumps(TOOLS_SCHEMA, ensure_ascii=False)) // 4  # quanto pesano gli strumenti da soli
 
     misura, _ = asyncio.run(_esegui(banco, mondo, luce, [pieno], num_ctx=1024))
-    largo, _ = asyncio.run(_esegui(banco, mondo, luce, [{**pieno, "prompt_eval_count": 900}], num_ctx=1024))
+    largo, _ = asyncio.run(
+        _esegui(banco, mondo, luce, [{**pieno, "prompt_eval_count": intero + 50}], num_ctx=8192)
+    )
 
     assert misura["troncato"] is True and misura["prompt_token"] == 1024
     assert largo["troncato"] is False
+
+
+def test_un_prompt_letto_per_meta_e_troncato_anche_se_lontano_dal_limite(banco, mondo):
+    """Il difetto del primo giro: con `num_ctx` 1024 il prompt da ~5.460 token risultava di 514, ben sotto
+    il limite — e il vecchio controllo (`>= num_ctx - 8`) diceva «0 troncati su 114»."""
+    luce = {"id": "l", "categoria": "casa", "frase": "accendi la luce", "attesi": []}
+    tagliato = {"message": {"role": "assistant", "content": "ok"}, "prompt_eval_count": 514}
+
+    misura, _ = asyncio.run(_esegui(banco, mondo, luce, [tagliato], num_ctx=1024))
+
+    assert misura["troncato"] is True
+    assert misura["prompt_atteso"] > 3000
+
+
+def test_una_chiacchierata_senza_strumenti_non_e_troncata_se_e_corta(banco, mondo):
+    ciao = {"id": "c", "categoria": "conversazione", "frase": "ciao come stai", "attesi": []}
+    corto = {"message": {"role": "assistant", "content": "bene"}, "prompt_eval_count": 12}
+
+    misura, _ = asyncio.run(_esegui(banco, mondo, ciao, [corto], num_ctx=1024))
+
+    assert misura["troncato"] is False
 
 
 def test_un_modello_che_chiama_strumenti_senza_fine_e_un_ciclo(banco, mondo):
@@ -586,6 +610,323 @@ def test_il_report_parziale_si_scrive_e_poi_si_sovrascrive(banco, mondo, tmp_pat
         "a @ 1024",
         "b @ 1024",
     }
+
+
+# ------------------------- cosa il primo giro sull'i5-8500T ha insegnato al banco (vedi l'analisi in risultati/)
+
+
+def test_un_alias_valido_non_e_un_dispositivo_inventato(banco, mondo):
+    """Gli strumenti risolvono «tapparella camera» come `cover.camera`: contarlo come invenzione era un falso."""
+    voce = {"id": "t", "categoria": "tapparelle", "attesi": []}
+    chiamate = [banco.Chiamata("comanda_tapparella", {"entity_id": "Tapparella Camera", "azione": "apri"})]
+
+    esito = banco.valuta(voce, chiamate, mondo.entita | mondo.nomi, set(_parametri()))
+    vero = banco.valuta(
+        voce,
+        [banco.Chiamata("control_device", {"entity_id": "light.cantina", "action": "turn_on"})],
+        mondo.entita | mondo.nomi,
+        set(_parametri()),
+    )
+
+    assert esito["inventate"] == []
+    assert vero["inventate"] == ["light.cantina"], "un identificativo che non esiste resta un'invenzione"
+
+
+def test_i_nomi_degli_alias_vengono_dal_mondo(mondo):
+    assert "tapparella camera" in mondo.nomi and "luce cucina" in mondo.nomi
+
+
+def _senza_risposta(banco, mondo, tipo):
+    return _risultato(banco, mondo, LUCE, [], errore=f"{tipo}: ")
+
+
+def test_un_timeout_non_e_uno_strumento_sbagliato(banco, mondo):
+    bene = [("control_device", {"entity_id": "light.cucina", "action": "turn_on"})]
+    risultati = [_risultato(banco, mondo, LUCE, bene) for _ in range(9)] + [
+        _senza_risposta(banco, mondo, "ReadTimeout")
+    ]
+
+    riassunto = banco.riassumi(risultati)
+
+    assert riassunto["risposte"] == 9 and riassunto["richieste"] == 10
+    assert riassunto["strumento_giusto"] == 100.0, "le percentuali sono sulle risposte arrivate"
+    assert riassunto["tipi_errore"] == {"ReadTimeout": 1}
+    assert riassunto["valutabile"] is True
+
+
+def test_con_troppe_risposte_mancanti_la_riga_non_e_valutabile(banco, mondo):
+    bene = [("control_device", {"entity_id": "light.cucina", "action": "turn_on"})]
+    risultati = [_risultato(banco, mondo, LUCE, bene) for _ in range(3)] + [
+        _senza_risposta(banco, mondo, "ConnectError") for _ in range(7)
+    ]
+
+    riassunto = banco.riassumi(risultati)
+    testo = banco.markdown({"qwen2.5:7b @ 1024": risultati}, "i5", 1)
+
+    assert riassunto["valutabile"] is False and banco.regge(riassunto) is False
+    assert "| qwen2.5:7b @ 1024 | 3/10 |" in testo and "n.v." in testo
+    assert "Senza risposta" in testo and "7 ConnectError" in testo
+
+
+def test_una_configurazione_mai_provata_non_scrive_percentuali(banco, mondo):
+    risultati = [_senza_risposta(banco, mondo, "ConnectError") for _ in range(4)]
+
+    testo = banco.markdown({"qwen2.5:7b @ 8192": risultati}, "i5", 1)
+
+    assert "| qwen2.5:7b @ 8192 | 0/4 | — |" in testo and "n.v." in testo
+    assert "0.0%" not in testo and "15.8%" not in testo
+
+
+def test_il_report_riporta_lo_stato_della_macchina(banco, mondo):
+    bene = [("control_device", {"entity_id": "light.cucina", "action": "turn_on"})]
+
+    testo = banco.markdown(
+        {"a @ 1024": [_risultato(banco, mondo, LUCE, bene)]},
+        "i5",
+        1,
+        {"Ollama: CPU concessa (secondi di CPU al secondo)": "3s", "Ollama: priorita' (Nice)": "10"},
+    )
+
+    assert "Stato della macchina e limiti del servizio" in testo
+    assert "CPU concessa" in testo and "(Nice)" in testo
+
+
+def test_lo_stato_della_macchina_non_solleva_mai(banco, monkeypatch):
+    def guasto(*a, **k):
+        raise FileNotFoundError("systemctl")
+
+    monkeypatch.setattr(banco.subprocess, "run", guasto)
+
+    stato = banco.stato_macchina()
+
+    assert stato["Core logici"].isdigit()
+
+
+def _rete(gestore):
+    return httpx.MockTransport(gestore)
+
+
+def _corpo_ok(prompt_token=900):
+    return httpx.Response(
+        200, json={"message": {"role": "assistant", "content": "ok"}, "prompt_eval_count": prompt_token}
+    )
+
+
+def test_ollama_che_si_riavvia_in_mezzo_si_aspetta_e_la_richiesta_riprova(banco, mondo, monkeypatch):
+    """Nel primo giro 244 richieste sono state scartate in 4 secondi mentre Ollama si riavviava."""
+    monkeypatch.setattr(banco.TEMPI, "sonda", 0.0)
+    monkeypatch.setattr(banco.TEMPI, "attesa_riavvio", 5.0)
+    stato = {"chat": 0, "sonde": 0}
+
+    def gestore(richiesta: httpx.Request) -> httpx.Response:
+        if richiesta.url.path == "/api/tags":
+            stato["sonde"] += 1
+            if stato["sonde"] < 3:
+                raise httpx.ConnectError("riavvio")
+            return httpx.Response(200, json={"models": []})
+        stato["chat"] += 1
+        if stato["chat"] == 1:
+            raise httpx.ConnectError("ucciso dal kernel")
+        return _corpo_ok()
+
+    ciao = {"id": "c", "categoria": "conversazione", "frase": "ciao", "attesi": []}
+
+    async def prova():
+        async with httpx.AsyncClient(transport=_rete(gestore)) as cliente:
+            return await banco.esegui_voce(
+                cliente,
+                "http://ollama.finto",
+                "m",
+                ciao,
+                mondo,
+                "P",
+                TOOLS_SCHEMA,
+                set(_parametri()),
+                2048,
+                0.4,
+                ("luce",),
+                False,
+            )
+
+    misura = asyncio.run(prova())
+
+    assert misura["errore"] == "" and stato["chat"] == 2 and stato["sonde"] == 3
+
+
+def test_ollama_che_non_torna_e_un_errore_non_un_giro_di_scarti_silenziosi(banco, mondo, monkeypatch):
+    monkeypatch.setattr(banco.TEMPI, "sonda", 0.0)
+    monkeypatch.setattr(banco.TEMPI, "attesa_riavvio", 0.05)
+
+    def gestore(richiesta: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("giu'")
+
+    ciao = {"id": "c", "categoria": "conversazione", "frase": "ciao", "attesi": []}
+
+    async def prova():
+        async with httpx.AsyncClient(transport=_rete(gestore)) as cliente:
+            return await banco.esegui_voce(
+                cliente,
+                "http://ollama.finto",
+                "m",
+                ciao,
+                mondo,
+                "P",
+                TOOLS_SCHEMA,
+                set(_parametri()),
+                2048,
+                0.4,
+                ("luce",),
+                False,
+            )
+
+    misura = asyncio.run(prova())
+
+    assert misura["errore"].startswith("ConnectError")
+
+
+def test_dopo_un_timeout_il_banco_aspetta_che_ollama_finisca(banco, mondo, monkeypatch):
+    """Rinunciare non ferma Ollama: continua 40-70 secondi, e la richiesta dopo aspetta in coda (e scade)."""
+    monkeypatch.setattr(banco.TEMPI, "dopo_timeout", 7.0)
+    attese: list[float] = []
+
+    async def finta_sleep(secondi):
+        attese.append(secondi)
+
+    monkeypatch.setattr(banco.asyncio, "sleep", finta_sleep)
+
+    def gestore(richiesta: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("lento")
+
+    ciao = {"id": "c", "categoria": "conversazione", "frase": "ciao", "attesi": []}
+
+    async def prova():
+        async with httpx.AsyncClient(transport=_rete(gestore)) as cliente:
+            return await banco.esegui_voce(
+                cliente,
+                "http://ollama.finto",
+                "m",
+                ciao,
+                mondo,
+                "P",
+                TOOLS_SCHEMA,
+                set(_parametri()),
+                2048,
+                0.4,
+                ("luce",),
+                False,
+            )
+
+    misura = asyncio.run(prova())
+
+    assert misura["errore"].startswith("ReadTimeout") and attese == [7.0]
+    assert misura["secondi"] < 5, "la pausa non entra nel tempo della richiesta"
+
+
+def test_il_riscaldamento_carica_il_modello_con_il_contesto_della_prova(banco):
+    viste: list = []
+
+    def gestore(richiesta: httpx.Request) -> httpx.Response:
+        viste.append(json.loads(richiesta.content))
+        return _corpo_ok()
+
+    async def prova():
+        async with httpx.AsyncClient(transport=_rete(gestore)) as cliente:
+            return await banco.scalda(cliente, "http://ollama.finto", "qwen2.5:3b", 8192)
+
+    assert asyncio.run(prova()) == ""
+    assert viste[0]["options"]["num_ctx"] == 8192 and viste[0]["options"]["num_predict"] == 1
+    assert "tools" not in viste[0]
+
+
+def _args_giro(tmp_path, **extra):
+    import argparse
+
+    base = {
+        "modelli": ["m"],
+        "num_ctx": ["1024"],
+        "ripetizioni": 1,
+        "temperatura": 0.4,
+        "solo": "conversazione",
+        "limite": 3,
+        "url": "http://ollama.finto",
+        "macchina": "prova",
+        "etichetta": "giro",
+        "strumenti_sempre": False,
+        "prova": False,
+        "timeout": 5.0,
+        "dopo_timeout": 0.0,
+        "attesa_riavvio": 0.05,
+    }
+    return argparse.Namespace(**{**base, **extra})
+
+
+def _banco_in(tmp_path, banco, monkeypatch, gestore):
+    import shutil
+
+    shutil.copy(CORPUS, tmp_path / "corpus.yaml")
+    monkeypatch.setattr(banco, "BANCO", tmp_path)
+    monkeypatch.setattr(banco.TEMPI, "sonda", 0.0)
+    originale = httpx.AsyncClient
+    monkeypatch.setattr(banco.httpx, "AsyncClient", lambda *a, **k: originale(transport=_rete(gestore)))
+
+
+def test_un_giro_intero_scalda_misura_e_scrive_lo_stato_della_macchina(banco, tmp_path, monkeypatch, capsys):
+    viste: list = []
+
+    def gestore(richiesta: httpx.Request) -> httpx.Response:
+        if richiesta.url.path == "/api/tags":
+            return httpx.Response(200, json={"models": []})
+        viste.append(json.loads(richiesta.content))
+        return _corpo_ok(prompt_token=800)
+
+    _banco_in(tmp_path, banco, monkeypatch, gestore)
+
+    esito = asyncio.run(banco.principale(_args_giro(tmp_path)))
+
+    assert esito == 0
+    assert viste[0]["options"]["num_predict"] == 1, "la prima richiesta e' il riscaldamento"
+    report = next((tmp_path / "risultati").glob("*-giro.md")).read_text(encoding="utf-8")
+    assert "Stato della macchina e limiti del servizio" in report and "Core logici" in report
+    assert "modello caricato" in capsys.readouterr().out
+
+
+def test_se_ollama_non_risponde_il_giro_non_parte_e_non_scrive_niente(banco, tmp_path, monkeypatch):
+    def gestore(richiesta: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("spento")
+
+    _banco_in(tmp_path, banco, monkeypatch, gestore)
+    monkeypatch.setattr(banco, "aspetta_ollama", lambda *a, **k: _falso())
+
+    assert asyncio.run(banco.principale(_args_giro(tmp_path))) == 2
+    assert not (tmp_path / "risultati").exists()
+
+
+async def _falso():
+    return False
+
+
+def test_se_ollama_cade_a_meta_il_giro_si_ferma_e_salva_quello_che_ha(banco, tmp_path, monkeypatch):
+    stato = {"richieste": 0}
+
+    def gestore(richiesta: httpx.Request) -> httpx.Response:
+        if richiesta.url.path == "/api/tags":
+            if stato["richieste"] >= 2:
+                raise httpx.ConnectError("caduto")
+            return httpx.Response(200, json={"models": []})
+        stato["richieste"] += 1
+        if stato["richieste"] > 2:
+            raise httpx.ConnectError("caduto")
+        return _corpo_ok(prompt_token=800)
+
+    _banco_in(tmp_path, banco, monkeypatch, gestore)
+
+    esito = asyncio.run(banco.principale(_args_giro(tmp_path, solo=None, limite=8)))
+
+    assert esito == 2
+    dati = json.loads(next((tmp_path / "risultati").glob("*-giro.json")).read_text(encoding="utf-8"))
+    righe = dati["m @ 1024"]
+    assert 3 <= len(righe) <= 6, "si ferma dopo tre guasti di fila, non consuma tutto il corpus"
+    assert any(r["errore"] for r in righe)
 
 
 # ------------------------------ gli strumenti arrivano al modello (il difetto che il banco ha trovato)
