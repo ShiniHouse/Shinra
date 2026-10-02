@@ -551,9 +551,11 @@ def scrivi(
     base = cartella / f"{date.today().isoformat()}-{args.etichetta}"
     base.with_suffix(".md").write_text(testo, encoding="utf-8", newline="\n")
     base.with_suffix(".json").write_text(
+        # L'a capo finale: i ganci lo vogliono su ogni file, e un risultato committato senza fallirebbe in CI.
         json.dumps(
             {n: [dict(r) for r in rs] for n, rs in configurazioni.items()}, ensure_ascii=False, indent=1
-        ),
+        )
+        + "\n",
         encoding="utf-8",
         newline="\n",
     )
