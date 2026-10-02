@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import re
 import statistics
 import subprocess
@@ -64,6 +65,30 @@ CRITERI = {
     "cicli": 0,
     "mediana_secondi": 8.0,
 }
+
+# Sotto questa quota di richieste con risposta, la riga del report non si puo' giudicare: «non valutabile».
+# Un timeout o un guasto di Ollama sono dati mancanti, non risposte sbagliate.
+QUOTA_RISPOSTE = 0.9
+
+
+@dataclass
+class Tempi:
+    """Le attese del banco, in secondi. Si cambiano da riga di comando (e nei test).
+
+    Il primo giro sull'i5-8500T ha insegnato tre cose (`banco/risultati/2026-10-02-i5-8500t-ANALISI.md`):
+    180 secondi sono pochi per una CPU senza GPU; dopo un timeout **Ollama continua a lavorare** per
+    altri 40-70 secondi e la richiesta successiva aspetta in coda, quindi serve una pausa; e Ollama,
+    ucciso dal kernel, riparte da solo in pochi secondi, quindi un `ConnectError` si aspetta.
+    """
+
+    richiesta: float = 600.0
+    dopo_timeout: float = 90.0
+    attesa_riavvio: float = 120.0
+    sonda: float = 3.0
+    scalda: float = 900.0
+
+
+TEMPI = Tempi()
 
 
 # --------------------------------------------------------------- valutazione
@@ -116,10 +141,14 @@ def valuta(
     categoria = voce["categoria"]
     nomi = [c.nome for c in chiamate]
 
+    # `entita` contiene gli identificativi veri **e i nomi degli alias**: gli strumenti accettano
+    # «tapparella camera» come «cover.camera» (lo risolvono), quindi un alias valido non e' un'invenzione.
     inventate = [
         c.args["entity_id"]
         for c in chiamate
-        if isinstance(c.args.get("entity_id"), str) and c.args["entity_id"] not in entita
+        if isinstance(c.args.get("entity_id"), str)
+        and c.args["entity_id"] not in entita
+        and c.args["entity_id"].strip().casefold() not in entita
     ]
     inesistenti = [n for n in nomi if n not in strumenti]
 
@@ -158,11 +187,17 @@ def valuta(
 class Mondo:
     dati: dict[str, Any]
     entita: set[str] = field(default_factory=set)
+    # I nomi degli alias, in minuscolo: sono un modo valido di indicare un dispositivo.
+    nomi: set[str] = field(default_factory=set)
 
     @classmethod
     def carica(cls, percorso: Path = BANCO / "mondo.yaml") -> Mondo:
         dati = yaml.safe_load(percorso.read_text(encoding="utf-8"))
-        return cls(dati=dati, entita={a["entity_id"] for a in dati["alias"]})
+        return cls(
+            dati=dati,
+            entita={a["entity_id"] for a in dati["alias"]},
+            nomi={a["alias"].strip().casefold() for a in dati["alias"]},
+        )
 
     def riassunto_alias(self) -> str:
         return "\n".join(
@@ -230,8 +265,6 @@ async def chiedi(
     temperatura: float,
     num_predict: int,
 ) -> dict[str, Any]:
-    from shinra.config.settings import settings
-
     payload: dict[str, Any] = {
         "model": modello,
         "messages": messaggi,
@@ -241,11 +274,65 @@ async def chiedi(
     }
     if strumenti:
         payload["tools"] = strumenti
-    risposta = await cliente.post(
-        f"{url.rstrip('/')}/api/chat", json=payload, timeout=max(settings.llm.timeout_seconds, 180)
-    )
+    risposta = await cliente.post(f"{url.rstrip('/')}/api/chat", json=payload, timeout=TEMPI.richiesta)
     risposta.raise_for_status()
     return risposta.json()
+
+
+# Gli errori di rete che, con Ollama, vogliono dire «si sta riavviando» e non «e' sbagliato»: il servizio e'
+# stato ucciso (di solito per memoria) e systemd lo rialza in pochi secondi.
+ERRORI_DI_RETE = (httpx.ConnectError, httpx.RemoteProtocolError, httpx.ReadError)
+ERRORI_DI_RETE_NOMI = tuple(e.__name__ for e in ERRORI_DI_RETE)
+
+
+async def aspetta_ollama(cliente: httpx.AsyncClient, url: str, secondi: float) -> bool:
+    """Aspetta che Ollama risponda a «ci sei?». Ritorna `False` se non torna entro `secondi`."""
+    fine = time.monotonic() + secondi
+    while True:
+        try:
+            risposta = await cliente.get(f"{url.rstrip('/')}/api/tags", timeout=10)
+            if risposta.status_code == 200:
+                return True
+        except httpx.HTTPError:
+            pass
+        if time.monotonic() >= fine:
+            return False
+        await asyncio.sleep(TEMPI.sonda)
+
+
+async def chiedi_resiliente(cliente: httpx.AsyncClient, url: str, *args: Any) -> dict[str, Any]:
+    """Come `chiedi`, ma se Ollama cade in mezzo aspetta che torni e riprova una volta.
+
+    Nel primo giro 244 richieste sono state scartate in quattro secondi con `ConnectError`, mentre
+    Ollama si riavviava: due configurazioni del report non misuravano niente.
+    """
+    try:
+        return await chiedi(cliente, url, *args)
+    except ERRORI_DI_RETE:
+        if not await aspetta_ollama(cliente, url, TEMPI.attesa_riavvio):
+            raise
+        return await chiedi(cliente, url, *args)
+
+
+async def scalda(cliente: httpx.AsyncClient, url: str, modello: str, num_ctx: int) -> str:
+    """Una richiesta minima che carica il modello con il contesto della prova.
+
+    Il caricamento (decine di secondi, anche piu' di cento) non deve finire nella statistica della
+    prima richiesta. Ritorna una stringa vuota, o l'errore.
+    """
+    payload = {
+        "model": modello,
+        "messages": [{"role": "user", "content": "ciao"}],
+        "stream": False,
+        "keep_alive": "30m",
+        "options": {"num_ctx": num_ctx, "num_predict": 1},
+    }
+    try:
+        risposta = await cliente.post(f"{url.rstrip('/')}/api/chat", json=payload, timeout=TEMPI.scalda)
+        risposta.raise_for_status()
+        return ""
+    except httpx.HTTPError as errore:
+        return f"{type(errore).__name__}: {errore}"
 
 
 def _chiamate_dal_messaggio(messaggio: dict[str, Any]) -> list[Chiamata]:
@@ -294,12 +381,20 @@ async def esegui_voce(
     try:
         for giro in range(MAX_GIRI):
             usa = tutti_gli_strumenti if (servono and (giro == 0 or strumenti_sempre)) else None
-            dati = await chiedi(cliente, url, modello, messaggi, usa, num_ctx, temperatura, 150)
+            dati = await chiedi_resiliente(cliente, url, modello, messaggi, usa, num_ctx, temperatura, 150)
             esito["giri"] += 1
             if esito["prompt_token"] is None:
-                esito["prompt_token"] = dati.get("prompt_eval_count")
-                # Se il prompt riempie tutto il contesto, Ollama ha tagliato: si vede qui.
-                esito["troncato"] = bool(esito["prompt_token"] and esito["prompt_token"] >= num_ctx - 8)
+                letti = dati.get("prompt_eval_count")
+                esito["prompt_token"] = letti
+                # Quanto dovrebbe pesare il prompt intero (4 caratteri per token: una stima per difetto).
+                atteso = (
+                    len(prompt) + len(frase) + (len(json.dumps(usa, ensure_ascii=False)) if usa else 0)
+                ) // 4
+                esito["prompt_atteso"] = atteso
+                # Ollama ha tagliato in due casi: il prompt riempie il contesto, oppure — e lo si vede solo cosi' —
+                # ne ha letto molto meno del dovuto. Con `num_ctx` 1024 il prompt da ~5.460 token ne risultava di 514,
+                # lontano dal limite: il vecchio controllo diceva «0 troncati su 114».
+                esito["troncato"] = bool(letti and (letti >= num_ctx - 8 or letti < 0.7 * atteso))
             messaggio = dati.get("message", {})
             nuove = _chiamate_dal_messaggio(messaggio)
             if not nuove:
@@ -324,6 +419,10 @@ async def esegui_voce(
         esito["errore"] = f"{type(errore).__name__}: {errore}"
     esito["secondi"] = round(time.monotonic() - inizio, 2)
     esito["chiamate"] = [{"nome": c.nome, "args": c.args} for c in chiamate]
+    if esito["errore"].startswith("ReadTimeout"):
+        # Rinunciare non ferma Ollama: continua per altri 40-70 secondi e la richiesta dopo aspetta in coda
+        # (e scade a sua volta). Si aspetta che finisca. Il tempo della pausa non entra nei `secondi`.
+        await asyncio.sleep(TEMPI.dopo_timeout)
     return esito
 
 
@@ -335,14 +434,28 @@ def _percento(parte: int, tutto: int) -> float:
 
 
 def riassumi(risultati: list[dict[str, Any]]) -> dict[str, Any]:
-    """I numeri di una configurazione (modello + contesto) su tutte le sue richieste."""
-    con_strumento = [r for r in risultati if r["voce"]["attesi"]]
-    secondi = [r["secondi"] for r in risultati if not r["errore"]]
-    con_argomenti = [r for r in risultati if r["ok_argomenti"] is not None]
-    senza_strumento = [r for r in risultati if not r["voce"]["attesi"]]
+    """I numeri di una configurazione (modello + contesto) su tutte le sue richieste.
+
+    Le percentuali sono calcolate **sulle richieste che hanno avuto una risposta**: un timeout o un
+    guasto di Ollama sono un dato mancante, non uno strumento sbagliato. Quante risposte sono arrivate
+    sta in `risposte`, e se sono troppo poche la riga e' «non valutabile».
+    """
+    valide = [r for r in risultati if not r["errore"]]
+    con_strumento = [r for r in valide if r["voce"]["attesi"]]
+    secondi = [r["secondi"] for r in valide]
+    con_argomenti = [r for r in valide if r["ok_argomenti"] is not None]
+    senza_strumento = [r for r in valide if not r["voce"]["attesi"]]
+    tipi_errore: dict[str, int] = {}
+    for r in risultati:
+        if r["errore"]:
+            tipo = r["errore"].split(":")[0]
+            tipi_errore[tipo] = tipi_errore.get(tipo, 0) + 1
     return {
         "richieste": len(risultati),
-        "strumento_giusto": _percento(sum(r["ok_strumento"] for r in risultati), len(risultati)),
+        "risposte": len(valide),
+        "valutabile": bool(valide) and len(valide) >= QUOTA_RISPOSTE * len(risultati),
+        "tipi_errore": tipi_errore,
+        "strumento_giusto": _percento(sum(r["ok_strumento"] for r in valide), len(valide)),
         "strumento_giusto_se_serve": _percento(
             sum(r["ok_strumento"] for r in con_strumento), len(con_strumento)
         ),
@@ -352,12 +465,12 @@ def riassumi(risultati: list[dict[str, Any]]) -> dict[str, Any]:
         "non_comanda_se_non_deve": _percento(
             sum(r["ok_strumento"] for r in senza_strumento), len(senza_strumento)
         ),
-        "inventate": sum(len(r["inventate"]) for r in risultati),
-        "inesistenti": sum(len(r["inesistenti"]) for r in risultati),
-        "cicli": sum(r["ciclo"] for r in risultati),
+        "inventate": sum(len(r["inventate"]) for r in valide),
+        "inesistenti": sum(len(r["inesistenti"]) for r in valide),
+        "cicli": sum(r["ciclo"] for r in valide),
         "errori": sum(bool(r["errore"]) for r in risultati),
-        "troncati": sum(r["troncato"] for r in risultati),
-        "prompt_token": next((r["prompt_token"] for r in risultati if r["prompt_token"]), None),
+        "troncati": sum(r["troncato"] for r in valide),
+        "prompt_token": next((r["prompt_token"] for r in valide if r["prompt_token"]), None),
         "mediana_secondi": round(statistics.median(secondi), 2) if secondi else None,
         "p90_secondi": (
             round(sorted(secondi)[int(len(secondi) * 0.9) - 1], 2)
@@ -369,7 +482,8 @@ def riassumi(risultati: list[dict[str, Any]]) -> dict[str, Any]:
 
 def regge(r: dict[str, Any]) -> bool:
     return (
-        r["strumento_giusto"] >= CRITERI["strumento_giusto"]
+        r.get("valutabile", True)
+        and r["strumento_giusto"] >= CRITERI["strumento_giusto"]
         and r["argomenti_giusti"] >= CRITERI["argomenti_giusti"]
         and r["inventate"] <= CRITERI["inventate"]
         and r["cicli"] <= CRITERI["cicli"]
@@ -379,21 +493,34 @@ def regge(r: dict[str, Any]) -> bool:
 
 
 def per_categoria(risultati: list[dict[str, Any]]) -> dict[str, tuple[int, int]]:
+    """Per categoria: (riuscite, con risposta). Le richieste senza risposta non contano ne' come riuscite ne' come fallite."""
     out: dict[str, list[int]] = {}
     for r in risultati:
         col = out.setdefault(r["voce"]["categoria"], [0, 0])
+        if r["errore"]:
+            continue
         col[0] += int(r["ok_strumento"] and r["ok_argomenti"] is not False)
         col[1] += 1
     return {k: (v[0], v[1]) for k, v in out.items()}
 
 
-def markdown(configurazioni: dict[str, list[dict[str, Any]]], macchina: str, ripetizioni: int) -> str:
+def markdown(
+    configurazioni: dict[str, list[dict[str, Any]]],
+    macchina: str,
+    ripetizioni: int,
+    stato: dict[str, str] | None = None,
+) -> str:
     righe = [
         f"# Banco di prova del tool calling — {date.today().isoformat()}",
         "",
         f"- **Macchina:** {macchina or 'non dichiarata'}",
         f"- **Ripetizioni per richiesta:** {ripetizioni}",
         f"- **Revisione:** `{_revisione()}`",
+    ]
+    if stato:
+        righe += ["", "## Stato della macchina e limiti del servizio (all'inizio del giro)", ""]
+        righe += [f"- **{voce}:** {valore}" for voce, valore in stato.items()]
+    righe += [
         "",
         "I criteri sono una **proposta** per l'ADR 0008, non una verita': "
         + ", ".join(
@@ -402,17 +529,25 @@ def markdown(configurazioni: dict[str, list[dict[str, Any]]], macchina: str, rip
         )
         + ".",
         "",
-        "| Configurazione | Strumento giusto | Argomenti giusti | Inventate | Cicli | Troncati | Token prompt | Mediana s | p90 s | Regge |",
-        "| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | :---: |",
+        "Le percentuali sono sulle richieste **che hanno avuto una risposta**: un timeout o un guasto di Ollama "
+        "sono un dato mancante, non uno strumento sbagliato. Con meno del "
+        f"{int(QUOTA_RISPOSTE * 100)}% di risposte la riga e' **n.v.** (non valutabile).",
+        "",
+        "| Configurazione | Risposte | Strumento giusto | Argomenti giusti | Inventate | Cicli | Troncati | Token prompt | Mediana s | p90 s | Regge |",
+        "| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | :---: |",
     ]
     sommari = {nome: riassumi(r) for nome, r in configurazioni.items()}
     for nome, s in sommari.items():
+        if s["risposte"] == 0:
+            righe.append(f"| {nome} | 0/{s['richieste']} | — | — | — | — | — | — | — | — | n.v. |")
+            continue
+        giudizio = ("si" if regge(s) else "no") if s["valutabile"] else "n.v."
         righe.append(
-            f"| {nome} | {s['strumento_giusto']}% | {s['argomenti_giusti']}% | {s['inventate']} | {s['cicli']} | "
-            f"{s['troncati']}/{s['richieste']} | {s['prompt_token'] or '—'} | {s['mediana_secondi']} | {s['p90_secondi']} | "
-            f"{'si' if regge(s) else 'no'} |"
+            f"| {nome} | {s['risposte']}/{s['richieste']} | {s['strumento_giusto']}% | {s['argomenti_giusti']}% | "
+            f"{s['inventate']} | {s['cicli']} | {s['troncati']}/{s['risposte']} | {s['prompt_token'] or '—'} | "
+            f"{s['mediana_secondi']} | {s['p90_secondi']} | {giudizio} |"
         )
-    righe += ["", "## Per categoria (richieste riuscite / totali)", ""]
+    righe += ["", "## Per categoria (riuscite / con risposta)", ""]
     categorie = sorted({c for r in configurazioni.values() for c in per_categoria(r)})
     righe.append("| Categoria | " + " | ".join(configurazioni) + " |")
     righe.append("| :--- | " + " | ".join("---:" for _ in configurazioni) + " |")
@@ -422,8 +557,15 @@ def markdown(configurazioni: dict[str, list[dict[str, Any]]], macchina: str, rip
             ok, tot = per_categoria(r).get(categoria, (0, 0))
             celle.append(f"{ok}/{tot}")
         righe.append(f"| {categoria} | " + " | ".join(celle) + " |")
+    senza_risposta = {nome: s["tipi_errore"] for nome, s in sommari.items() if s["tipi_errore"]}
+    if senza_risposta:
+        righe += ["", "## Senza risposta", ""]
+        for nome, tipi in senza_risposta.items():
+            righe.append(f"- **{nome}:** " + ", ".join(f"{n} {tipo}" for tipo, n in sorted(tipi.items())))
     for nome, r in configurazioni.items():
-        sbagliate = [x for x in r if not x["ok_strumento"] or x["ok_argomenti"] is False]
+        sbagliate = [
+            x for x in r if not x["errore"] and (not x["ok_strumento"] or x["ok_argomenti"] is False)
+        ]
         if not sbagliate:
             continue
         righe += ["", f"## Dove sbaglia: {nome}", ""]
@@ -438,6 +580,79 @@ def markdown(configurazioni: dict[str, list[dict[str, Any]]], macchina: str, rip
                 + (f" — **{x['errore']}**" if x["errore"] else "")
             )
     return "\n".join(righe) + "\n"
+
+
+def stato_macchina() -> dict[str, str]:
+    """Com'e' la macchina e come e' limitato Ollama, al meglio che si riesce (su Windows ne esce meno).
+
+    Senza, i tempi di un giro non si interpretano: il primo, sull'i5-8500T, e' stato misurato con Ollama
+    limitato a 3 core su 6 (`CPUQuota=300%`), a priorita' bassa (`Nice=10`), mentre sulla stessa macchina
+    giravano un server di gioco e un browser — e nel report non c'era scritto.
+    """
+    stato: dict[str, str] = {"Core logici": str(os.cpu_count())}
+    try:
+        meminfo = {
+            riga.split(":")[0]: int(riga.split(":")[1].split()[0])
+            for riga in Path("/proc/meminfo").read_text(encoding="utf-8").splitlines()
+            if ":" in riga
+        }
+        stato["Memoria"] = (
+            f"{meminfo['MemAvailable'] / 1048576:.1f} GB disponibili su {meminfo['MemTotal'] / 1048576:.1f} GB"
+        )
+        stato["Swap"] = (
+            f"{(meminfo['SwapTotal'] - meminfo['SwapFree']) / 1024:.0f} MB in uso su {meminfo['SwapTotal'] / 1024:.0f} MB"
+        )
+        stato["Carico (1/5/15 min)"] = " / ".join(
+            Path("/proc/loadavg").read_text(encoding="utf-8").split()[:3]
+        )
+    except (OSError, KeyError, ValueError, IndexError):
+        pass
+    try:
+        uscita = subprocess.run(
+            [  # noqa: S607
+                "systemctl",
+                "show",
+                "ollama",
+                "-p",
+                "CPUQuotaPerSecUSec",
+                "-p",
+                "Nice",
+                "-p",
+                "MemoryMax",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        ).stdout
+        valori = dict(riga.split("=", 1) for riga in uscita.splitlines() if "=" in riga)
+        if valori:
+            stato["Ollama: CPU concessa (secondi di CPU al secondo)"] = valori.get("CPUQuotaPerSecUSec", "?")
+            stato["Ollama: priorita' (Nice)"] = valori.get("Nice", "?")
+            massimo = valori.get("MemoryMax", "?")
+            stato["Ollama: tetto di memoria"] = (
+                f"{int(massimo) / 1073741824:.1f} GB" if massimo.isdigit() else massimo
+            )
+    except (OSError, subprocess.SubprocessError):
+        pass
+    try:
+        grandi = subprocess.run(
+            ["ps", "-eo", "rss=,comm=", "--sort=-rss"],  # noqa: S607
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        ).stdout.splitlines()[:5]
+        voci = []
+        for riga in grandi:
+            rss, _, nome = riga.strip().partition(" ")
+            if rss.isdigit():
+                voci.append(f"{nome.strip()} {int(rss) / 1048576:.1f} GB")
+        if voci:
+            stato["Processi piu' grandi"] = ", ".join(voci)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return stato
 
 
 def _revisione() -> str:
@@ -495,18 +710,44 @@ async def principale(args: argparse.Namespace) -> int:
         return 0
 
     contesti = [produzione if c == "produzione" else int(c) for c in args.num_ctx]
+    TEMPI.richiesta = args.timeout
+    TEMPI.dopo_timeout = args.dopo_timeout
+    TEMPI.attesa_riavvio = args.attesa_riavvio
+    args.stato_macchina = stato_macchina()
+    for voce_stato, valore in args.stato_macchina.items():
+        print(f"{voce_stato}: {valore}")
+
+    indirizzo = args.url or settings.llm.ollama_url
     configurazioni: dict[str, list[dict[str, Any]]] = {}
+    interrotto = False
     async with httpx.AsyncClient() as cliente:
+        if not await aspetta_ollama(cliente, indirizzo, 30):
+            print(f"Ollama non risponde su {indirizzo}: il giro non parte.", file=sys.stderr)
+            return 2
         for modello in args.modelli:
             for ctx in contesti:
+                if interrotto:
+                    break
                 nome = f"{modello} @ {ctx}"
                 print(f"\n=== {nome} ===")
-                risultati = []
+                if not await aspetta_ollama(cliente, indirizzo, TEMPI.attesa_riavvio):
+                    print("Ollama non risponde piu': giro interrotto.", file=sys.stderr)
+                    interrotto = True
+                    break
+                # Il caricamento del modello non deve finire nella statistica della prima richiesta.
+                guasto = await scalda(cliente, indirizzo, modello, ctx)
+                print(
+                    f"  ATTENZIONE: il modello non si e' caricato ({guasto})"
+                    if guasto
+                    else "  modello caricato"
+                )
+                risultati: list[dict[str, Any]] = []
+                di_fila = 0
                 for voce in corpus:
                     for _ in range(args.ripetizioni):
                         misura = await esegui_voce(
                             cliente,
-                            args.url or settings.llm.ollama_url,
+                            indirizzo,
                             modello,
                             voce,
                             mondo,
@@ -518,10 +759,11 @@ async def principale(args: argparse.Namespace) -> int:
                             parole,
                             args.strumenti_sempre,
                         )
+                        # I nomi degli alias sono un modo valido di indicare un dispositivo: non sono invenzioni.
                         verdetto = valuta(
                             voce,
                             [Chiamata(c["nome"], c["args"]) for c in misura["chiamate"]],
-                            mondo.entita,
+                            mondo.entita | mondo.nomi,
                             strumenti,
                         )
                         risultati.append({"voce": voce, **misura, **verdetto})
@@ -534,10 +776,22 @@ async def principale(args: argparse.Namespace) -> int:
                             f"  {segno}{voce['id']:<28} {misura['secondi']:>6}s  {len(misura['chiamate'])} chiamate"
                             + (f"  ERRORE {misura['errore']}" if misura["errore"] else "")
                         )
+                        # Ollama non torna nemmeno dopo l'attesa: inutile consumare le altre richieste a vuoto.
+                        di_fila = di_fila + 1 if misura["errore"].startswith(ERRORI_DI_RETE_NOMI) else 0
+                        if di_fila >= 3:
+                            print(
+                                "Ollama non risponde: giro interrotto, i risultati parziali sono salvati.",
+                                file=sys.stderr,
+                            )
+                            interrotto = True
+                            break
+                    if interrotto:
+                        break
                 configurazioni[nome] = risultati
                 scrivi(configurazioni, args, parziale=True)
 
-    return scrivi(configurazioni, args)
+    esito = scrivi(configurazioni, args)
+    return 2 if interrotto else esito
 
 
 def scrivi(
@@ -545,7 +799,7 @@ def scrivi(
 ) -> int:
     """Scrive il report e i dati grezzi. Si chiama anche a meta' giro: un giro lungo
     interrotto non deve perdere cio' che e' gia' stato misurato."""
-    testo = markdown(configurazioni, args.macchina, args.ripetizioni)
+    testo = markdown(configurazioni, args.macchina, args.ripetizioni, getattr(args, "stato_macchina", None))
     cartella = BANCO / "risultati"
     cartella.mkdir(exist_ok=True)
     base = cartella / f"{date.today().isoformat()}-{args.etichetta}"
@@ -581,6 +835,24 @@ def analizza() -> argparse.Namespace:
     p.add_argument("--url", help="l'indirizzo di Ollama (predefinito: quello della configurazione)")
     p.add_argument("--macchina", default="", help="una riga che descrive la macchina, per il report")
     p.add_argument("--etichetta", default="banco", help="il nome del file dei risultati")
+    p.add_argument(
+        "--timeout",
+        type=float,
+        default=TEMPI.richiesta,
+        help="secondi da aspettare una risposta (predefinito 600: su una CPU senza GPU 180 non bastano)",
+    )
+    p.add_argument(
+        "--dopo-timeout",
+        type=float,
+        default=TEMPI.dopo_timeout,
+        help="pausa dopo un timeout: Ollama continua a lavorare altri 40-70 secondi",
+    )
+    p.add_argument(
+        "--attesa-riavvio",
+        type=float,
+        default=TEMPI.attesa_riavvio,
+        help="secondi da aspettare che Ollama torni dopo un guasto prima di rinunciare",
+    )
     p.add_argument(
         "--strumenti-sempre",
         action="store_true",

@@ -81,16 +81,41 @@ quello in corso invece si perde, per questo conviene un modello per volta.
 | **Argomenti giusti** | Fra quelle con uno strumento atteso: ha passato il dispositivo e i valori giusti |
 | **Inventate** | Quante volte ha scritto un `entity_id` che la casa non ha. E' il difetto piu' grave: un comando verso un dispositivo inesistente non da' un errore chiaro |
 | **Cicli** | Richieste in cui il modello ha continuato a chiamare strumenti fino al limite di quattro giri |
-| **Troncati** | Richieste in cui il prompt ha riempito tutto il contesto: Ollama ha tagliato |
+| **Risposte** | Quante richieste hanno avuto una risposta. Le percentuali sono calcolate **su queste**: un timeout o un guasto sono un dato mancante, non uno strumento sbagliato |
+| **Troncati** | Richieste in cui Ollama ha tagliato il prompt: o ha riempito il contesto, oppure ne ha letto **meno del 70%** di quanto pesa (con `num_ctx` 1024 un prompt da ~5.460 token risultava di 514) |
 | **Token prompt** | Quanti token ha davvero contato Ollama per il prompt |
 | **Mediana / p90 s** | Quanto ci mette a rispondere, in secondi. Il p90 e' il tempo che supera una richiesta su dieci |
-| **Regge** | Rispetta i criteri proposti qui sotto |
+| **Regge** | Rispetta i criteri proposti qui sotto. **n.v.** (non valutabile) se meno del 90% delle richieste ha avuto risposta |
 
 I criteri proposti per dire che un modello regge sono: strumento giusto ≥ 85%,
 argomenti giusti ≥ 75%, al piu' una `entity_id` inventata, nessun ciclo e una
 mediana di al massimo 8 secondi. **Sono una proposta da discutere nell'ADR 0008**,
 non una verita': i numeri veri li da' il banco, e puo' darsi che sulla tua
 macchina nessun modello li rispetti — che e' un risultato, non un fallimento.
+
+## Cosa fa il banco per non mentire
+
+Il primo giro sull'i5-8500T ([l'analisi](risultati/2026-10-02-i5-8500t-ANALISI.md)) ha mostrato otto modi in cui un
+banco puo' produrre numeri sicuri e sbagliati. Ora:
+
+- **Aspetta Ollama.** Se il servizio cade — di solito ucciso per memoria, e systemd lo rialza in pochi secondi — la
+  richiesta aspetta che torni (`--attesa-riavvio`, 120 s) e riprova una volta. Se non torna, dopo tre guasti di fila il
+  giro si **ferma** e salva quello che ha; non consuma altre centinaia di richieste a vuoto.
+- **Aspetta dopo un timeout** (`--dopo-timeout`, 90 s). Rinunciare a una richiesta non ferma Ollama: continua per altri
+  40–70 secondi e la richiesta successiva aspetta in coda, scade a sua volta, e i timeout si alternano. La pausa non
+  entra nel tempo misurato.
+- **Riscalda il modello** prima di ogni configurazione, con una richiesta minima: il caricamento (decine di secondi) non
+  finisce nella statistica della prima richiesta.
+- **Dà tempo.** `--timeout` e' di 600 s: su una CPU senza GPU, con l'intero catalogo, 180 s non bastano.
+- **Non conta un alias come un'invenzione.** «tapparella camera» e' un modo valido di indicare `cover.camera`:
+  gli strumenti lo risolvono.
+- **Scrive in che condizioni ha girato**: memoria disponibile, swap, carico, i processi piu' grandi e — su Linux con systemd —
+  i **limiti del servizio Ollama** (`CPUQuota`, `Nice`, `MemoryMax`). Un tempo senza sapere se Ollama aveva tre core o sei,
+  a priorita' alta o bassa, accanto a un server di gioco o no, non si puo' confrontare con niente.
+
+Per misurare **la macchina** e non l'ospite, il giro va fatto con Ollama libero (senza `CPUQuota` e con `Nice` normale) e
+con gli altri carichi spenti; per misurare **l'esperienza di ogni giorno**, con i limiti di sempre. Sono due numeri diversi
+e servono tutti e due: il report dice quale dei due e'.
 
 ## Come ci si fida dei numeri
 
