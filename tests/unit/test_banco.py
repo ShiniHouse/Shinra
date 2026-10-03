@@ -632,6 +632,29 @@ def test_un_alias_valido_non_e_un_dispositivo_inventato(banco, mondo):
     assert vero["inventate"] == ["light.cantina"], "un identificativo che non esiste resta un'invenzione"
 
 
+def test_un_alias_negli_argomenti_vale_l_identificativo_che_risolve(banco, mondo):
+    """Il secondo giro segnava 0/8 sulle tapparelle: il modello scriveva «tapparella salotto» e il banco
+    voleva `cover.salotto`, che l'app invece ricava da sola. Era un falso negativo del banco, non del modello.
+    """
+    voce = {
+        "id": "t",
+        "categoria": "tapparelle",
+        "attesi": [
+            {"tool": "comanda_tapparella", "args": {"entity_id": "cover.salotto", "azione": "chiudi"}}
+        ],
+    }
+    giusta = [banco.Chiamata("comanda_tapparella", {"entity_id": "Tapparella Salotto", "azione": "chiudi"})]
+    altra = [banco.Chiamata("comanda_tapparella", {"entity_id": "tapparella camera", "azione": "chiudi"})]
+    strumenti = set(_parametri())
+
+    assert (
+        banco.valuta(voce, giusta, mondo.entita | mondo.nomi, strumenti, mondo.alias)["ok_argomenti"] is True
+    )
+    assert (
+        banco.valuta(voce, altra, mondo.entita | mondo.nomi, strumenti, mondo.alias)["ok_argomenti"] is False
+    ), "un alias di un'altra stanza resta un errore"
+
+
 def test_i_nomi_degli_alias_vengono_dal_mondo(mondo):
     assert "tapparella camera" in mondo.nomi and "luce cucina" in mondo.nomi
 
