@@ -133,8 +133,23 @@ def _chiamata_soddisfa(attesa: dict[str, Any], c: Chiamata) -> bool:
     return all(combacia(v, c.args.get(k)) for k, v in (attesa.get("args") or {}).items())
 
 
+def _con_alias_risolti(chiamate: list[Chiamata], alias: dict[str, str]) -> list[Chiamata]:
+    """Gli strumenti risolvono «tapparella salotto» in `cover.salotto`: il confronto deve farlo come loro."""
+    risolte = []
+    for c in chiamate:
+        riferimento = c.args.get("entity_id")
+        if isinstance(riferimento, str) and riferimento.strip().casefold() in alias:
+            c = Chiamata(c.nome, {**c.args, "entity_id": alias[riferimento.strip().casefold()]})
+        risolte.append(c)
+    return risolte
+
+
 def valuta(
-    voce: dict[str, Any], chiamate: list[Chiamata], entita: set[str], strumenti: set[str]
+    voce: dict[str, Any],
+    chiamate: list[Chiamata],
+    entita: set[str],
+    strumenti: set[str],
+    alias: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Il verdetto su una richiesta: strumento giusto, argomenti giusti, invenzioni."""
     attesi = voce.get("attesi") or []
@@ -163,7 +178,7 @@ def valuta(
 
     ok_argomenti = None
     if attesi and ok_strumento:
-        liberi = list(chiamate)
+        liberi = _con_alias_risolti(chiamate, alias or {})
         ok_argomenti = True
         for attesa in attesi:
             trovata = next((c for c in liberi if _chiamata_soddisfa(attesa, c)), None)
@@ -189,6 +204,8 @@ class Mondo:
     entita: set[str] = field(default_factory=set)
     # I nomi degli alias, in minuscolo: sono un modo valido di indicare un dispositivo.
     nomi: set[str] = field(default_factory=set)
+    # Dal nome dell'alias, in minuscolo, all'identificativo vero.
+    alias: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def carica(cls, percorso: Path = BANCO / "mondo.yaml") -> Mondo:
@@ -197,6 +214,7 @@ class Mondo:
             dati=dati,
             entita={a["entity_id"] for a in dati["alias"]},
             nomi={a["alias"].strip().casefold() for a in dati["alias"]},
+            alias={a["alias"].strip().casefold(): a["entity_id"] for a in dati["alias"]},
         )
 
     def riassunto_alias(self) -> str:
@@ -765,6 +783,7 @@ async def principale(args: argparse.Namespace) -> int:
                             [Chiamata(c["nome"], c["args"]) for c in misura["chiamate"]],
                             mondo.entita | mondo.nomi,
                             strumenti,
+                            mondo.alias,
                         )
                         risultati.append({"voce": voce, **misura, **verdetto})
                         segno = (
