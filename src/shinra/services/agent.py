@@ -3,7 +3,7 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from shinra.config.prompt_templates import get_system_prompt
+from shinra.config.prompt_templates import get_contesto_della_richiesta, get_system_prompt
 from shinra.config.settings import settings
 from shinra.domain.contesto import come_modello
 from shinra.infra.data_store import data_store
@@ -137,24 +137,30 @@ class ShinraAgent:
         conoscenza = await servizio_conoscenza.per_la_domanda(richiesta.testo)
         cronaca.conoscenza_consultata(servizio_conoscenza.fatti_usati())
 
+        # Il prompt di sistema e' sempre lo stesso fra una richiesta e l'altra: cosi' Ollama
+        # riusa quello che ha gia' letto. Cio' che cambia (che ora e', lo stato dei
+        # dispositivi, i fatti per questa domanda) va davanti alla frase dell'utente.
         system_prompt = get_system_prompt(
             lingua=lingua,
-            home_context_summary=ha_summary,
             default_city=settings.assistant.default_city,
             user_profile=profile,
+            device_aliases=data_store.get_aliases_summary(),
+            modes_summary=data_store.get_modes_summary(),
+        )
+        contesto_richiesta = get_contesto_della_richiesta(
+            lingua=lingua,
+            home_context_summary=ha_summary,
             # Il recupero al posto dell'iniezione totale (issue #32). Sotto
             # i venticinque fatti manda tutto come prima: il problema esiste
             # a duecento fatti, non a venti.
             custom_knowledge=conoscenza,
-            device_aliases=data_store.get_aliases_summary(),
-            modes_summary=data_store.get_modes_summary(),
         )
 
         # Cio' che gli intenti hanno raccolto senza rispondere: oggi solo
         # l'estratto di Wikipedia, che informa il modello invece di essere
         # letto a voce cosi' com'e'.
         if richiesta.contesto:
-            system_prompt += (
+            contesto_richiesta += (
                 "\n\n"
                 + lingua.prompt_di("informazioni_in_tempo_reale")
                 + "\n"
@@ -168,6 +174,12 @@ class ShinraAgent:
 
         conversation_messages: List[Dict[str, Any]] = [{"role": "system", "content": system_prompt}]
         conversation_messages.extend(mem.get_messages())
+        # Il contesto della richiesta si aggiunge alla copia del messaggio che va al modello, non a
+        # quello in memoria: la storia non deve portarsi dietro l'ora di ieri.
+        if conversation_messages[-1].get("role") == "user":
+            ultimo = dict(conversation_messages[-1])
+            ultimo["content"] = f"{contesto_richiesta}\n\n{ultimo.get('content', '')}"
+            conversation_messages[-1] = ultimo
 
         # 6. Ciclo di Tool Calling con Gemma / Qwen
         # Attiva i tools complessi solo se il messaggio contiene richieste di domotica o ricerca web attiva

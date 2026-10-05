@@ -244,11 +244,25 @@ def prompt_di_sistema(mondo: Mondo) -> str:
     profilo = UserProfile(id="alessio", name="Alessio", role="admin", age_group="adult")
     return get_system_prompt(
         lingua=schemi("it"),
-        home_context_summary=mondo.dati.get("riassunto_casa", ""),
         default_city=mondo.dati.get("citta", "Roma"),
         user_profile=profilo,
         device_aliases=mondo.riassunto_alias(),
         modes_summary=mondo.riassunto_modalita(),
+    )
+
+
+def contesto_di_richiesta(mondo: Mondo) -> str:
+    """Cio' che l'agente mette davanti alla frase a ogni richiesta: l'ora e lo stato della casa.
+
+    Il banco lo rifa a ogni richiesta, come l'agente: con l'ora vera. Prima il prompt era costruito una volta
+    sola e il suo prefisso restava identico per ore, cosi' la cache di Ollama rendeva il banco piu' veloce
+    della produzione, dove l'ora cambiava ogni minuto.
+    """
+    from shinra.config.prompt_templates import get_contesto_della_richiesta
+    from shinra.services.intenti.lingue import schemi
+
+    return get_contesto_della_richiesta(
+        lingua=schemi("it"), home_context_summary=mondo.dati.get("riassunto_casa", "")
     )
 
 
@@ -389,6 +403,7 @@ async def esegui_voce(
     parole_azione: tuple[str, ...],
     strumenti_sempre: bool,
     agenti: bool = False,
+    contesto: str = "",
 ) -> dict[str, Any]:
     """Una richiesta, col ciclo dell'agente. Ritorna i fatti misurati, non il verdetto.
 
@@ -406,7 +421,8 @@ async def esegui_voce(
         scelti = servizio_agenti.scegli(frase, schemi("it"))
         if scelti:
             visti = servizio_agenti.schemi_di(scelti)
-    messaggi = [{"role": "system", "content": prompt}, {"role": "user", "content": frase}]
+    domanda = f"{contesto}\n\n{frase}" if contesto else frase
+    messaggi = [{"role": "system", "content": prompt}, {"role": "user", "content": domanda}]
     chiamate: list[Chiamata] = []
     esito: dict[str, Any] = {"giri": 0, "prompt_token": None, "troncato": False, "errore": "", "ciclo": False}
     if agenti:
@@ -422,7 +438,7 @@ async def esegui_voce(
                 esito["prompt_token"] = letti
                 # Quanto dovrebbe pesare il prompt intero (4 caratteri per token: una stima per difetto).
                 atteso = (
-                    len(prompt) + len(frase) + (len(json.dumps(usa, ensure_ascii=False)) if usa else 0)
+                    len(prompt) + len(domanda) + (len(json.dumps(usa, ensure_ascii=False)) if usa else 0)
                 ) // 4
                 esito["prompt_atteso"] = atteso
                 # Ollama ha tagliato in due casi: il prompt riempie il contesto, oppure — e lo si vede solo cosi' —
@@ -800,6 +816,7 @@ async def principale(args: argparse.Namespace) -> int:
                             parole,
                             args.strumenti_sempre,
                             getattr(args, "agenti", False),
+                            contesto_di_richiesta(mondo),
                         )
                         # I nomi degli alias sono un modo valido di indicare un dispositivo: non sono invenzioni.
                         verdetto = valuta(

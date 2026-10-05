@@ -7,14 +7,19 @@ from shinra.services.user_manager import UserProfile
 
 def get_system_prompt(
     lingua: Any,
-    home_context_summary: str = "",
     default_city: str = "Roma",
     user_profile: Optional[UserProfile] = None,
-    custom_knowledge: str = "",
     device_aliases: str = "",
     modes_summary: str = "",
 ) -> str:
-    """Il prompt di sistema, nella lingua di chi sta parlando.
+    """Il prompt di sistema, nella lingua di chi sta parlando: la parte che non cambia fra una richiesta e l'altra.
+
+    Ollama riusa il prefisso del prompt che ha gia' letto (nel banco, 130 s diventano 3-10 s), ma solo
+    fino al primo byte diverso. Per questo qui non c'e' niente che cambi a ogni richiesta: la data e
+    l'ora, lo stato dei dispositivi e i fatti recuperati per la domanda stanno in
+    `get_contesto_della_richiesta`, che l'agente mette davanti alla frase dell'utente, dopo il prompt
+    e dopo gli schemi degli strumenti. Prima l'ora, con i minuti, era alla prima riga: la cache
+    moriva ogni minuto.
 
     `lingua` (un `Schemi`) la sceglie il chiamante, l'agente, che sa chi sta
     parlando; qui non si importa il caricatore perche' `config/` sta sotto
@@ -40,23 +45,33 @@ def get_system_prompt(
         persona = lingua.prompt_di("persona_adulto", nome=user_name, ruolo=ruolo)
 
     parts = [
-        lingua.prompt_di(
-            "intro",
-            assistente=assistant_name,
-            adesso=lingua.data_e_ora(datetime.datetime.now()),
-            citta=default_city,
-        ),
+        lingua.prompt_di("intro", assistente=assistant_name, citta=default_city),
         persona,
         lingua.prompt_di("regole", citta=default_city),
     ]
 
-    if custom_knowledge:
-        parts.append(f"{lingua.prompt_di('titolo_conoscenza')}:\n{custom_knowledge}")
     if device_aliases:
         parts.append(f"{lingua.prompt_di('titolo_alias')}:\n{device_aliases}")
     if modes_summary:
         parts.append(f"{lingua.prompt_di('titolo_modalita')}:\n{modes_summary}")
+
+    return "\n\n".join(parts)
+
+
+def get_contesto_della_richiesta(
+    lingua: Any,
+    home_context_summary: str = "",
+    custom_knowledge: str = "",
+    adesso: Optional[datetime.datetime] = None,
+) -> str:
+    """Quello che cambia a ogni richiesta: che ora e', cosa sa la casa, cosa serve per questa domanda.
+
+    Va davanti alla frase dell'utente, nello stesso messaggio, e non nel prompt di sistema: vedi
+    `get_system_prompt`.
+    """
+    parts = [lingua.prompt_di("adesso", adesso=lingua.data_e_ora(adesso or datetime.datetime.now()))]
+    if custom_knowledge:
+        parts.append(f"{lingua.prompt_di('titolo_conoscenza')}:\n{custom_knowledge}")
     if home_context_summary:
         parts.append(f"{lingua.prompt_di('titolo_dispositivi')}: {home_context_summary}")
-
     return "\n\n".join(parts)
