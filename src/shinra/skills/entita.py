@@ -104,6 +104,13 @@ async def verifica(
     trasforma «non lo so» in «non esiste» impedirebbe di comandare la casa
     proprio nei momenti in cui e' gia' in difficolta'.
     """
+    # Un riferimento vuoto non e' «un dispositivo che non conosco»: e' una richiesta a cui manca il
+    # bersaglio («apri», «spegni»). Si chiede quale, **prima** di guardare se la casa risponde: con
+    # Home Assistant spento il controllo qui sotto lascia passare tutto, e un comando senza
+    # destinatario non deve partire nemmeno allora.
+    if not (riferimento or "").strip():
+        raise EntitaSconosciuta("Non mi hai detto su quale dispositivo agire. Quale?")
+
     entita = risolvi(riferimento, stanza)
     ammessi = set(domini)
 

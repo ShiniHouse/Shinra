@@ -9,7 +9,7 @@ from shinra.domain.eventi import RICHIESTA_AVVISO, Evento, bus
 from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.skills.entita import EntitaSconosciuta
-from shinra.skills.entita import risolvi as risolvi_entita
+from shinra.skills.entita import verifica as verifica_entita
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +79,34 @@ async def _notifica_dal_nodo(dati: Mapping[str, Any], nome_routine: str) -> bool
     return True
 
 
+# I tipi di dispositivo che `control_device` sa comandare. Serrature, allarmi e script ci sono: li ferma
+# la conferma (`domain/sensibilita.py`), non questo elenco; qui conta solo che il bersaglio esista.
+DOMINI_COMANDABILI = frozenset(
+    {
+        "light",
+        "switch",
+        "input_boolean",
+        "fan",
+        "cover",
+        "climate",
+        "media_player",
+        "humidifier",
+        "vacuum",
+        "scene",
+        "script",
+        "automation",
+        "button",
+        "input_button",
+        "siren",
+        "lock",
+        "alarm_control_panel",
+        "water_heater",
+        "valve",
+        "remote",
+    }
+)
+
+
 async def control_device(
     entity_id: str,
     action: str,  # 'turn_on', 'turn_off', 'toggle', 'set_temperature', 'open', 'close', 'press'
@@ -97,8 +125,12 @@ async def control_device(
     # che un riferimento buono per piu' dispositivi viene dichiarato tale.
     # Prima ne veniva scelto uno a caso e questo tool — il piu' usato di
     # tutti — accendeva una lampadina qualunque senza dire niente.
+    #
+    # E poi si verifica che esista: `light.cantina` e' un nome plausibile, e il modello lo scrive
+    # senza averlo letto da nessuna parte (banco di prova, giro con gli agenti). Home Assistant
+    # risponde 200 a un servizio su un'entita' inesistente, e Shinra annunciava «fatto».
     try:
-        resolved_entity = risolvi_entita(entity_id)
+        resolved_entity = await verifica_entita(entity_id, DOMINI_COMANDABILI)
     except EntitaSconosciuta as ambiguita:
         return {"success": False, "message": str(ambiguita)}
 
