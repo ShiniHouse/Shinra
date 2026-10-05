@@ -131,6 +131,19 @@ notizie:
 # la frase va al modello senza tool: serve a non dargli il catalogo intero
 # per una chiacchierata.
 agente:
+  # Quale agente di dominio prende la richiesta (ADR 0008, issue #190): le
+  # parole che la riportano a un dominio, in minuscolo e senza la desinenza,
+  # cosi' «tapparell» prende tapparella e tapparelle. Le parole generiche
+  # (metti, porta) non stanno qui: non dicono di cosa si parla.
+  domini:
+    casa: [accend, spegn, luce, luci, lampad, presa, interruttore, caffettier, modalità, routine, scena, stato casa, "com'è la casa", stato della casa, dispositivi, entità]
+    clima_e_tapparelle: [clima, condizionatore, termostato, riscald, temperatura, gradi, tapparell, persian, "serrand"]
+    dispositivi: [serratura, chiave, "porta di ingresso", "porta d'ingresso", aspirapolvere, robot, televisione, "tv", ventilatore, volume, pausa, riprendi, musica]
+    sicurezza: [allarme, finestr, apert, antifurto, simulazione presenza, "sicurezza"]
+    energia: [consum, energia, fascia, kwh, bolletta, quanto costa, quanto mi costa, tariffa]
+    informazioni: [meteo, che tempo, previsioni, piove, notizie, chi era, cosa significa, wikipedia, cerca sul web, cerca su internet, trova online]
+    promemoria: [ricordami, promemoria, ricorda, timer, sveglia]
+    agenda: [lista, spesa, scadenz, scade, appuntament, impegn, programma, agenda, calendario, fatto, dimentica]
   parole_azione:
     - accend
     - spegn
