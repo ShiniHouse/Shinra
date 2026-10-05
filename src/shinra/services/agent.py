@@ -16,7 +16,7 @@ from shinra.services.intenti import Richiesta, instrada
 from shinra.services.intenti.lingue import schemi
 from shinra.services.memory import ConversationMemory, gestore_memorie
 from shinra.services.user_manager import UserProfile, user_manager
-from shinra.skills.registry import TOOLS_SCHEMA, execute_tool
+from shinra.skills.registry import execute_tool
 
 logger = logging.getLogger("Shinra")
 
@@ -189,9 +189,10 @@ class ShinraAgent:
 
         # Gli agenti di dominio (ADR 0008, issue #190): il router guarda la frase e dice
         # quali domini la prendono, e il modello vede soltanto i loro strumenti. Se nessuna
-        # parola riconosce un dominio, nessun agente: il catalogo intero, come prima.
+        # parola riconosce un dominio, nessun agente e nessuno strumento: il modello risponde
+        # a parole (di solito con una domanda) e non puo' eseguire niente.
         agenti_scelti = agenti.scegli(user_text, lingua) if needs_action_tools else []
-        schemi_visti = agenti.schemi_di(agenti_scelti) if agenti_scelti else TOOLS_SCHEMA
+        schemi_visti = agenti.schemi_di(agenti_scelti)
         if agenti_scelti:
             logger.info(f"[Shinra] Agenti di dominio scelti: {', '.join(agenti_scelti)}")
 

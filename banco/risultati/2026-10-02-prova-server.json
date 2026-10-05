@@ -1,0 +1,176 @@
+{
+ "qwen2.5:3b @ 1024": [
+  {
+   "voce": {
+    "id": "luce-cucina-accendi",
+    "categoria": "casa",
+    "frase": "accendi la luce della cucina",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.cucina",
+       "action": "turn_on"
+      }
+     }
+    ]
+   },
+   "giri": 1,
+   "prompt_token": 514,
+   "troncato": true,
+   "errore": "",
+   "ciclo": false,
+   "prompt_atteso": 5098,
+   "secondi": 14.9,
+   "chiamate": [],
+   "ok_strumento": false,
+   "ok_argomenti": null,
+   "inventate": [],
+   "inesistenti": []
+  },
+  {
+   "voce": {
+    "id": "luce-salotto-spegni",
+    "categoria": "casa",
+    "frase": "spegni la luce del salotto",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.salotto",
+       "action": "turn_off"
+      }
+     }
+    ]
+   },
+   "giri": 1,
+   "prompt_token": 514,
+   "troncato": true,
+   "errore": "",
+   "ciclo": false,
+   "prompt_atteso": 5097,
+   "secondi": 5.1,
+   "chiamate": [],
+   "ok_strumento": false,
+   "ok_argomenti": null,
+   "inventate": [],
+   "inesistenti": []
+  },
+  {
+   "voce": {
+    "id": "luce-camera-intensita",
+    "categoria": "casa",
+    "frase": "metti la luce della camera al 30 per cento",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.camera",
+       "action": "turn_on",
+       "brightness": 30
+      }
+     }
+    ]
+   },
+   "giri": 1,
+   "prompt_token": 514,
+   "troncato": true,
+   "errore": "",
+   "ciclo": false,
+   "prompt_atteso": 5101,
+   "secondi": 13.79,
+   "chiamate": [],
+   "ok_strumento": false,
+   "ok_argomenti": null,
+   "inventate": [],
+   "inesistenti": []
+  },
+  {
+   "voce": {
+    "id": "luce-studio-colore",
+    "categoria": "casa",
+    "frase": "accendi la luce dello studio di colore blu",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.studio",
+       "action": "turn_on",
+       "color_name": {
+        "presente": true
+       }
+      }
+     }
+    ]
+   },
+   "giri": 1,
+   "prompt_token": 514,
+   "troncato": true,
+   "errore": "",
+   "ciclo": false,
+   "prompt_atteso": 5101,
+   "secondi": 16.6,
+   "chiamate": [],
+   "ok_strumento": false,
+   "ok_argomenti": null,
+   "inventate": [],
+   "inesistenti": []
+  },
+  {
+   "voce": {
+    "id": "caffettiera-accendi",
+    "categoria": "casa",
+    "frase": "accendi la caffettiera",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "switch.caffettiera",
+       "action": "turn_on"
+      }
+     }
+    ]
+   },
+   "giri": 1,
+   "prompt_token": 514,
+   "troncato": true,
+   "errore": "",
+   "ciclo": false,
+   "prompt_atteso": 5096,
+   "secondi": 14.48,
+   "chiamate": [],
+   "ok_strumento": false,
+   "ok_argomenti": null,
+   "inventate": [],
+   "inesistenti": []
+  },
+  {
+   "voce": {
+    "id": "caffettiera-spegni",
+    "categoria": "casa",
+    "frase": "spegni la presa della caffettiera",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "switch.caffettiera",
+       "action": "turn_off"
+      }
+     }
+    ]
+   },
+   "giri": 1,
+   "prompt_token": 514,
+   "troncato": true,
+   "errore": "",
+   "ciclo": false,
+   "prompt_atteso": 5099,
+   "secondi": 16.32,
+   "chiamate": [],
+   "ok_strumento": false,
+   "ok_argomenti": null,
+   "inventate": [],
+   "inesistenti": []
+  }
+ ]
+}
