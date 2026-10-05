@@ -1033,7 +1033,7 @@ def test_con_gli_agenti_il_modello_vede_solo_gli_strumenti_del_dominio(banco, mo
     assert agenti["agenti"] == ["clima_e_tapparelle"]
 
 
-def test_con_gli_agenti_una_frase_che_il_router_non_riconosce_vede_tutto(banco, mondo):
+def test_con_gli_agenti_una_frase_che_il_router_non_riconosce_non_vede_strumenti(banco, mondo):
     voce = {"id": "t", "categoria": "casa", "frase": "metti qualcosa di bello", "attesi": []}
 
     async def una():
@@ -1058,4 +1058,4 @@ def test_con_gli_agenti_una_frase_che_il_router_non_riconosce_vede_tutto(banco, 
 
     misura, viste = asyncio.run(una())
 
-    assert len(viste[0]["tools"]) == len(TOOLS_SCHEMA) and misura["agenti"] == []
+    assert "tools" not in viste[0] and misura["agenti"] == []

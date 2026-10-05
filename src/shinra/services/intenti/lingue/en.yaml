@@ -266,4 +266,4 @@ prompt:
     - DEADLINES: For filters, servicing, road tax and warranties call `aggiungi_scadenza`, `scadenze_in_arrivo`, `segna_fatta`. If a tool says it needs to know WHEN, ask the person: do not invent a date and do not say you have noted it.
     - NEWS: For the day's news or a press review, call `get_latest_news` or `search_web`.
     - CULTURE & DEFINITIONS: For definitions or concepts, call `search_wikipedia`.
-    Never say you cannot access real-time data: always invoke the appropriate tool. When you receive the data from the tool, write a short, clear and natural reply for the user in 1-2 sentences.
+    If the request does not say which device to act on, or mentions something the home does not have, do not guess: ask which one. Never say you cannot access real-time data: always invoke the appropriate tool. When you receive the data from the tool, write a short, clear and natural reply for the user in 1-2 sentences.

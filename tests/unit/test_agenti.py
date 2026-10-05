@@ -64,9 +64,10 @@ def test_un_agente_non_puo_chiamare_uno_strumento_fuori_dal_suo_dominio():
     assert agenti.consente(["casa", "energia"], "fascia_corrente") is True, "con due agenti valgono i due"
 
 
-def test_senza_agenti_l_esecuzione_resta_quella_di_sempre():
-    """Il ripiego: il router non ha riconosciuto niente, nessuno strumento viene tolto."""
-    assert agenti.consente([], "comanda_serratura") is True
+def test_senza_agenti_non_parte_niente():
+    """Il router non ha riconosciuto un dominio: il modello non ha ricevuto strumenti, e se ne nomina uno lo inventa."""
+    assert agenti.consente([], "comanda_serratura") is False
+    assert agenti.consente([], "get_home_status") is False
 
 
 def test_il_modello_vede_solo_gli_schemi_degli_agenti_scelti():
@@ -194,8 +195,18 @@ async def test_uno_strumento_del_proprio_dominio_parte(monkeypatch):
     assert eseguiti == ["comanda_tapparella"]
 
 
-async def test_se_il_router_non_riconosce_niente_il_modello_vede_tutto_il_catalogo(monkeypatch):
-    esito, modello, _ = await _chiedi(monkeypatch, "metti qualcosa di bello", [])
+async def test_se_il_router_non_riconosce_niente_il_modello_non_riceve_strumenti(monkeypatch):
+    """Il ripiego non e' il catalogo intero (~5.460 token, non ci sta nel contesto): e' rispondere a parole."""
+    esito, modello, _ = await _chiedi(monkeypatch, "apri", [])
 
-    assert len(modello.strumenti_visti[0]) == len(TOOLS_SCHEMA)
+    assert not modello.strumenti_visti[0], "nessuno strumento al modello"
     assert esito["agenti"] == []
+
+
+async def test_senza_dominio_uno_strumento_nominato_lo_stesso_non_parte(monkeypatch):
+    """«apri» senza dire cosa: se il modello chiama una tapparella a caso, non si esegue."""
+    _, _, eseguiti = await _chiedi(
+        monkeypatch, "apri", [("comanda_tapparella", {"entity_id": "", "azione": "apri"})]
+    )
+
+    assert eseguiti == []

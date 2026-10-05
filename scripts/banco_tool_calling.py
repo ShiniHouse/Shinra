@@ -408,7 +408,7 @@ async def esegui_voce(
     """Una richiesta, col ciclo dell'agente. Ritorna i fatti misurati, non il verdetto.
 
     Con `agenti` il router sceglie i domini (ADR 0008) e il modello vede solo i loro strumenti, come fa
-    `services/agent.py`; se non riconosce niente, vede il catalogo intero.
+    `services/agent.py`; se non riconosce niente, non vede nessuno strumento.
     """
     frase = voce["frase"]
     servono = any(k in frase.lower() for k in parole_azione) and _strumenti_nativi(modello)
@@ -419,8 +419,7 @@ async def esegui_voce(
         from shinra.services.intenti.lingue import schemi
 
         scelti = servizio_agenti.scegli(frase, schemi("it"))
-        if scelti:
-            visti = servizio_agenti.schemi_di(scelti)
+        visti = servizio_agenti.schemi_di(scelti)
     domanda = f"{contesto}\n\n{frase}" if contesto else frase
     messaggi = [{"role": "system", "content": prompt}, {"role": "user", "content": domanda}]
     chiamate: list[Chiamata] = []

@@ -16,7 +16,9 @@ non parte, comunque il modello lo chieda.
 **Il router non usa il modello.** Parole chiave per dominio, nella lingua di chi
 parla (`agente.domini` nei file delle lingue): costa microsecondi e non puo'
 inventare. Se nessuna parola riconosce un dominio, il router non sceglie e
-l'agente generale (tutto il catalogo) resta il ripiego.
+il modello non riceve **nessuno strumento** e risponde a parole: la frase e' ambigua o parla di qualcosa
+che la casa non ha, e la risposta giusta e' una domanda, non un comando. Il catalogo intero non e' un ripiego:
+pesa ~5.460 token, non ci sta nel contesto (il banco lo ha visto troncato anche a 4096) e invita a indovinare.
 
 Le frasi che toccano due domini ricevono i due agenti con piu' parole
 riconosciute, mai di piu': sono comunque meno strumenti del catalogo intero.
@@ -110,7 +112,8 @@ def schemi_di(nomi: Sequence[str]) -> List[Dict[str, Any]]:
 def consente(nomi: Sequence[str], strumento: str) -> bool:
     """Questo strumento puo' partire, con questi agenti al lavoro?
 
-    Senza agenti (il ripiego sul catalogo intero) non si limita niente:
-    l'esecuzione resta quella di sempre.
+    Senza agenti non parte niente: se il router non ha riconosciuto un dominio il modello non ha
+    ricevuto strumenti, e uno che ne nomina lo stesso (a memoria, o in un `[TOOL: ...]` nel testo)
+    sta inventando.
     """
-    return not nomi or strumento in strumenti_di(nomi)
+    return strumento in strumenti_di(nomi)
