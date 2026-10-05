@@ -118,6 +118,18 @@ notizie:
     - what's happening
 
 agente:
+  # Which domain agent takes the request (ADR 0008, issue #190): the words that
+  # tie it to a domain, lowercase and without the ending. Generic words (put,
+  # start) are not here: they do not say what is being talked about.
+  domini:
+    casa: [turn on, turn off, switch, light, lamp, plug, outlet, coffee, mode, routine, scene, home status, devices, entities]
+    clima_e_tapparelle: [climate, air conditioning, thermostat, heating, temperature, degrees, blind, shutter, shade]
+    dispositivi: [lock, key, front door, vacuum, robot, television, "tv", fan, volume, pause, resume, music]
+    sicurezza: [alarm, window, open, burglar, presence simulation, security]
+    energia: [consumption, energy, tariff, kwh, bill, how much does it cost, how much did it cost]
+    informazioni: [weather, forecast, rain, news, who was, what does, wikipedia, search the web, search online, look up]
+    promemoria: [remind, reminder, timer, alarm clock]
+    agenda: [list, shopping, deadline, due, appointment, schedule, calendar, agenda, done, forget]
   parole_azione:
     - turn on
     - turn off

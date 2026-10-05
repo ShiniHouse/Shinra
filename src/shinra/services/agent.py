@@ -9,6 +9,7 @@ from shinra.domain.contesto import come_modello
 from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.llm.ollama import OllamaClient
+from shinra.services import agenti
 from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.cronaca import Cronaca
 from shinra.services.intenti import Richiesta, instrada
@@ -24,6 +25,24 @@ class ShinraAgent:
     def __init__(self):
         self.ollama = OllamaClient()
         self.ha = client_home_assistant()
+
+    @staticmethod
+    async def _esegui(nome: str, argomenti: Dict[str, Any], agenti_scelti: List[str]) -> Dict[str, Any]:
+        """Esegue lo strumento che il modello ha chiesto, se gli agenti al lavoro lo dichiarano.
+
+        Il confine fra i domini sta qui e non nel prompt: togliere uno strumento dallo schema
+        non impedisce a un modello di nominarlo, e un modello piccolo lo fa.
+        """
+        if not agenti.consente(agenti_scelti, nome):
+            logger.warning(
+                f"[Shinra] Strumento '{nome}' fuori dal dominio degli agenti {agenti_scelti}: non eseguito"
+            )
+            return {
+                "success": False,
+                "error": f"Lo strumento '{nome}' non e' disponibile per questa richiesta.",
+            }
+        with come_modello():
+            return await execute_tool(nome, argomenti)
 
     async def process_user_input(
         self,
@@ -156,13 +175,21 @@ class ShinraAgent:
         ACTION_KEYWORDS = lingua.parole_azione
         needs_action_tools = any(kw in user_text.lower() for kw in ACTION_KEYWORDS)
 
+        # Gli agenti di dominio (ADR 0008, issue #190): il router guarda la frase e dice
+        # quali domini la prendono, e il modello vede soltanto i loro strumenti. Se nessuna
+        # parola riconosce un dominio, nessun agente: il catalogo intero, come prima.
+        agenti_scelti = agenti.scegli(user_text, lingua) if needs_action_tools else []
+        schemi_visti = agenti.schemi_di(agenti_scelti) if agenti_scelti else TOOLS_SCHEMA
+        if agenti_scelti:
+            logger.info(f"[Shinra] Agenti di dominio scelti: {', '.join(agenti_scelti)}")
+
         for iteration in range(max_tool_iterations):
             user_label = profile.name if profile else "Utente"
             logger.info(f"[Shinra] ({user_label}) Iterazione {iteration + 1} per: '{user_text}'")
 
             # Passa i tools solo se strettamente necessari e solo alla prima iterazione
             current_tools = (
-                TOOLS_SCHEMA if (needs_action_tools and not richiesta.contesto and iteration == 0) else None
+                schemi_visti if (needs_action_tools and not richiesta.contesto and iteration == 0) else None
             )
             response = await self.ollama.chat(messages=conversation_messages, tools=current_tools)
 
@@ -194,8 +221,7 @@ class ShinraAgent:
                         t_args = {}
 
                     logger.info(f"[Shinra] Rilevato tool testuale: '{t_name}' con {t_args}")
-                    with come_modello():
-                        t_res = await execute_tool(t_name, t_args)
+                    t_res = await self._esegui(t_name, t_args, agenti_scelti)
                     cronaca.strumento(t_name, t_args, t_res)
                     actions_taken.append({"tool": t_name, "args": t_args, "result": t_res})
                     mem.add_tool_interaction(t_name, t_args, t_res)
@@ -222,6 +248,7 @@ class ShinraAgent:
                         "actions": actions_taken,
                         "user": profile.model_dump() if profile else None,
                         "success": True,
+                        "agenti": agenti_scelti,
                     }
 
             conversation_messages.append(message)
@@ -240,8 +267,7 @@ class ShinraAgent:
                     args = raw_args
 
                 logger.info(f"Esecuzione tool '{tool_name}' con parametri: {args}")
-                with come_modello():
-                    tool_result = await execute_tool(tool_name, args)
+                tool_result = await self._esegui(str(tool_name or ""), args, agenti_scelti)
                 cronaca.strumento(str(tool_name or ""), args, tool_result)
 
                 actions_taken.append({"tool": tool_name, "args": args, "result": tool_result})

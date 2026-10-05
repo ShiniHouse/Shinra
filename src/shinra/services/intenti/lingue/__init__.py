@@ -53,6 +53,7 @@ RICHIESTE: Tuple[Tuple[str, ...], ...] = (
     ("casa", "preposizioni_stanza"),
     ("notizie", "inneschi"),
     ("agente", "parole_azione"),
+    ("agente", "domini"),
     ("conferma", "accetta"),
     ("conferma", "rifiuta"),
     ("calendario", "giorni"),
@@ -145,6 +146,8 @@ class Schemi:
     stanza: re.Pattern
     inneschi_notizie: Tuple[str, ...]
     parole_azione: Tuple[str, ...]
+    # Dal nome del dominio alle parole che portano a quell'agente (ADR 0008).
+    domini_agente: Mapping[str, Tuple[str, ...]]
     conferma_accetta: Tuple[str, ...]
     conferma_rifiuta: Tuple[str, ...]
     giorni: Tuple[str, ...]
@@ -226,6 +229,10 @@ def _compila(lingua: str) -> Schemi:
         stanza=re.compile(dati["casa"]["preposizioni_stanza"], re.IGNORECASE),
         inneschi_notizie=tuple(dati["notizie"]["inneschi"]),
         parole_azione=tuple(dati["agente"]["parole_azione"]),
+        domini_agente={
+            str(nome): tuple(str(p).lower() for p in parole)
+            for nome, parole in dati["agente"]["domini"].items()
+        },
         conferma_accetta=tuple(p.lower() for p in dati["conferma"]["accetta"]),
         conferma_rifiuta=tuple(p.lower() for p in dati["conferma"]["rifiuta"]),
         giorni=tuple(dati["calendario"]["giorni"]),
