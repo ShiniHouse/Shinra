@@ -1874,7 +1874,7 @@ fare al posto di qualcuno che guarda.
 
 #### Chiusa alla 0.5.0, il resto alla 0.6.0
 
-La strada Docker e' fatta e provata in CI. L'add-on e la prova su Raspberry Pi 4 richiedono hardware che qui non c'e': la [#212](backlog/v0.6.0/212-add-on-e-raspberry-pi.md), da valutare.
+La strada Docker e' fatta e provata in CI. L'add-on e la prova su Raspberry Pi 4 richiedono hardware che qui non c'e': la #212 (poi ricreata come [#282](backlog/v0.7.0/282-add-on-home-assistant.md), solo l'add-on; il Raspberry Pi e' rimandato).
 
 ### #38 — docs: documentazione utente e installazione verificata
 
