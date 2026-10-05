@@ -74,7 +74,7 @@ scattare in una casa vera. Note: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.
   non diventa conoscenza permanente in silenzio.
 
 **Cosa la `0.5.0` non fa, e dove è scritto.** Non c'è la parola di attivazione
-(#211), non c'è l'add-on per Home Assistant OS (#212), timer e promemoria
+(#211), non c'è l'add-on per Home Assistant OS (#282), timer e promemoria
 capiscono solo l'italiano (#205), le etichette della dashboard sono solo
 italiane (#206), e nessuna persona che non ha scritto le guide le ha ancora
 seguite da sola (#208). Sono nella **`0.7.0`**. La `0.6.0`, *Il Cervello*, è in

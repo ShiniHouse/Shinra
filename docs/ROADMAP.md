@@ -146,7 +146,7 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` | **spostata alla `v0.6.0`** (#211): dove gira e' deciso (ADR 0007), il codice non c'e' |
 | 34 | Scomporre `index.html` (7.438 righe) in moduli ES | fatta (#144-#151, #176-#178, #200, moduli ES veri) |
 | 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | chiusa in parte (#181, #203): il meccanismo, l'inglese e la lingua per persona. Il resto alla `v0.6.0` (#205, #206, #207) |
-| 37 | Immagine Docker e add-on per Home Assistant OS | chiusa in parte (#168, #169): la strada Docker. L'add-on e la prova su Raspberry Pi 4 alla `v0.6.0` (#212) |
+| 37 | Immagine Docker e add-on per Home Assistant OS | chiusa in parte (#168, #169): la strada Docker. L'add-on alla `v0.7.0` (#282); la prova su Raspberry Pi 4 e' rimandata |
 | 38 | Documentazione utente e guida all'installazione verificata | chiusa in parte (#167, #204): le guide sono scritte. Il collaudo di chi non le ha scritte alla `v0.6.0` (#208) |
 | 170 | L'intervista di apprendimento impara poco | chiusa in parte (#171, #174): dice quando non ha capito e mostra cosa ha capito. Il resto alla `v0.6.0` (#209, #210) |
 
@@ -155,8 +155,8 @@ ciascuna invece di lasciarlo dedurre dal numero. Il resto e' nella `v0.6.0`:
 
 - **#37** — l'immagine Docker, il `docker-compose.yml` e la pubblicazione su
   GHCR per `amd64` e `arm64` ci sono. Manca l'add-on per Home Assistant OS
-  (#212): chi sviluppa qui usa Home Assistant Container, non HA OS, quindi
-  l'add-on non sarebbe provabile in casa. L'ostacolo dell'*ingress* — novantadue
+  (#282, ex #212): chi sviluppa qui usa Home Assistant Container, non HA OS, quindi
+  l'add-on va provato su un'istanza HA OS, anche virtuale. L'ostacolo dell'*ingress* — novantadue
   riferimenti assoluti nella pagina — e' adesso lavoro di quella scheda, non
   piu' della #34.
 - **#38** — la CI costruisce l'immagine, la avvia e verifica di riuscire
@@ -352,7 +352,7 @@ e le schede, stanno in [`docs/proposte/v0.7.0/`](proposte/v0.7.0/README.md).
 | 209 | Intervista: una domanda per volta, niente domande su cio' che la casa sa — *residuo della #170* | apprendimento |
 | 210 | Intervista: dalle entita' vere alle routine complete — *residuo della #170* | apprendimento |
 | 211 | La parola di attivazione nel browser — *residuo della #30* | voce |
-| 212 | L'add-on per Home Assistant OS e la prova su Raspberry Pi 4 — *residuo della #37, da valutare. **L'issue risulta cancellata su GitHub**: la scheda resta in `docs/backlog/v0.6.0/`, da riaprire o da togliere* | distribuzione |
+| 282 | L'add-on per Home Assistant OS — *residuo della #37 (ex #212, ricreata dopo la cancellazione). La prova su Raspberry Pi 4 e' rimandata* | distribuzione |
 | 240 | Ollama su un'altra macchina della rete: configurazione, protezione, misura | infrastruttura |
 | 241 | Il banco di prova sull'hardware candidato, misurato e non stimato | misura |
 | 242 | Aiutanti locali per il lavoro di sviluppo, con il guadagno misurato | strumenti |
@@ -470,3 +470,5 @@ poggia su infrastruttura costruita nelle fasi precedenti.
 | Spiegabilita': «perche' l'hai fatto?» — *«che ricordi hai usato» e' nella `0.8.0`; resta il perche' di un'azione* | v0.2.0 (registro azioni) |
 | Cucina come contesto (ricette, timer, lista) | v0.2.0 (scheduler) + v0.3.0 (liste) |
 | Diario della casa — *le proposte del sogno sono un primo pezzo, nella `0.8.0`* | v0.2.0 (database) + v0.3.0 (eventi) |
+
+**Rimandata, senza data:** la prova dell'immagine `arm64` su un Raspberry Pi 4 (era nella #212, ora divisa dall'add-on #282). In CI l'immagine si costruisce ma non si esegue su quell'hardware; se ne parlera' quando ci sara' un Pi da provare.
