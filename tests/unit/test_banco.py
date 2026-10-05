@@ -996,3 +996,66 @@ def test_l_inglese_ha_le_stesse_famiglie_di_parole(voci):
     assert len(inglese) >= len(italiano) * 0.6, f"parole_azione: it {len(italiano)}, en {len(inglese)}"
     for dominio in ("weather", "list", "reminder", "energy", "blind", "alarm", "vacuum"):
         assert any(dominio in p for p in inglese), f"nessuna parola inglese per «{dominio}»"
+
+
+# ------------------------------------------------------------------ la modalita' agenti
+
+
+def test_con_gli_agenti_il_modello_vede_solo_gli_strumenti_del_dominio(banco, mondo):
+    voce = {"id": "t", "categoria": "tapparelle", "frase": "chiudi la tapparella del salotto", "attesi": []}
+
+    async def una(agenti):
+        viste: list = []
+        async with httpx.AsyncClient(transport=_ollama_finto([], viste)) as cliente:
+            misura = await banco.esegui_voce(
+                cliente,
+                "http://ollama.finto",
+                "qwen2.5:3b",
+                voce,
+                mondo,
+                "PROMPT",
+                TOOLS_SCHEMA,
+                set(_parametri()),
+                2048,
+                0.4,
+                ("chiudi",),
+                False,
+                agenti,
+            )
+        return misura, viste
+
+    intero, viste_intero = asyncio.run(una(False))
+    agenti, viste_agenti = asyncio.run(una(True))
+
+    assert len(viste_intero[0]["tools"]) == len(TOOLS_SCHEMA) and "agenti" not in intero
+    nomi = {s["function"]["name"] for s in viste_agenti[0]["tools"]}
+    assert nomi == {"comanda_clima", "stato_clima", "comanda_tapparella", "stato_tapparella"}
+    assert agenti["agenti"] == ["clima_e_tapparelle"]
+
+
+def test_con_gli_agenti_una_frase_che_il_router_non_riconosce_vede_tutto(banco, mondo):
+    voce = {"id": "t", "categoria": "casa", "frase": "metti qualcosa di bello", "attesi": []}
+
+    async def una():
+        viste: list = []
+        async with httpx.AsyncClient(transport=_ollama_finto([], viste)) as cliente:
+            misura = await banco.esegui_voce(
+                cliente,
+                "http://ollama.finto",
+                "qwen2.5:3b",
+                voce,
+                mondo,
+                "PROMPT",
+                TOOLS_SCHEMA,
+                set(_parametri()),
+                2048,
+                0.4,
+                ("metti",),
+                False,
+                True,
+            )
+        return misura, viste
+
+    misura, viste = asyncio.run(una())
+
+    assert len(viste[0]["tools"]) == len(TOOLS_SCHEMA) and misura["agenti"] == []

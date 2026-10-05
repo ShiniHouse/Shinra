@@ -388,17 +388,33 @@ async def esegui_voce(
     temperatura: float,
     parole_azione: tuple[str, ...],
     strumenti_sempre: bool,
+    agenti: bool = False,
 ) -> dict[str, Any]:
-    """Una richiesta, col ciclo dell'agente. Ritorna i fatti misurati, non il verdetto."""
+    """Una richiesta, col ciclo dell'agente. Ritorna i fatti misurati, non il verdetto.
+
+    Con `agenti` il router sceglie i domini (ADR 0008) e il modello vede solo i loro strumenti, come fa
+    `services/agent.py`; se non riconosce niente, vede il catalogo intero.
+    """
     frase = voce["frase"]
     servono = any(k in frase.lower() for k in parole_azione) and _strumenti_nativi(modello)
+    visti = tutti_gli_strumenti
+    scelti: list[str] = []
+    if agenti and servono:
+        from shinra.services import agenti as servizio_agenti
+        from shinra.services.intenti.lingue import schemi
+
+        scelti = servizio_agenti.scegli(frase, schemi("it"))
+        if scelti:
+            visti = servizio_agenti.schemi_di(scelti)
     messaggi = [{"role": "system", "content": prompt}, {"role": "user", "content": frase}]
     chiamate: list[Chiamata] = []
     esito: dict[str, Any] = {"giri": 0, "prompt_token": None, "troncato": False, "errore": "", "ciclo": False}
+    if agenti:
+        esito["agenti"] = scelti
     inizio = time.monotonic()
     try:
         for giro in range(MAX_GIRI):
-            usa = tutti_gli_strumenti if (servono and (giro == 0 or strumenti_sempre)) else None
+            usa = visti if (servono and (giro == 0 or strumenti_sempre)) else None
             dati = await chiedi_resiliente(cliente, url, modello, messaggi, usa, num_ctx, temperatura, 150)
             esito["giri"] += 1
             if esito["prompt_token"] is None:
@@ -724,6 +740,13 @@ async def principale(args: argparse.Namespace) -> int:
         f"`num_ctx` di produzione: {produzione}. "
         + ("**Il prompt non ci sta: Ollama lo taglia.**" if token_prompt + token_schemi > produzione else "")
     )
+    if getattr(args, "agenti", False):
+        from shinra.services import agenti as servizio_agenti
+
+        print("Con gli agenti di dominio il modello vede solo gli strumenti del dominio scelto:")
+        for nome_agente, agente in servizio_agenti.AGENTI.items():
+            token = (len(json.dumps(list(agente.schemi), ensure_ascii=False)) + len(prompt)) // 4
+            print(f"  {nome_agente:<20} {len(agente.strumenti):>2} strumenti, prompt ~{token} token")
     if args.prova:
         return 0
 
@@ -746,7 +769,7 @@ async def principale(args: argparse.Namespace) -> int:
             for ctx in contesti:
                 if interrotto:
                     break
-                nome = f"{modello} @ {ctx}"
+                nome = f"{modello} @ {ctx}" + (" + agenti" if getattr(args, "agenti", False) else "")
                 print(f"\n=== {nome} ===")
                 if not await aspetta_ollama(cliente, indirizzo, TEMPI.attesa_riavvio):
                     print("Ollama non risponde piu': giro interrotto.", file=sys.stderr)
@@ -776,6 +799,7 @@ async def principale(args: argparse.Namespace) -> int:
                             args.temperatura,
                             parole,
                             args.strumenti_sempre,
+                            getattr(args, "agenti", False),
                         )
                         # I nomi degli alias sono un modo valido di indicare un dispositivo: non sono invenzioni.
                         verdetto = valuta(
@@ -876,6 +900,11 @@ def analizza() -> argparse.Namespace:
         "--strumenti-sempre",
         action="store_true",
         help="passa gli strumenti a ogni giro (l'agente li passa solo al primo)",
+    )
+    p.add_argument(
+        "--agenti",
+        action="store_true",
+        help="il router sceglie gli agenti di dominio e il modello vede solo i loro strumenti (ADR 0008)",
     )
     p.add_argument(
         "--prova", action="store_true", help="stampa quanto pesa il prompt ed esce, senza chiamare Ollama"
