@@ -83,4 +83,5 @@ async def test_l_agente_manda_lo_stesso_prompt_e_mette_il_contesto_davanti_alla_
     ultimo = visti[0][-1]["content"]
     assert ultimo.endswith("dimmi una cosa strana") and "luce cucina: accesa" in ultimo and "Oggi è" in ultimo
     # La storia non si porta dietro il contesto di ieri: in memoria resta la frase pulita.
-    assert [m["content"] for m in memoria.get_messages() if m["role"] == "user"][0] == "dimmi una cosa strana"
+    primo_utente = next(m["content"] for m in memoria.get_messages() if m["role"] == "user")
+    assert primo_utente == "dimmi una cosa strana"
