@@ -106,6 +106,7 @@ CHIAVI_MESSAGGI: Tuple[str, ...] = (
 # l'utente che scrive in inglese produce risposte in un italiano stentato.
 CHIAVI_PROMPT: Tuple[str, ...] = (
     "intro",
+    "adesso",
     "utente_anonimo",
     "persona_bambino",
     "persona_ragazzo",
