@@ -164,6 +164,7 @@ class OllamaClient:
         max_tok = (
             settings.llm.max_tokens if hasattr(cfg.llm, "max_tokens") and settings.llm.max_tokens else 150
         )
+        num_ctx = settings.llm.num_ctx or (1024 if max_tok <= 250 else 2048)
         payload = {
             "model": curr_model,
             "messages": messages,
@@ -171,7 +172,7 @@ class OllamaClient:
             "keep_alive": "24h",
             "options": {
                 "temperature": curr_temp,
-                "num_ctx": 1024 if max_tok <= 250 else 2048,
+                "num_ctx": num_ctx,
                 "num_predict": max_tok,
                 "top_p": 0.9,
             },
@@ -205,11 +206,25 @@ class OllamaClient:
                     if "<thought>" in content and "</thought>" in content:
                         content = re.sub(r"<thought>.*?</thought>", "", content, flags=re.DOTALL).strip()
 
+                    # Ollama non avvisa quando taglia il prompt: lo si capisce dal numero di
+                    # token letti, che arriva al tetto. Senza questa riga il modello sceglie
+                    # fra gli ultimi strumenti del catalogo e nessuno sa perche'.
+                    letti = data.get("prompt_eval_count")
+                    troncato = isinstance(letti, int) and letti >= num_ctx - 8
+                    if troncato:
+                        logger.warning(
+                            "Il prompt riempie tutto il contesto (%s token letti, num_ctx %s): "
+                            "Ollama ha tagliato l'inizio e il modello non vede tutti gli strumenti.",
+                            letti,
+                            num_ctx,
+                        )
+
                     return {
                         "success": True,
                         "message": message,
                         "content": content,
                         "tool_calls": message.get("tool_calls", []),
+                        "troncato": troncato,
                     }
                 else:
                     err_detail = res.text or f"Status {res.status_code}"

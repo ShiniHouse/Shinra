@@ -53,6 +53,13 @@ class LLMConfig(BaseModel):
     temperature: float = 0.4
     timeout_seconds: int = 60
     max_tokens: int = 150
+    # La finestra di contesto che si chiede a Ollama. 0 = quella di sempre:
+    # 1024 per le risposte brevi, 2048 per le lunghe. Il prompt con tutti gli
+    # strumenti pesa ~5.460 token: a 1024 Ollama ne legge 514 e tiene solo la
+    # coda, e il modello sceglie fra gli ultimi strumenti del catalogo (banco
+    # di prova, issue #183). Alzarlo costa tempo di lettura: ~42 token/s
+    # sull'i5-8500T, quindi 8192 vuol dire ~130 s a richiesta.
+    num_ctx: int = 0
 
 
 class HomeAssistantConfig(BaseModel):

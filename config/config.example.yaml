@@ -29,6 +29,10 @@ llm:
   temperature: 0.4
   timeout_seconds: 60
   max_tokens: 150
+  # Finestra di contesto per Ollama; 0 = 1024 (risposte brevi) o 2048 (lunghe).
+  # Con tutti gli strumenti il prompt pesa ~5.460 token: sotto quel valore
+  # Ollama taglia l'inizio del prompt. Alzarlo rallenta la lettura.
+  num_ctx: 0
 
 home_assistant:
   enabled: true
