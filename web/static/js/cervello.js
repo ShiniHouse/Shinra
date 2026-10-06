@@ -23,10 +23,11 @@ import { _args, _html } from './sicurezza.js';
 import { getAuthHeaders } from './accesso.js';
 import { safeCreateIcons } from './avvio.js';
 import { FORZE_PREDEFINITE, creaSimulazione } from './cervello_fisica.js';
+import { inLeggera, leggiMemoria, notaLeggera, scriviMemoria } from './cervello_scelte.js';
+import { movimentoRidotto } from './cervello_stile.js';
 import { Lavagna } from './cervello_disegno.js';
 import { attivita, disegnaRegistro } from './cervello_attivita.js';
 
-const MEMORIA = 'shinra.cervello';
 const AGGIORNA_OGNI_MS = 30000;
 
 const TIPI = {
@@ -67,6 +68,7 @@ let _osservatore = null;
 let _tipiNascosti = new Set();
 let _forzeScelte = { ...FORZE_PREDEFINITE };
 let _nodoScelto = null;
+let _leggera = null; // null: decide il numero di nodi
 
 const $ = (id) => document.getElementById(id);
 
@@ -76,31 +78,15 @@ const $ = (id) => document.getElementById(id);
 // comodita', non _dati. Senza, la scheda si apre con le impostazioni di fabbrica.
 
 function _leggiMemoria() {
-    try {
-        const grezzo = window.localStorage.getItem(MEMORIA);
-        if (!grezzo) return;
-        const salvato = JSON.parse(grezzo);
-        _tipiNascosti = new Set(Array.isArray(salvato.nascosti) ? salvato.nascosti : []);
-        _forzeScelte = {
-            distanza: Number(salvato.distanza) || FORZE_PREDEFINITE.distanza,
-            attrazione: Number.isFinite(Number(salvato.attrazione))
-                ? Number(salvato.attrazione)
-                : FORZE_PREDEFINITE.attrazione,
-        };
-    } catch {
-        /* senza memoria si vive */
-    }
+    const salvato = leggiMemoria();
+    if (!salvato) return;
+    _tipiNascosti = salvato.nascosti;
+    _forzeScelte = salvato.forze;
+    _leggera = salvato.leggera;
 }
 
 function _scriviMemoria() {
-    try {
-        window.localStorage.setItem(
-            MEMORIA,
-            JSON.stringify({ nascosti: [..._tipiNascosti], ..._forzeScelte }),
-        );
-    } catch {
-        /* idem */
-    }
+    scriviMemoria({ nascosti: _tipiNascosti, forze: _forzeScelte, leggera: _leggera });
 }
 
 // ------------------------------------------------------------------ caricamento
@@ -217,6 +203,8 @@ function _disegna() {
     if (conservati > nuova.punti.length / 2) nuova.alfa = 0.25;
     lavagna.forze = { ..._forzeScelte };
     lavagna.nascosti = new Set(_tipiNascosti);
+    lavagna.fermo = _inLeggera(nodi.length) || movimentoRidotto();
+    _notaLeggera(nodi.length);
     lavagna.imposta(nuova, _dati.clusters || [], _dati.sistemi || []);
     if (_nodoScelto && nuova.perId.has(_nodoScelto)) lavagna.seleziona(_nodoScelto);
     $('cervello-canvas').setAttribute(
@@ -394,6 +382,25 @@ function cervelloMostraTipo(cluster, visibile) {
     lavagna?.inquadra();
 }
 
+function _inLeggera(quantiNodi) {
+    return inLeggera(_leggera, quantiNodi);
+}
+
+function _notaLeggera(quantiNodi) {
+    const casella = $('cervello-leggera');
+    const nota = $('cervello-leggera-nota');
+    if (casella) casella.checked = _inLeggera(quantiNodi);
+    if (nota) nota.textContent = notaLeggera(_leggera, quantiNodi);
+}
+
+function cervelloLeggera(attiva) {
+    _leggera = Boolean(attiva);
+    _scriviMemoria();
+    const quanti = (_dati?.nodi || []).length;
+    _notaLeggera(quanti);
+    lavagna?.impostaLeggera(_leggera);
+}
+
 function cervelloForza(nome, valore) {
     const numero = Number(valore);
     if (!Number.isFinite(numero)) return;
@@ -405,6 +412,11 @@ function cervelloForza(nome, valore) {
 function cervelloRipristina() {
     _forzeScelte = { ...FORZE_PREDEFINITE };
     _tipiNascosti = new Set();
+    _leggera = null;
+    if (_dati) {
+        _notaLeggera((_dati.nodi || []).length);
+        lavagna?.impostaLeggera(_inLeggera((_dati.nodi || []).length));
+    }
     _scriviMemoria();
     for (const [id, v] of [
         ['cervello-forza-distanza', _forzeScelte.distanza],
@@ -470,6 +482,7 @@ Gesti.registra({
     cervelloCerca,
     cervelloForza,
     cervelloInquadra,
+    cervelloLeggera,
     cervelloMostraTipo,
     cervelloRipristina,
     cervelloSchermoIntero,
