@@ -314,8 +314,10 @@ e' una demo.
 | 198 | Guida al Cervello, agli agenti e ai piani | documentazione |
 
 **Criteri di uscita**
-- Il banco di prova (#183) ha numeri per almeno due modelli, e gli agenti di
-  dominio fanno meglio del ciclo unico, o la scheda dice il contrario.
+- Il banco di prova (#183) ha numeri per il modello di casa, con e senza agenti, e
+  gli agenti di dominio fanno meglio del ciclo unico, o la scheda dice il contrario.
+  *Un secondo modello non e' richiesto (decisione del 2026-10-06): il 7B non sta nella
+  memoria del server di casa e non e' previsto di cambiarlo.*
 - Nessun percorso, nemmeno un piano o un agente, raggiunge una serratura o
   l'allarme senza conferma (#192).
 - Con l'opzione esterna spenta nessuna richiesta esce dalla rete locale.
