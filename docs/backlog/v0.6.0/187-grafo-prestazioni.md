@@ -14,7 +14,7 @@ serve a nessuno.
 
 ## Cosa fare
 
-- [ ] Misurare i fotogrammi al secondo su tre dispositivi veri: portatile (fatto: 60 fps), **telefono e tablet da provare** (vedi sotto)
+- [x] Misurare i fotogrammi al secondo su tre dispositivi veri: portatile (60 fps misurati), telefono e tablet (a occhio, senza contatore: vedi sotto)
 - [ ] ~~Raggruppare in cluster oltre una soglia di nodi~~ — sostituito dalla modalita' leggera: le misure dicono che il costo e' l'animazione, non il numero di nodi disegnati. I gruppi si nascondono gia' dalla legenda
 - [x] Ridurre il lavoro quando la scheda non e' in primo piano o il grafo e' fermo (un grafo assestato non richiede fotogrammi; a scheda chiusa un evento dell'agente non ne richiede: test che fallisce senza la guardia)
 - [x] Un interruttore per la modalita' leggera, scelto in automatico oltre 400 nodi (Forze del grafo → Modalita' leggera; la scelta di chi guarda vince e si ricorda)
@@ -46,6 +46,14 @@ si accende da sola oltre i 400 nodi e si sceglie a mano; con 600 o 1000 nodi il 
 dopo il caricamento, a qualunque velocita' di CPU. Sotto i 400 nodi resta l'animazione (36 fps o piu' anche a 6x). E a scheda
 chiusa un evento dell'agente non fa piu' disegnare una tela che nessuno vede (prima: 73 fotogrammi per evento).
 
-**Cosa resta:** la casa oggi ha circa 90 nodi (la modalita' leggera non si accende), e **nessun telefono o tablet vero e' stato
-provato**. Un telefono e' piu' lento di un portatile ma non sappiamo di quanto: la prova vera e' aprire la scheda Il Cervello sul
-telefono e sul tablet e dire se si muove fluida. La scheda resta aperta per questo.
+**Un telefono vero (2026-10-06):** un iPhone (modello non annotato), Safari, 89 nodi e 133 collegamenti, agenti compresi (la
+modalita' leggera resta spenta). Chi l'ha provato dice che si e' assestato in **meno di tre secondi** e che si muove **fluido**:
+un giudizio a occhio, senza un contatore di fotogrammi. Coerente con le misure: a 90 nodi anche un browser sei volte piu'
+lento di un portatile fa 40 fps o piu'.
+
+**Un tablet vero (2026-10-06):** un iPad mini, Safari, lo stesso grafo (89 nodi, 133 collegamenti, 9 agenti pronti): «uguale,
+velocissimo». Anche questo a occhio.
+
+**Cosa resta, e non e' di questa scheda:** i dispositivi veri sono stati provati con 89 nodi, sotto la soglia della modalita' leggera.
+Se un giorno il grafo supera i 400 nodi, la stessa prova con la modalita' leggera accesa va ripetuta: oggi esiste solo la misura
+in un browser a CPU rallentata.
