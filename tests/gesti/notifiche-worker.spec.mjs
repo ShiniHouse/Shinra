@@ -8,6 +8,11 @@
 
 import { test, expect } from '@playwright/test';
 
+// In CI gira `chromium-headless-shell`, che non sa mostrare notifiche: `getNotifications()` torna sempre vuoto, anche
+// con un worker perfetto. Un test che li' fallisce sempre non dice niente: si prova in locale, con un browser vero
+// (`channel: 'msedge'` o `'chrome'`), e in CI si salta dichiarandolo.
+test.skip(!!process.env.CI, 'il browser senza testa di CI non mostra notifiche');
+
 test('il worker mostra la notifica con il titolo e il testo del messaggio', async ({ page, context }) => {
     await context.grantPermissions(['notifications']);
     const client = await context.newCDPSession(page);
