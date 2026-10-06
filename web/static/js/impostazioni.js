@@ -407,7 +407,10 @@ async function installPwa() {
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js').catch((e) => console.warn('SW error:', e));
+        // `scope: '/'`: il worker sta in /static/ ma deve controllare la pagina (il server lo consente, vedi `FileStatici`).
+        navigator.serviceWorker
+            .register('/static/sw.js', { scope: '/' })
+            .catch((e) => console.warn('SW error:', e));
     });
 }
 

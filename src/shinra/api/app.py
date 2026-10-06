@@ -90,6 +90,13 @@ class FileStatici(StaticFiles):
     def file_response(self, *args, **kwargs):
         risposta = super().file_response(*args, **kwargs)
         risposta.headers["Cache-Control"] = "no-cache"
+        # Il service worker sta in `/static/sw.js` ma deve controllare la pagina, che sta in `/`. Un worker
+        # puo' controllare solo il proprio percorso e quelli sotto, **a meno che il server dica di si'**: senza
+        # questa intestazione la registrazione con `scope: '/'` e' rifiutata, e `serviceWorker.ready` non si
+        # risolve mai — le notifiche (#29) restavano su «Un momento…» su ogni dispositivo vero.
+        percorso = str(args[0] if args else kwargs.get("full_path", "")).replace("\\", "/")
+        if percorso.endswith("/sw.js"):
+            risposta.headers["Service-Worker-Allowed"] = "/"
         return risposta
 
 

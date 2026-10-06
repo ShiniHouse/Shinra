@@ -88,8 +88,15 @@ function _nomeDelDispositivo() {
 
 const _eIos = () => /iPhone|iPad|iPod/.test(navigator.userAgent || '');
 
+// `ready` non si risolve mai se il worker non controlla questa pagina (era il caso: scope sbagliato). Senza un
+// limite la sezione resterebbe su «Un momento…» per sempre: meglio dirlo.
 async function _registrazione() {
-    return navigator.serviceWorker.ready;
+    return Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_, rifiuta) =>
+            setTimeout(() => rifiuta(new Error('il service worker non è pronto')), 6000),
+        ),
+    ]);
 }
 
 /** Cosa si puo' dire di questo dispositivo: `{ tipo, ... }`. Non fa niente, guarda soltanto. */
