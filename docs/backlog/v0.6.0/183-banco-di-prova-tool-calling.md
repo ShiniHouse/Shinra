@@ -26,9 +26,9 @@ le altre.
 
 ## Criteri di accettazione
 
-- [ ] La tabella esiste per almeno due modelli, sull'hardware del server di casa
-- [ ] La scheda dice quale modello e' il minimo per gli agenti della `0.6.0`, o dice che nessuno regge e cosa cambia nel piano
-- [ ] Rieseguire il banco dopo una modifica al prompt o agli strumenti e' un comando, non una serata
+- [ ] ~~La tabella esiste per almeno due modelli, sull'hardware del server di casa~~ — **non perseguito** (2026-10-06): vedi sotto
+- [x] La scheda dice quale modello e' il minimo per gli agenti della `0.6.0`, o dice che nessuno regge e cosa cambia nel piano: **il solo modello misurato non regge le soglie**, vedi sotto
+- [x] Rieseguire il banco dopo una modifica al prompt o agli strumenti e' un comando, non una serata (`banco/README.md`; con `--agenti` misura anche il router)
 
 ## Com'e' andata, e cosa manca
 
@@ -58,3 +58,26 @@ il corpus, un modello muto no, e il ciclo gira contro un Ollama finto.
 chiedono la tabella per almeno due modelli **sull'hardware di casa** (i5-8500T, 16 GB, niente
 GPU) e la frase su quale modello e' il minimo. Servono le misure vere: comandi in
 `banco/README.md`. La scheda resta aperta finche' i risultati non sono in `banco/risultati/`.
+
+## Com'e' finita (2026-10-06)
+
+**La scheda e' chiusa come non pianificata per cio' che manca.** Il banco c'e', e ha fatto il suo lavoro: ha trovato e fatto
+correggere cinque difetti veri (il prompt tagliato, gli strumenti che non arrivavano al modello, la cache distrutta dall'ora,
+gli alias contati male, il ripiego sul catalogo intero). Le misure sono in `banco/risultati/` con le analisi.
+
+**Misurato un solo modello**, `qwen2.5:3b`, in sei configurazioni (contesto 1024, 2048, 4096 e 8192; catalogo intero e agenti)
+su due macchine (l'i5-8500T di casa e un portatile i7-1355U). Non regge le soglie dell'ADR 0008:
+
+| | Catalogo intero @ 8192 | Agenti @ 4096 |
+| :--- | ---: | ---: |
+| Strumento giusto | 72,8% | 79,8% |
+| Mediana | 131 s | 28,7 s |
+
+**Cosa cambia nel piano:** il modello locale e' il ripiego, non la strada principale. I comandi semplici di ogni giorno li
+risolvono gli intenti in meno di 0,2 secondi, senza modello; gli agenti di dominio rendono il ripiego piu' corto e piu'
+sicuro, ma non lo rendono veloce.
+
+**Il secondo modello non si misura.** Servirebbe un 7B, che non sta nella memoria assegnata a Ollama sul server di casa
+(6 GB, con 4,7 GB solo di pesi), e il proprietario non ha intenzione di cambiare hardware: la tabella per due modelli
+bloccherebbe la tabella di marcia per un dato che non cambierebbe nessuna decisione. Se un giorno l'hardware cambia, il
+banco e' pronto: un comando, un'ora.
