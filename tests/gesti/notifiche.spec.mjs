@@ -12,7 +12,7 @@ const ENDPOINT = 'https://push.finto.example/abc123';
 
 // Un'iscrizione e un service worker finti, prima che la pagina parta.
 function falsifica() {
-    return ({ permesso, conPushManager, iscritto, endpoint }) => {
+    return ({ permesso, conPushManager, iscritto, endpoint, readyMai }) => {
         window.__richieste_permesso = 0;
         window.__subscribe = 0;
         window.__unsubscribe = 0;
@@ -46,7 +46,7 @@ function falsifica() {
             },
         };
         Object.defineProperty(navigator.serviceWorker, 'ready', {
-            get: () => Promise.resolve(registrazione),
+            get: () => (readyMai ? new Promise(() => {}) : Promise.resolve(registrazione)),
         });
         if (!conPushManager) delete window.PushManager;
         else window.PushManager = window.PushManager || function PushManager() {};
@@ -72,6 +72,7 @@ async function apri(
         permesso: 'default',
         conPushManager: true,
         iscritto: false,
+        readyMai: false,
         ...opzioni,
         endpoint: ENDPOINT,
     });
@@ -213,6 +214,19 @@ test.describe('le notifiche push', () => {
         expect(visti.preferenze[0]).toEqual({ chiave: 'categoria.timer', valore: false });
 
         await expect(page.getByLabel(/Sicurezza \(allarme, porte\)/)).toBeDisabled();
+    });
+});
+
+test.describe('un service worker che non controlla la pagina', () => {
+    // Era il difetto vero: il worker stava in /static/ e la pagina in /, quindi `serviceWorker.ready` non si
+    // risolveva mai e la sezione restava su «Un momento…» su ogni dispositivo. Il test che fingeva il worker non
+    // poteva vederlo: qui si finge proprio quel caso.
+    test('la sezione lo dice invece di restare in attesa per sempre', async ({ page }) => {
+        test.setTimeout(30_000);
+        await apri(page, { opzioni: { readyMai: true } });
+
+        await expect(stato(page)).toHaveAttribute('data-stato', 'errore', { timeout: 12_000 });
+        await expect(page.locator('#notifiche-contenuto')).toContainText('service worker');
     });
 });
 
