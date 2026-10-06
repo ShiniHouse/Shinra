@@ -197,7 +197,7 @@ globalThis.document = {
 globalThis.chiudiMenuConfigurazione = () => {};
 for (const caricatore of ['loadKnowledge', 'loadSources', 'loadAliases', 'loadRegole',
                           'loadModes', 'disegnaScorciatoia', 'loadUsers', 'loadSettings',
-                          'preparaSezioniImpostazioni', 'loadCervello', 'fermaCervello']) {
+                          'preparaSezioniImpostazioni', 'loadCervello', 'fermaCervello', 'caricaNotifiche']) {
     globalThis[caricatore] = () => {};
 }
 

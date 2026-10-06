@@ -12,6 +12,7 @@ import { disegnaScorciatoia, loadRegole } from './regole.js';
 import { loadUsers } from './utenti.js';
 import { loadSettings } from './impostazioni.js';
 import { fermaCervello, loadCervello } from './cervello.js';
+import { caricaNotifiche } from './notifiche.js';
 
 const tabDisplayMap = {
     console: 'grid',
@@ -188,6 +189,7 @@ export function switchTab(tabId) {
     if (tabId === 'settings') {
         loadSettings();
         preparaSezioniImpostazioni();
+        caricaNotifiche();
     }
 }
 
