@@ -404,3 +404,23 @@ async def test_una_casa_grande_si_descrive_in_meno_di_un_secondo(casa):
     assert durata < 1.0, f"il grafo di una casa grande ha impiegato {durata:.2f}s"
     assert len(grafo["nodi"]) <= dominio.MASSIMO_NODI
     assert grafo["troncato"] is True
+
+
+# ------------------------------------------------ gli agenti di dominio nel grafo (#190)
+
+
+async def test_il_grafo_mostra_gli_agenti_di_dominio_con_i_loro_strumenti():
+    from shinra.services import agenti
+
+    grafo = await servizio.genera(None)
+    nodi = {n["id"]: n for n in grafo["nodi"]}
+
+    for nome in agenti.AGENTI:
+        assert f"agente:{nome}" in nodi, f"manca l'agente {nome}"
+    usa = {(c["da"], c["a"]) for c in grafo["collegamenti"] if c.get("tipo") == "usa"}
+    assert ("agente:energia", "strumento:fascia_corrente") in usa
+    assert (
+        "agente:energia",
+        "strumento:comanda_serratura",
+    ) not in usa, "un agente vede solo i suoi strumenti"
+    assert grafo["contatori"]["agenti_pronti"] >= len(agenti.AGENTI)
