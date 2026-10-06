@@ -17,26 +17,10 @@
 //    `fillText`: un dispositivo chiamato `<img onerror=...>` e' una stringa
 //    qualunque, e non c'e' nessun punto in cui diventi HTML.
 
-import {
-    FORZE_PREDEFINITE,
-    centroDi,
-    disponi,
-    passo,
-    quieta,
-    riscalda,
-    vicinoVerso,
-} from './cervello_fisica.js';
-import {
-    COLORI,
-    PREDEFINITO,
-    RAGGI,
-    SOGLIA_CLIC,
-    STATO,
-    ZOOM_MAX,
-    ZOOM_MIN,
-    movimentoRidotto,
-} from './cervello_stile.js';
+import { FORZE_PREDEFINITE, centroDi, disponi, passo, quieta, riscalda } from './cervello_fisica.js';
+import { COLORI, PREDEFINITO, RAGGI, STATO, ZOOM_MAX, ZOOM_MIN, movimentoRidotto } from './cervello_stile.js';
 import { disegnaAttivita } from './cervello_attivita.js';
+import { collega } from './cervello_interazione.js';
 
 export class Lavagna {
     constructor(canvas, eventi = {}) {
@@ -63,7 +47,7 @@ export class Lavagna {
         this._vistaManuale = false;
         this._trascinando = null;
         this._ascolti = [];
-        this._collega();
+        collega(this);
     }
 
     // ------------------------------------------------------------------ dati
@@ -403,114 +387,6 @@ export class Lavagna {
     _ascolta(bersaglio, tipo, funzione, opzioni) {
         bersaglio.addEventListener(tipo, funzione, opzioni);
         this._ascolti.push(() => bersaglio.removeEventListener(tipo, funzione, opzioni));
-    }
-
-    _collega() {
-        const c = this.canvas;
-        this._ascolta(c, 'pointerdown', (e) => {
-            const { x, y } = this._punto(e);
-            const p = this.nodoA(x, y);
-            c.setPointerCapture?.(e.pointerId);
-            this._trascinando = {
-                x,
-                y,
-                partitiDa: { x, y },
-                nodo: p,
-                vista: { ...this.vista },
-                mosso: false,
-            };
-            if (p) p.fisso = true;
-        });
-        this._ascolta(c, 'pointermove', (e) => {
-            const { x, y } = this._punto(e);
-            const t = this._trascinando;
-            if (!t) {
-                const p = this.nodoA(x, y);
-                const id = p ? p.id : null;
-                if (id !== this.sopra) {
-                    this.sopra = id;
-                    c.style.cursor = id ? 'pointer' : 'grab';
-                    this.eventi.alSopra?.(p ? p.nodo : null, { x, y });
-                    this.ridisegna();
-                }
-                return;
-            }
-            if (Math.hypot(x - t.partitiDa.x, y - t.partitiDa.y) > SOGLIA_CLIC) t.mosso = true;
-            if (t.nodo && t.mosso) {
-                t.nodo.x = (x - this.vista.x) / this.vista.k;
-                t.nodo.y = (y - this.vista.y) / this.vista.k;
-                if (!this.fermo) riscalda(this.sim, 0.3);
-                this.avvia();
-            } else if (!t.nodo) {
-                this.vista.x = t.vista.x + (x - t.partitiDa.x);
-                this.vista.y = t.vista.y + (y - t.partitiDa.y);
-                this._vistaManuale = true;
-            }
-            this.ridisegna();
-        });
-        const fine = () => {
-            const t = this._trascinando;
-            this._trascinando = null;
-            if (!t) return;
-            if (t.nodo) t.nodo.fisso = false;
-            if (!t.mosso) this.seleziona(t.nodo ? t.nodo.id : null);
-        };
-        this._ascolta(c, 'pointerup', fine);
-        this._ascolta(c, 'pointercancel', fine);
-        this._ascolta(c, 'pointerleave', () => {
-            if (this.sopra) {
-                this.sopra = null;
-                this.eventi.alSopra?.(null);
-                this.ridisegna();
-            }
-        });
-        this._ascolta(c, 'dblclick', (e) => {
-            const { x, y } = this._punto(e);
-            const p = this.nodoA(x, y);
-            if (p) this.eventi.alApri?.(p.nodo);
-        });
-        this._ascolta(
-            c,
-            'wheel',
-            (e) => {
-                e.preventDefault();
-                const { x, y } = this._punto(e);
-                this.zoom(Math.exp(-e.deltaY * 0.0015), x, y);
-            },
-            { passive: false },
-        );
-        this._ascolta(c, 'keydown', (e) => this._tasto(e));
-
-        // Il tema cambia a pagina aperta: i colori si rileggono.
-        const osservatore = new MutationObserver(() => this.ridisegna());
-        osservatore.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-        this._ascolti.push(() => osservatore.disconnect());
-    }
-
-    _tasto(e) {
-        if (!this.sim) return;
-        const direzioni = { ArrowUp: 'su', ArrowDown: 'giu', ArrowLeft: 'sinistra', ArrowRight: 'destra' };
-        const corrente = this.selezionato ? this.sim.perId.get(this.selezionato) : null;
-        if (direzioni[e.key]) {
-            e.preventDefault();
-            const da = corrente || this.sim.punti.find((p) => this.visibile(p));
-            if (!da) return;
-            const prossimo = corrente
-                ? vicinoVerso(this.sim, da, direzioni[e.key], (p) => this.visibile(p))
-                : da;
-            if (prossimo) this.seleziona(prossimo.id, { centra: true });
-        } else if (e.key === 'Enter' && corrente) {
-            e.preventDefault();
-            this.eventi.alApri?.(corrente.nodo);
-        } else if (e.key === 'Escape') {
-            this.seleziona(null);
-        } else if (e.key === '+' || e.key === '=') {
-            this.zoom(1.25);
-        } else if (e.key === '-') {
-            this.zoom(0.8);
-        } else if (e.key === 'Home' || e.key === '0') {
-            this.inquadra();
-        }
     }
 
     distruggi() {

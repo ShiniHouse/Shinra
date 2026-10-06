@@ -23,15 +23,12 @@ import { _args, _html } from './sicurezza.js';
 import { getAuthHeaders } from './accesso.js';
 import { safeCreateIcons } from './avvio.js';
 import { FORZE_PREDEFINITE, creaSimulazione } from './cervello_fisica.js';
+import { inLeggera, leggiMemoria, notaLeggera, scriviMemoria } from './cervello_scelte.js';
 import { movimentoRidotto } from './cervello_stile.js';
 import { Lavagna } from './cervello_disegno.js';
 import { attivita, disegnaRegistro } from './cervello_attivita.js';
 
-const MEMORIA = 'shinra.cervello';
 const AGGIORNA_OGNI_MS = 30000;
-// Oltre questi nodi la modalita' leggera si accende da sola: dalle misure (#187) un grafo di 600
-// nodi su un dispositivo sei volte piu' lento di un portatile scende a 25 fotogrammi al secondo.
-const SOGLIA_LEGGERA = 400;
 
 const TIPI = {
     stanza: 'Stanza',
@@ -71,8 +68,7 @@ let _osservatore = null;
 let _tipiNascosti = new Set();
 let _forzeScelte = { ...FORZE_PREDEFINITE };
 let _nodoScelto = null;
-// `null` = decide il numero di nodi; `true`/`false` = ha scelto chi guarda.
-let _leggera = null;
+let _leggera = null; // null: decide il numero di nodi
 
 const $ = (id) => document.getElementById(id);
 
@@ -82,32 +78,15 @@ const $ = (id) => document.getElementById(id);
 // comodita', non _dati. Senza, la scheda si apre con le impostazioni di fabbrica.
 
 function _leggiMemoria() {
-    try {
-        const grezzo = window.localStorage.getItem(MEMORIA);
-        if (!grezzo) return;
-        const salvato = JSON.parse(grezzo);
-        _tipiNascosti = new Set(Array.isArray(salvato.nascosti) ? salvato.nascosti : []);
-        _leggera = typeof salvato.leggera === 'boolean' ? salvato.leggera : null;
-        _forzeScelte = {
-            distanza: Number(salvato.distanza) || FORZE_PREDEFINITE.distanza,
-            attrazione: Number.isFinite(Number(salvato.attrazione))
-                ? Number(salvato.attrazione)
-                : FORZE_PREDEFINITE.attrazione,
-        };
-    } catch {
-        /* senza memoria si vive */
-    }
+    const salvato = leggiMemoria();
+    if (!salvato) return;
+    _tipiNascosti = salvato.nascosti;
+    _forzeScelte = salvato.forze;
+    _leggera = salvato.leggera;
 }
 
 function _scriviMemoria() {
-    try {
-        window.localStorage.setItem(
-            MEMORIA,
-            JSON.stringify({ nascosti: [..._tipiNascosti], leggera: _leggera, ..._forzeScelte }),
-        );
-    } catch {
-        /* idem */
-    }
+    scriviMemoria({ nascosti: _tipiNascosti, forze: _forzeScelte, leggera: _leggera });
 }
 
 // ------------------------------------------------------------------ caricamento
@@ -404,24 +383,14 @@ function cervelloMostraTipo(cluster, visibile) {
 }
 
 function _inLeggera(quantiNodi) {
-    return _leggera === null ? quantiNodi > SOGLIA_LEGGERA : _leggera;
+    return inLeggera(_leggera, quantiNodi);
 }
 
 function _notaLeggera(quantiNodi) {
     const casella = $('cervello-leggera');
     const nota = $('cervello-leggera-nota');
-    const attiva = _inLeggera(quantiNodi);
-    if (casella) casella.checked = attiva;
-    if (!nota) return;
-    if (_leggera === null) {
-        nota.textContent = attiva
-            ? `Accesa da sola: il grafo ha più di ${SOGLIA_LEGGERA} nodi.`
-            : `Si accende da sola oltre ${SOGLIA_LEGGERA} nodi.`;
-    } else {
-        nota.textContent = attiva
-            ? 'Scelta tua: il grafo si dispone una volta e sta fermo.'
-            : "Scelta tua: l'animazione resta sempre accesa.";
-    }
+    if (casella) casella.checked = _inLeggera(quantiNodi);
+    if (nota) nota.textContent = notaLeggera(_leggera, quantiNodi);
 }
 
 function cervelloLeggera(attiva) {
