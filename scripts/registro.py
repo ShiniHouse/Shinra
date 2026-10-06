@@ -26,10 +26,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
-_RADICE = Path(__file__).resolve().parent.parent
-# Gli script si lanciano dalla copia di lavoro, dove il pacchetto puo' non essere installato.
-if (_RADICE / "src").is_dir():
-    sys.path.insert(0, str(_RADICE / "src"))
+# Gli script si lanciano dalla copia di lavoro, dove il pacchetto puo' non essere installato: senza questo,
+# `import shinra` fallirebbe. E' l'unico punto che calcola un percorso da solo; il resto lo chiede a `shinra.percorsi`.
+_SORGENTI = Path(__file__).resolve().parent.parent / "src"
+if _SORGENTI.is_dir():
+    sys.path.insert(0, str(_SORGENTI))
 
 
 def _in_ora_locale(momento: str) -> str:
@@ -83,8 +84,10 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
     # I percorsi dei dati sono relativi alla copia di lavoro, come per il servizio. Si torna dov'eravamo: chi
     # importa questo modulo (i test) non deve ritrovarsi con la cartella di lavoro cambiata.
+    from shinra import percorsi
+
     prima = os.getcwd()
-    os.chdir(_RADICE)
+    os.chdir(percorsi.RADICE)
     try:
         voci = leggi(args.ore, args.azione, args.esito, args.limite)
     finally:
