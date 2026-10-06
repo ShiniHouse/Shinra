@@ -110,6 +110,61 @@ systemctl status ollama
 curl -s http://localhost:11434/api/tags | head -c 200
 ```
 
+### Il modello risponde ma non vede gli strumenti: il prompt viene tagliato
+
+Visto sul server di casa con il banco di prova. Il modello risponde, i comandi
+semplici (una luce, un timer) funzionano perché non passano da lui, ma quelli
+che vuole capire lui sbagliano strumento o non ne chiamano nessuno. Il motivo:
+il prompt con gli strumenti pesa da 1.100 a 5.500 token, e il contesto
+predefinito di Ollama in Shinra è di **1024 o 2048**. Quando non ci sta,
+**Ollama taglia l'inizio e non lo dice**: il modello vede soltanto gli ultimi
+strumenti dell'elenco.
+
+Shinra lo scrive nel log:
+
+```bash
+journalctl -u shinra --since "-1h" | grep "riempie tutto il contesto"
+```
+
+```
+Il prompt riempie tutto il contesto (2048 token letti, num_ctx 2048): Ollama ha tagliato l'inizio…
+```
+
+Se lo vedi, alza il contesto in `config/config.yaml`:
+
+```yaml
+llm:
+  num_ctx: 4096
+```
+
+Costa tempo di lettura (la CPU legge il prompt a decine di token al secondo) e
+un po' di memoria: è un compromesso, non una correzione gratis. Gli
+[agenti di dominio](AGENTI.md) tengono il prompt corto per questo.
+
+### Ollama viene ucciso per memoria e si riavvia da solo
+
+Visto sul server di casa durante il banco di prova. Le richieste scadono, poi
+una risposta arriva e le successive funzionano: nel frattempo `systemctl`
+mostra che Ollama è ripartito. Se il servizio ha un limite di memoria (quello
+di casa ha `MemoryMax=6G`, per non soffocare il resto della macchina), la
+**cache dei prompt** di Ollama, per impostazione predefinita, può arrivare a
+8 GiB: quando supera il limite, il kernel uccide il processo.
+
+```bash
+journalctl -u ollama --since "-1d" | grep -iE "oom|killed|Started"
+```
+
+Se vedi `killed` o un riavvio che non hai fatto tu, limita la cache in
+`/etc/systemd/system/ollama.service.d/` (un file `.conf` nuovo):
+
+```ini
+[Service]
+Environment="OLLAMA_CACHE_RAM=1024"
+Environment="LLAMA_ARG_CACHE_RAM=1024"
+```
+
+poi `systemctl daemon-reload && systemctl restart ollama`.
+
 ### Timeout 524 dietro Cloudflare o un altro proxy
 
 Il modello impiega più del tempo che il proxy concede. Non è un problema di
@@ -254,6 +309,8 @@ sempre prima di ripristinare.
 | Una scheda si apre vuota | Era un difetto (#153): una destinazione che non esiste adesso torna alla console invece di lasciare il vuoto |
 | Il servizio ci mette novanta secondi a fermarsi | Era un difetto (#118): adesso si ferma in pochi secondi |
 | Ollama e Home Assistant non ci sono e Shinra parte lo stesso | È voluto. Parte, dice nel log cosa manca, e funziona per tutto il resto |
+| Chiedo di aprire la serratura e Shinra risponde «Confermi?» e non la apre | È voluto: le azioni sensibili aspettano un «sì» di chi ha chiesto, entro tre minuti. Vedi [CONFERME.md](CONFERME.md) |
+| Dico «apri» o «accendi la luce della cantina» e Shinra mi risponde con una domanda, o dice «Non conosco nessun dispositivo chiamato…» | È voluto: senza un bersaglio che esiste, un comando non parte e Shinra chiede quale. Vedi [AGENTI.md](AGENTI.md) |
 
 ---
 

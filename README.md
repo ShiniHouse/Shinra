@@ -88,6 +88,9 @@ modello. Il quadro completo è nella [ROADMAP](docs/ROADMAP.md), e
 | [`docs/INSTALLAZIONE.md`](docs/INSTALLAZIONE.md) | Docker o a mano su Debian, il token di Home Assistant, cosa sopravvive a un aggiornamento |
 | [`docs/PRIMI-PASSI.md`](docs/PRIMI-PASSI.md) | Dal primo accesso alla prima automazione: profili, Home Assistant, alias, routine |
 | [`docs/PROBLEMI.md`](docs/PROBLEMI.md) | Cosa fare quando qualcosa non funziona, guasto per guasto — tutti successi davvero |
+| [`docs/CERVELLO.md`](docs/CERVELLO.md) | Il grafo della casa: cosa si vede, i colori, come ci si muove, cosa si accende quando Shinra lavora |
+| [`docs/AGENTI.md`](docs/AGENTI.md) | Gli otto agenti di dominio, come sceglie il router, cosa succede quando sbaglia, cosa regolare |
+| [`docs/CONFERME.md`](docs/CONFERME.md) | Le azioni che chiedono conferma (serrature, allarme, garage), come si risponde, cosa succede se scadono |
 | [`docs/ALEXA.md`](docs/ALEXA.md) | Come configurare la skill Alexa (Interaction Model, endpoint HTTPS, test) |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le fasi da `0.1.0` a `1.0.0` — con la `0.7.0` e la `0.8.0` — e i criteri di uscita di ciascuna |
 | [`docs/storia-delle-fasi.md`](docs/storia-delle-fasi.md) | Le schede di lavoro delle fasi chiuse (0.1.0–0.5.0): perché, cosa, com'è andata |
@@ -187,6 +190,7 @@ riassumerle in uno slogan.
 | La conoscenza di casa e le sue ricerche | **Resta in casa** | Anche gli embedding: li calcola Ollama |
 | Comandi ai dispositivi | **Resta in casa** | Home Assistant sulla tua rete |
 | Anagrafica, PIN, passkey, registro delle azioni | **Resta in casa** | Sul disco del server |
+| Il grafo del Cervello e gli agenti | **Resta in casa** | Si calcolano sul server; gli eventi viaggiano solo verso il tuo browser, e portano dove Shinra e' passata, non cosa hai detto |
 | **La voce che parli al microfono** | **Resta in casa** *(dalla `0.4.0`)* | Whisper sul server. Vedi sotto |
 | Il testo delle risposte lette a voce | **Esce** → Microsoft | Edge-TTS. Si può spegnere e usare le voci del browser |
 | Meteo | **Esce** → Open-Meteo | La tua città, non chi sei |
