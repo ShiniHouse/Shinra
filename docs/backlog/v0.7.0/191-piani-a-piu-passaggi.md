@@ -1,7 +1,7 @@
 ---
 title: "feat(agente): piani a piu' passaggi, con correzione se un passaggio fallisce"
 issue: 191
-milestone: "v0.6.0"
+milestone: "v0.7.0"
 labels: ["tipo: funzione", "area: core"]
 ---
 
@@ -10,6 +10,12 @@ labels: ["tipo: funzione", "area: core"]
 «Prepara la casa per la sera» non e' uno strumento: sono luci, tapparelle,
 clima e forse un allarme. Oggi il ciclo fa una scelta alla volta. Serve un
 piano: scomporre, eseguire, verificare, e correggersi se un passaggio fallisce.
+
+> **Spostata dalla `0.6.0` alla `0.7.0` (2026-10-06).** Con il router e gli agenti di dominio la categoria
+> «piu' passaggi» del banco e' a 5/10 sul portatile (6/10 sul server), e un piano strutturato e' il lavoro piu'
+> grosso della fase per un guadagno incerto con il 3B su questo hardware. Si riprende con i numeri del banco rifatto
+> sull'hardware nuovo, o quando la casa mostra che serve: il ciclo attuale accetta gia' piu' chiamate in uno stesso
+> giro, e il controllo del dominio e del bersaglio valido (#190, #290) vale anche per un piano.
 
 ## Cosa fare
 

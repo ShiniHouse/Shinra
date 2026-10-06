@@ -307,7 +307,6 @@ e' una demo.
 | 188 | Il ciclo dell'agente racconta cosa sta facendo | grafo vivo |
 | 189 | Il grafo vivo: si illumina quando Shinra lavora | grafo vivo |
 | 190 | Router e agenti di dominio | agenti |
-| 191 | Piani a piu' passaggi, con correzione | agenti |
 | 192 | Le azioni sensibili chiedono sempre conferma | sicurezza |
 | 195 | Una regola e un piano scattano davvero in una casa vera | verifica |
 | 196 | Nessun file del backend sopra le cinquecento righe | debito |
@@ -352,6 +351,7 @@ e le schede, stanno in [`docs/proposte/v0.7.0/`](proposte/v0.7.0/README.md).
 | 209 | Intervista: una domanda per volta, niente domande su cio' che la casa sa — *residuo della #170* | apprendimento |
 | 210 | Intervista: dalle entita' vere alle routine complete — *residuo della #170* | apprendimento |
 | 211 | La parola di attivazione nel browser — *residuo della #30* | voce |
+| 191 | Piani a piu' passaggi, con correzione — *spostata dalla `0.6.0`: il «piu' passaggi» del banco e' a 5/10 con gli agenti, e il piano e' il lavoro piu' grosso per un guadagno incerto* | agenti |
 | 282 | L'add-on per Home Assistant OS — *residuo della #37 (ex #212, ricreata dopo la cancellazione). La prova su Raspberry Pi 4 e' rimandata* | distribuzione |
 | 240 | Ollama su un'altra macchina della rete: configurazione, protezione, misura | infrastruttura |
 | 241 | Il banco di prova sull'hardware candidato, misurato e non stimato | misura |
