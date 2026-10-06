@@ -91,6 +91,7 @@ modello. Il quadro completo è nella [ROADMAP](docs/ROADMAP.md), e
 | [`docs/CERVELLO.md`](docs/CERVELLO.md) | Il grafo della casa: cosa si vede, i colori, come ci si muove, cosa si accende quando Shinra lavora |
 | [`docs/AGENTI.md`](docs/AGENTI.md) | Gli otto agenti di dominio, come sceglie il router, cosa succede quando sbaglia, cosa regolare |
 | [`docs/CONFERME.md`](docs/CONFERME.md) | Le azioni che chiedono conferma (serrature, allarme, garage), come si risponde, cosa succede se scadono |
+| [`docs/VERIFICA-IN-CASA.md`](docs/VERIFICA-IN-CASA.md) | La lista delle prove da fare in una casa vera (regole, conferme), con l'esito accanto: chi vive qui la compila |
 | [`docs/ALEXA.md`](docs/ALEXA.md) | Come configurare la skill Alexa (Interaction Model, endpoint HTTPS, test) |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le fasi da `0.1.0` a `1.0.0` — con la `0.7.0` e la `0.8.0` — e i criteri di uscita di ciascuna |
 | [`docs/storia-delle-fasi.md`](docs/storia-delle-fasi.md) | Le schede di lavoro delle fasi chiuse (0.1.0–0.5.0): perché, cosa, com'è andata |
