@@ -198,8 +198,17 @@ export class Lavagna {
 
     // ------------------------------------------------------------- animazione
 
+    // La scheda e' in primo piano? Un evento dell'agente che arriva a scheda chiusa non deve
+    // far girare il disegno di una tela che nessuno vede (#187): quando la scheda si riapre
+    // il grafo si ricarica e riparte da solo.
+    _visibile() {
+        return this.canvas.isConnected && this.canvas.offsetParent !== null;
+    }
+
     avvia() {
+        if (!this._visibile()) return;
         if (this.fermo) {
+            this.canvas.dataset.animando = 'no';
             this.ridisegna();
             return;
         }
@@ -223,6 +232,29 @@ export class Lavagna {
             this.canvas.dataset.animando = continua ? 'si' : 'no';
         };
         this._frame = requestAnimationFrame(ciclo);
+    }
+
+    /**
+     * La modalita' leggera (#187): il grafo si dispone in un colpo e poi sta fermo, come con il
+     * movimento ridotto. Costa un calcolo solo, invece di decine di secondi di animazione a scatti
+     * su un telefono; si puo' ancora selezionare, cercare e vedere accendersi i nodi.
+     */
+    impostaLeggera(leggera) {
+        const fermo = Boolean(leggera) || movimentoRidotto();
+        if (fermo === this.fermo) return;
+        this.fermo = fermo;
+        if (!this.sim) return;
+        if (fermo) {
+            if (this._frame) cancelAnimationFrame(this._frame);
+            this._frame = 0;
+            disponi(this.sim, this.forze);
+            this.inquadra();
+            this.canvas.dataset.animando = 'no';
+            this.disegna();
+        } else {
+            riscalda(this.sim, 0.6);
+            this.avvia();
+        }
     }
 
     ridisegna() {

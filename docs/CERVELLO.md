@@ -76,6 +76,7 @@ nel dettaglio di un nodo:
 - **Zoom** (anche con la rotella), **inquadra tutto** e **schermo intero** sono
   in basso a destra. Si trascina il fondo per spostare la vista, e un nodo per
   spostarlo.
+- **Modalità leggera** (in «Forze del grafo»): il grafo si dispone una volta e poi sta fermo, invece di muoversi finché si assesta. Si accende da sola oltre 400 nodi, per non far scattare un telefono; la scelta che fai tu vince e resta. I nodi si accendono lo stesso quando Shinra lavora.
 - **Cosa mostrare**: spegni un gruppo (per esempio gli strumenti) se il grafo
   è troppo fitto; **Forze del grafo** regola distanza e attrazione.
 - **Da tastiera**: il disegno prende il fuoco con `Tab`, e tutto quello che

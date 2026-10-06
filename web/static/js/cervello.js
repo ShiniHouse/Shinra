@@ -23,11 +23,15 @@ import { _args, _html } from './sicurezza.js';
 import { getAuthHeaders } from './accesso.js';
 import { safeCreateIcons } from './avvio.js';
 import { FORZE_PREDEFINITE, creaSimulazione } from './cervello_fisica.js';
+import { movimentoRidotto } from './cervello_stile.js';
 import { Lavagna } from './cervello_disegno.js';
 import { attivita, disegnaRegistro } from './cervello_attivita.js';
 
 const MEMORIA = 'shinra.cervello';
 const AGGIORNA_OGNI_MS = 30000;
+// Oltre questi nodi la modalita' leggera si accende da sola: dalle misure (#187) un grafo di 600
+// nodi su un dispositivo sei volte piu' lento di un portatile scende a 25 fotogrammi al secondo.
+const SOGLIA_LEGGERA = 400;
 
 const TIPI = {
     stanza: 'Stanza',
@@ -67,6 +71,8 @@ let _osservatore = null;
 let _tipiNascosti = new Set();
 let _forzeScelte = { ...FORZE_PREDEFINITE };
 let _nodoScelto = null;
+// `null` = decide il numero di nodi; `true`/`false` = ha scelto chi guarda.
+let _leggera = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -81,6 +87,7 @@ function _leggiMemoria() {
         if (!grezzo) return;
         const salvato = JSON.parse(grezzo);
         _tipiNascosti = new Set(Array.isArray(salvato.nascosti) ? salvato.nascosti : []);
+        _leggera = typeof salvato.leggera === 'boolean' ? salvato.leggera : null;
         _forzeScelte = {
             distanza: Number(salvato.distanza) || FORZE_PREDEFINITE.distanza,
             attrazione: Number.isFinite(Number(salvato.attrazione))
@@ -96,7 +103,7 @@ function _scriviMemoria() {
     try {
         window.localStorage.setItem(
             MEMORIA,
-            JSON.stringify({ nascosti: [..._tipiNascosti], ..._forzeScelte }),
+            JSON.stringify({ nascosti: [..._tipiNascosti], leggera: _leggera, ..._forzeScelte }),
         );
     } catch {
         /* idem */
@@ -217,6 +224,8 @@ function _disegna() {
     if (conservati > nuova.punti.length / 2) nuova.alfa = 0.25;
     lavagna.forze = { ..._forzeScelte };
     lavagna.nascosti = new Set(_tipiNascosti);
+    lavagna.fermo = _inLeggera(nodi.length) || movimentoRidotto();
+    _notaLeggera(nodi.length);
     lavagna.imposta(nuova, _dati.clusters || [], _dati.sistemi || []);
     if (_nodoScelto && nuova.perId.has(_nodoScelto)) lavagna.seleziona(_nodoScelto);
     $('cervello-canvas').setAttribute(
@@ -394,6 +403,35 @@ function cervelloMostraTipo(cluster, visibile) {
     lavagna?.inquadra();
 }
 
+function _inLeggera(quantiNodi) {
+    return _leggera === null ? quantiNodi > SOGLIA_LEGGERA : _leggera;
+}
+
+function _notaLeggera(quantiNodi) {
+    const casella = $('cervello-leggera');
+    const nota = $('cervello-leggera-nota');
+    const attiva = _inLeggera(quantiNodi);
+    if (casella) casella.checked = attiva;
+    if (!nota) return;
+    if (_leggera === null) {
+        nota.textContent = attiva
+            ? `Accesa da sola: il grafo ha più di ${SOGLIA_LEGGERA} nodi.`
+            : `Si accende da sola oltre ${SOGLIA_LEGGERA} nodi.`;
+    } else {
+        nota.textContent = attiva
+            ? 'Scelta tua: il grafo si dispone una volta e sta fermo.'
+            : "Scelta tua: l'animazione resta sempre accesa.";
+    }
+}
+
+function cervelloLeggera(attiva) {
+    _leggera = Boolean(attiva);
+    _scriviMemoria();
+    const quanti = (_dati?.nodi || []).length;
+    _notaLeggera(quanti);
+    lavagna?.impostaLeggera(_leggera);
+}
+
 function cervelloForza(nome, valore) {
     const numero = Number(valore);
     if (!Number.isFinite(numero)) return;
@@ -405,6 +443,11 @@ function cervelloForza(nome, valore) {
 function cervelloRipristina() {
     _forzeScelte = { ...FORZE_PREDEFINITE };
     _tipiNascosti = new Set();
+    _leggera = null;
+    if (_dati) {
+        _notaLeggera((_dati.nodi || []).length);
+        lavagna?.impostaLeggera(_inLeggera((_dati.nodi || []).length));
+    }
     _scriviMemoria();
     for (const [id, v] of [
         ['cervello-forza-distanza', _forzeScelte.distanza],
@@ -470,6 +513,7 @@ Gesti.registra({
     cervelloCerca,
     cervelloForza,
     cervelloInquadra,
+    cervelloLeggera,
     cervelloMostraTipo,
     cervelloRipristina,
     cervelloSchermoIntero,
