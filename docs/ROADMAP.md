@@ -356,15 +356,16 @@ e le schede, stanno in [`docs/proposte/v0.7.0/`](proposte/v0.7.0/README.md).
 | 191 | Piani a piu' passaggi, con correzione — *spostata dalla `0.6.0`: il «piu' passaggi» del banco e' a 5/10 con gli agenti, e il piano e' il lavoro piu' grosso per un guadagno incerto* | agenti |
 | 282 | L'add-on per Home Assistant OS — *residuo della #37 (ex #212, ricreata dopo la cancellazione). La prova su Raspberry Pi 4 e' rimandata* | distribuzione |
 | 240 | Ollama su un'altra macchina della rete: configurazione, protezione, misura | infrastruttura |
-| 241 | Il banco di prova sull'hardware candidato, misurato e non stimato | misura |
+| 241 | Il banco di prova sull'hardware candidato, misurato e non stimato — *ridotta (2026-10-06): le prove si fanno sul portatile, un hardware nuovo non e' previsto* | misura |
 | 242 | Aiutanti locali per il lavoro di sviluppo, con il guadagno misurato | strumenti |
 
 **Criteri di uscita**
 - Shinra usa un Ollama su un'altra macchina della rete locale, scelto da
   configurazione; l'endpoint **non** e' raggiungibile da fuori la rete di casa e la
   guida dice come proteggerlo (Ollama non ha autenticazione).
-- Il banco della `#183` ha numeri sull'hardware attuale e su **almeno un
-  candidato**, misurati; la guida dice quale hardware serve per quale modello.
+- Il banco ha numeri **misurati** sull'hardware di casa e sul portatile di prova, con un solo
+  modello (`qwen2.5:3b`). Un hardware nuovo non e' previsto (decisione del 2026-10-06): se cambia,
+  il banco si rilancia con un comando.
 - Le etichette della dashboard e i messaggi degli strumenti sono in due lingue, con
   la guardia di parita' (`#206`, `#207`, `#205`).
 - L'intervista fa una domanda per volta e produce routine complete (`#209`, `#210`).

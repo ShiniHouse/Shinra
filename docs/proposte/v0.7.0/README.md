@@ -31,7 +31,7 @@ misure ufficiali: **ordini di grandezza, da verificare**. Non ho trovato una mis
    dedicata raggiunta via rete (`base_url` di Ollama e' gia' configurabile). Si sostituisce solo cio' che serve, si puo'
    provare prima, e se la macchina si ferma Shinra continua: gli intenti deterministici («accendi la luce») non
    passano dal modello.
-3. **Un Mac mini M1 16 GB e' una buona candidata** per questo ruolo: 7–8B comodi, 14B stretti con un contesto
+3. **Un Mac mini M1 16 GB e' una buona candidata** per questo ruolo *(ricerca di partenza: l'acquisto non e' previsto, decisione del 2026-10-06; le prove si fanno sul portatile)*: 7–8B comodi, 14B stretti con un contesto
    largo (macOS ne usa una parte). Non e' l'unica: il mini PC Ryzen costa meno ma e' piu' incerto sul software.
 4. **Provarlo prima di pagarlo**: un negozio con diritto di reso, o la macchina di qualcuno, con il banco che c'e' gia'.
 

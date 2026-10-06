@@ -6,6 +6,9 @@ labels: ["tipo: attivita'", "area: core"]
 ---
 
 > **Dipende da:** il banco della #183 e l'Ollama su un server dedicato.
+>
+> **Ridotta il 2026-10-06.** Non e' previsto un hardware nuovo: le prove si fanno **sul portatile** (i7-1355U, in carica) e sul
+> server di casa, con un solo modello. Il banco resta pronto se un giorno l'hardware cambia (un comando, un'ora).
 
 ## Contesto
 
@@ -19,14 +22,14 @@ tabella deve dire *entrambe* le cose.
 
 ## Cosa fare
 
-- [ ] Eseguire il banco sull'hardware attuale (i5-8500T) con i modelli scelti
-- [ ] Eseguirlo su almeno una candidata (per esempio un Mac mini M1 16 GB, anche in prestito o con reso)
-- [ ] Per ogni coppia macchina/modello: scelte giuste, argomenti giusti, **troncati**, tempo di lettura del prompt, token al secondo in scrittura, picco di memoria
-- [ ] Salvare i risultati in `banco/risultati/` e riassumerli in una tabella
-- [ ] La guida dice quale hardware serve per quale modello, con i numeri
+- [x] Eseguire il banco sull'hardware attuale (i5-8500T) con i modelli scelti: `qwen2.5:3b`, sei configurazioni
+- [x] Eseguirlo su una seconda macchina: il portatile i7-1355U (non un Mac mini: l'acquisto non e' previsto)
+- [ ] Per ogni coppia macchina/modello: scelte giuste, argomenti giusti, **troncati** (fatto), **mediana e p90** (fatto); tempo di lettura del prompt, token al secondo in scrittura e picco di memoria **non misurati a parte** (si leggono solo come stime dai tempi)
+- [x] Salvare i risultati in `banco/risultati/` e riassumerli in una tabella (le analisi `*-ANALISI.md`)
+- [ ] ~~La guida dice quale hardware serve per quale modello, con i numeri~~ — non applicabile: nessun hardware nuovo da consigliare
 
 ## Criteri di accettazione
 
-- [ ] La tabella ha almeno due macchine e due modelli, **misurati**
-- [ ] Una riga di conclusione: «con questo hardware, questo modello e' il minimo», oppure «non basta»
-- [ ] Le cifre della ricerca in rete non compaiono come fatti: solo come punto di partenza dichiarato
+- [ ] ~~La tabella ha almeno due macchine e due modelli~~ — **due macchine e un modello**, misurati; il secondo modello non si fa (vedi la #183)
+- [x] Una riga di conclusione: con questo hardware `qwen2.5:3b` **non basta** per le soglie dell'ADR 0008 (strumento giusto 79,8% contro 85%, ~29 s contro 15 s), vedi la scheda #183
+- [x] Le cifre della ricerca in rete non compaiono come fatti: solo come punto di partenza dichiarato
