@@ -12,7 +12,7 @@ const ENDPOINT = 'https://push.finto.example/abc123';
 
 // Un'iscrizione e un service worker finti, prima che la pagina parta.
 function falsifica() {
-    return ({ permesso, conPushManager, iscritto, endpoint, readyMai }) => {
+    return ({ permesso, conPushManager, iscritto, endpoint, bloccato, soloPredefinito }) => {
         window.__richieste_permesso = 0;
         window.__subscribe = 0;
         window.__unsubscribe = 0;
@@ -45,9 +45,16 @@ function falsifica() {
                 },
             },
         };
-        Object.defineProperty(navigator.serviceWorker, 'ready', {
-            get: () => (readyMai ? new Promise(() => {}) : Promise.resolve(registrazione)),
-        });
+        // La pagina registra il worker da sola (non usa `ready`): `register()` restituisce la registrazione.
+        // `bloccato`: il worker resta «installing» per sempre; `soloPredefinito`: lo scope '/' viene rifiutato.
+        let tentativi = 0;
+        navigator.serviceWorker.register = async (url, opzioni) => {
+            tentativi += 1;
+            window.__register = (window.__register || []).concat([opzioni ? opzioni.scope : 'predefinito']);
+            if (soloPredefinito && opzioni?.scope) throw new Error('scope non consentito');
+            if (bloccato) return { installing: new EventTarget(), pushManager: registrazione.pushManager };
+            return { active: {}, pushManager: registrazione.pushManager, tentativi };
+        };
         if (!conPushManager) delete window.PushManager;
         else window.PushManager = window.PushManager || function PushManager() {};
         const Falsa = function Notification() {};
@@ -72,7 +79,8 @@ async function apri(
         permesso: 'default',
         conPushManager: true,
         iscritto: false,
-        readyMai: false,
+        bloccato: false,
+        soloPredefinito: false,
         ...opzioni,
         endpoint: ENDPOINT,
     });
@@ -217,15 +225,34 @@ test.describe('le notifiche push', () => {
     });
 });
 
-test.describe('un service worker che non controlla la pagina', () => {
-    // Era il difetto vero: il worker stava in /static/ e la pagina in /, quindi `serviceWorker.ready` non si
-    // risolveva mai e la sezione restava su «Un momento…» su ogni dispositivo. Il test che fingeva il worker non
-    // poteva vederlo: qui si finge proprio quel caso.
-    test('la sezione lo dice invece di restare in attesa per sempre', async ({ page }) => {
-        test.setTimeout(30_000);
-        await apri(page, { opzioni: { readyMai: true } });
+test.describe('il service worker', () => {
+    // Era il difetto vero: la pagina aspettava `serviceWorker.ready`, che non si risolve se il worker non controlla
+    // la pagina (stava in /static/, la pagina in /). Il test che fingeva `ready` non poteva vederlo. Ora la pagina si
+    // registra da sola, e qui si finge cio' che puo' andare storto.
+    test('si registra con lo scope della radice, e non aspetta `ready`', async ({ page }) => {
+        await apri(page, { opzioni: { permesso: 'granted', iscritto: true } });
 
-        await expect(stato(page)).toHaveAttribute('data-stato', 'errore', { timeout: 12_000 });
+        await expect(stato(page)).toHaveAttribute('data-stato', 'attive');
+        // Due registrazioni: quella della pagina all'avvio e quella della sezione. Nessuna col scope predefinito.
+        const scope = await page.evaluate(() => window.__register);
+        expect(scope).toContain('/');
+        expect(scope).not.toContain('predefinito');
+    });
+
+    test('se lo scope della radice è rifiutato ripiega sul predefinito: le notifiche funzionano lo stesso', async ({
+        page,
+    }) => {
+        await apri(page, { opzioni: { permesso: 'granted', iscritto: true, soloPredefinito: true } });
+
+        await expect(stato(page)).toHaveAttribute('data-stato', 'attive');
+        expect(await page.evaluate(() => window.__register)).toContain('predefinito');
+    });
+
+    test('un worker che non si attiva lo dice, invece di restare in attesa per sempre', async ({ page }) => {
+        test.setTimeout(30_000);
+        await apri(page, { opzioni: { bloccato: true } });
+
+        await expect(stato(page)).toHaveAttribute('data-stato', 'errore', { timeout: 14_000 });
         await expect(page.locator('#notifiche-contenuto')).toContainText('service worker');
     });
 });

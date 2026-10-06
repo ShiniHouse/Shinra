@@ -88,15 +88,36 @@ function _nomeDelDispositivo() {
 
 const _eIos = () => /iPhone|iPad|iPod/.test(navigator.userAgent || '');
 
-// `ready` non si risolve mai se il worker non controlla questa pagina (era il caso: scope sbagliato). Senza un
-// limite la sezione resterebbe su «Un momento…» per sempre: meglio dirlo.
+// La registrazione del service worker, **senza passare da `serviceWorker.ready`**.
+//
+// `ready` si risolve solo se il worker controlla *questa pagina*: bastava uno scope diverso da quello della pagina
+// (era il caso: il worker sta in /static/, la pagina in /) perche' non si risolvesse mai, e sul telefono la sezione
+// restava muta. Ma per iscriversi alle notifiche il controllo della pagina non serve: basta la registrazione, e
+// `register()` la restituisce, anche se esiste gia'. Si prova prima con lo scope della radice (il server lo consente),
+// poi con quello predefinito; e se il worker non si attiva si dice perche', con le parole del browser.
 async function _registrazione() {
-    return Promise.race([
-        navigator.serviceWorker.ready,
-        new Promise((_, rifiuta) =>
-            setTimeout(() => rifiuta(new Error('il service worker non è pronto')), 6000),
-        ),
-    ]);
+    let registrazione;
+    try {
+        registrazione = await navigator.serviceWorker.register('/static/sw.js', { scope: '/' });
+    } catch {
+        registrazione = await navigator.serviceWorker.register('/static/sw.js');
+    }
+    if (registrazione.active) return registrazione;
+    const lavoratore = registrazione.installing || registrazione.waiting;
+    if (!lavoratore) throw new Error('il service worker non parte');
+    await new Promise((ok, rifiuta) => {
+        const scaduto = setTimeout(() => rifiuta(new Error('il service worker non si attiva')), 8000);
+        lavoratore.addEventListener('statechange', () => {
+            if (lavoratore.state === 'activated') {
+                clearTimeout(scaduto);
+                ok();
+            } else if (lavoratore.state === 'redundant') {
+                clearTimeout(scaduto);
+                rifiuta(new Error('il service worker non si è installato'));
+            }
+        });
+    });
+    return registrazione;
 }
 
 /** Cosa si puo' dire di questo dispositivo: `{ tipo, ... }`. Non fa niente, guarda soltanto. */
