@@ -39,6 +39,17 @@ logger = logging.getLogger("Shinra.Push")
 # problema di rete vorrebbe dire smettere di avvisare qualcuno senza dirglielo.
 DEFINITIVI = frozenset({404, 410})
 
+# Quanto il servizio push **tiene** un messaggio se il telefono non e' raggiungibile in quel momento.
+#
+# `pywebpush` parte con una scadenza di **zero secondi**: «consegna adesso o butta». Un telefono con lo schermo
+# spento, un computer con il browser chiuso, una rete che manca per un minuto: il messaggio sparisce, il servizio
+# risponde comunque 201, e dal server sembra che sia andato tutto bene. Per un promemoria e' un peccato; per un
+# allarme e' un difetto. Un avviso urgente resta in coda un giorno intero: arrivare tardi vale piu' che non arrivare.
+SCADENZA_S = {"informativa": 3600, "importante": 6 * 3600, "urgente": 24 * 3600}
+SCADENZA_PREDEFINITA_S = 3600
+# L'urgenza dice al servizio push di non rimandare per risparmiare batteria (RFC 8030).
+URGENZA = {"informativa": "normal", "importante": "high", "urgente": "high"}
+
 # Dopo quanti fallimenti di fila si molla anche senza uno stato definitivo.
 # Un endpoint che non risponde da giorni non e' un problema di rete.
 FALLIMENTI_MASSIMI = 10
@@ -178,6 +189,7 @@ def invia(sottoscrizione: Mapping[str, Any], carico: Mapping[str, Any]) -> Esito
     if not endpoint:
         return Esito(False, errore="Sottoscrizione senza endpoint.")
 
+    priorita = str(carico.get("priorita") or "")
     try:
         from pywebpush import WebPushException, webpush
 
@@ -193,6 +205,8 @@ def invia(sottoscrizione: Mapping[str, Any], carico: Mapping[str, Any]) -> Esito
             vapid_private_key=le_chiavi.privata,
             vapid_claims={"sub": le_chiavi.contatto},
             timeout=10,
+            ttl=SCADENZA_S.get(priorita, SCADENZA_PREDEFINITA_S),
+            headers={"Urgency": URGENZA.get(priorita, "normal")},
         )
         return Esito(True, stato=201)
 

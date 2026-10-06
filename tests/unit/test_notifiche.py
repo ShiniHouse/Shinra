@@ -477,3 +477,54 @@ def test_i_dispositivi_elencati_non_mostrano_le_chiavi():
     assert "chiave-segreta" not in testo
     assert "auth-segreta" not in testo
     assert ENDPOINT not in testo
+
+
+# ---------------------------------------------------- la scadenza del messaggio presso il servizio push
+
+
+def _catturato(monkeypatch, tmp_path):
+    """Un `webpush` che annota con quali argomenti viene chiamato, e una coppia di chiavi gia' fatta."""
+    import pywebpush
+
+    from shinra.infra.push import mittente
+
+    visti: list[dict] = []
+    monkeypatch.setattr(pywebpush, "webpush", lambda **kw: visti.append(kw) or None)
+    monkeypatch.setattr(
+        mittente, "chiavi", lambda: mittente.ChiaviVapid("privata", "pubblica", "https://shinra.example")
+    )
+    return visti, mittente
+
+
+def _sottoscrizione():
+    return {"endpoint": "https://push.example/x", "p256dh": "a", "auth": "b"}
+
+
+def test_un_avviso_urgente_resta_in_coda_un_giorno_e_non_si_rimanda(monkeypatch, tmp_path):
+    """Con la scadenza di pywebpush (zero) un telefono spento perdeva l'allarme, e il server vedeva 201."""
+    visti, mittente = _catturato(monkeypatch, tmp_path)
+
+    esito = mittente.invia(_sottoscrizione(), {"titolo": "x", "priorita": "urgente"})
+
+    assert esito.riuscito
+    assert visti[0]["ttl"] == 24 * 3600
+    assert visti[0]["headers"] == {"Urgency": "high"}
+
+
+def test_la_scadenza_cresce_con_l_importanza(monkeypatch, tmp_path):
+    visti, mittente = _catturato(monkeypatch, tmp_path)
+
+    for priorita in ("informativa", "importante", "urgente"):
+        mittente.invia(_sottoscrizione(), {"priorita": priorita})
+
+    ttl = [v["ttl"] for v in visti]
+    assert ttl == sorted(ttl) and len(set(ttl)) == 3
+    assert all(t > 0 for t in ttl), "nessun avviso puo' avere scadenza zero"
+
+
+def test_senza_priorita_c_e_comunque_una_scadenza(monkeypatch, tmp_path):
+    visti, mittente = _catturato(monkeypatch, tmp_path)
+
+    mittente.invia(_sottoscrizione(), {"titolo": "x"})
+
+    assert visti[0]["ttl"] > 0 and visti[0]["headers"] == {"Urgency": "normal"}
