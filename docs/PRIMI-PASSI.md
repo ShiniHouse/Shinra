@@ -8,8 +8,8 @@ Se l'installazione non è ancora fatta, sta nella
 [guida all'installazione](INSTALLAZIONE.md#a-mano-su-linuxdebian).
 Se qualcosa non funziona, c'è [PROBLEMI.md](PROBLEMI.md).
 
-I passi sono in ordine e ognuno dipende dal precedente. Il quinto è
-facoltativo.
+I passi sono in ordine e ognuno dipende dal precedente. Il quinto e il
+sesto sono facoltativi.
 
 ---
 
@@ -130,6 +130,22 @@ Due cose da sapere prima di cominciare, perché ti risparmiano tempo:
 
 I fatti servono a far **dire** cose. Per far **fare** servono gli alias del
 passo 3 e le automazioni del passo 4.
+
+---
+
+## 6. Facoltativo — gli avvisi sul telefono
+
+Allarmi, promemoria, scadenze: Shinra può avvisarti anche con l'app chiusa. Va attivato **dal dispositivo che
+vuoi avvisare**, una volta.
+
+**Impostazioni → Notifiche → Attiva le notifiche su questo dispositivo.** Il browser ti chiede il permesso:
+rispondi di sì. Poi **Mandami una prova**: deve arrivare in pochi secondi. Più sotto scegli cosa vuoi sentire (gli
+avvisi di sicurezza non si possono silenziare, di proposito).
+
+- **iPhone e iPad**: le notifiche funzionano solo dall'app aggiunta alla schermata Home (iOS 16.4 o più). Da
+  Safari normale la sezione te lo dice e non mostra il pulsante.
+- **Hai detto di no al browser**: sbloccale dall'icona del lucchetto vicino all'indirizzo, poi torna qui.
+- Il Cervello mostra lo stato: «Notifiche push: attivo» quando almeno un dispositivo è iscritto, «fermo» altrimenti.
 
 ---
 

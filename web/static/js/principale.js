@@ -35,3 +35,4 @@ import './cervello_attivita.js';
 import './cervello_interazione.js';
 import './cervello_disegno.js';
 import './cervello.js';
+import './notifiche.js';

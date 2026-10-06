@@ -39,6 +39,7 @@ installabile e utilizzabile.
 - **Le guide al Cervello, agli agenti e alle conferme** (`docs/CERVELLO.md`, `docs/AGENTI.md`,
   `docs/CONFERME.md`), e due guasti veri in `docs/PROBLEMI.md` (il prompt tagliato, Ollama ucciso per memoria).
 - **`llm.num_ctx`**: la finestra di contesto per Ollama si configura (0 = come prima, 1024 o 2048).
+- **Le notifiche push si attivano dal dispositivo** (#29, completata): Impostazioni → Notifiche chiede il permesso al browser, iscrive il dispositivo, manda una prova, mostra i dispositivi iscritti e le preferenze (dove, cosa, non disturbare; la sicurezza non si silenzia). Prima il server sapeva mandarle ma nessuna interfaccia iscriveva un dispositivo, e il Cervello diceva «Notifiche push: fermo». Su iPhone solo dall'app sulla schermata Home. `web/static/js/notifiche.js`, 8 prove con un browser vero e un servizio push finto.
 - **La modalita' leggera del Cervello** (#187): oltre 400 nodi il grafo si dispone in un colpo e sta fermo invece di animarsi a scatti; si sceglie anche a mano (Forze del grafo). Misurato con un browser a CPU rallentata (a 600 nodi su una CPU sei volte piu' lenta: 25 fotogrammi al secondo; a 1000, 12). A scheda chiusa il disegno non lavora piu' per gli eventi dell'agente.
 
 ### Modificato
