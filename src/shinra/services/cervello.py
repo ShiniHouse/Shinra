@@ -61,12 +61,22 @@ def strumenti_noti() -> List[Dict[str, str]]:
 
 
 def agenti_noti() -> List[Dict[str, Any]]:
-    """Gli agenti di dominio. Non esistono ancora: li portera' la #190.
+    """Gli agenti di dominio (ADR 0008, #190), ciascuno con gli strumenti che dichiara.
 
-    Il grafo e i contatori sono gia' pronti a riceverli: quando ci saranno,
-    basta che questa funzione li elenchi.
+    Sono sempre pronti: non hanno un servizio che puo' cadere, e' il router che li sceglie.
+    Il nodo del modello e' un altro, e dipende da Ollama.
     """
-    return []
+    from shinra.services import agenti
+
+    return [
+        {
+            "id": nome,
+            "nome": f"Agente {nome.replace('_', ' ')}",
+            "pronto": True,
+            "strumenti": sorted(agente.strumenti),
+        }
+        for nome, agente in agenti.AGENTI.items()
+    ]
 
 
 def modello_come_agente(modello: Dict[str, Any], strumenti: List[Dict[str, str]]) -> Dict[str, Any]:
@@ -74,7 +84,9 @@ def modello_come_agente(modello: Dict[str, Any], strumenti: List[Dict[str, str]]
 
     Senza questo nodo gli eventi dell'agente (#188) non avrebbero un punto da cui
     partire, e un errore del modello non avrebbe un posto in cui farsi vedere.
-    Usa tutti gli strumenti, ed e' vero: li vede tutti a ogni richiesta con azione.
+    I collegamenti verso gli strumenti sono quelli che il grafo vivo percorre quando si accende
+    un percorso (modello, strumento, dispositivo). Quali strumenti il modello vede davvero in una
+    richiesta lo decidono gli agenti di dominio (#190): ognuno ha i suoi, e il router sceglie.
     """
     return {
         "id": "modello",
