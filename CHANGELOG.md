@@ -28,8 +28,29 @@ installabile e utilizzabile.
   di ogni gruppo sul grafo, lo stato dei sistemi (attivo, fermo, non raggiungibile), una
   ricerca, filtri per tipo, le forze regolabili e la modalita' a schermo intero.
   Nessuna libreria esterna; si usa anche con la tastiera.
+- **Agenti di dominio e un router** (#190, [ADR 0008](docs/adr/0008-agenti-per-dominio.md), *Proposto*).
+  Otto agenti, uno per modulo del catalogo, ciascuno con gli strumenti che dichiara; un router a
+  parole chiave per lingua (`agente.domini`) sceglie quali, e il modello vede soltanto quelli. Uno
+  strumento non dichiarato non parte, anche se il modello lo nomina. Una frase senza dominio
+  riconosciuto non riceve strumenti e ottiene una risposta a parole. Il grafo del Cervello li mostra.
+- **Un banco di prova del modello** (#183, `scripts/banco_tool_calling.py`, `banco/`): misura quale
+  modello sceglie lo strumento giusto, separa i guasti di Ollama dagli errori del modello, rileva il
+  prompt troncato e scrive le condizioni della macchina. Con `--agenti` misura il router.
+- **Le guide al Cervello, agli agenti e alle conferme** (`docs/CERVELLO.md`, `docs/AGENTI.md`,
+  `docs/CONFERME.md`), e due guasti veri in `docs/PROBLEMI.md` (il prompt tagliato, Ollama ucciso per memoria).
+- **`llm.num_ctx`**: la finestra di contesto per Ollama si configura (0 = come prima, 1024 o 2048).
+
+### Modificato
+- **Il prompt di sistema non cambia piu' a ogni richiesta**: l'ora, lo stato dei dispositivi e i
+  fatti recuperati stanno in `get_contesto_della_richiesta`, davanti alla frase dell'utente, e non piu'
+  in cima al prompt. Ollama riusa il prefisso gia' letto, e prima la cache moriva ogni minuto.
+  `get_system_prompt` non accetta piu' `home_context_summary` e `custom_knowledge`.
 
 ### Corretto
+- **Il prompt tagliato non era segnalato.** Con `num_ctx` 1024 Ollama leggeva 514 token di 5.460 e
+  il modello sceglieva fra gli ultimi strumenti. Adesso il log lo dice (#244, parziale).
+- **Un comando senza bersaglio valido partiva** (#190): `control_device` verifica che il
+  dispositivo esista, e un riferimento vuoto chiede «Quale?» anche con Home Assistant spento.
 - **Dopo un aggiornamento la dashboard poteva girare mezza vecchia, dietro Cloudflare.**
   Cloudflare riscrive `Cache-Control: no-cache` in `max-age=14400`, quindi per
   quattro ore il browser teneva i moduli importati (`stato.js`, `gesti.js`…) anche
