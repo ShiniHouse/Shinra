@@ -14,7 +14,7 @@ serve a nessuno.
 
 ## Cosa fare
 
-- [ ] Misurare i fotogrammi al secondo su tre dispositivi veri: portatile (fatto: 60 fps), telefono (fatto, a occhio: vedi sotto), **tablet da provare**
+- [x] Misurare i fotogrammi al secondo su tre dispositivi veri: portatile (60 fps misurati), telefono e tablet (a occhio, senza contatore: vedi sotto)
 - [ ] ~~Raggruppare in cluster oltre una soglia di nodi~~ — sostituito dalla modalita' leggera: le misure dicono che il costo e' l'animazione, non il numero di nodi disegnati. I gruppi si nascondono gia' dalla legenda
 - [x] Ridurre il lavoro quando la scheda non e' in primo piano o il grafo e' fermo (un grafo assestato non richiede fotogrammi; a scheda chiusa un evento dell'agente non ne richiede: test che fallisce senza la guardia)
 - [x] Un interruttore per la modalita' leggera, scelto in automatico oltre 400 nodi (Forze del grafo → Modalita' leggera; la scelta di chi guarda vince e si ricorda)
@@ -51,5 +51,9 @@ modalita' leggera resta spenta). Chi l'ha provato dice che si e' assestato in **
 un giudizio a occhio, senza un contatore di fotogrammi. Coerente con le misure: a 90 nodi anche un browser sei volte piu'
 lento di un portatile fa 40 fps o piu'.
 
-**Cosa resta:** un **tablet** vero, e — se un giorno il numero dei nodi supera i 400 — la stessa prova con la modalita' leggera
-accesa. La scheda resta aperta per il tablet.
+**Un tablet vero (2026-10-06):** un iPad mini, Safari, lo stesso grafo (89 nodi, 133 collegamenti, 9 agenti pronti): «uguale,
+velocissimo». Anche questo a occhio.
+
+**Cosa resta, e non e' di questa scheda:** i dispositivi veri sono stati provati con 89 nodi, sotto la soglia della modalita' leggera.
+Se un giorno il grafo supera i 400 nodi, la stessa prova con la modalita' leggera accesa va ripetuta: oggi esiste solo la misura
+in un browser a CPU rallentata.
