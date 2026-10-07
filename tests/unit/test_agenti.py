@@ -124,8 +124,9 @@ def test_il_router_sceglie_il_dominio_giusto_in_almeno_il_90_per_cento_delle_fra
 class _Modello:
     """Un modello finto: risponde a comando con le chiamate date, poi con una frase."""
 
-    def __init__(self, chiamate):
+    def __init__(self, chiamate, risposta="Fatto."):
         self.chiamate = chiamate
+        self.risposta = risposta
         self.strumenti_visti: list = []
 
     async def chat(self, messages, tools=None, **_):
@@ -139,10 +140,10 @@ class _Modello:
                     "tool_calls": [{"function": {"name": n, "arguments": a}} for n, a in self.chiamate],
                 },
             }
-        return {"success": True, "message": {"role": "assistant", "content": "Fatto."}}
+        return {"success": True, "message": {"role": "assistant", "content": self.risposta}}
 
 
-async def _chiedi(monkeypatch, frase, chiamate):
+async def _chiedi(monkeypatch, frase, chiamate, risposta="Fatto.", esito=None):
     from shinra.services import agent as modulo
     from shinra.services.memory import ConversationMemory
     from shinra.services.user_manager import UserProfile
@@ -151,9 +152,9 @@ async def _chiedi(monkeypatch, frase, chiamate):
 
     async def execute_tool(nome, argomenti):
         eseguiti.append(nome)
-        return {"success": True}
+        return esito if esito is not None else {"success": True}
 
-    modello = _Modello(chiamate)
+    modello = _Modello(chiamate, risposta)
     a = modulo.ShinraAgent()
     monkeypatch.setattr(a.ollama, "chat", modello.chat)
     monkeypatch.setattr(modulo, "execute_tool", execute_tool)
@@ -210,3 +211,49 @@ async def test_senza_dominio_uno_strumento_nominato_lo_stesso_non_parte(monkeypa
     )
 
     assert eseguiti == []
+
+
+# --------------------------------------- cosa si dice a chi ha chiesto, dopo uno strumento fallito (#195)
+
+
+async def test_se_lo_strumento_fallisce_si_dice_cio_che_ha_detto_lo_strumento_non_il_modello(monkeypatch):
+    """Provando in casa: `add_reminder` diceva «non ho capito quando» e il modello rispondeva `success: true`."""
+    errore = "Non ho capito quando ricordarti di spegnere le luci. Dimmi un orario."
+    esito, _, _ = await _chiedi(
+        monkeypatch,
+        "alza la tapparella del salotto",
+        [("comanda_tapparella", {"entity_id": "cover.salotto", "azione": "alza"})],
+        risposta='{"success": true, "message": "Fatto, tapparella alzata."}',
+        esito={"success": False, "error": errore},
+    )
+
+    assert esito["response"] == errore
+    assert "Fatto" not in esito["response"]
+
+
+async def test_il_json_grezzo_del_modello_non_arriva_a_chi_parla(monkeypatch):
+    esito, _, _ = await _chiedi(
+        monkeypatch,
+        "alza la tapparella del salotto",
+        [("comanda_tapparella", {"entity_id": "cover.salotto", "azione": "alza"})],
+        risposta='{"success": true, "message": "Tapparella alzata."}',
+    )
+
+    assert esito["response"] == "Tapparella alzata."
+
+
+async def test_un_json_senza_parole_diventa_una_frase_e_non_un_oggetto(monkeypatch):
+    esito, _, _ = await _chiedi(monkeypatch, "alza la tapparella del salotto", [], risposta='{"ok": 1}')
+
+    assert not esito["response"].startswith("{")
+
+
+async def test_una_risposta_normale_resta_com_e(monkeypatch):
+    esito, _, _ = await _chiedi(
+        monkeypatch,
+        "alza la tapparella del salotto",
+        [("comanda_tapparella", {"entity_id": "cover.salotto", "azione": "alza"})],
+        risposta="Fatto, la tapparella e' alzata.",
+    )
+
+    assert esito["response"] == "Fatto, la tapparella e' alzata."
