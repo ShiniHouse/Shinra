@@ -39,6 +39,8 @@ from shinra.domain.eventi import (
     HA_STATO_CAMBIATO,
     PERSONA_RIENTRATA,
     PERSONA_USCITA,
+    PROMEMORIA_SCADUTO,
+    TIMER_SCADUTO,
     Evento,
     bus,
 )
@@ -53,12 +55,15 @@ ORIGINE_GRAFO = "grafo:"
 # Gli eventi del bus su cui una regola puo' essere innescata. Non tutti:
 # `notifica.avviso` e' cio' che una regola produce, e ascoltarlo sarebbe il
 # modo piu' breve per costruire un ciclo senza volerlo.
+# Mancavano `timer.scaduto` e `promemoria.scaduto`: la regola si salvava e non scattava mai (trovato in casa, #195).
 EVENTI_ASCOLTATI = (
     HA_STATO_CAMBIATO,
     CASA_ABITATA,
     CASA_VUOTA,
     PERSONA_RIENTRATA,
     PERSONA_USCITA,
+    TIMER_SCADUTO,
+    PROMEMORIA_SCADUTO,
 )
 
 

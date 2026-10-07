@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field
 from shinra.api.sicurezza import richiedi_autenticazione, richiedi_permesso
 from shinra.domain import regole as dominio
 from shinra.services import permessi
-from shinra.services.regole import motore_regole
+from shinra.services.regole import EVENTI_ASCOLTATI, motore_regole
 from shinra.services.user_manager import UserProfile
 
 logger = logging.getLogger("Shinra.Regole")
@@ -65,6 +65,17 @@ def _valida(regola: RegolaIn) -> None:
             status_code=400,
             detail=f"Trigger «{tipo or 'assente'}» sconosciuto. Sono: {', '.join(dominio.TRIGGER)}.",
         )
+
+    if tipo == dominio.EVENTO:
+        evento = str(regola.trigger.get("evento") or "")
+        if evento not in EVENTI_ASCOLTATI:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"L'evento «{evento or 'assente'}» non lo ascolta nessuno: la regola non scatterebbe mai. "
+                    f"Gli eventi che si possono usare sono: {', '.join(EVENTI_ASCOLTATI)}."
+                ),
+            )
 
     if tipo == dominio.STATO:
         confronto = str(regola.trigger.get("confronto") or "")

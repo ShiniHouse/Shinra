@@ -211,3 +211,33 @@ def test_un_azione_completa_resta_accettata(cliente_autenticato):
             },
         )
         assert risposta.status_code == 200, risposta.text
+
+
+# ----------------------------------------- un evento che nessuno ascolta non si salva (#195)
+
+
+def _evento(nome: str) -> dict:
+    return {
+        "nome": "Su un evento",
+        "trigger": {"tipo": "evento", "evento": nome},
+        "azioni": [{"tipo": "dispositivo", "entity_id": "light.studio", "azione": "turn_on"}],
+    }
+
+
+def test_un_evento_che_nessuno_ascolta_viene_rifiutato_e_dice_quali_si_possono_usare(cliente_autenticato):
+    """Prima si salvava, non scattava mai, e l'elenco non diceva perche'."""
+    risposta = cliente_autenticato.post("/api/regole", json=_evento("evento.inventato"))
+
+    assert risposta.status_code == 400
+    dettaglio = risposta.json()["detail"]
+    assert "evento.inventato" in dettaglio and "timer.scaduto" in dettaglio and "casa.vuota" in dettaglio
+
+
+def test_un_evento_vuoto_viene_rifiutato(cliente_autenticato):
+    assert cliente_autenticato.post("/api/regole", json=_evento("")).status_code == 400
+
+
+def test_un_evento_che_si_ascolta_si_salva(cliente_autenticato):
+    risposta = cliente_autenticato.post("/api/regole", json=_evento("timer.scaduto"))
+
+    assert risposta.status_code == 200, risposta.text

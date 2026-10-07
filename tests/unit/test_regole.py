@@ -510,3 +510,53 @@ def _orologio(fisso: datetime):
             return fisso
 
     return Fermo
+
+
+# ---------------------------------------- «quando il timer suona» (trovato provando in casa, #195)
+
+
+async def test_una_regola_sul_timer_scatta_quando_il_timer_scade(casa):
+    """La prova 2 della lista in casa: il timer scadeva, la regola era salvata e non partiva mai.
+
+    La scorciatoia accettava `timer.scaduto` e il motore non lo ascoltava. Qui si usa il **bus vero**: chiamare
+    `_su_evento` a mano avrebbe passato lo stesso, perche' il difetto stava nell'elenco degli eventi ascoltati.
+    """
+    from shinra.domain.eventi import TIMER_SCADUTO, bus
+
+    chiamate = casa
+    motore = MotoreRegole()
+    motore.crea(
+        {
+            "nome": "Quando il timer suona",
+            "trigger": {"tipo": dominio.EVENTO, "evento": TIMER_SCADUTO},
+            "azioni": [{"tipo": dominio.AZIONE_DISPOSITIVO, "entity_id": "light.studio"}],
+        }
+    )
+    motore.avvia()
+    try:
+        await bus.pubblica(Evento(tipo=TIMER_SCADUTO, dati={"id": "timer_x", "etichetta": "Timer"}))
+    finally:
+        motore.ferma()
+
+    assert ("light", "turn_on", {"entity_id": "light.studio"}) in chiamate
+
+
+async def test_anche_il_promemoria_scaduto_innesca_una_regola(casa):
+    from shinra.domain.eventi import PROMEMORIA_SCADUTO, bus
+
+    chiamate = casa
+    motore = MotoreRegole()
+    motore.crea(
+        {
+            "nome": "Quando il promemoria suona",
+            "trigger": {"tipo": dominio.EVENTO, "evento": PROMEMORIA_SCADUTO},
+            "azioni": [{"tipo": dominio.AZIONE_DISPOSITIVO, "entity_id": "light.studio"}],
+        }
+    )
+    motore.avvia()
+    try:
+        await bus.pubblica(Evento(tipo=PROMEMORIA_SCADUTO, dati={"id": "p_x", "testo": "forno"}))
+    finally:
+        motore.ferma()
+
+    assert ("light", "turn_on", {"entity_id": "light.studio"}) in chiamate
