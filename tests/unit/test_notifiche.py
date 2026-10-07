@@ -572,7 +572,9 @@ async def test_un_servizio_push_lento_non_blocca_il_server(push_lento):
     )
 
     # Con l'invio dentro il ciclo, il cuore si ferma per tutto il mezzo secondo: un battito solo, poi un buco.
-    buchi = [b - a for a, b in zip(battiti, battiti[1:], strict=False)]
+    from itertools import pairwise
+
+    buchi = [b - a for a, b in pairwise(battiti)]
     assert max(buchi) < 0.25, f"il server si e' fermato per {max(buchi):.2f}s mentre mandava la notifica"
 
 
