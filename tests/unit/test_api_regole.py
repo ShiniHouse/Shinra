@@ -241,3 +241,53 @@ def test_un_evento_che_si_ascolta_si_salva(cliente_autenticato):
     risposta = cliente_autenticato.post("/api/regole", json=_evento("timer.scaduto"))
 
     assert risposta.status_code == 200, risposta.text
+
+
+# ------------------------------- il dispositivo di una regola deve esistere (trovato in casa, #195)
+
+STATI_CASA = [
+    {"entity_id": "light.acquario", "state": "off", "attributes": {"friendly_name": "Luce Acquario"}},
+    {"entity_id": "light.cucina", "state": "off", "attributes": {"friendly_name": "Luce cucina"}},
+]
+
+
+@pytest.fixture
+def casa_con_luci(monkeypatch):
+    class FintoClient:
+        async def stati_correnti(self):
+            return list(STATI_CASA)
+
+    monkeypatch.setattr("shinra.infra.homeassistant.client.client_home_assistant", lambda: FintoClient())
+
+
+def _con_dispositivo(entita: str) -> dict:
+    return {
+        "nome": "Su un timer",
+        "trigger": {"tipo": "evento", "evento": "timer.scaduto"},
+        "azioni": [{"tipo": "dispositivo", "entity_id": entita, "servizio": "turn_on"}],
+    }
+
+
+def test_un_nome_che_non_e_un_identificativo_viene_rifiutato_con_il_suggerimento(
+    cliente_autenticato, casa_con_luci
+):
+    """La scorciatoia salvava `Luce Acquario`: la regola scattava, Home Assistant diceva 400, l'elenco 'parziale'."""
+    risposta = cliente_autenticato.post("/api/regole", json=_con_dispositivo("Luce Acquario"))
+
+    assert risposta.status_code == 400
+    assert "light.acquario" in risposta.json()["detail"], "manca il suggerimento"
+
+
+def test_un_identificativo_che_esiste_si_salva_com_e(cliente_autenticato, casa_con_luci):
+    risposta = cliente_autenticato.post("/api/regole", json=_con_dispositivo("light.acquario"))
+
+    assert risposta.status_code == 200, risposta.text
+    assert risposta.json()["regola"]["azioni"][0]["entity_id"] == "light.acquario"
+
+
+def test_un_alias_si_salva_col_suo_identificativo(cliente_autenticato, casa_con_luci):
+    """Chi scrive «luce cucina» vuole `light.cucina`: e' quello che Home Assistant capisce."""
+    risposta = cliente_autenticato.post("/api/regole", json=_con_dispositivo("luce cucina"))
+
+    assert risposta.status_code == 200, risposta.text
+    assert risposta.json()["regola"]["azioni"][0]["entity_id"] == "light.cucina"

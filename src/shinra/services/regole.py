@@ -217,14 +217,9 @@ class MotoreRegole:
             return {"tipo": tipo, "riuscita": bool(esito.get("success")), "dettaglio": esito.get("message")}
 
         if tipo == dominio.AZIONE_DISPOSITIVO:
-            from shinra.infra.homeassistant.client import client_home_assistant
+            from shinra.skills.ha_tools import comanda_dal_motore
 
-            entita = str(azione.get("entity_id") or "")
-            servizio = str(azione.get("servizio") or "turn_on")
-            dominio_ha = entita.split(".")[0] if "." in entita else "homeassistant"
-            dati = {"entity_id": entita, **(azione.get("dati") or {})}
-            esito = await client_home_assistant().call_service(dominio_ha, servizio, dati)
-            return {"tipo": tipo, "riuscita": bool(esito.get("success")), "entity_id": entita}
+            return {"tipo": tipo, **await comanda_dal_motore(azione)}
 
         if tipo == dominio.AZIONE_AVVISO:
             from shinra.domain import notifiche
