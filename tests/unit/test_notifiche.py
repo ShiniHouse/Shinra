@@ -235,6 +235,7 @@ async def test_l_intrusione_arriva_al_telefono(con_telefono, push_finto):
     inviati, _ = push_finto
 
     await con_telefono._su_evento(Evento(tipo=CASA_INTRUSIONE, dati={"persone_in_casa": []}))
+    await con_telefono.attendi()
 
     assert len(inviati) == 1
     assert inviati[0][1]["priorita"] == dominio.URGENTE
@@ -528,3 +529,83 @@ def test_senza_priorita_c_e_comunque_una_scadenza(monkeypatch, tmp_path):
     mittente.invia(_sottoscrizione(), {"titolo": "x"})
 
     assert visti[0]["ttl"] > 0 and visti[0]["headers"] == {"Urgency": "normal"}
+
+
+# ---------------------------------------- un servizio push lento non ferma la casa (trovato in casa, #195)
+
+
+@pytest.fixture
+def push_lento(monkeypatch):
+    """Un servizio push che ci mette mezzo secondo a rispondere, come fa quando la rete e' lenta."""
+    import time
+
+    from shinra.infra.push import mittente
+
+    inizi: list[float] = []
+
+    def lento(sottoscrizione, carico):
+        inizi.append(time.monotonic())
+        time.sleep(0.5)
+        return mittente.Esito(True, stato=201)
+
+    monkeypatch.setattr(mittente, "invia", lento)
+    return inizi
+
+
+async def test_un_servizio_push_lento_non_blocca_il_server(push_lento):
+    """`webpush` e' sincrono: chiamato dentro il ciclo fermava tutto (le richieste, i timer, il canale di Home Assistant)."""
+    import asyncio
+
+    servizio = ServizioNotifiche()
+    servizio.registra_dispositivo("alessio", ENDPOINT, "p", "a", "Telefono")
+    battiti: list[float] = []
+
+    async def cuore():
+        for _ in range(20):
+            battiti.append(asyncio.get_running_loop().time())
+            await asyncio.sleep(0.02)
+
+    # Il cuore parte per primo: se l'invio fermasse il ciclo, fra un battito e il successivo ci sarebbe un buco.
+    await asyncio.gather(
+        cuore(),
+        servizio.avvisa(dominio.Avviso(dominio.PROMEMORIA, "Prova"), utente="alessio"),
+    )
+
+    # Con l'invio dentro il ciclo, il cuore si ferma per tutto il mezzo secondo: un battito solo, poi un buco.
+    buchi = [b - a for a, b in zip(battiti, battiti[1:], strict=False)]
+    assert max(buchi) < 0.25, f"il server si e' fermato per {max(buchi):.2f}s mentre mandava la notifica"
+
+
+async def test_piu_telefoni_si_avvisano_insieme_non_uno_dopo_l_altro(push_lento):
+    import asyncio
+    import time
+
+    servizio = ServizioNotifiche()
+    for i in range(3):
+        servizio.registra_dispositivo("alessio", f"https://push.example/{i}", "p", "a", f"Telefono {i}")
+
+    inizio = time.monotonic()
+    await servizio.avvisa(dominio.Avviso(dominio.PROMEMORIA, "Prova"), utente="alessio")
+    durata = time.monotonic() - inizio
+
+    assert len(push_lento) == 3
+    assert (
+        durata < 1.2
+    ), f"tre telefoni da mezzo secondo hanno richiesto {durata:.2f}s: si mandano uno alla volta"
+    await asyncio.sleep(0)
+
+
+async def test_chi_pubblica_un_evento_non_aspetta_il_servizio_push(push_lento):
+    """Il bus consegna agli ascoltatori uno dopo l'altro: se le notifiche aspettassero Google, le regole aspetterebbero."""
+    import time
+
+    servizio = ServizioNotifiche()
+    servizio.registra_dispositivo("alessio", ENDPOINT, "p", "a", "Telefono")
+
+    inizio = time.monotonic()
+    await servizio._su_evento(Evento(tipo=TIMER_SCADUTO, dati={"etichetta": "Timer"}))
+    ritorno = time.monotonic() - inizio
+    await servizio.attendi()
+
+    assert ritorno < 0.2, f"l'ascoltatore ha aspettato {ritorno:.2f}s il servizio push"
+    assert len(push_lento) == 1, "l'avviso doveva partire comunque"
