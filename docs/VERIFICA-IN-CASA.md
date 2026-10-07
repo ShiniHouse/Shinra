@@ -37,9 +37,9 @@ voce `regola.eseguita` con esito `ok`.
 sudo /opt/Shinra/.venv/bin/python /opt/Shinra/scripts/registro.py --azione regola --ore 1
 ```
 
-- Esito:
-- Cosa ho visto:
-- Riga del registro:
+- Esito: ✅ verificata (2026-10-07)
+- Cosa ho visto: creata alle 21:26 dalla scorciatoia *A un orario*, programmata dallo scheduler per le 21:30:00; alle 21:30:00 ha eseguito l'azione (una routine: spegne la presa, aspetta 15 secondi, la riaccende) e alle 21:30:15 ha finito; si è riprogrammata da sola per il giorno dopo.
+- Riga del registro: `regola.eseguita  ok  attore=alessio canale=web  {"regola":"reg_gfe0ad457d444a686","nome":"Nuova Routine, ogni giorno alle 21:30","motivo":"orario","azioni":[{"tipo":"modalita","riuscita":true}]}` (riportata con l'ora in UTC: lo script allora mostrava 19:30:15, vedi la correzione di `registro.py`).
 
 ## 2. Una regola su un evento (un timer)
 

@@ -50,3 +50,15 @@ def test_senza_voci_lo_dice_e_non_finge_che_vada_bene(capsys):
 
     assert codice == 1
     assert "Nessuna voce" in capsys.readouterr().err
+
+
+def test_l_ora_del_registro_e_utc_e_si_mostra_in_ora_locale():
+    """Il registro salva l'ora in UTC senza il fuso: letta come locale, una regola delle 21:30 compariva alle 19:30."""
+    from datetime import datetime, timezone
+
+    atteso = datetime(2026, 10, 7, 19, 30, 15, tzinfo=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+
+    assert _script()._in_ora_locale("2026-10-07T19:30:15") == atteso
+    assert (
+        _script()._in_ora_locale("2026-10-07T19:30:15+00:00") == atteso
+    ), "con il fuso dichiarato vale lo stesso"
