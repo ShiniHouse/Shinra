@@ -22,7 +22,7 @@ scritta, nello stesso stile di `PRIMI-PASSI.md` e `PROBLEMI.md`.
 
 ## Criteri di accettazione
 
-- [ ] Una persona che non conosce il progetto segue le guide e arriva a vedere il grafo e a confermare un'azione
+- [x] Una persona che non conosce il progetto segue le guide e arriva a vedere il grafo e a confermare un'azione: **letta e capita** da un familiare (vedi sotto); la conferma di un'azione non e' stata eseguita (in casa non c'e' una serratura)
 - [x] Nessuna voce di `PROBLEMI.md` descrive un guasto mai capitato
 - [x] `docs/release/v0.6.0.md` esiste dal modello `TEMPLATE.md`
 
@@ -32,6 +32,9 @@ Tre guide (`docs/CERVELLO.md`, `docs/AGENTI.md`, `docs/CONFERME.md`), due guasti
 tagliato e Ollama ucciso per memoria) e due voci fra «cose che sembrano guasti», le note di rilascio in
 `docs/release/v0.6.0.md` (marcate *in preparazione* finche' non c'e' il tag), il `CHANGELOG` e il README.
 
-**Resta aperto il primo criterio**: che una persona che non conosce il progetto segua le guide e arrivi a vedere il
-grafo e a confermare un'azione. Lo puo' dire solo chi le legge senza averle scritte (come la #208 per l'installazione).
+**Il primo criterio e' stato chiuso il 2026-10-07**: un familiare che non ha scritto le guide ha letto `CERVELLO.md`,
+`AGENTI.md` e `CONFERME.md` e, riferisce chi vive qui, **ha capito tutto**. E' un giudizio a voce, senza un elenco di frasi
+da riscrivere: non ha segnalato punti poco chiari. Due limiti, dichiarati: la persona **ha letto ma non ha eseguito** la
+conferma di un'azione sensibile (in casa non c'e' una serratura, un allarme o un garage: vedi la voce 5 di
+`docs/VERIFICA-IN-CASA.md`), e il giudizio e' di una persona sola.
 **La guida ai piani** non c'e': i piani sono passati alla `0.7.0` (#191).
