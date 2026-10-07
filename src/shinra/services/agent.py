@@ -21,6 +21,34 @@ from shinra.skills.registry import execute_tool
 logger = logging.getLogger("Shinra")
 
 
+def _testo_della_risposta(testo: str, azioni: List[Dict[str, Any]], senza_parole: str) -> str:
+    """Cio' che si dice alla persona, dopo che il modello ha finito.
+
+    **Se l'ultimo strumento e' fallito, si dice quello che lo strumento ha detto**, non quello che il modello ne ha
+    fatto: provando in casa, `add_reminder` rispondeva «non ho capito quando» e il modello rispondeva
+    `{"success": true, "message": "Ricorda …"}`, cioe' annunciava come riuscita una cosa che non era partita. I messaggi
+    di errore degli strumenti sono scritti per essere letti da chi ha chiesto. Un modello piccolo, poi, a volte risponde con
+    il JSON grezzo: a chi parla non si mostra.
+    """
+    ultimo = azioni[-1].get("result") if azioni else None
+    if isinstance(ultimo, dict) and (ultimo.get("success") is False or ultimo.get("error")):
+        messaggio = ultimo.get("error") or ultimo.get("message")
+        if isinstance(messaggio, str) and messaggio.strip():
+            return messaggio.strip()
+    if testo.lstrip().startswith(("{", "[")):
+        try:
+            dati = json.loads(testo)
+        except ValueError:
+            return testo
+        if isinstance(dati, dict):
+            for chiave in ("message", "error", "testo"):
+                valore = dati.get(chiave)
+                if isinstance(valore, str) and valore.strip():
+                    return valore.strip()
+        return senza_parole
+    return testo
+
+
 class ShinraAgent:
     def __init__(self):
         self.ollama = OllamaClient()
@@ -253,7 +281,10 @@ class ShinraAgent:
                     )
                     continue
                 else:
-                    final_text = content.strip() or lingua.dice("operazione_completata")
+                    senza_parole = lingua.dice("operazione_completata")
+                    final_text = _testo_della_risposta(
+                        content.strip() or senza_parole, actions_taken, senza_parole
+                    )
                     mem.add_assistant_message(final_text)
                     cronaca.risposta_data(dal_modello=True)
                     return {

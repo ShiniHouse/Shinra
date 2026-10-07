@@ -30,6 +30,11 @@ def motore() -> TimerEngine:
         ("timer 30 secondi", 30),
         ("imposta un timer di 2 ore", 2 * 3600),
         ("avvia timer di 5 minuti", 5 * 60),
+        # Un refuso o una trascrizione vocale: «d» per «di». Provando in casa («metti un timer d 30 secondi») la frase
+        # non era un timer, passava al modello, e il modello inventava un promemoria che non esisteva.
+        ("metti un timer d 30 secondi", 30),
+        ("timer per 2 minuti", 2 * 60),
+        ("imposta un timer da 10 minuti", 10 * 60),
     ],
 )
 def test_riconosce_i_timer(motore: TimerEngine, frase: str, secondi_attesi: int) -> None:

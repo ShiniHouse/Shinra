@@ -202,10 +202,12 @@ class TimerEngine:
                 "unit": "minuti",
             }
 
-        # 1. Parsing Timer: "timer 10 minuti", "timer di 5 minuti per la pasta", "metti un timer di 30 secondi"
+        # 1. Parsing Timer: "timer 10 minuti", "timer di 5 minuti per la pasta", "metti un timer di 30 secondi".
+        # Tollera «d» al posto di «di» (un refuso, o una trascrizione vocale): senza, la frase non era un timer, passava
+        # al modello, e il modello inventava un promemoria (trovato provando in casa, #195).
         numeri = "|".join(NUMERI_TIMER)
         timer_match = re.search(
-            rf"\b(?:metti|imposta|avvia|crea)?\s*(?:un\s+)?timer\s+(?:di\s+)?({numeri}|\d+)\s*(minuti|minuto|secondi|secondo|ore|ora)\b(?:\s+(?:per|da|chiamato)\s+(.+))?",
+            rf"\b(?:metti|imposta|avvia|crea)?\s*(?:un\s+)?timer\s+(?:(?:di|d|per|da|entro)\s+)?({numeri}|\d+)\s*(minuti|minuto|secondi|secondo|ore|ora)\b(?:\s+(?:per|da|chiamato)\s+(.+))?",
             t_lower,
         )
         if timer_match:
