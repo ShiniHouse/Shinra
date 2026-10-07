@@ -16,6 +16,7 @@ Riferimento: issue #29.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from datetime import datetime
@@ -101,6 +102,8 @@ def _avviso_da(evento: Evento) -> Optional[dominio.Avviso]:
 class ServizioNotifiche:
     def __init__(self) -> None:
         self._annulla: list[Any] = []
+        # Gli avvisi in corso: un compito senza padrone puo' sparire a meta' consegna, e uno che fallisce va detto.
+        self._in_volo: set[asyncio.Task[Any]] = set()
 
     # ------------------------------------------------------------ ciclo
 
@@ -118,9 +121,28 @@ class ServizioNotifiche:
         self._annulla = []
 
     async def _su_evento(self, evento: Evento) -> None:
+        """Un evento diventa un avviso, **senza far aspettare chi l'ha pubblicato**.
+
+        Il bus consegna agli ascoltatori uno dopo l'altro. Se qui si aspettasse il servizio push (che dall'altra parte
+        e' Google o Apple) tutti gli altri — le regole, la dashboard — aspetterebbero con lui. Provando in casa: un timer
+        scadeva alle 22:51:20, la regola che doveva accendere una luce partiva alle 22:53:21, due minuti dopo.
+        """
         avviso = _avviso_da(evento)
-        if avviso is not None:
-            await self.avvisa(avviso)
+        if avviso is None:
+            return
+        compito = asyncio.get_running_loop().create_task(self.avvisa(avviso))
+        self._in_volo.add(compito)
+        compito.add_done_callback(self._finito)
+
+    def _finito(self, compito: "asyncio.Task[Any]") -> None:
+        self._in_volo.discard(compito)
+        if not compito.cancelled() and compito.exception() is not None:
+            logger.error("Avviso non consegnato: %s", compito.exception(), exc_info=compito.exception())
+
+    async def attendi(self) -> None:
+        """Aspetta gli avvisi in corso. Serve ai test: in casa nessuno li aspetta."""
+        if self._in_volo:
+            await asyncio.gather(*self._in_volo, return_exceptions=True)
 
     # ------------------------------------------------------------ invio
 
@@ -192,9 +214,13 @@ class ServizioNotifiche:
             "destinazione": avviso.destinazione,
         }
 
+        # `invia` e' sincrono e parla con Google o Apple: chiamarlo qui dentro fermava **tutto** il server (le richieste,
+        # i timer, il canale degli eventi di Home Assistant, che infatti cadeva) finche' non rispondevano — due minuti,
+        # provando in casa. Si manda in un filo a parte, e a tutti i telefoni insieme.
+        esiti = await asyncio.gather(*(asyncio.to_thread(mittente.invia, s, carico) for s in sottoscrizioni))
+
         riuscite = 0
-        for sottoscrizione in sottoscrizioni:
-            esito = mittente.invia(sottoscrizione, carico)
+        for sottoscrizione, esito in zip(sottoscrizioni, esiti, strict=True):
             if esito.riuscito:
                 riuscite += 1
                 depositi.sottoscrizioni_push.aggiorna(
