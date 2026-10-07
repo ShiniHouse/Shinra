@@ -34,10 +34,18 @@ if _SORGENTI.is_dir():
 
 
 def _in_ora_locale(momento: str) -> str:
+    """Il momento scritto nel registro, nell'ora del server.
+
+    Il registro lo salva **in UTC senza dire che e' UTC** (il campo non porta il fuso). Leggerlo come ora locale — come
+    faceva questo script all'inizio — mostrava tutto due ore indietro: una regola scattata alle 21:30 compariva alle 19:30.
+    """
     try:
-        return datetime.fromisoformat(momento).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+        letto = datetime.fromisoformat(momento)
     except ValueError:
         return momento
+    if letto.tzinfo is None:
+        letto = letto.replace(tzinfo=timezone.utc)
+    return letto.astimezone().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def riga(voce: dict[str, Any]) -> str:
