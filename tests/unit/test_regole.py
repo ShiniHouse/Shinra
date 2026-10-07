@@ -560,3 +560,23 @@ async def test_anche_il_promemoria_scaduto_innesca_una_regola(casa):
         motore.ferma()
 
     assert ("light", "turn_on", {"entity_id": "light.studio"}) in chiamate
+
+
+async def test_una_regola_salvata_con_un_alias_lo_risolve_quando_scatta(casa):
+    """Una regola gia' nel database con «luce cucina»: Home Assistant vuole `light.cucina`, a un nome risponde 400."""
+    chiamate = casa
+    motore = MotoreRegole()
+    regola = _dalla_riga(
+        motore.crea(
+            {
+                "nome": "Con un alias",
+                "trigger": {"tipo": dominio.EVENTO, "evento": HA_STATO_CAMBIATO},
+                "azioni": [{"tipo": dominio.AZIONE_DISPOSITIVO, "entity_id": "luce cucina"}],
+            }
+        )
+    )
+
+    esito = await motore.esegui(regola, motivo="prova")
+
+    assert ("light", "turn_on", {"entity_id": "light.cucina"}) in chiamate
+    assert esito["eseguita"] is True

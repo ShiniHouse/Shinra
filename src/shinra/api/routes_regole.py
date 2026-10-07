@@ -26,6 +26,9 @@ from shinra.domain import regole as dominio
 from shinra.services import permessi
 from shinra.services.regole import EVENTI_ASCOLTATI, motore_regole
 from shinra.services.user_manager import UserProfile
+from shinra.skills.entita import EntitaSconosciuta
+from shinra.skills.entita import verifica as verifica_entita
+from shinra.skills.ha_tools import DOMINI_COMANDABILI
 
 logger = logging.getLogger("Shinra.Regole")
 
@@ -50,6 +53,24 @@ class Modifica(BaseModel):
     condizioni: Optional[List[Dict[str, Any]]] = None
     azioni: Optional[List[Dict[str, Any]]] = None
     attiva: Optional[bool] = None
+
+
+async def _verifica_bersagli(azioni: List[Dict[str, Any]]) -> None:
+    """Il dispositivo di un'azione deve esistere, e si salva col suo identificativo vero.
+
+    Trovato provando in casa (#195): la scorciatoia salvava `Luce Acquario`, un nome e non un identificativo; la regola
+    scattava, Home Assistant rispondeva 400, e l'elenco diceva «parziale» senza dire perche'. Un alias («luce cucina»)
+    diventa il suo `entity_id`; un nome che non c'e' e' un rifiuto con il suggerimento piu' vicino.
+    """
+    for azione in azioni:
+        if str(azione.get("tipo") or "") != dominio.AZIONE_DISPOSITIVO:
+            continue
+        try:
+            azione["entity_id"] = await verifica_entita(
+                str(azione.get("entity_id") or ""), DOMINI_COMANDABILI
+            )
+        except EntitaSconosciuta as errore:
+            raise HTTPException(status_code=400, detail=str(errore)) from errore
 
 
 def _valida(regola: RegolaIn) -> None:
@@ -170,6 +191,7 @@ async def crea(
 ) -> Dict[str, Any]:
     """Crea una regola del motore (innesco, condizioni, azioni)."""
     _valida(dati)
+    await _verifica_bersagli(dati.azioni)
     voce = motore_regole.crea(dati.model_dump(), autore=profilo.id if profilo else None)
     return {"success": True, "regola": voce}
 
@@ -177,6 +199,8 @@ async def crea(
 @router.patch("/{identificativo}", dependencies=[Depends(richiedi_permesso(permessi.MODIFICA_MODALITA))])
 async def modifica(identificativo: str, dati: Modifica) -> Dict[str, Any]:
     """Modifica una regola esistente."""
+    if dati.azioni:
+        await _verifica_bersagli(dati.azioni)
     cambiamenti = {k: v for k, v in dati.model_dump().items() if v is not None}
     if not cambiamenti:
         raise HTTPException(status_code=400, detail="Non c'e' niente da cambiare.")

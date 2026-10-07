@@ -9,6 +9,7 @@ from shinra.domain.eventi import RICHIESTA_AVVISO, Evento, bus
 from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.skills.entita import EntitaSconosciuta
+from shinra.skills.entita import risolvi as risolvi_entita
 from shinra.skills.entita import verifica as verifica_entita
 
 logger = logging.getLogger(__name__)
@@ -170,6 +171,27 @@ async def control_device(
         "error": res.get("error"),
         "message": f"Non è stato possibile eseguire l'azione '{action}' su '{resolved_entity}'.",
     }
+
+
+async def comanda_dal_motore(azione: Mapping[str, Any]) -> Dict[str, Any]:
+    """L'azione «dispositivo» di una regola: risolve il nome, poi chiama Home Assistant.
+
+    Una regola salvata con un alias o un nome («luce cucina») lo risolve qui, come fa il resto: Home Assistant vuole un
+    identificativo e a un nome risponde 400 (trovato in casa, #195). Un riferimento ambiguo non parte e dice perche'.
+    """
+    # Il client si prende qui, al momento di usarlo: e' cosi' che lo faceva il motore, e cosi' lo sostituiscono i test.
+    from shinra.infra.homeassistant.client import client_home_assistant as cliente
+
+    entita = str(azione.get("entity_id") or "")
+    try:
+        entita = risolvi_entita(entita)
+    except EntitaSconosciuta as ambiguita:
+        return {"riuscita": False, "entity_id": entita, "dettaglio": str(ambiguita)}
+    servizio = str(azione.get("servizio") or "turn_on")
+    dominio_ha = entita.split(".")[0] if "." in entita else "homeassistant"
+    dati = {"entity_id": entita, **(azione.get("dati") or {})}
+    esito = await cliente().call_service(dominio_ha, servizio, dati)
+    return {"riuscita": bool(esito.get("success")), "entity_id": entita}
 
 
 async def get_home_status(filter_domain: Optional[str] = None) -> Dict[str, Any]:
