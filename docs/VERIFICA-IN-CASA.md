@@ -63,9 +63,9 @@ confrontalo con l'ora del tramonto di oggi nella tua città (qualunque sito mete
 **Cosa aspettarti.** I due orari non differiscono di più di qualche minuto. Se la scheda dice «prossima: mai», la regola
 è scritta male o il sole non arriva da Home Assistant: è un guasto da annotare, non una regola che aspetta.
 
-- Esito:
-- Cosa ho visto (orario nella scheda / orario vero):
-- Riga del registro (se è scattata davvero la sera, altrimenti «non ancora scattata»):
+- Esito: ✅ per il calcolo (2026-10-07); ⏳ lo scatto vero non è ancora stato osservato
+- Cosa ho visto (orario nella scheda / orario vero): l'orario mostrato dalla scheda coincide con il tramonto di oggi (confronto fatto da chi vive qui).
+- Riga del registro: **non ancora scattata**: nel registro non c'è nessuna `regola.eseguita` per una regola del sole. Il criterio «nessuna voce è verificata senza una riga del registro» vale per lo scatto, quindi questa voce si chiude la sera in cui la regola scatta.
 
 ## 4. Una regola che non scatta, e dice perché *(se ne hai una con una condizione)*
 
@@ -80,7 +80,7 @@ modo per distinguere una regola che non doveva scattare da una che non è scatta
 sudo /opt/Shinra/.venv/bin/python /opt/Shinra/scripts/registro.py --azione regola.saltata --ore 1
 ```
 
-- Esito:
+- Esito: ➖ non applicabile (saltata su richiesta, 2026-10-07): è facoltativa e non c'è una regola con una condizione.
 - Cosa ho visto:
 - Riga del registro:
 
@@ -105,9 +105,11 @@ solo dopo l'ultima.
 sudo /opt/Shinra/.venv/bin/python /opt/Shinra/scripts/registro.py --azione conferma --ore 1
 ```
 
-- Esito:
-- Cosa ho visto (la serratura si è mossa solo dopo il «sì»?):
-- Righe del registro:
+- Esito: ➖ **non provata in casa** (saltata su richiesta, 2026-10-07): in casa non c'è una serratura, un allarme o un garage da usare.
+- Cosa ho visto: niente. Il meccanismo è provato soltanto dai test (`test_conferme.py`, `test_sensibilita.py`) e non da un caso vero. Non è lo stesso: i test non vedono cosa fa Home Assistant. Si può provare anche senza una serratura, con uno **script innocuo** di Home Assistant (gli script chiedono sempre conferma): vedi la proposta qui sotto.
+- Righe del registro: nessuna.
+
+> **Per chi vorrà provarla più avanti:** crea in Home Assistant `script.prova_conferma` (basta una notifica), dagli il nome «prova conferma» fra gli alias, e dalla chat scrivi «attiva la scena prova conferma». Deve chiedere conferma e non far partire lo script finché non rispondi «sì». Nel registro: `conferma.richiesta`, `conferma.rifiutata`/`conferma.accettata`, e `tool.activate_scene_or_routine` solo dopo il «sì».
 
 ## 6. Il piano a più passaggi
 
