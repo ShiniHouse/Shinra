@@ -81,7 +81,7 @@ function _campiQuandoScorciatoia(tipo) {
             </select>
             <input type="text" id="scorciatoia-valore" placeholder="es. 15" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
     }
-    return _html`<input type="text" id="scorciatoia-evento" placeholder="es. casa.vuota" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
+    return _html`<input type="text" id="scorciatoia-evento" placeholder="es. timer.scaduto o casa.vuota" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100">`;
 }
 
 function _campiCosaScorciatoia(tipo) {

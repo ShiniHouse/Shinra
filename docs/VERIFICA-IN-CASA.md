@@ -49,9 +49,9 @@ sudo /opt/Shinra/.venv/bin/python /opt/Shinra/scripts/registro.py --azione regol
 **Cosa aspettarti.** Dopo un minuto il timer suona **e** la regola scatta: avviso al telefono (o la lampada), voce
 `regola.eseguita` nel registro.
 
-- Esito:
-- Cosa ho visto:
-- Riga del registro:
+- Esito: ❌ la prima volta (2026-10-07); corretto, **da riprovare dopo l'aggiornamento**
+- Cosa ho visto: la regola su `timer.scaduto` è stata accettata e salvata; il timer è scaduto (21:37:48, «Timer scaduto» nel log) e **non è partito niente**: nessuna `regola.eseguita` nel registro. Causa: il motore non ascoltava `timer.scaduto` (né `promemoria.scaduto`), e la scorciatoia accettava lo stesso un evento che nessuno ascoltava. Ora il motore li ascolta e la creazione rifiuta gli eventi sconosciuti, dicendo quali si possono usare.
+- Riga del registro: nessuna (è il difetto)
 
 ## 3. Una regola sul sole
 
