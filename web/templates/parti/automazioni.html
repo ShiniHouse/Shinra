@@ -18,7 +18,7 @@
                     <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
                         <i data-lucide="zap" class="w-5 h-5 text-amber-400"></i> Cosa fa la casa da sola
                     </h2>
-                    <p class="text-xs text-slate-400 mt-1">Ogni automazione dice quando scatta, quando scatterà la prossima volta e com'è andata l'ultima.</p>
+                    <p class="text-xs text-slate-400 mt-1">Un'<strong class="text-slate-300">automazione</strong> parte da sola, quando succede qualcosa o a un'ora. Una <strong class="text-slate-300">routine</strong> è una serie di azioni che parte quando la chiedi tu («Buonanotte»). Un'automazione può far partire una routine.</p>
                 </div>
                 <button data-gesto="loadRegole" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0">
                     <i data-lucide="refresh-cw" class="w-4 h-4"></i> Aggiorna
@@ -43,9 +43,9 @@
                                  esiste in lucide 0.344.0 e si vede come un
                                  buco. E' il secondo nome sbagliato in un
                                  giorno — ci vuole una guardia (#139). -->
-                            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i> «Alle 23, spegni tutto»
+                            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i> Crea un'automazione
                         </h3>
-                        <p class="text-[11px] text-slate-400 mt-0.5">Un innesco, un'azione, senza aprire l'editor. Per tutto il resto c'è il disegno a blocchi.</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Scegli <em>quando</em> e <em>cosa fare</em>. Per esempio: alle 23, spegni una luce. Per qualcosa di più complicato c'è il disegno a blocchi.</p>
                     </div>
                     <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
                 </summary>
@@ -66,7 +66,7 @@
                         <div class="space-y-2">
                             <label class="text-slate-400 font-semibold block">Fai questo</label>
                             <select id="scorciatoia-cosa" data-al-cambio="disegnaScorciatoia" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
-                                <option value="modalita">Avvia una routine</option>
+                                <option value="modalita">Avvia una delle tue routine</option>
                                 <option value="dispositivo">Accendi o spegni un dispositivo</option>
                                 <option value="avviso">Mandami un avviso</option>
                             </select>
@@ -75,8 +75,8 @@
                     </div>
 
                     <div>
-                        <label class="text-slate-400 font-semibold block mb-1">Come la chiamo <span class="text-slate-600 font-normal">(facoltativo)</span></label>
-                        <input type="text" id="scorciatoia-nome" placeholder="Se lo lasci vuoto, il nome lo scrivo io" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                        <label class="text-slate-400 font-semibold block mb-1">Nome dell'automazione <span class="text-slate-600 font-normal">(facoltativo)</span></label>
+                        <input type="text" id="scorciatoia-nome" placeholder="Se lo lasci vuoto, lo scrive Shinra (per esempio «ogni giorno alle 23»)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                     </div>
 
                     <!-- Il rifiuto del server si legge qui, non in un `alert`:
@@ -102,12 +102,12 @@
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
                 <div>
                     <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-                        <i data-lucide="workflow" class="w-5 h-5 text-indigo-400"></i> Le routine che disegni
+                        <i data-lucide="workflow" class="w-5 h-5 text-indigo-400"></i> Le tue routine
                     </h2>
-                    <p class="text-xs text-slate-400 mt-1">Blocchi collegati: un innesco, poi azioni, attese e risposte vocali. Da qui nascono anche le automazioni qui sopra — basta dare al primo blocco un innesco che non sia la voce.</p>
+                    <p class="text-xs text-slate-400 mt-1">Una serie di azioni che parte a comando, a voce o con un tocco. Si disegna con blocchi collegati: azioni, attese e risposte vocali. Se al primo blocco scegli un orario o un evento invece della voce, diventa anche un'automazione.</p>
                 </div>
                 <button data-gesto="openModularModeBuilder" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shrink-0 shadow-lg shadow-indigo-600/20">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Nuova Routine Modulare
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Nuova routine
                 </button>
             </div>
 

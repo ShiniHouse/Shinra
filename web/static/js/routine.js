@@ -31,7 +31,7 @@ export async function loadModes() {
 
         if (!Stato.routine || Stato.routine.length === 0) {
             container.innerHTML = _html`<div class="col-span-2 text-center py-8 text-slate-500 text-xs">
-                Nessuna routine configurata. Clicca "+ Nuova Routine Modulare" per crearne una.
+                Non hai ancora nessuna routine. Premi «Nuova routine» per crearne una.
             </div>`;
             return;
         }
