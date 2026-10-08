@@ -6,17 +6,42 @@ Il nome *Shinra* nasce dall'unione concettuale con **Shinigami** (死神 — ent
 
 ---
 
-## 🚧 Stato del progetto — beta, all'ultima release: la `0.5.0`
+## 🚧 Stato del progetto — beta, all'ultima release: la `0.6.0`
 
 Shinra è in **beta** e procede per fasi verso la `1.0.0`. Ogni versione minor
 corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino
 alla `1.0.0` una minor può introdurre modifiche incompatibili.
 
-**L'ultima release è la `0.5.0`**: il prodotto. Quello che serve perché
-Shinra lo installi qualcuno che non sei tu — un'interfaccia da tre ingressi,
-un frontend in moduli che si può modificare senza romperlo, due lingue e una
-per persona, il backup, l'immagine Docker e una documentazione che si difende
-da sola. Note complete: [`docs/release/v0.5.0.md`](docs/release/v0.5.0.md).
+**L'ultima release è la `0.6.0`**, *Il Cervello*: la casa diventa visibile e più sicura. Un
+grafo che mostra cosa sa e cosa fa Shinra, otto agenti che dividono il lavoro del modello, le
+azioni delicate — serrature, allarme, garage — che non partono mai sulla parola del modello,
+e le notifiche push attivabili dal telefono. Note complete, con **cosa è stato provato in una
+casa vera e cosa no**: [`docs/release/v0.6.0.md`](docs/release/v0.6.0.md).
+
+**Dentro la `0.6.0`:**
+
+- **Il Cervello** (#185–#189): il grafo di stanze, dispositivi, alias, routine, regole, conoscenza,
+  strumenti e agenti, con lo stato dei sistemi e il racconto di cosa fa Shinra mentre lavora.
+  Guida: [`docs/CERVELLO.md`](docs/CERVELLO.md).
+- **Agenti di dominio e un router** (#190, [ADR 0008](docs/adr/0008-agenti-per-dominio.md), *Proposto*):
+  otto agenti, ciascuno con i propri strumenti; uno strumento non dichiarato non parte nemmeno
+  se il modello lo nomina. Con il modello di casa (`qwen2.5:3b`, CPU senza scheda grafica):
+  strumento giusto 79,8% invece di 72,8%, 28,7 s a richiesta invece di 131. **Non raggiunge le
+  soglie dell'ADR**: il modello è un di più, e comandi, regole e timer funzionano senza.
+- **Le azioni sensibili chiedono sempre conferma** (#192): serrature, allarme, garage e script.
+  Provate dai test; **non** in una casa vera (non c'era una serratura).
+- **Un banco di prova del modello** (#183) che ha trovato e fatto correggere cinque difetti.
+- **Le notifiche push si attivano dal dispositivo** (#29): provate su un iPhone vero.
+- **Verificato in casa** (#195): una regola a un orario e una regola su un timer che spegne una
+  presa da sola. Lo scatto vero di una regola sul sole non è ancora stato visto.
+- **La pagina delle automazioni spiega cosa è un'automazione e cosa una routine.**
+
+**Cosa la `0.6.0` non fa, e dove è scritto.** I piani a più passaggi, il modello esterno
+opzionale, Ollama su un'altra macchina, l'add-on per Home Assistant OS e gli aiutanti locali di
+sviluppo sono **dopo la `1.0.0`**. La parola di attivazione (#211), timer e promemoria in più
+lingue (#205), le etichette della dashboard in due lingue (#206), l'intervista che fa una domanda
+per volta (#209, #210) e il collaudo delle guide (#208) sono nella **`0.7.0`**. La `0.8.0`, *Memoria
+viva*, viene dopo. Il quadro completo è nella [ROADMAP](docs/ROADMAP.md), e [qui sotto](#-dove-sta-andando) in breve.
 
 La `0.4.0` aveva fatto smettere alla casa di aspettare la domanda: routine che
 partono da sole, la voce che resta in casa, passkey e notifiche push.
@@ -24,7 +49,7 @@ Due cose quelle release **non** dichiarano risolte, e le dicono: da un Echo
 l'audio va ad Amazon per costruzione, e nessuno ha ancora guardato una regola
 scattare in una casa vera. Note: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.md).
 
-**Dentro la `0.5.0`:**
+**Dentro la `0.5.0`** *(la release prima)*:
 
 - **L'interfaccia rifatta** (#123–#128, #134, #139): da otto ingressi a tre,
   impostazioni a sezioni, e la colonna di destra che racconta cosa sta per
@@ -73,16 +98,6 @@ scattare in una casa vera. Note: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.
   prima di salvare fa vedere cosa ha capito, così un'interpretazione sbagliata
   non diventa conoscenza permanente in silenzio.
 
-**Cosa la `0.5.0` non fa, e dove è scritto.** Non c'è la parola di attivazione
-(#211), non c'è l'add-on per Home Assistant OS (#282), timer e promemoria
-capiscono solo l'italiano (#205), le etichette della dashboard sono solo
-italiane (#206), e nessuna persona che non ha scritto le guide le ha ancora
-seguite da sola (#208). Sono nella **`0.7.0`**. La `0.6.0`, *Il Cervello*, è in
-lavorazione: il grafo vivo della casa e le conferme per le azioni sensibili sono
-già nel codice; mancano gli agenti che si dividono il lavoro e le misure sul
-modello. Il quadro completo è nella [ROADMAP](docs/ROADMAP.md), e
-[qui sotto](#-dove-sta-andando) in breve.
-
 | Documento | Cosa contiene |
 | :--- | :--- |
 | [`docs/INSTALLAZIONE.md`](docs/INSTALLAZIONE.md) | Docker o a mano su Debian, il token di Home Assistant, cosa sopravvive a un aggiornamento |
@@ -113,6 +128,9 @@ modello. Il quadro completo è nella [ROADMAP](docs/ROADMAP.md), e
 >   rifiuta ogni richiesta.
 > - I segreti rimasti in `config/config.yaml` vengono spostati in `.env` al
 >   primo avvio e cancellati da lì.
+> - **Dalla `0.5.0` alla `0.6.0` non c'è nessuna migrazione.** Con gli agenti conviene alzare il
+>   contesto del modello: `llm.num_ctx: 4096` in `config/config.yaml` (vedi
+>   [`docs/AGENTI.md`](docs/AGENTI.md)). Le notifiche push si attivano da Impostazioni → Notifiche.
 > - **Dalla `0.4.0` alla `0.5.0` il database si aggiorna da solo** al primo
 >   avvio (una colonna nuova nei profili, la lingua): i profili restano, e
 >   quella scelta vale «come la casa» finché non ne scegli un'altra. Il
@@ -134,7 +152,7 @@ modello. Il quadro completo è nella [ROADMAP](docs/ROADMAP.md), e
   <img src="docs/screenshots/cervello.png" alt="Il Cervello: il grafo della casa con stanze, dispositivi, alias, routine, conoscenza, strumenti e agenti, e a destra lo stato dei sistemi" width="100%">
 </p>
 
-<p align="center"><sub><b>Il Cervello</b> — cosa sa e cosa fa la casa, come grafo interattivo: 81 nodi e 97 collegamenti in questa casa, con lo stato di ogni sistema (Home Assistant, modello, regole, notizie). <i>Fa parte della <code>0.6.0</code>, in lavorazione: non è nella release <code>0.5.0</code>.</i></sub></p>
+<p align="center"><sub><b>Il Cervello</b> — cosa sa e cosa fa la casa, come grafo interattivo: 81 nodi e 97 collegamenti in questa casa, con lo stato di ogni sistema (Home Assistant, modello, regole, notizie). <i>Fa parte della <code>0.6.0</code>.</i></sub></p>
 
 <p align="center">
   <img src="docs/screenshots/automazioni.png" alt="Le routine che si disegnano: Buonanotte, Buongiorno, Cinema, Lavoro e Studio, ciascuna con le frasi che la attivano e il pulsante Esegui" width="100%">
@@ -142,7 +160,7 @@ modello. Il quadro completo è nella [ROADMAP](docs/ROADMAP.md), e
 
 <p align="center"><sub><b>Automazioni e routine.</b> Blocchi collegati — un innesco, poi azioni, attese e risposte vocali — con le frasi che le attivano e un pulsante per eseguirle.</sub></p>
 
-<p align="center"><sub>Le schermate sono della versione di sviluppo (<code>0.6.0.dev0</code>) su una casa di prova.</sub></p>
+<p align="center"><sub>Le schermate sono della <code>0.6.0</code> su una casa di prova.</sub></p>
 
 ---
 
@@ -153,8 +171,8 @@ Il traguardo è la `1.0.0`, e il cammino ha un ordine. Ogni fase è rilasciabile
 
 | Fase | Tema | Cosa porta |
 | :--- | :--- | :--- |
-| **`0.6.0`** *(in lavorazione)* | **Il Cervello** | Il grafo vivo della casa (già nel codice), le azioni sensibili — serrature, allarme, garage — che chiedono sempre conferma (già nel codice), un banco di prova che misura quale modello sceglie lo strumento giusto, e gli agenti di dominio |
-| **`0.7.0`** | **Rifinitura** | Le lingue (dashboard, timer, messaggi), un'intervista che fa una domanda per volta, la parola di attivazione, i plugin con permessi dichiarati; il modello su una macchina dedicata della rete, e piccoli aiutanti locali per il lavoro ripetitivo dello sviluppo |
+| **`0.6.0`** *(rilasciata l'8 ottobre 2026)* | **Il Cervello** | Il grafo vivo della casa, le azioni sensibili — serrature, allarme, garage — che chiedono sempre conferma, un banco di prova che misura quale modello sceglie lo strumento giusto, gli agenti di dominio, le notifiche push dal telefono |
+| **`0.7.0`** | **Rifinitura** | Le lingue (dashboard, timer, messaggi), un'intervista che fa una domanda per volta, la parola di attivazione, i plugin con permessi dichiarati. Piani a più passaggi, modello esterno opzionale, Ollama su un'altra macchina, l'add-on per Home Assistant OS e gli aiutanti locali sono **dopo la `1.0.0`** |
 | **`0.8.0`** | **Memoria viva** | Shinra ricorda — e tu vedi cosa, lo correggi, glielo fai dimenticare. La storia vecchia diventa un riassunto, di notte la casa «ci ripensa» **proponendo** (mai decidendo), e un canale di messaggistica esterno è un'opzione spenta di default |
 | **`1.0.0`** | **Stabile** | Se non ci sono intoppi, subito dopo: trenta giorni di esercizio reale senza regressioni, installazione da zero verificata, nessun difetto grave aperto |
 

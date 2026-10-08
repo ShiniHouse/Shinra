@@ -14,6 +14,12 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+---
+
+## [0.6.0] - 2026-10-08 - Il Cervello
+
+Note complete: [`docs/release/v0.6.0.md`](docs/release/v0.6.0.md).
+
 ### Aggiunto
 - **Le azioni sensibili chiedono sempre conferma** (#192). Aprire una serratura, disinserire
   l'allarme, alzare il garage o una porta, lanciare uno script: se a sceglierlo e' il modello
@@ -58,6 +64,12 @@ installabile e utilizzabile.
   in cima al prompt. Ollama riusa il prefisso gia' letto, e prima la cache moriva ogni minuto.
   `get_system_prompt` non accetta piu' `home_context_summary` e `custom_knowledge`.
 
+- **Tailwind e' precompilato.** Prima la pagina scaricava `cdn.tailwindcss.com` a ogni apertura e costruiva gli stili nel browser: senza internet niente stile, e chi controlla il CDN poteva cambiare la dashboard. Ora `web/static/css/tailwind.css` (46 KB, Tailwind 3.4.17, la stessa versione del CDN) e' generato da `tailwind.config.js` con `npm run css` e committato; la CI verifica che sia aggiornato. Verificato contro il CDN su tutte le schede, chiare e scure: ogni regola che il CDN produceva c'e', e le schermate sono identiche pixel per pixel tranne l'alone animato del logo. **La dashboard non chiede piu' niente a terzi per disegnarsi.** Chi cambia delle classi deve eseguire `npm run css` (vedi `docs/SVILUPPO.md`).
+- **I caratteri (Plus Jakarta Sans e JetBrains Mono) vengono dal nostro server, non da Google Fonts.** Prima ogni apertura della dashboard diceva a Google che qualcuno, da quell'indirizzo, la stava guardando; ora i file stanno in `web/static/fonts/` (font variabili `woff2`, 157 KB in tutto, licenza SIL OFL) e un test dei gesti verifica che la pagina non chieda niente a terzi per disegnarsi, a parte Tailwind (che e' il prossimo).
+- **Le icone (lucide) vengono dal nostro server, a versione fissata.** Prima la pagina le caricava da un CDN, con un ripiego su `lucide@latest`: se il CDN cadeva la dashboard restava senza icone, e se cambiava cambiava la dashboard. Il file sta in `web/static/vendor/` (verificato identico fra jsDelivr e npm), la versione e' nel nome. Anche l'aggiornamento dell'elenco delle icone valide ora non richiede la rete.
+- **L'avvio non copia piu' file JSON.** Una casa nuova (database vuoto) viene seminata direttamente dai dati di `data/examples/`; spariti la copia in `data/`, l'importazione dei JSON all'avvio e `scripts/migra_da_json.py`. Chi ha ancora una installazione precedente alla 0.2.0 passa prima dalla 0.5.x, che sa ancora migrare.
+- **Il token di sessione viaggia solo nel cookie `HttpOnly`.** Prima tornava anche nel corpo del login, finiva in `sessionStorage` e si rimandava nell'intestazione `x-shinra-auth`: leggibile da uno script, quindi un XSS lo avrebbe rubato e l'`HttpOnly` non serviva a niente. Ora il corpo non lo contiene, l'interfaccia non lo conserva e il server non accetta piu' l'intestazione. **Cambia per i client esterni**: vanno usati con un cookie jar (`curl -c`/`-b`).
+
 ### Corretto
 - **Il prompt tagliato non era segnalato.** Con `num_ctx` 1024 Ollama leggeva 514 token di 5.460 e
   il modello sceglieva fra gli ultimi strumenti. Adesso il log lo dice (#244, parziale).
@@ -69,14 +81,8 @@ installabile e utilizzabile.
   con l'ingresso nuovo. La pagina ha adesso un import map che mette la versione
   nell'indirizzo di ogni modulo. Visto su un server vero, non dai test.
 
----
 
-### Modificato
-- **Tailwind e' precompilato.** Prima la pagina scaricava `cdn.tailwindcss.com` a ogni apertura e costruiva gli stili nel browser: senza internet niente stile, e chi controlla il CDN poteva cambiare la dashboard. Ora `web/static/css/tailwind.css` (46 KB, Tailwind 3.4.17, la stessa versione del CDN) e' generato da `tailwind.config.js` con `npm run css` e committato; la CI verifica che sia aggiornato. Verificato contro il CDN su tutte le schede, chiare e scure: ogni regola che il CDN produceva c'e', e le schermate sono identiche pixel per pixel tranne l'alone animato del logo. **La dashboard non chiede piu' niente a terzi per disegnarsi.** Chi cambia delle classi deve eseguire `npm run css` (vedi `docs/SVILUPPO.md`).
-- **I caratteri (Plus Jakarta Sans e JetBrains Mono) vengono dal nostro server, non da Google Fonts.** Prima ogni apertura della dashboard diceva a Google che qualcuno, da quell'indirizzo, la stava guardando; ora i file stanno in `web/static/fonts/` (font variabili `woff2`, 157 KB in tutto, licenza SIL OFL) e un test dei gesti verifica che la pagina non chieda niente a terzi per disegnarsi, a parte Tailwind (che e' il prossimo).
-- **Le icone (lucide) vengono dal nostro server, a versione fissata.** Prima la pagina le caricava da un CDN, con un ripiego su `lucide@latest`: se il CDN cadeva la dashboard restava senza icone, e se cambiava cambiava la dashboard. Il file sta in `web/static/vendor/` (verificato identico fra jsDelivr e npm), la versione e' nel nome. Anche l'aggiornamento dell'elenco delle icone valide ora non richiede la rete.
-- **L'avvio non copia piu' file JSON.** Una casa nuova (database vuoto) viene seminata direttamente dai dati di `data/examples/`; spariti la copia in `data/`, l'importazione dei JSON all'avvio e `scripts/migra_da_json.py`. Chi ha ancora una installazione precedente alla 0.2.0 passa prima dalla 0.5.x, che sa ancora migrare.
-- **Il token di sessione viaggia solo nel cookie `HttpOnly`.** Prima tornava anche nel corpo del login, finiva in `sessionStorage` e si rimandava nell'intestazione `x-shinra-auth`: leggibile da uno script, quindi un XSS lo avrebbe rubato e l'`HttpOnly` non serviva a niente. Ora il corpo non lo contiene, l'interfaccia non lo conserva e il server non accetta piu' l'intestazione. **Cambia per i client esterni**: vanno usati con un cookie jar (`curl -c`/`-b`).
+---
 
 ## [0.5.0] - 2026-10-01 - Prodotto
 
