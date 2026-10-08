@@ -244,7 +244,11 @@ def test_troppi_tentativi_bloccano(casa_chiusa) -> None:
 
 def test_il_pin_non_e_mai_salvato_in_chiaro() -> None:
     cifrato = sicurezza.cifra_pin("1234")
-    assert "1234" not in cifrato
+    # Non si cerca «1234» come sottostringa: l'impronta e' esadecimale e casuale, e quattro cifre in fila ci
+    # finiscono per caso una volta ogni duemila (e il test falliva a caso in CI). Si guardano i campi.
+    assert "1234" not in cifrato.split("$"), "il PIN e' uno dei campi salvati"
+    assert cifrato != "1234"
+    assert sicurezza.cifra_pin("1234") != cifrato, "stesso PIN, stessa impronta: manca il sale"
     assert cifrato.startswith("pbkdf2_sha256$")
     assert sicurezza.verifica_pin("1234", cifrato)
     assert not sicurezza.verifica_pin("1235", cifrato)
