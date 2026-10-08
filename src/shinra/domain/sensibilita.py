@@ -78,6 +78,11 @@ TOOL_SICURI = frozenset(
     }
 )
 
+# Gli strumenti dei plugin che non hanno nessun permesso sulla casa (#193): li aggiunge
+# `services/plugin` quando li carica e li toglie quando li scarica. Un plugin che comanda
+# dispositivi non c'e' qui: resta «sensibile», chiuso per difetto, e chiede conferma.
+TOOL_SICURI_DINAMICI: set[str] = set()
+
 # Sicuri **o no, a seconda degli argomenti**: li decide `classifica`.
 TOOL_CONDIZIONATI = frozenset(
     {
@@ -161,7 +166,7 @@ def classifica(
     argomenti = argomenti or {}
     if tool in TOOL_VIETATI_AGLI_AGENTI:
         return VIETATA
-    if tool in TOOL_SICURI:
+    if tool in TOOL_SICURI or tool in TOOL_SICURI_DINAMICI:
         return SICURA
     if tool not in TOOL_CONDIZIONATI:
         return SENSIBILE  # chiuso per difetto: uno strumento che non conosco non e' sicuro

@@ -105,6 +105,7 @@ scattare in una casa vera. Note: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.
 | [`docs/PROBLEMI.md`](docs/PROBLEMI.md) | Cosa fare quando qualcosa non funziona, guasto per guasto — tutti successi davvero |
 | [`docs/CERVELLO.md`](docs/CERVELLO.md) | Il grafo della casa: cosa si vede, i colori, come ci si muove, cosa si accende quando Shinra lavora |
 | [`docs/AGENTI.md`](docs/AGENTI.md) | Gli otto agenti di dominio, come sceglie il router, cosa succede quando sbaglia, cosa regolare |
+| [`docs/PLUGIN.md`](docs/PLUGIN.md) | Aggiungere strumenti con un plugin: il manifesto, i permessi dichiarati, e cosa **non** garantiscono (solo codice tuo) |
 | [`docs/CONFERME.md`](docs/CONFERME.md) | Le azioni che chiedono conferma (serrature, allarme, garage), come si risponde, cosa succede se scadono |
 | [`docs/VERIFICA-IN-CASA.md`](docs/VERIFICA-IN-CASA.md) | La lista delle prove da fare in una casa vera (regole, conferme), con l'esito accanto: chi vive qui la compila |
 | [`docs/ALEXA.md`](docs/ALEXA.md) | Come configurare la skill Alexa (Interaction Model, endpoint HTTPS, test) |

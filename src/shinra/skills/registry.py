@@ -30,6 +30,11 @@ TOOL_HANDLERS: Dict[str, Callable] = {
     **agenda.GESTORI,
 }
 
+# Quale plugin possiede uno strumento (#193): lo riempie `services/plugin` quando li carica, e il
+# registro delle azioni lo scrive. Sta qui, e non nel plugin, perche' le `skills` non dipendono
+# dai `services`.
+PLUGIN_DEGLI_STRUMENTI: Dict[str, str] = {}
+
 # Schemi compatibili con Ollama / OpenAI Tools
 TOOLS_SCHEMA: List[Dict[str, Any]] = [
     *informazioni.SCHEMI,
@@ -76,7 +81,10 @@ async def execute_tool(
         )
         return {"success": False, "error": f"Tool '{tool_name}' non trovato nel registro."}
 
-    with registro.traccia(f"tool.{tool_name}", {"parametri": arguments}) as voce:
+    dettagli: Dict[str, Any] = {"parametri": arguments}
+    if (di_plugin := PLUGIN_DEGLI_STRUMENTI.get(tool_name)) is not None:
+        dettagli["plugin"] = di_plugin
+    with registro.traccia(f"tool.{tool_name}", dettagli) as voce:
         try:
             if inspect.iscoroutinefunction(handler):
                 esito = await handler(**arguments)

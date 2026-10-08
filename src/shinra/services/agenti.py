@@ -53,6 +53,8 @@ class Agente:
 
     nome: str
     schemi: tuple
+    # Parole del router per gli agenti che non stanno nei file delle lingue: i plugin (#193).
+    parole: tuple = ()
 
     @property
     def strumenti(self) -> FrozenSet[str]:
@@ -83,6 +85,15 @@ AGENTI: Dict[str, Agente] = {
 }
 
 
+def aggiungi_agente(nome: str, schemi: Sequence[Dict[str, Any]], parole: Sequence[str]) -> None:
+    """Un agente in piu' (un plugin), in fondo: a parita' di parole vincono quelli del catalogo."""
+    AGENTI[nome] = Agente(nome=nome, schemi=tuple(schemi), parole=tuple(parole))
+
+
+def togli_agente(nome: str) -> None:
+    AGENTI.pop(nome, None)
+
+
 def scegli(testo: str, lingua: Schemi) -> List[str]:
     """I nomi degli agenti che prendono la richiesta, dal piu' al meno pertinente.
 
@@ -91,7 +102,7 @@ def scegli(testo: str, lingua: Schemi) -> List[str]:
     minuscolo = testo.lower()
     punteggi = []
     for posizione, nome in enumerate(AGENTI):
-        parole = lingua.domini_agente.get(nome, ())
+        parole = lingua.domini_agente.get(nome, ()) or AGENTI[nome].parole
         colpi = sum(1 for p in parole if p and p in minuscolo)
         if colpi:
             punteggi.append((-colpi, posizione, nome))

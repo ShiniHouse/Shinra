@@ -1,0 +1,8 @@
+{
+  "nome": "esempio_dado",
+  "versione": "1.0.0",
+  "descrizione": "Tira un dado: un plugin di esempio, senza nessun permesso.",
+  "strumenti": ["esempio_dado_tira"],
+  "parole": ["tira un dado", "lancia un dado", "tira i dadi"],
+  "permessi": {}
+}

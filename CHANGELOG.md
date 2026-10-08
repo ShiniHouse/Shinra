@@ -15,6 +15,15 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Modificato
+- **I plugin: un manifesto e permessi dichiarati** (#193, [`docs/PLUGIN.md`](docs/PLUGIN.md)). Una
+  cartella in `plugins/` con `plugin.json` (nome, strumenti, parole per il router, permessi) e `plugin.py`.
+  Per difetto non ce n'e' nessuno abilitato (`plugin.abilitati` in `config/config.yaml`) e un plugin
+  non abilitato non si importa. Il plugin agisce sulla casa solo tramite il `Contesto`, che controlla
+  ogni richiesta contro il manifesto; serrature, allarme e script non si possono dichiarare, e un
+  plugin che comanda dispositivi chiede conferma come ogni strumento sconosciuto. Un plugin rotto non
+  ferma il servizio e il registro delle azioni dice quale plugin ha fatto cosa. **Solo codice del
+  proprietario, dentro il processo:** i permessi sono un patto verificabile, non una prigione, e il
+  codice di terzi non si carica. Plugin di esempio: `esempio_dado`.
 - **L'intervista trasforma un'abitudine in una routine controllata sulla casa vera** (#210, seconda
   parte). La proposta del modello passa da quattro filtri prima di arrivare a chi risponde: ogni
   dispositivo deve esistere in Home Assistant (o essere un alias che ne indica uno), ogni azione
