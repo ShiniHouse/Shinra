@@ -16,6 +16,9 @@ I criteri sui falsi positivi si misurano su audio registrato (il riferimento di
 openWakeWord e' meno di 0,5 attivazioni false all'ora), non con un microfono
 acceso per giorni: il metodo e' nella scheda originale.
 
+> **In fondo alla `0.7.0` (2026-10-08).** Il primo giro con una parola gia' addestrata, e solo dopo aver sistemato il
+> riconoscimento del microfono (Whisper `small` ha scritto «pardon»). Se non e' pronta, passa a dopo la `1.0.0`.
+
 ## Cosa fare
 
 - [ ] Un modulo della dashboard che carica i tre modelli ONNX (serviti dal repository, non da un CDN) e ascolta il microfono solo a scheda in primo piano
