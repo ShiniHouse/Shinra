@@ -13,6 +13,7 @@ from shinra.api.sicurezza import (
     richiedi_autenticazione,
 )
 from shinra.services.interview_engine import interview_engine
+from shinra.services.intervista_alias import dispositivi_senza_nome
 from shinra.services.timer_engine import timer_engine
 
 logger = logging.getLogger("Shinra.Admin")
@@ -100,8 +101,10 @@ class ConfirmRoutineReq(BaseModel):
 @router.post("/learning/start")
 async def start_learning_session(payload: StartLearningReq):
     """Avvia l'intervista di apprendimento per un profilo."""
-    res = interview_engine.start_session(payload.user_id)
-    return res
+    # I dispositivi veri senza un nome: Home Assistant spento li rende zero, e
+    # l'intervista fa le sue domande senza questa parte.
+    dispositivi = await dispositivi_senza_nome()
+    return interview_engine.start_session(payload.user_id, dispositivi)
 
 
 @router.post("/learning/answer")

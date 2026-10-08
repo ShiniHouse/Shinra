@@ -119,6 +119,11 @@ rispondere. **Non rifà le domande a cui la casa ha già una risposta**: se i pr
 stanze ci sono già, o se hai già detto la città, salta quel passo e te lo dice («In casa
 ci sono già Alessio e Sonia: salto la domanda»).
 
+**In fondo ti chiede come chiami alcuni dispositivi** (fino a sei, quelli di Home Assistant che non
+hanno ancora un nome tuo): «Come chiami in casa "Sonoff 100053af52" (presa o interruttore)?». Scrivi un
+nome breve, rispondi «sì» al riepilogo e da quel momento puoi dire «spegni la luce dell'acquario».
+Con «salta» lo lasci com'è. Se Home Assistant è spento questa parte non c'è.
+
 Due cose da sapere prima di cominciare, perché ti risparmiano tempo:
 
 - **Serve un modello capace.** L'intervista chiede al modello di interpretare

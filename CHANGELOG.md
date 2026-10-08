@@ -15,6 +15,12 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Modificato
+- **L'intervista dà un nome ai dispositivi veri** (#210, prima parte). Dopo le domande sulla casa
+  chiede, per fino a sei dispositivi di Home Assistant che non hanno ancora un alias (luci, prese,
+  tapparelle, clima, ventilatori), «come lo chiami in casa?». Il nome si salva dopo il «sì» e solo
+  sull'`entity_id` che ha scritto Home Assistant: chi risponde non scrive mai l'identificativo, e un
+  nome già usato da un altro dispositivo si rifiuta. Con Home Assistant spento la parte salta e
+  l'intervista fa le altre domande. Il messaggio dell'ultimo passo non si perde più nel saluto finale.
 - **L'intervista fa una domanda per volta e non chiede cio' che la casa sa gia'** (#209). I sei passi
   da tre domande l'uno sono diventati tredici da una: la scelta delle domande e' del codice, il modello
   legge solo la risposta. Prima di ognuna guarda il database: i profili gia' registrati saltano «chi vive

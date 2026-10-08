@@ -7,6 +7,21 @@ from typing import Any, Dict, List, Optional
 from shinra.config import settings as impostazioni
 from shinra.infra.data_store import data_store
 from shinra.infra.llm.ollama import OllamaClient
+from shinra.services.intervista_alias import TurniAlias, passo_alias
+from shinra.services.intervista_comune import (
+    AFFERMAZIONI,  # noqa: F401 - riesportati: li importano i test
+    FASE_CONFERMA,
+    FASE_DOMANDA,
+    LIMITE_CORREZIONI,
+    NEGAZIONI,  # noqa: F401
+    SUGGERIMENTO_CONFERMA,
+)
+from shinra.services.intervista_comune import (
+    e_affermativa as _e_affermativa,
+)
+from shinra.services.intervista_comune import (
+    e_negativa as _e_negativa,
+)
 from shinra.services.intervista_noto import cosa_si_sa, dati_della_casa
 from shinra.services.intervista_passi import INTERVIEW_STEPS
 
@@ -40,96 +55,24 @@ def _riconoscimento(interpretato: bool, quanti: int) -> str:
     )
 
 
-def _chiusura(imparati: int, non_interpretate: int) -> str:
+def _chiusura(imparati: int, non_interpretate: int, alias_creati: int = 0) -> str:
     """Il saluto finale, che non dice «ottimo lavoro» dopo sei fallimenti."""
+    nomi = (
+        f" Ho dato un nome a {alias_creati} dispositiv{'o' if alias_creati == 1 else 'i'}: da ora li capisco a voce."
+        if alias_creati
+        else ""
+    )
     if non_interpretate:
         return (
             f"Intervista finita. Ho memorizzato {imparati} fatti, ma {non_interpretate} "
             "delle tue risposte non sono riuscita a interpretarle: le ho conservate "
             "cosi' come le hai scritte. Con un modello piu' capace vale la pena "
-            "rifarla — imparerei molto di piu' dalle stesse risposte."
+            "rifarla — imparerei molto di piu' dalle stesse risposte." + nomi
         )
     return (
         f"Ottimo lavoro! Intervista completata. Ho memorizzato {imparati} fatti sulla "
-        "tua casa e calibrato le mie risposte per te e la tua famiglia."
+        "tua casa e calibrato le mie risposte per te e la tua famiglia." + nomi
     )
-
-
-# Le due fasi di un passo. Fino alla #170 ce n'era una sola: si rispondeva e
-# l'intervista salvava. Adesso in mezzo c'e' la conferma.
-FASE_DOMANDA = "domanda"
-FASE_CONFERMA = "conferma"
-
-# Quante volte si accetta una correzione prima di salvare e proseguire. Senza
-# un limite, chi risponde con una frase che il modello continua a masticare
-# male resta fermo sullo stesso passo per sempre: ogni testo libero e' una
-# correzione, e ogni correzione riapre la conferma.
-LIMITE_CORREZIONI = 1
-
-AFFERMAZIONI = frozenset(
-    {
-        "si",
-        "sì",
-        "s",
-        "ok",
-        "okay",
-        "va bene",
-        "vabene",
-        "giusto",
-        "esatto",
-        "esattamente",
-        "corretto",
-        "perfetto",
-        "certo",
-        "confermo",
-        "conferma",
-        "yes",
-        "y",
-        "tutto giusto",
-        "e giusto",
-        "è giusto",
-        "sì esatto",
-        "si esatto",
-    }
-)
-
-NEGAZIONI = frozenset(
-    {
-        "no",
-        "n",
-        "nope",
-        "sbagliato",
-        "niente",
-        "annulla",
-        "salta",
-        "lascia perdere",
-        "no grazie",
-        "non e giusto",
-        "non è giusto",
-    }
-)
-
-SUGGERIMENTO_CONFERMA = (
-    "Rispondi «sì» per salvare, «no» per saltare, oppure riscrivi la frase come la diresti tu."
-)
-
-
-def _normalizza(testo: str) -> str:
-    """Toglie punteggiatura e maiuscole, per leggere «Sì!» come «si».
-
-    Si conservano le lettere accentate: in italiano «e» e «è» non sono la
-    stessa parola, e «no» non deve diventare un «n» che vale come «n» secco.
-    """
-    solo_lettere = re.sub(r"[^a-zà-ÿ]+", " ", (testo or "").lower())
-    return re.sub(r"\s+", " ", solo_lettere).strip()
-
-
-def _e_affermativa(testo: str) -> bool:
-    return _normalizza(testo) in AFFERMAZIONI
-
-
-def _e_negativa(testo: str) -> bool:
-    return _normalizza(testo) in NEGAZIONI
 
 
 def _riepilogo(fatti: List[Dict[str, str]]) -> str:
@@ -168,7 +111,7 @@ def _insistenza(step: Dict[str, Any], interpretato: bool) -> str:
     return f"{apertura} Ci riprovo una volta sola, poi passo oltre.\n{step['question']}{coda}"
 
 
-def _primo_da_chiedere(partenza: int) -> tuple:
+def _primo_da_chiedere(partenza: int, passi: List[Dict[str, Any]]) -> tuple:
     """Dal passo `partenza` in poi, il primo che la casa non sa gia'.
 
     Ritorna `(indice, saltati)`: `saltati` sono le frasi che dicono cosa si e'
@@ -177,8 +120,8 @@ def _primo_da_chiedere(partenza: int) -> tuple:
     dati = dati_della_casa(data_store)
     saltati: List[str] = []
     indice = partenza
-    while indice < len(INTERVIEW_STEPS):
-        noto = cosa_si_sa(INTERVIEW_STEPS[indice], dati)
+    while indice < len(passi):
+        noto = cosa_si_sa(passi[indice], dati)
         if not noto:
             break
         saltati.append(noto)
@@ -192,7 +135,7 @@ def _frase_dei_saltati(saltati: List[str]) -> str:
     return " ".join(f"{s}: salto la domanda." for s in saltati) + " "
 
 
-class LearningInterviewEngine:
+class LearningInterviewEngine(TurniAlias):
     def __init__(self):
         self.ollama = OllamaClient()
         self._active_sessions: Dict[str, Dict[str, Any]] = {}
@@ -204,12 +147,16 @@ class LearningInterviewEngine:
     def get_session(self, user_id: str) -> Optional[Dict[str, Any]]:
         return self._active_sessions.get(user_id)
 
-    def start_session(self, user_id: str = "alessio") -> Dict[str, Any]:
+    def start_session(
+        self, user_id: str = "alessio", dispositivi: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
+        passi = list(INTERVIEW_STEPS) + [passo_alias(d) for d in dispositivi or []]
         session = {
+            "passi": passi,
             "user_id": user_id,
             "is_active": True,
             "current_step_index": 0,
-            "total_steps": len(INTERVIEW_STEPS),
+            "total_steps": len(passi),
             "answers": {},
             "learned_facts": [],
             "proposed_routines": [],
@@ -227,13 +174,13 @@ class LearningInterviewEngine:
             "started_at": datetime.now().isoformat(),
         }
         self._active_sessions[user_id] = session
-        indice, saltati = _primo_da_chiedere(0)
-        if indice >= len(INTERVIEW_STEPS):
+        indice, saltati = _primo_da_chiedere(0, passi)
+        if indice >= len(passi):
             session["is_active"] = False
             return {
                 "is_active": False,
                 "step_index": indice,
-                "total_steps": len(INTERVIEW_STEPS),
+                "total_steps": len(session["passi"]),
                 "fase": FASE_DOMANDA,
                 "message": _frase_dei_saltati(saltati)
                 + "Non ho niente da chiedere: la casa mi ha gia' detto tutto quello che serve.",
@@ -243,7 +190,7 @@ class LearningInterviewEngine:
                 "summary": {"total_facts": 0, "proposed_routines": []},
             }
         session["current_step_index"] = indice
-        first_step = INTERVIEW_STEPS[indice]
+        first_step = passi[indice]
 
         greeting = (
             "Modalità Apprendimento attivata. Ti farò qualche breve domanda, una per volta, per imparare "
@@ -253,7 +200,7 @@ class LearningInterviewEngine:
             "is_active": True,
             "step_index": indice,
             "step": first_step,
-            "total_steps": len(INTERVIEW_STEPS),
+            "total_steps": len(session["passi"]),
             "fase": FASE_DOMANDA,
             "message": greeting,
             "capiti": [],
@@ -266,7 +213,9 @@ class LearningInterviewEngine:
         if not session or not session.get("is_active", False):
             return self.start_session(user_id)
 
-        current_step = INTERVIEW_STEPS[session["current_step_index"]]
+        current_step = session["passi"][session["current_step_index"]]
+        if current_step.get("kind") == "alias":
+            return self._turno_alias(session, current_step, answer_text, data_store)
         if session.get("fase") == FASE_CONFERMA:
             return await self._turno_conferma(session, current_step, answer_text)
         return await self._turno_domanda(session, current_step, answer_text)
@@ -396,7 +345,7 @@ class LearningInterviewEngine:
             "is_active": True,
             "step_index": session["current_step_index"],
             "step": step,
-            "total_steps": len(INTERVIEW_STEPS),
+            "total_steps": len(session["passi"]),
             "fase": session["fase"],
             "message": messaggio,
             "new_facts": [],
@@ -429,16 +378,16 @@ class LearningInterviewEngine:
                 f"\n\n💡 Ho notato una possibile routine: vuoi che crei l'automazione '{routine['name']}'?"
             )
 
-        prossimo, saltati = _primo_da_chiedere(session["current_step_index"] + 1)
+        prossimo, saltati = _primo_da_chiedere(session["current_step_index"] + 1, session["passi"])
         prefisso += _frase_dei_saltati(saltati)
-        if prossimo < len(INTERVIEW_STEPS):
+        if prossimo < len(session["passi"]):
             session["current_step_index"] = prossimo
-            passo = INTERVIEW_STEPS[prossimo]
+            passo = session["passi"][prossimo]
             return {
                 "is_active": True,
                 "step_index": prossimo,
                 "step": passo,
-                "total_steps": len(INTERVIEW_STEPS),
+                "total_steps": len(session["passi"]),
                 "fase": FASE_DOMANDA,
                 "message": prefisso + passo["question"] + proposta,
                 "new_facts": salvati,
@@ -454,9 +403,10 @@ class LearningInterviewEngine:
         return {
             "is_active": False,
             "step_index": prossimo,
-            "total_steps": len(INTERVIEW_STEPS),
+            "total_steps": len(session["passi"]),
             "fase": FASE_DOMANDA,
-            "message": _chiusura(imparati, session["non_interpretate"]),
+            "message": prefisso
+            + _chiusura(imparati, session["non_interpretate"], session.get("alias_creati", 0)),
             "new_facts": salvati,
             "capiti": [],
             "suggerimento": None,
