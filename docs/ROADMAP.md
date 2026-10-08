@@ -110,9 +110,12 @@ Sono un investimento unico che sblocca l'intero resto della roadmap.
 - ~~Nessun audio della casa lascia la rete locale.~~ — soddisfatto per il
   microfono di Shinra; **non** per Alexa, dove l'audio va ad Amazon per
   costruzione. Vedi la tabella nel README.
-- Una regola creata dall'interfaccia scatta da sola su un evento reale. —
-  **da verificare in casa**: il motore funziona e i test coprono la catena,
-  ma nessuno ha ancora guardato una regola scattare davvero.
+- ~~Una regola creata dall'interfaccia scatta da sola su un evento reale.~~ —
+  **verificato in casa il 2026-10-08** (#195): una regola su `timer.scaduto`, creata
+  dalla dashboard, ha spento una presa da sola alla scadenza di un timer, con la riga
+  `regola.eseguita ok` nel registro. Ci sono voluti quattro difetti trovati in casa
+  (il motore non ascoltava i timer, un dispositivo inesistente veniva accettato,
+  le notifiche push bloccavano il server, l'errore vero veniva nascosto).
 - ~~Il contesto inviato al modello non cresce linearmente con la knowledge
   base.~~ — soddisfatto dalla #32.
 
