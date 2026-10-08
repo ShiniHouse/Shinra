@@ -22,6 +22,7 @@ from typing import Any, Dict
 
 from shinra.domain import calendario as dominio
 from shinra.domain import quando as tempo
+from shinra.services.intenti.lingue import schemi
 
 logger = logging.getLogger("Shinra.Calendario")
 
@@ -87,7 +88,7 @@ def _giorno_detto(detto: str) -> tuple[date, str]:
     if not piatto or piatto == "oggi":
         return oggi, "oggi"
 
-    momento = tempo.quando(piatto)
+    momento = tempo.quando(piatto, lessico=schemi().tempo)
     if momento is None:
         return oggi, "oggi"
 
@@ -173,9 +174,9 @@ async def aggiungi_impegno(
     if not nome:
         return _fallito("Serve dire che impegno segnare.")
 
-    momento = tempo.quando(quando_detto)
+    momento = tempo.quando(quando_detto, lessico=schemi().tempo)
     if momento is None:
-        nome_ripulito, momento = tempo.separa(nome)
+        nome_ripulito, momento = tempo.separa(nome, lessico=schemi().tempo)
         if momento is not None and nome_ripulito:
             nome = nome_ripulito
 
@@ -201,4 +202,6 @@ async def aggiungi_impegno(
         }
     )
 
-    return _riuscito(f"Segnato: {nome} {tempo.descrivi(momento)}.", quando=momento.isoformat())
+    return _riuscito(
+        f"Segnato: {nome} {tempo.descrivi(momento, lessico=schemi().tempo)}.", quando=momento.isoformat()
+    )

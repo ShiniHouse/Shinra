@@ -150,9 +150,13 @@ Un file `src/shinra/services/intenti/lingue/<codice>.yaml` con **le stesse
 chiavi** di `it.yaml`. Non si tocca il codice: lo prova un test che ne inventa
 una. Il caricatore dice per nome quale chiave manca.
 
+Le sezioni `tempo` e `timer` sono le parole del tempo: i numeri in lettere, le unita', i nomi dei giorni e dei mesi, «domani»,
+«stasera», e le frasi che chiedono un timer o un promemoria. Il parser (`domain/quando.py`) non conosce nessuna parola:
+legge il `Lessico` della lingua, e un test controlla che nessuna parola italiana resti nel dominio (#205).
+
 La lingua si sceglie per persona nella scheda del profilo, o per tutta la casa
-con `assistant.language`. Restano italiani, per ora: il parser di timer e
-promemoria, le etichette della dashboard e i messaggi degli strumenti.
+con `assistant.language`. Restano italiani, per ora: le etichette della dashboard e i messaggi degli strumenti.
+Gli strumenti che leggono il tempo (promemoria, calendario, scadenze) usano la lingua dell'installazione.
 
 ---
 

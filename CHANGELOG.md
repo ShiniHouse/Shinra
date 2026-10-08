@@ -15,6 +15,14 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Modificato
+- **Timer e promemoria capiscono piu' di una lingua** (#205). I numeri in lettere, le unita' di tempo, i
+  giorni, i mesi, «domani», «stasera» e le frasi che chiedono un timer escono da `domain/quando.py` e da
+  `timer_engine.py` e stanno nei file delle lingue (sezioni `tempo` e `timer`); il dominio riceve un `Lessico`
+  e non conosce nessuna parola, e un test lo controlla. In inglese «set a timer for ten minutes for the pasta»
+  e «remind me tomorrow morning to call the dentist» producono lo stesso timer e lo stesso istante dell'italiano
+  invece di passare dal modello. Una lingua con la sezione `tempo` incompleta dice per nome cosa manca. In
+  italiano il titolo di un promemoria non comincia piu' con «Di»: «ricordami domani di chiamare il dentista»
+  diventa «Chiamare il dentista». Gli strumenti che leggono il tempo usano la lingua dell'installazione.
 - **I plugin: un manifesto e permessi dichiarati** (#193, [`docs/PLUGIN.md`](docs/PLUGIN.md)). Una
   cartella in `plugins/` con `plugin.json` (nome, strumenti, parole per il router, permessi) e `plugin.py`.
   Per difetto non ce n'e' nessuno abilitato (`plugin.abilitati` in `config/config.yaml`) e un plugin

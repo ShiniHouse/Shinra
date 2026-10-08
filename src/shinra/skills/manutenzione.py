@@ -20,6 +20,7 @@ from typing import Any, Dict, Optional
 
 from shinra.domain import manutenzione as dominio
 from shinra.domain import quando as tempo
+from shinra.services.intenti.lingue import schemi
 
 logger = logging.getLogger("Shinra.Manutenzione")
 
@@ -58,6 +59,11 @@ def tutte() -> list[dominio.Scadenza]:
     return [s for s in lette if s is not None]
 
 
+def _giorno_detto(momento: Any) -> str:
+    """Il giorno, senza l'ora: «domani», «il 15/03». Toglie le ultime due parole di `descrivi` («alle 09:00»)."""
+    return " ".join(tempo.descrivi(momento, lessico=schemi().tempo).split()[:-2])
+
+
 def _unita_detta(parola: str) -> str:
     piatto = tempo.normalizza(parola)
     if piatto.startswith("giorn"):
@@ -82,9 +88,9 @@ async def aggiungi_scadenza(
     if not nome:
         return _fallito("Serve dire che scadenza segnare.")
 
-    momento = tempo.quando(quando_detto) if quando_detto else None
+    momento = tempo.quando(quando_detto, lessico=schemi().tempo) if quando_detto else None
     if momento is None:
-        nome_ripulito, momento = tempo.separa(nome)
+        nome_ripulito, momento = tempo.separa(nome, lessico=schemi().tempo)
         if momento is not None and nome_ripulito:
             nome = nome_ripulito
 
@@ -115,7 +121,7 @@ async def aggiungi_scadenza(
         ricorre = f", e poi ogni {int(ogni)} {dominio.NOMI_UNITA[_unita_detta(unita)]}"
 
     return _riuscito(
-        f"Segnata la scadenza «{nome}» per {tempo.descrivi(momento)[:-9].strip() or 'quel giorno'}{ricorre}.",
+        f"Segnata la scadenza «{nome}» per {_giorno_detto(momento) or 'quel giorno'}{ricorre}.",
         id=identificativo,
         prossima=momento.date().isoformat(),
     )

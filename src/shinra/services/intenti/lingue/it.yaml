@@ -228,6 +228,97 @@ calendario:
   mesi: [gennaio, febbraio, marzo, aprile, maggio, giugno, luglio, agosto, settembre, ottobre, novembre, dicembre]
   formato_data: "{giorno} {numero} {mese} {anno}, ore {ore}:{minuti}"
 
+
+# Il tempo detto a parole (#205): cosa leggono timer, promemoria, scadenze e impegni.
+# Le espressioni regolari sono tra apici singoli, cosi' il backslash resta com'e'. Le parole
+# si scrivono senza accenti (il testo si normalizza prima del confronto).
+tempo:
+  numeri:
+    un: 1
+    uno: 1
+    una: 1
+    due: 2
+    tre: 3
+    quattro: 4
+    cinque: 5
+    sei: 6
+    sette: 7
+    otto: 8
+    nove: 9
+    dieci: 10
+    quindici: 15
+    venti: 20
+    trenta: 30
+    quaranta: 40
+    sessanta: 60
+    undici: 11
+    dodici: 12
+    venticinque: 25
+    quarantacinque: 45
+    cinquanta: 50
+    novanta: 90
+  # Per ogni momento della giornata, le parole che lo dicono (l'ora la decide il codice).
+  momenti:
+    morning: [mattina, mattino, mattinata, stamattina, stamane]
+    noon: [mezzogiorno, pranzo]
+    afternoon: [pomeriggio]
+    evening: [sera, serata, stasera, cena]
+    night: [notte, stanotte]
+  # Un pasto e' insieme un'ora e un titolo: «dopo cena» e' un'ora, «cena con Marco» un impegno.
+  pasti: [pranzo, cena]
+  prima_dei_pasti: '(?:a|per|dopo|verso|prima\s+di|entro)'
+  settimana: [lunedi, martedi, mercoledi, giovedi, venerdi, sabato, domenica]
+  mesi: [gennaio, febbraio, marzo, aprile, maggio, giugno, luglio, agosto, settembre, ottobre, novembre, dicembre]
+  word_today: 'oggi'
+  word_tomorrow: 'domani'
+  word_day_after_tomorrow: 'dopodomani'
+  next_weekday: '{giorno}\s+prossimo'
+  fra: '(?:tra|fra|entro)'
+  unita:
+    minutes: 'minut\w*'
+    hours: 'or[ae]'
+    days: 'giorn\w*'
+    weeks: 'settiman\w*'
+    months: 'mes\w*'
+  mezz_ora: '(?:tra|fra)\s+mezz\s*ora'
+  alle: 'all[ae]'
+  e_mezza: 'e\s+mezza'
+  dopo_mezzogiorno: '(?:di sera|del pomeriggio|di pomeriggio)'
+  # «il 15», «il 15 marzo», «il 15/3»
+  date:
+    - '\b(?:il|per il|entro il)\s+(?P<giorno>\d{1,2})(?:\s+(?P<mese>@MESI@)|[/-](?P<mese_num>\d{1,2}))?\b'
+  # Altre espressioni da togliere dal testo di un promemoria.
+  extra:
+    - '\b(?:di mattina|del mattino)\b'
+    - '\bquesta\s+(?:mattina|sera|notte)\b'
+    - '\bnel\s+pomeriggio\b'
+    - '\bin\s+(?:mattinata|serata)\b'
+  servizio_finale: '(?:di|a|per|che|devo|dovrei)'
+  servizio_iniziale: '(?:di|che|devo|dovrei)'
+  # Come si ridice un momento a chi ha chiesto.
+  frasi:
+    today: 'oggi alle {ora}'
+    tomorrow: 'domani alle {ora}'
+    day_after_tomorrow: 'dopodomani alle {ora}'
+    weekday: '{giorno} alle {ora}'
+    date: 'il {data} alle {ora}'
+
+# Timer e promemoria: le frasi che li chiedono.
+timer:
+  verbi: '(?:metti|imposta|avvia|crea)'
+  articolo: '(?:un\s+)?'
+  parola: 'timer'
+  prima_della_durata: '(?:(?:di|d|per|da|entro)\s+)?'
+  unita:
+    secondi: 'secondi|secondo'
+    minuti: 'minuti|minuto'
+    ore: 'ore|ora'
+  prima_dell_etichetta: '(?:per|da|chiamato)'
+  mezz_ora: 'mezz.ora|mezzora'
+  promemoria: '(?:ricordami|ricordati|ricordarmi|segnati|promemoria)\s*(?:che\s+)?(?:devo\s+)?(?:di\s+)?'
+  etichetta_predefinita: 'Timer'
+  unita_a_voce: {secondi: secondi, minuti: minuti, ore: ore}
+
 # Le frasi che Shinra dice senza passare dal modello: le risposte degli
 # intenti, il rifiuto, i messaggi di errore. Ogni chiave e' nell'elenco
 # `CHIAVI_MESSAGGI` del caricatore, che dice per nome quale manca.

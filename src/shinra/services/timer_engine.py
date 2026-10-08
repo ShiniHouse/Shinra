@@ -2,18 +2,15 @@ import logging
 import re
 import time
 import uuid
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
 from shinra.domain import quando as quando_dominio
 from shinra.infra.db import depositi
+from shinra.services.intenti.lingue import Schemi, schemi
 
 logger = logging.getLogger("Shinra.TimerEngine")
-
-# Ordinati per lunghezza decrescente: nell'alternativa della regex
-# "venticinque" deve essere provato prima di "venti".
-NUMERI_TIMER: list[str] = []  # riempito sotto, dopo la definizione della mappa
 
 
 class TimerItem(BaseModel):
@@ -151,115 +148,81 @@ class TimerEngine:
     # I numeri che si dicono a voce. «Metti un timer di un minuto» e'
     # italiano normale: prima non veniva riconosciuto perche' la regex
     # pretendeva una cifra, e la frase finiva al modello.
-    NUMERI_A_PAROLE: ClassVar[Dict[str, int]] = {
-        "un": 1,
-        "uno": 1,
-        "una": 1,
-        "due": 2,
-        "tre": 3,
-        "quattro": 4,
-        "cinque": 5,
-        "sei": 6,
-        "sette": 7,
-        "otto": 8,
-        "nove": 9,
-        "dieci": 10,
-        "undici": 11,
-        "dodici": 12,
-        "quindici": 15,
-        "venti": 20,
-        "venticinque": 25,
-        "trenta": 30,
-        "quaranta": 40,
-        "quarantacinque": 45,
-        "cinquanta": 50,
-        "sessanta": 60,
-        "novanta": 90,
-    }
 
-    @classmethod
-    def _quantita(cls, testo: str) -> Optional[int]:
-        testo = (testo or "").strip().lower()
-        if testo.isdigit():
-            return int(testo)
-        return cls.NUMERI_A_PAROLE.get(testo)
+    def parse_timer_or_reminder(
+        self, user_text: str, lingua: Optional[Schemi] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Estrae durata, etichetta o orario da frasi in linguaggio naturale.
 
-    def parse_timer_or_reminder(self, user_text: str) -> Optional[Dict[str, Any]]:
-        """Estrae durata, etichetta o orario da frasi in linguaggio naturale."""
+        Le parole le dice la lingua (`lingua`, o quella dell'installazione): i numeri, le unita', i verbi che
+        chiedono un timer e quelli che chiedono un promemoria stanno nel suo file, sezioni `timer` e `tempo` (#205).
+        """
+        lingua = lingua or schemi()
+        lessico, frasi = lingua.tempo, lingua.timer
         t_lower = user_text.lower().strip()
+        parola = frasi["parola"]
+        etichetta_dopo = frasi["prima_dell_etichetta"]
+        voce = {"secondi": 1, "minuti": 60, "ore": 3600}
 
         # "mezz'ora" non ha un numero da estrarre: si tratta a parte.
         mezzora = re.search(
-            r"\btimer\s+(?:di\s+)?(?:mezz.ora|mezzora)\b(?:\s+(?:per|da|chiamato)\s+(.+))?", t_lower
+            rf"\b{parola}\s+(?:{frasi['prima_della_durata']})?(?:{frasi['mezz_ora']})\b(?:\s+{etichetta_dopo}\s+(.+))?",
+            t_lower,
         )
         if mezzora:
-            etichetta = (mezzora.group(1) or "Timer").strip(" .?!,")
+            etichetta = (mezzora.group(1) or frasi["etichetta_predefinita"]).strip(" .?!,")
             return {
                 "type": "timer",
                 "label": etichetta.capitalize(),
                 "duration_seconds": 1800,
                 "amount": 30,
-                "unit": "minuti",
+                "unit": frasi["unita_a_voce"]["minuti"],
             }
 
-        # 1. Parsing Timer: "timer 10 minuti", "timer di 5 minuti per la pasta", "metti un timer di 30 secondi".
+        # 1. Timer: "timer 10 minuti", "timer di 5 minuti per la pasta", "metti un timer di 30 secondi".
         # Tollera «d» al posto di «di» (un refuso, o una trascrizione vocale): senza, la frase non era un timer, passava
         # al modello, e il modello inventava un promemoria (trovato provando in casa, #195).
-        numeri = "|".join(NUMERI_TIMER)
+        unita = "|".join(f"(?P<{nome}>{espressione})" for nome, espressione in frasi["unita"].items())
         timer_match = re.search(
-            rf"\b(?:metti|imposta|avvia|crea)?\s*(?:un\s+)?timer\s+(?:(?:di|d|per|da|entro)\s+)?({numeri}|\d+)\s*(minuti|minuto|secondi|secondo|ore|ora)\b(?:\s+(?:per|da|chiamato)\s+(.+))?",
+            rf"\b{frasi['verbi']}?\s*{frasi['articolo']}{parola}\s+{frasi['prima_della_durata']}"
+            rf"(?P<n>{lessico.numero[1:-1]})\s*(?:{unita})\b(?:\s+{etichetta_dopo}\s+(?P<etichetta>.+))?",
             t_lower,
         )
         if timer_match:
-            amount = self._quantita(timer_match.group(1))
+            amount = lessico.quantita(timer_match.group("n"))
             if amount is None:
                 return None
-            unit = timer_match.group(2)
-            label = timer_match.group(3) or "Timer"
-            label = label.strip(" .?!,")
-
-            secs = amount
-            if "minut" in unit:
-                secs = amount * 60
-            elif "or" in unit:
-                secs = amount * 3600
-
+            nome_unita = next(n for n in voce if timer_match.group(n))
+            label = (timer_match.group("etichetta") or frasi["etichetta_predefinita"]).strip(" .?!,")
             return {
                 "type": "timer",
                 "label": label.capitalize(),
-                "duration_seconds": secs,
+                "duration_seconds": amount * voce[nome_unita],
                 "amount": amount,
-                "unit": unit,
+                "unit": timer_match.group(nome_unita),
             }
 
-        # 2. Promemoria. Il «quando» lo legge `domain/quando.py`, che capisce
-        #    anche «domani mattina», «sabato», «fra due giorni» e l'ordine
-        #    delle parole rovesciato («ricordami domani di chiamare»).
+        # 2. Promemoria. Il «quando» lo legge `domain/quando.py` con il lessico della lingua: capisce anche «domani
+        #    mattina», «sabato», «fra due giorni» e l'ordine delle parole rovesciato («ricordami domani di
+        #    chiamare»).
         #
-        #    Prima qui c'erano due espressioni regolari, «alle HH» e «tra N
-        #    minuti», e basta. Tutto il resto cadeva al modello, che chiamava
-        #    un tool che scriveva in una lista in memoria e rispondeva
-        #    «salvato» — issue #92. Le formule che questo ramo non cattura
-        #    finiscono ancora al modello, ma adesso il tool le tratta bene, e
-        #    se non capisce l'ora chiede invece di fingere.
-        chiesto = re.search(
-            r"\b(?:ricordami|ricordati|ricordarmi|segnati|promemoria)\b\s*(?:che\s+)?(?:devo\s+)?(?:di\s+)?(.+)",
-            t_lower,
-        )
+        #    Prima qui c'erano due espressioni regolari, «alle HH» e «tra N minuti», e basta. Tutto il resto cadeva al
+        #    modello, che chiamava un tool che scriveva in una lista in memoria e rispondeva «salvato» — issue #92. Le
+        #    formule che questo ramo non cattura finiscono ancora al modello, ma adesso il tool le tratta bene, e se
+        #    non capisce l'ora chiede invece di fingere.
+        chiesto = re.search(rf"\b{frasi['promemoria']}(.+)", t_lower)
         if chiesto:
             resto = chiesto.group(1).strip()
-            azione, momento = quando_dominio.separa(resto)
+            azione, momento = quando_dominio.separa(resto, lessico=lessico)
             if momento is not None and azione:
                 return {
                     "type": "reminder",
                     "text": azione.capitalize(),
                     "remind_at": momento.strftime("%Y-%m-%dT%H:%M:%S"),
-                    "formatted_time": quando_dominio.descrivi(momento),
+                    "formatted_time": quando_dominio.descrivi(momento, lessico=lessico),
                 }
 
         return None
 
-
-NUMERI_TIMER.extend(sorted(TimerEngine.NUMERI_A_PAROLE, key=len, reverse=True))
 
 timer_engine = TimerEngine()

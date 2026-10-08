@@ -66,6 +66,13 @@ DEBITO: frozenset[str] = frozenset(
         # infrastruttura raggiunti dall'API sono gli stessi sei (`data_store`,
         # `db`, `homeassistant.client`, `llm.ollama`, `scheduler.motore`,
         # `tts`), e nessuna direzione nuova e' nata.
+        # Le skill che leggono il tempo detto a parole (#205) hanno bisogno del lessico della lingua,
+        # che sta nel caricatore dei servizi. Andra' passato dal registro degli strumenti, che oggi
+        # chiama i gestori con i soli argomenti del modello: finche' non porta anche la lingua, il
+        # debito e' scritto qui.
+        "skills/calendario.py -> shinra.services.intenti.lingue",
+        "skills/manutenzione.py -> shinra.services.intenti.lingue",
+        "skills/reminders.py -> shinra.services.intenti.lingue",
         "api/app.py -> shinra.infra.homeassistant.client",
         "api/app.py -> shinra.infra.llm.ollama",
         "api/app.py -> shinra.infra.tts",
