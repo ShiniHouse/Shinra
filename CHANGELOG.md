@@ -15,6 +15,12 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Modificato
+- **L'intervista di apprendimento si svolge nella lingua di chi risponde** (#207, prima parte). I passi,
+  le domande, i suggerimenti, i riepiloghi, i saluti, i rifiuti, i nomi dei dispositivi, la descrizione di una routine
+  proposta e le parole di «si'», «no» e «salta» stanno nella sezione `intervista` del file della lingua; il prompt
+  per il modello e' nella stessa lingua. La lingua e' quella del profilo (vuota: quella dell'installazione) e vale per
+  tutta la sessione. Un profilo inglese fa l'intervista per intero in inglese, e in inglese «yes» conferma e «sì» no. Una
+  lingua senza una frase dell'intervista dice per nome quale manca. Restano da portare i messaggi degli strumenti.
 - **Timer e promemoria capiscono piu' di una lingua** (#205). I numeri in lettere, le unita' di tempo, i
   giorni, i mesi, «domani», «stasera» e le frasi che chiedono un timer escono da `domain/quando.py` e da
   `timer_engine.py` e stanno nei file delle lingue (sezioni `tempo` e `timer`); il dominio riceve un `Lessico`

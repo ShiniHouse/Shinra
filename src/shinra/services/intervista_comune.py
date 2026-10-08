@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
-"""Cio' che l'intervista e i suoi turni condividono: le fasi e il «si'»/«no».
+"""Cio' che l'intervista e i suoi turni condividono: le fasi, il «si'»/«no» e le frasi nella lingua giusta.
 
-Stanno qui, e non nel motore, perche' i turni dell'alias (`intervista_alias`)
-li usano senza poter importare il motore.
+Stanno qui, e non nel motore, perche' i turni dell'alias (`intervista_alias`) li usano senza poter importare il motore.
+
+**Nessuna frase e' nel codice** (#207): stanno nella sezione `intervista` del file della lingua, e chi risponde le riceve
+nella propria. `lingua` e' il codice della lingua del profilo; vuoto vuol dire «quella dell'installazione».
 """
 
 import re
+from typing import Any, Mapping
+
+from shinra.services.intenti.lingue import schemi
 
 # Le due fasi di un passo. Fino alla #170 ce n'era una sola: si rispondeva e
 # l'intervista salvava. Adesso in mezzo c'e' la conferma.
@@ -18,52 +23,15 @@ FASE_CONFERMA = "conferma"
 # correzione, e ogni correzione riapre la conferma.
 LIMITE_CORREZIONI = 1
 
-AFFERMAZIONI = frozenset(
-    {
-        "si",
-        "sì",
-        "s",
-        "ok",
-        "okay",
-        "va bene",
-        "vabene",
-        "giusto",
-        "esatto",
-        "esattamente",
-        "corretto",
-        "perfetto",
-        "certo",
-        "confermo",
-        "conferma",
-        "yes",
-        "y",
-        "tutto giusto",
-        "e giusto",
-        "è giusto",
-        "sì esatto",
-        "si esatto",
-    }
-)
 
-NEGAZIONI = frozenset(
-    {
-        "no",
-        "n",
-        "nope",
-        "sbagliato",
-        "niente",
-        "annulla",
-        "salta",
-        "lascia perdere",
-        "no grazie",
-        "non e giusto",
-        "non è giusto",
-    }
-)
+def sezione(lingua: str = "") -> Mapping[str, Any]:
+    """La sezione `intervista` della lingua: passi, frasi, parole di si'/no, prompt."""
+    return schemi(lingua or None).intervista
 
-SUGGERIMENTO_CONFERMA = (
-    "Rispondi «sì» per salvare, «no» per saltare, oppure riscrivi la frase come la diresti tu."
-)
+
+def dice(lingua: str, chiave: str, **valori: Any) -> str:
+    """Una frase dell'intervista, con i valori al loro posto."""
+    return sezione(lingua)["testi"][chiave].format_map(valori)
 
 
 def normalizza(testo: str) -> str:
@@ -76,9 +44,17 @@ def normalizza(testo: str) -> str:
     return re.sub(r"\s+", " ", solo_lettere).strip()
 
 
-def e_affermativa(testo: str) -> bool:
-    return normalizza(testo) in AFFERMAZIONI
+def _parole(lingua: str, chiave: str) -> frozenset:
+    return frozenset(normalizza(p) for p in sezione(lingua)[chiave])
 
 
-def e_negativa(testo: str) -> bool:
-    return normalizza(testo) in NEGAZIONI
+def e_affermativa(testo: str, lingua: str = "") -> bool:
+    return normalizza(testo) in _parole(lingua, "afferma")
+
+
+def e_negativa(testo: str, lingua: str = "") -> bool:
+    return normalizza(testo) in _parole(lingua, "nega")
+
+
+def vuole_saltare(testo: str, lingua: str = "") -> bool:
+    return normalizza(testo) in _parole(lingua, "salta")

@@ -15,6 +15,7 @@ from shinra.api.sicurezza import (
 from shinra.services.interview_engine import interview_engine
 from shinra.services.intervista_alias import dispositivi_senza_nome
 from shinra.services.timer_engine import timer_engine
+from shinra.services.user_manager import user_manager
 
 logger = logging.getLogger("Shinra.Admin")
 # Ogni rotta di questo router richiede una sessione valida: e' il
@@ -104,7 +105,9 @@ async def start_learning_session(payload: StartLearningReq):
     # I dispositivi veri senza un nome: Home Assistant spento li rende zero, e
     # l'intervista fa le sue domande senza questa parte.
     dispositivi = await dispositivi_senza_nome()
-    return interview_engine.start_session(payload.user_id, dispositivi)
+    profilo = user_manager.get_user_by_id(payload.user_id)
+    # L'intervista si svolge nella lingua della persona (vuota: quella dell'installazione).
+    return interview_engine.start_session(payload.user_id, dispositivi, getattr(profilo, "lingua", "") or "")
 
 
 @router.post("/learning/answer")

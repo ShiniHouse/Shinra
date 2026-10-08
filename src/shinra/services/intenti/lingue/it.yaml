@@ -322,6 +322,158 @@ timer:
 # Le frasi che Shinra dice senza passare dal modello: le risposte degli
 # intenti, il rifiuto, i messaggi di errore. Ogni chiave e' nell'elenco
 # `CHIAVI_MESSAGGI` del caricatore, che dice per nome quale manca.
+
+# L'intervista di apprendimento (#207): i passi, le frasi, le parole di «si'» e «no», e il prompt di estrazione.
+# I passi stanno qui con il testo di ogni lingua; la struttura (id, categoria, cosa la casa sa gia') e' nel codice.
+intervista:
+  afferma: ["si", "sì", "s", "ok", "okay", "va bene", "vabene", "giusto", "esatto", "esattamente", "corretto", "perfetto", "certo", "confermo", "conferma", "yes", "y", "tutto giusto", "e giusto", "è giusto", "sì esatto", "si esatto"]
+  nega: ["no", "n", "nope", "sbagliato", "niente", "annulla", "salta", "lascia perdere", "no grazie", "non e giusto", "non è giusto"]
+  salta: ["salta", "no", "niente", "nulla", "nessuno", "lascia perdere", "non so", "boh", "basta"]
+  testi:
+    saluto: "Modalità Apprendimento attivata. Ti farò qualche breve domanda, una per volta, per imparare a gestire la tua casa al meglio. "
+    salto: "{noto}: salto la domanda."
+    niente_da_chiedere: "Non ho niente da chiedere: la casa mi ha già detto tutto quello che serve."
+    riconoscimento_non_interpretato: "Ho conservato la tua risposta, ma non sono riuscita a ricavarne niente di preciso: il modello non ha risposto come mi serve. Controlla quale modello e' configurato — per capire una frase e riassumerla ne serve uno da qualche miliardo di parametri. Intanto proseguo. "
+    riconoscimento_n: "Ricevuto! Ho aggiunto {quanti} nuovi dettagli alla mia conoscenza. "
+    riconoscimento_niente: "Ho letto, ma da questa risposta non ho ricavato niente da ricordare: se ti va, piu' avanti riprendiamo con qualche dettaglio in piu'. "
+    chiusura_errori: "Intervista finita. Ho memorizzato {imparati} fatti, ma {non_interpretate} delle tue risposte non sono riuscita a interpretarle: le ho conservate cosi' come le hai scritte. Con un modello piu' capace vale la pena rifarla — imparerei molto di piu' dalle stesse risposte."
+    chiusura_ok: "Ottimo lavoro! Intervista completata. Ho memorizzato {imparati} fatti sulla tua casa e calibrato le mie risposte per te e la tua famiglia."
+    chiusura_alias_uno: " Ho dato un nome a {n} dispositivo: da ora li capisco a voce."
+    chiusura_alias_piu: " Ho dato un nome a {n} dispositivi: da ora li capisco a voce."
+    riepilogo: "Ho capito questo:\n{elenco}\nÈ giusto? Rispondi «sì» e lo salvo. Se ho capito male, riscrivimelo come lo diresti tu; se preferisci lasciar perdere, rispondi «no»."
+    suggerimento_conferma: "Rispondi «sì» per salvare, «no» per saltare, oppure riscrivi la frase come la diresti tu."
+    insistenza_non_interpretato: "Non sono riuscita a ricavarne niente di preciso."
+    insistenza_vuota: "Da questa risposta non ho ricavato niente da ricordare."
+    insistenza: "{apertura} Ci riprovo una volta sola, poi passo oltre.\n{domanda}{esempio}"
+    per_esempio: "\nPer esempio: «{esempio}»"
+    non_salvo: "Va bene, non salvo niente di questo passo. "
+    salvo_cosi: "Salvo così e proseguo, per non farti riscrivere all'infinito. "
+    routine_proposta: "\n\n💡 Ho notato una possibile routine, «{nome}»:\n{anteprima}\nProva a secco: {prova}.{scartate} Vuoi che la crei? La potrai modificare nell'editor."
+    routine_scartate: " Ho scartato: {elenco}."
+    routine_prova_non_fatta: "non fatta"
+    routine_non_supera: "La routine non supera il controllo sulla casa vera."
+    alias_titolo: "Il nome di un dispositivo"
+    alias_domanda: "Come chiami in casa «{nome}» ({etichetta})?"
+    alias_hint: "es. la luce del corridoio. Rispondi «salta» per lasciarlo com'e'."
+    alias_lascio: "Va bene, lo lascio com'e'. "
+    alias_non_capito: "Non ho capito un nome: lo lascio com'e'. "
+    alias_breve: "Un nome e' breve, di poche parole: come lo chiameresti a voce? Oppure rispondi «salta»."
+    alias_gia_preso: "«{nome}» e' gia' il nome di {altro}: scegline un altro, oppure rispondi «salta»."
+    alias_conferma: "Lo chiamerai «{nome}». E' giusto?"
+    alias_suggerimento: "Rispondi «sì» per salvare, «no» per lasciarlo com'e', oppure scrivi un altro nome."
+    alias_fatto: "Fatto: da ora «{nome}» e' questo dispositivo. "
+    alias_rinuncia: "Lo lascio com'e', per non farti riscrivere all'infinito. "
+    noto_profili: "In casa ci sono gia' {nomi}"
+    noto_stanze: "Conosco gia' queste stanze: {nomi}"
+    noto_fatto: "Ho gia' annotato: «{fatto}»"
+    elenco_e: " e "
+    r_ignoto: "«{rif}»: non e' un dispositivo che conosco"
+    r_comando: "«{nome}»: non so fare «{comando}»"
+    r_delicato: "«{nome}»: una routine non lo comanda (e' una cosa delicata)"
+    r_pausa: "una pausa con un tempo che non ha senso"
+    r_annuncio: "un annuncio vuoto o troppo lungo"
+    r_tipo: "un'azione di tipo «{tipo}» che non esiste"
+    r_prova_ok: "{n} passi, provati senza toccare la casa"
+    r_prova_ferma: "nella prova a secco si fermerebbe dopo {fatti} passi su {attesi}"
+    r_luminosita: " al {valore}%"
+    r_temperatura: " a {valore} gradi"
+    r_pausa_voce: "aspetta {secondi} secondi"
+    r_dice: "dice: «{messaggio}»"
+  comandi:
+    turn_on: "accende"
+    turn_off: "spegne"
+    toggle: "inverte lo stato di"
+    open_cover: "apre"
+    close_cover: "chiude"
+    stop_cover: "ferma"
+  etichette:
+    light: "luce"
+    switch: "presa o interruttore"
+    cover: "tapparella o tenda"
+    climate: "clima"
+    fan: "ventilatore"
+    media_player: "lettore multimediale"
+  passi:
+    casa_citta:
+      title: "Dove si trova la casa"
+      question: "In quale città o zona si trova la tua casa?"
+      hint: "es. Vivo ad Arezzo."
+      parole: ["vivo a", "abito a", "città", "citta", "zona", "si trova a", "si trova ad"]
+    casa_piano:
+      title: "Il piano"
+      question: "A che piano abiti?"
+      hint: "es. Al secondo piano di un condominio."
+      parole: ["piano"]
+    casa_stanze:
+      title: "Le stanze"
+      question: "Quali sono le stanze principali della casa?"
+      hint: "es. Salotto, cucina, due camere e studio."
+    famiglia_chi:
+      title: "Chi vive in casa"
+      question: "Chi vive con te in casa?"
+      hint: "es. Mia moglie Sonia e i miei figli Thomas e Christian."
+    famiglia_stanze:
+      title: "Dove sta ciascuno"
+      question: "In quale stanza passa più tempo ciascuno di loro?"
+      hint: "es. Thomas sta spesso nella cameretta."
+      parole: ["passa più tempo", "sta spesso", "passa piu tempo"]
+    mattina_ora:
+      title: "L'ora del risveglio"
+      question: "A che ora ti svegli di solito?"
+      hint: "es. Mi sveglio alle 7:00."
+      parole: ["sveglia", "si sveglia", "mi sveglio", "risveglio"]
+    mattina_cosa:
+      title: "Cosa succede al risveglio"
+      question: "Che cosa vorresti che succedesse in casa quando ti svegli?"
+      hint: "es. Accendere la luce in cucina e la macchina del caffè."
+    notte_ora:
+      title: "L'ora di andare a dormire"
+      question: "A che ora vai a dormire di solito?"
+      hint: "es. Verso le 23:30."
+      parole: ["va a letto", "vado a letto", "va a dormire", "vado a dormire"]
+    notte_cosa:
+      title: "Cosa succede la sera"
+      question: "Che cosa deve succedere in casa quando vai a dormire?"
+      hint: "es. Spegnere tutte le luci e abbassare il termostato a 18 gradi."
+    relax:
+      title: "Relax e svago"
+      question: "Quando guardi un film, come ti piace impostare le luci del salotto?"
+      hint: "es. Le abbasso al 15% e accendo la presa della TV."
+    tecnico_wifi:
+      title: "La rete per gli ospiti"
+      question: "Qual è il nome della rete Wi-Fi per gli ospiti?"
+      hint: "es. CasaMia_Guest."
+      parole: ["wi-fi", "wifi", "rete ospiti"]
+    tecnico_contatore:
+      title: "Il contatore"
+      question: "Dove si trova il contatore elettrico?"
+      hint: "es. Nel sottoscala all'ingresso."
+      parole: ["contatore"]
+    tecnico_contatto:
+      title: "Un contatto importante"
+      question: "C'è un contatto importante da ricordare, come l'idraulico o il medico?"
+      hint: "es. L'idraulico è Rossi, 333 1234567."
+      parole: ["idraulico", "elettricista", "medico", "numero di emergenza"]
+  prompt_estrazione: |
+    Sei l'assistente IA Shinra. Analizza la risposta dell'utente durante un'intervista ed estrai le informazioni da memorizzare.
+
+    Argomento: {titolo} (Categoria: {categoria})
+    Domanda: "{domanda}"
+    Risposta: "{risposta}"
+
+    Estrai:
+    1. Una lista di 'facts' atomici e chiari in forma di frasi descrittive in terza persona (es. "La sveglia nei feriali è alle ore 7:00").
+    2. Se l'utente ha descritto una sequenza di azioni o abitudini, crea un oggetto 'proposed_routine' con 'name', 'description', 'trigger_phrases' e una lista 'actions' (con type 'ha_device', 'tts' o 'delay'). Altrimenti metti null.
+
+    Rispondi ESCLUSIVAMENTE con un JSON:
+    {{
+      "facts": [
+        {{"text": "Frase descrittiva 1", "category": "{categoria}"}}
+      ],
+      "proposed_routine": null
+    }}
+  sistema_estrazione: "Rispondi solo con JSON valido. Non aggiungere markdown o spiegazioni."
+
 messaggi:
   temperatura_sensori_illeggibili: "Non riesco a leggere i sensori di casa."
   temperatura_nessun_sensore: "Non trovo un sensore di temperatura in casa."

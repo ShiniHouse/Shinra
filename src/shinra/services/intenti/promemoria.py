@@ -30,7 +30,7 @@ class Apprendimento(Intento):
 
         lingua = richiesta.schemi
         if any(t in richiesta.minuscolo for t in lingua.avvii_apprendimento):
-            esito = interview_engine.start_session(utente)
+            esito = interview_engine.start_session(utente, lingua=richiesta.lingua)
             richiesta.annota("learning_interview", {"action": "start"}, esito)
             return Risposta(esito["message"], extra={"learning_session": esito})
 

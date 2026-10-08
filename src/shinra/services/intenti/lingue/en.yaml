@@ -289,6 +289,157 @@ timer:
   etichetta_predefinita: 'Timer'
   unita_a_voce: {secondi: seconds, minuti: minutes, ore: hours}
 
+
+# The learning interview (#207): steps, sentences, the yes/no words and the extraction prompt.
+intervista:
+  afferma: ["yes", "y", "yeah", "yep", "ok", "okay", "right", "correct", "exactly", "sure", "confirm", "that's right", "thats right", "all right", "perfect"]
+  nega: ["no", "n", "nope", "wrong", "nothing", "cancel", "skip", "forget it", "no thanks", "that's wrong", "thats wrong"]
+  salta: ["skip", "no", "nothing", "none", "forget it", "i don't know", "i dont know", "dunno", "enough"]
+  testi:
+    saluto: "Learning mode is on. I'll ask you a few short questions, one at a time, to learn how to run your home. "
+    salto: "{noto}: I'll skip the question."
+    niente_da_chiedere: "I have nothing to ask: the house has already told me everything I need."
+    riconoscimento_non_interpretato: "I kept your answer, but I couldn't make anything precise of it: the model didn't answer the way I need. Check which model is configured: understanding and summarising a sentence takes one with a few billion parameters. I'll go on for now. "
+    riconoscimento_n: "Got it! I added {quanti} new details to what I know. "
+    riconoscimento_niente: "I read it, but I couldn't pick anything to remember from that answer: if you like, we can come back with a few more details later. "
+    chiusura_errori: "Interview over. I stored {imparati} facts, but I could not interpret {non_interpretate} of your answers: I kept them exactly as you wrote them. With a more capable model it is worth doing again, I would learn much more from the same answers."
+    chiusura_ok: "Great job! Interview complete. I stored {imparati} facts about your home and tuned my answers for you and your family."
+    chiusura_alias_uno: " I gave a name to {n} device: from now on I understand it by voice."
+    chiusura_alias_piu: " I gave a name to {n} devices: from now on I understand them by voice."
+    riepilogo: "Here is what I understood:\n{elenco}\nIs that right? Answer «yes» and I'll save it. If I got it wrong, write it again the way you'd say it; if you'd rather drop it, answer «no»."
+    suggerimento_conferma: "Answer «yes» to save, «no» to skip, or write the sentence again the way you'd say it."
+    insistenza_non_interpretato: "I couldn't make anything precise of that."
+    insistenza_vuota: "I couldn't pick anything to remember from that answer."
+    insistenza: "{apertura} I'll try once more, then move on.\n{domanda}{esempio}"
+    per_esempio: "\nFor example: «{esempio}»"
+    non_salvo: "All right, I won't save anything from this step. "
+    salvo_cosi: "I'll save it like this and move on, so you don't have to rewrite it forever. "
+    routine_proposta: "\n\n💡 I noticed a possible routine, «{nome}»:\n{anteprima}\nDry run: {prova}.{scartate} Shall I create it? You can edit it in the editor."
+    routine_scartate: " I dropped: {elenco}."
+    routine_prova_non_fatta: "not done"
+    routine_non_supera: "The routine doesn't pass the check against the real house."
+    alias_titolo: "A device's name"
+    alias_domanda: "What do you call «{nome}» ({etichetta}) at home?"
+    alias_hint: "e.g. the hallway light. Answer «skip» to leave it as it is."
+    alias_lascio: "All right, I'll leave it as it is. "
+    alias_non_capito: "I didn't catch a name: I'll leave it as it is. "
+    alias_breve: "A name is short, a few words: what would you call it out loud? Or answer «skip»."
+    alias_gia_preso: "«{nome}» is already the name of {altro}: pick another, or answer «skip»."
+    alias_conferma: "You'll call it «{nome}». Is that right?"
+    alias_suggerimento: "Answer «yes» to save, «no» to leave it as it is, or write another name."
+    alias_fatto: "Done: from now on «{nome}» is this device. "
+    alias_rinuncia: "I'll leave it as it is, so you don't have to rewrite it forever. "
+    noto_profili: "The house already has {nomi}"
+    noto_stanze: "I already know these rooms: {nomi}"
+    noto_fatto: "I've already noted: «{fatto}»"
+    elenco_e: " and "
+    r_ignoto: "«{rif}»: not a device I know"
+    r_comando: "«{nome}»: I can't do «{comando}»"
+    r_delicato: "«{nome}»: a routine doesn't control it (it's a delicate thing)"
+    r_pausa: "a pause with a time that makes no sense"
+    r_annuncio: "an empty or too long announcement"
+    r_tipo: "an action of type «{tipo}» that doesn't exist"
+    r_prova_ok: "{n} steps, tried without touching the house"
+    r_prova_ferma: "in the dry run it would stop after {fatti} steps out of {attesi}"
+    r_luminosita: " at {valore}%"
+    r_temperatura: " at {valore} degrees"
+    r_pausa_voce: "waits {secondi} seconds"
+    r_dice: "says: «{messaggio}»"
+  comandi:
+    turn_on: "turns on"
+    turn_off: "turns off"
+    toggle: "toggles"
+    open_cover: "opens"
+    close_cover: "closes"
+    stop_cover: "stops"
+  etichette:
+    light: "light"
+    switch: "plug or switch"
+    cover: "blind or curtain"
+    climate: "climate"
+    fan: "fan"
+    media_player: "media player"
+  passi:
+    casa_citta:
+      title: "Where the house is"
+      question: "In which city or area is your home?"
+      hint: "e.g. I live in Arezzo."
+      parole: ["i live in", "live in", "city", "area", "located in"]
+    casa_piano:
+      title: "The floor"
+      question: "Which floor do you live on?"
+      hint: "e.g. On the second floor of an apartment block."
+      parole: ["floor"]
+    casa_stanze:
+      title: "The rooms"
+      question: "What are the main rooms of the house?"
+      hint: "e.g. Living room, kitchen, two bedrooms and a study."
+    famiglia_chi:
+      title: "Who lives here"
+      question: "Who lives in the house with you?"
+      hint: "e.g. My wife Sonia and my children Thomas and Christian."
+    famiglia_stanze:
+      title: "Where each one is"
+      question: "Which room does each of them spend the most time in?"
+      hint: "e.g. Thomas is often in his bedroom."
+      parole: ["spends the most time", "is often in", "spends most of"]
+    mattina_ora:
+      title: "Wake-up time"
+      question: "What time do you usually wake up?"
+      hint: "e.g. I wake up at 7:00."
+      parole: ["wake up", "wakes up", "alarm"]
+    mattina_cosa:
+      title: "What happens when you wake up"
+      question: "What would you like to happen in the house when you wake up?"
+      hint: "e.g. Turn on the kitchen light and the coffee machine."
+    notte_ora:
+      title: "Bedtime"
+      question: "What time do you usually go to bed?"
+      hint: "e.g. Around 11:30 pm."
+      parole: ["go to bed", "goes to bed", "bedtime", "go to sleep"]
+    notte_cosa:
+      title: "What happens in the evening"
+      question: "What should happen in the house when you go to bed?"
+      hint: "e.g. Turn off all the lights and lower the thermostat to 18 degrees."
+    relax:
+      title: "Relax and leisure"
+      question: "When you watch a film, how do you like to set the living room lights?"
+      hint: "e.g. I dim them to 15% and turn on the TV plug."
+    tecnico_wifi:
+      title: "The guest network"
+      question: "What is the name of the guest Wi-Fi network?"
+      hint: "e.g. MyHome_Guest."
+      parole: ["wi-fi", "wifi", "guest network"]
+    tecnico_contatore:
+      title: "The meter"
+      question: "Where is the electricity meter?"
+      hint: "e.g. In the cupboard under the stairs by the entrance."
+      parole: ["meter"]
+    tecnico_contatto:
+      title: "An important contact"
+      question: "Is there an important contact to remember, like the plumber or the doctor?"
+      hint: "e.g. The plumber is Rossi, 333 1234567."
+      parole: ["plumber", "electrician", "doctor", "emergency number"]
+  prompt_estrazione: |
+    You are the AI assistant Shinra. Analyse the user's answer during an interview and extract the information to remember.
+
+    Topic: {titolo} (Category: {categoria})
+    Question: "{domanda}"
+    Answer: "{risposta}"
+
+    Extract:
+    1. A list of atomic, clear 'facts' as descriptive third-person sentences (e.g. "The weekday alarm is at 7:00").
+    2. If the user described a sequence of actions or habits, create a 'proposed_routine' object with 'name', 'description', 'trigger_phrases' and a list 'actions' (with type 'ha_device', 'tts' or 'delay'). Otherwise put null.
+
+    Answer ONLY with a JSON:
+    {{
+      "facts": [
+        {{"text": "Descriptive sentence 1", "category": "{categoria}"}}
+      ],
+      "proposed_routine": null
+    }}
+  sistema_estrazione: "Answer only with valid JSON. Do not add markdown or explanations."
+
 messaggi:
   temperatura_sensori_illeggibili: "I can't read the home sensors."
   temperatura_nessun_sensore: "I can't find a temperature sensor in the house."

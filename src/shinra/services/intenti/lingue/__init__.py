@@ -63,6 +63,7 @@ RICHIESTE: Tuple[Tuple[str, ...], ...] = (
     ("calendario", "formato_data"),
     ("tempo",),
     ("timer",),
+    ("intervista",),
 )
 
 # Le voci della sezione timer: le frasi che chiedono un timer o un promemoria (#205).
@@ -78,6 +79,19 @@ CHIAVI_TIMER: Tuple[str, ...] = (
     "etichetta_predefinita",
     "unita_a_voce",
 )
+
+# Le frasi dell'intervista di apprendimento (#207), sezione `intervista.testi`.
+CHIAVI_INTERVISTA: Tuple[str, ...] = (
+    "saluto", "salto", "niente_da_chiedere", "riconoscimento_non_interpretato", "riconoscimento_n",
+    "riconoscimento_niente", "chiusura_errori", "chiusura_ok", "chiusura_alias_uno", "chiusura_alias_piu",
+    "riepilogo", "suggerimento_conferma", "insistenza_non_interpretato", "insistenza_vuota", "insistenza",
+    "per_esempio", "non_salvo", "salvo_cosi", "routine_proposta", "routine_scartate", "routine_prova_non_fatta",
+    "routine_non_supera", "alias_titolo", "alias_domanda", "alias_hint", "alias_lascio", "alias_non_capito",
+    "alias_breve", "alias_gia_preso", "alias_conferma", "alias_suggerimento", "alias_fatto", "alias_rinuncia",
+    "noto_profili", "noto_stanze", "noto_fatto", "elenco_e", "r_ignoto", "r_comando", "r_delicato", "r_pausa",
+    "r_annuncio", "r_tipo", "r_prova_ok", "r_prova_ferma", "r_luminosita", "r_temperatura", "r_pausa_voce",
+    "r_dice",
+)  # fmt: skip
 
 # Le frasi che Shinra **dice**, una per chiave. Stanno qui e non in
 # `RICHIESTE` perche' il controllo e' piu' fine: non basta che la sezione
@@ -175,6 +189,8 @@ class Schemi:
     # Il tempo detto a parole, per domain/quando.py (#205), e le frasi dei timer.
     tempo: quando_dominio.Lessico
     timer: Mapping[str, Any]
+    # L'intervista di apprendimento: passi, frasi, parole di si'/no e prompt (#207).
+    intervista: Mapping[str, Any]
     messaggi: Mapping[str, str]
     prompt: Mapping[str, str]
 
@@ -225,6 +241,30 @@ def _verifica(dati: Dict[str, Any], dove: Path) -> None:
     timer = dati.get("timer")
     if isinstance(timer, dict):
         mancanti.extend(f"timer.{k}" for k in CHIAVI_TIMER if not timer.get(k))
+    intervista = dati.get("intervista")
+    if isinstance(intervista, dict):
+        testi = intervista.get("testi") or {}
+        mancanti.extend(f"intervista.testi.{k}" for k in CHIAVI_INTERVISTA if not testi.get(k))
+        mancanti.extend(
+            f"intervista.{k}"
+            for k in (
+                "afferma",
+                "nega",
+                "salta",
+                "comandi",
+                "etichette",
+                "passi",
+                "prompt_estrazione",
+                "sistema_estrazione",
+            )
+            if not intervista.get(k)
+        )
+        for passo, voci in (intervista.get("passi") or {}).items():
+            mancanti.extend(
+                f"intervista.passi.{passo}.{k}"
+                for k in ("title", "question", "hint")
+                if not (voci or {}).get(k)
+            )
     if mancanti:
         raise LinguaIncompleta(f"{dove.name}: mancano {', '.join(mancanti)}")
 
@@ -270,6 +310,7 @@ def _compila(lingua: str) -> Schemi:
         formato_data=str(dati["calendario"]["formato_data"]),
         tempo=tempo,
         timer=dict(dati["timer"]),
+        intervista=dict(dati["intervista"]),
         messaggi={k: str(v) for k, v in dati["messaggi"].items()},
         prompt={k: str(v) for k, v in dati["prompt"].items()},
     )
