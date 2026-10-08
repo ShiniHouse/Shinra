@@ -156,7 +156,11 @@ legge il `Lessico` della lingua, e un test controlla che nessuna parola italiana
 
 La lingua si sceglie per persona nella scheda del profilo, o per tutta la casa
 con `assistant.language`. Restano italiani, per ora: le etichette della dashboard e i messaggi degli strumenti (l'intervista no, #207).
-Gli strumenti che leggono il tempo (promemoria, calendario, scadenze) usano la lingua dell'installazione.
+Gli strumenti dicono il loro esito nella lingua di chi ha chiesto (#207): la lingua del profilo viaggia nel contesto
+della richiesta (`contesto.lingua_corrente()`, la dichiara l'agente) e lo strumento scrive `messaggio("chiave", nome=...)`
+da `shinra.infra.lingue`, con la frase in `messaggi` di ogni lingua. Oggi lo fa la serratura; gli altri strumenti hanno
+ancora frasi italiane nel codice, e `tests/unit/test_inventario_messaggi.py` le conta: un debito che cala, file per file.
+Gli strumenti che leggono il tempo (promemoria, calendario, scadenze) usano ancora la lingua dell'installazione.
 
 La sezione `intervista` e' l'intervista di apprendimento: ogni passo (titolo, domanda, suggerimento, parole di «la casa
 lo sa gia'»), ogni frase (`testi`), le parole di sì/no/salta, i nomi dei comandi di una routine e il prompt di estrazione

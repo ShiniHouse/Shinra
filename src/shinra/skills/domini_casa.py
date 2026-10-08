@@ -26,6 +26,7 @@ import logging
 from typing import Any, Dict, Optional
 
 from shinra.domain.contesto import CANALE_ALEXA, canale_corrente, identita_e_ignota
+from shinra.infra.lingue import messaggio
 from shinra.skills.entita import EntitaSconosciuta, nome_di, stati_noti, stato_di, verifica
 
 logger = logging.getLogger("Shinra.DominiCasa")
@@ -81,17 +82,19 @@ async def comanda_serratura(entity_id: str, azione: str) -> Dict[str, Any]:
 
     if azione in ("stato", "verifica"):
         valore = stato_di(entita, stati)
-        leggibile = {"locked": "chiusa", "unlocked": "aperta", "jammed": "bloccata"}.get(valore, valore)
-        return _riuscito(f"{nome} e' {leggibile}.", stato=valore)
+        leggibile = (
+            messaggio(f"serratura_stato_{valore}") if valore in ("locked", "unlocked", "jammed") else valore
+        )
+        return _riuscito(messaggio("serratura_stato", nome=nome, stato=leggibile), stato=valore)
 
     if azione in ("blocca", "chiudi", "lock"):
         esito = await _chiama("lock", "lock", {"entity_id": entita})
         if esito.get("success"):
-            return _riuscito(f"{nome} chiusa.")
-        return _fallito(f"Non sono riuscito a chiudere {nome}.")
+            return _riuscito(messaggio("serratura_chiusa", nome=nome))
+        return _fallito(messaggio("serratura_non_chiusa", nome=nome))
 
     if azione not in ("sblocca", "apri", "unlock"):
-        return _fallito(f"Azione «{azione}» non prevista per una serratura.")
+        return _fallito(messaggio("serratura_azione_ignota", azione=azione))
 
     canale = canale_corrente()
     if canale == CANALE_ALEXA and identita_e_ignota():
@@ -103,11 +106,7 @@ async def comanda_serratura(entity_id: str, azione: str) -> Dict[str, Any]:
         # Chi so chi e' passa di qui e incontra due controlli veri: il
         # permesso `sicurezza.comanda`, imposto da `call_service` sul dominio
         # `lock`, e la conferma esplicita qui sotto.
-        return _fallito(
-            f"Da voce non apro {nome}: non so chi sta parlando. Se configuri i "
-            "profili vocali di Alexa e associ la tua voce a un profilo dalle "
-            "impostazioni, potro' farlo. Intanto puoi aprirla dalla dashboard."
-        )
+        return _fallito(messaggio("serratura_da_voce", nome=nome))
 
     # Qui si arriva solo dopo la conferma di chi ha chiesto: la chiede `execute_tool` per ogni
     # azione sensibile (`services/conferme.py`, issue #192), legata alla persona e al canale e
@@ -115,8 +114,8 @@ async def comanda_serratura(entity_id: str, azione: str) -> Dict[str, Any]:
     esito = await _chiama("lock", "unlock", {"entity_id": entita})
     if esito.get("success"):
         logger.warning("Serratura aperta: %s (canale %s)", entita, canale or "non indicato")
-        return _riuscito(f"{nome} aperta.")
-    return _fallito(f"Non sono riuscito ad aprire {nome}.")
+        return _riuscito(messaggio("serratura_aperta", nome=nome))
+    return _fallito(messaggio("serratura_non_aperta", nome=nome))
 
 
 # ------------------------------------------------------------ media player

@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from shinra.config.prompt_templates import get_contesto_della_richiesta, get_system_prompt
 from shinra.config.settings import settings
-from shinra.domain.contesto import come_modello
+from shinra.domain.contesto import come_modello, dichiara_lingua
 from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.lingue import schemi
@@ -94,6 +94,10 @@ class ShinraAgent:
                 # Profilo admin predefinito se non specificato
                 users = user_manager.get_users()
                 profile = users[0] if users else None
+
+        # La lingua di chi parla viaggia con la richiesta: gli strumenti che il modello chiama la leggono
+        # dal contesto e dicono il loro esito nella lingua giusta (#207).
+        dichiara_lingua(getattr(profile, "lingua", "") or "")
 
         # 1a. La memoria della conversazione e' di questa persona, non di
         # tutta la casa. Si sceglie qui, dopo aver risolto il profilo, e non

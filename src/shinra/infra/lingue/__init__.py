@@ -99,6 +99,16 @@ CHIAVI_INTERVISTA: Tuple[str, ...] = (
 # ogni lingua. Una chiave che manca non deve scoppiare dentro una risposta a
 # chi sta parlando: si dice per nome al caricamento.
 CHIAVI_MESSAGGI: Tuple[str, ...] = (
+    "serratura_stato",
+    "serratura_stato_locked",
+    "serratura_stato_unlocked",
+    "serratura_stato_jammed",
+    "serratura_chiusa",
+    "serratura_aperta",
+    "serratura_non_chiusa",
+    "serratura_non_aperta",
+    "serratura_azione_ignota",
+    "serratura_da_voce",
     "temperatura_sensori_illeggibili",
     "temperatura_nessun_sensore",
     "temperatura_nessun_sensore_in",
@@ -332,6 +342,16 @@ def elenco_lingue() -> Dict[str, Any]:
     from shinra.config import settings as impostazioni
 
     return {"installazione": impostazioni.settings.assistant.language, "lingue": disponibili}
+
+
+def messaggio(chiave: str, **valori: Any) -> str:
+    """Una frase degli strumenti, nella lingua di chi sta parlando (#207).
+
+    La lingua e' quella del contesto della richiesta; se non c'e', quella dell'installazione.
+    """
+    from shinra.domain.contesto import lingua_corrente
+
+    return schemi(lingua_corrente() or None).dice(chiave, **valori)
 
 
 def schemi(lingua: str | None = None) -> Schemi:

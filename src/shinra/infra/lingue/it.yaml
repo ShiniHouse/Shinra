@@ -475,6 +475,16 @@ intervista:
   sistema_estrazione: "Rispondi solo con JSON valido. Non aggiungere markdown o spiegazioni."
 
 messaggi:
+  serratura_stato: "{nome} e' {stato}."
+  serratura_stato_locked: "chiusa"
+  serratura_stato_unlocked: "aperta"
+  serratura_stato_jammed: "bloccata"
+  serratura_chiusa: "{nome} chiusa."
+  serratura_aperta: "{nome} aperta."
+  serratura_non_chiusa: "Non sono riuscito a chiudere {nome}."
+  serratura_non_aperta: "Non sono riuscito ad aprire {nome}."
+  serratura_azione_ignota: "Azione «{azione}» non prevista per una serratura."
+  serratura_da_voce: "Da voce non apro {nome}: non so chi sta parlando. Se configuri i profili vocali di Alexa e associ la tua voce a un profilo dalle impostazioni, potro' farlo. Intanto puoi aprirla dalla dashboard."
   temperatura_sensori_illeggibili: "Non riesco a leggere i sensori di casa."
   temperatura_nessun_sensore: "Non trovo un sensore di temperatura in casa."
   temperatura_nessun_sensore_in: "Non trovo un sensore di temperatura in {stanza}."
