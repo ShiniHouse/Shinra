@@ -119,7 +119,7 @@ PRESA = {"entity_id": "switch.sonoff_100053af52", "friendly_name": "Sonoff 10005
 
 
 def test_i_dispositivi_diventano_passi_dopo_le_domande_fisse(archivio, monkeypatch) -> None:
-    motore, sessione = _motore(archivio, monkeypatch, [CUCINA, PRESA])
+    _, sessione = _motore(archivio, monkeypatch, [CUCINA, PRESA])
 
     assert len(sessione["passi"]) == len(INTERVIEW_STEPS) + 2
     primo = sessione["passi"][len(INTERVIEW_STEPS)]
