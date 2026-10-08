@@ -84,7 +84,7 @@ Da qui in poi «accendi la luce della scrivania» funziona.
 
 ## 4. La prima automazione, in un minuto
 
-**Automazioni e routine → «Alle 23, spegni tutto»**.
+**Automazioni e routine → «Crea un'automazione»**.
 
 È una scorciatoia: un innesco, un'azione, niente disegno. Scegli *quando* —
 a un orario, all'alba, al tramonto, quando un valore supera una soglia,

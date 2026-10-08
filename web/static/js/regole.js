@@ -298,12 +298,12 @@ function renderRegole(regole, modi) {
                 <i data-lucide="zap-off" class="w-8 h-8 text-slate-600 mx-auto mb-3"></i>
                 <p class="text-sm text-slate-300 font-semibold">La casa non fa ancora niente da sola.</p>
                 <p class="text-xs text-slate-500 mt-2 max-w-md mx-auto">
-                    Le automazioni nascono dagli inneschi delle routine: apri una routine
-                    <span class="text-slate-300">qui sotto</span>, metti un innesco
-                    «a un orario» o «al tramonto» sul primo nodo, e salva.
+                    Apri <span class="text-slate-300">«Crea un'automazione»</span> qui sopra:
+                    scegli quando (a un'ora, al tramonto, quando succede qualcosa) e
+                    cosa fare. Oppure parti da una routine che hai già disegnato.
                 </p>
                 <button type="button" data-gesto="vaiAlleRoutine" class="mt-4 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
-                    Vai alle routine
+                    Vai alle tue routine
                 </button>
             </div>`);
     }

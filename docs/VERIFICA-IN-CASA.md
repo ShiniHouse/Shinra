@@ -27,7 +27,7 @@ serve **un dispositivo innocuo** (una lampada o una presa) che puoi accendere e 
 
 ## 1. Una regola a un orario
 
-**Cosa fare.** Automazioni e routine → «Alle 23, spegni tutto». Scegli *A un orario* con l'ora di **tra tre minuti**,
+**Cosa fare.** Automazioni e routine → «Crea un'automazione». Scegli *A un orario* con l'ora di **tra tre minuti**,
 *Accendi o spegni un dispositivo* con la lampada, e crea. La scheda deve dire quando scatterà.
 
 **Cosa aspettarti.** Alle ore indicate la lampada cambia stato; la scheda dice «ultima: riuscita»; nel registro c'è una

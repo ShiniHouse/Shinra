@@ -48,6 +48,11 @@ installabile e utilizzabile.
 - **La modalita' leggera del Cervello** (#187): oltre 400 nodi il grafo si dispone in un colpo e sta fermo invece di animarsi a scatti; si sceglie anche a mano (Forze del grafo). Misurato con un browser a CPU rallentata (a 600 nodi su una CPU sei volte piu' lenta: 25 fotogrammi al secondo; a 1000, 12). A scheda chiusa il disegno non lavora piu' per gli eventi dell'agente.
 
 ### Modificato
+- **«Automazioni e routine» dice cosa e' cosa.** Una automazione parte da sola, una routine
+  a comando e un'automazione puo' farne partire una: la pagina lo spiega in cima. Il modulo si
+  chiama «Crea un'automazione» (prima aveva per titolo l'esempio «Alle 23, spegni tutto», che
+  sembrava una regola gia' esistente), il nome si dice facoltativo e come viene scritto, e il
+  pulsante e' «Nuova routine». Solo testi: il motore non cambia.
 - **Il prompt di sistema non cambia piu' a ogni richiesta**: l'ora, lo stato dei dispositivi e i
   fatti recuperati stanno in `get_contesto_della_richiesta`, davanti alla frase dell'utente, e non piu'
   in cima al prompt. Ollama riusa il prefisso gia' letto, e prima la cache moriva ogni minuto.
