@@ -24,6 +24,7 @@ from shinra.services.intervista_comune import (
 )
 from shinra.services.intervista_noto import cosa_si_sa, dati_della_casa
 from shinra.services.intervista_passi import INTERVIEW_STEPS
+from shinra.services.intervista_routine import controlla_proposta, routine_da_salvare
 
 logger = logging.getLogger("Shinra.Interview")
 
@@ -375,7 +376,11 @@ class LearningInterviewEngine(TurniAlias):
         if routine and routine.get("name"):
             session["proposed_routines"].append(routine)
             proposta = (
-                f"\n\n💡 Ho notato una possibile routine: vuoi che crei l'automazione '{routine['name']}'?"
+                f"\n\n💡 Ho notato una possibile routine, «{routine['name']}»:\n"
+                f"{routine.get('anteprima', '')}\n"
+                f"Prova a secco: {routine.get('prova', 'non fatta')}."
+                + (f" Ho scartato: {'; '.join(routine['scartate'])}." if routine.get("scartate") else "")
+                + " Vuoi che la crei? La potrai modificare nell'editor."
             )
 
         prossimo, saltati = _primo_da_chiedere(session["current_step_index"] + 1, session["passi"])
@@ -471,7 +476,9 @@ Rispondi ESCLUSIVAMENTE con un JSON:
 
         return {
             "facts": self._fatti_validi(dati.get("facts"), step),
-            "proposed_routine": self._routine_valida(dati.get("proposed_routine")),
+            "proposed_routine": await controlla_proposta(
+                self._routine_valida(dati.get("proposed_routine")), data_store
+            ),
             "interpretato": True,
         }
 
@@ -515,6 +522,13 @@ Rispondi ESCLUSIVAMENTE con un JSON:
             [str(f).strip() for f in frasi if str(f).strip()] if isinstance(frasi, list) else []
         )
         return grezza
+
+    async def conferma_routine_proposta(self, proposta: Dict[str, Any]) -> Dict[str, Any]:
+        """Salva la routine proposta, dopo averla ricontrollata (vedi `intervista_routine`)."""
+        pulita = await routine_da_salvare(proposta, data_store)
+        if pulita is None:
+            return {"success": False, "error": "La routine non supera il controllo sulla casa vera."}
+        return self.confirm_routine(pulita)
 
     def confirm_routine(self, routine_data: Dict[str, Any]) -> Dict[str, Any]:
         if not routine_data or not routine_data.get("name"):

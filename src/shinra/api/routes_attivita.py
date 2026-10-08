@@ -117,7 +117,7 @@ async def answer_learning_question(payload: AnswerLearningReq):
 @router.post("/learning/confirm-routine")
 async def confirm_learning_routine(payload: ConfirmRoutineReq):
     """Conferma la routine proposta alla fine dell'intervista."""
-    res = interview_engine.confirm_routine(payload.routine)
+    res = await interview_engine.conferma_routine_proposta(payload.routine)
     return res
 
 

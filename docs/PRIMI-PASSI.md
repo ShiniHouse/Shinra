@@ -124,6 +124,12 @@ hanno ancora un nome tuo): «Come chiami in casa "Sonoff 100053af52" (presa o in
 nome breve, rispondi «sì» al riepilogo e da quel momento puoi dire «spegni la luce dell'acquario».
 Con «salta» lo lasci com'è. Se Home Assistant è spento questa parte non c'è.
 
+**Se racconti un'abitudine** («la sera chiudo le tapparelle e accendo la luce del corridoio»), Shinra può
+proporti una routine. Prima di crearla ti mostra i passi con i nomi veri dei tuoi dispositivi, ti dice cosa ha
+scartato (un dispositivo che non esiste, una cosa delicata come una serratura o il garage) e l'ha già
+**provata a secco**: percorsa fino in fondo senza toccare la casa. Con Home Assistant spento non propone
+niente, perché non può controllare. La routine nasce come grafo che puoi modificare nell'editor.
+
 Due cose da sapere prima di cominciare, perché ti risparmiano tempo:
 
 - **Serve un modello capace.** L'intervista chiede al modello di interpretare
