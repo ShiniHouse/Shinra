@@ -13,9 +13,9 @@ from __future__ import annotations
 from datetime import datetime
 
 from shinra.config.prompt_templates import get_contesto_della_richiesta, get_system_prompt
+from shinra.infra.lingue import schemi
 from shinra.services import agent as modulo_agente
 from shinra.services.agent import ShinraAgent
-from shinra.services.intenti.lingue import schemi
 from shinra.services.memory import ConversationMemory
 from shinra.services.user_manager import UserProfile
 

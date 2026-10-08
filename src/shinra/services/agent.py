@@ -8,12 +8,12 @@ from shinra.config.settings import settings
 from shinra.domain.contesto import come_modello
 from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
+from shinra.infra.lingue import schemi
 from shinra.infra.llm.ollama import OllamaClient
 from shinra.services import agenti
 from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.cronaca import Cronaca
 from shinra.services.intenti import Richiesta, instrada
-from shinra.services.intenti.lingue import schemi
 from shinra.services.memory import ConversationMemory, gestore_memorie
 from shinra.services.user_manager import UserProfile, user_manager
 from shinra.skills.registry import execute_tool

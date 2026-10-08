@@ -23,7 +23,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from shinra.services.intenti import lingue
+from shinra.infra import lingue
 
 RADICE = Path(__file__).resolve().parent.parent.parent
 INTENTI = RADICE / "src" / "shinra" / "services" / "intenti"

@@ -14,7 +14,7 @@ import yaml
 
 from shinra import percorsi
 from shinra.domain import quando
-from shinra.services.intenti.lingue import LinguaIncompleta, schemi
+from shinra.infra.lingue import LinguaIncompleta, schemi
 from shinra.services.timer_engine import timer_engine
 
 # Giovedi' 8 ottobre 2026, le 15:00.
@@ -173,7 +173,7 @@ def test_un_lessico_a_meta_dice_per_nome_cosa_manca() -> None:
 
 def test_il_caricatore_dice_quale_voce_del_tempo_manca(tmp_path, monkeypatch) -> None:
     """Una lingua senza la sezione `tempo` non si offre a meta': si dice per nome."""
-    from shinra.services.intenti import lingue
+    from shinra.infra import lingue
 
     dati = yaml.safe_load((lingue.CARTELLA / "en.yaml").read_text(encoding="utf-8"))
     del dati["tempo"]["domani" if "domani" in dati["tempo"] else "word_tomorrow"]
@@ -208,9 +208,7 @@ def _stringhe_del_codice(file: Path) -> set[str]:
 
 def test_nessuna_parola_di_tempo_resta_nel_dominio() -> None:
     """Il criterio della #205: le parole stanno nei file delle lingue, non in `domain/quando.py`."""
-    it = yaml.safe_load((percorsi.RADICE / "src/shinra/services/intenti/lingue/it.yaml").read_text("utf-8"))[
-        "tempo"
-    ]
+    it = yaml.safe_load((percorsi.RADICE / "src/shinra/infra/lingue/it.yaml").read_text("utf-8"))["tempo"]
     parole = set(it["numeri"]) | set(it["settimana"]) | set(it["mesi"]) | set(it["pasti"])
     parole |= {p for elenco in it["momenti"].values() for p in elenco}
     parole |= {it["word_today"], it["word_tomorrow"], it["word_day_after_tomorrow"]}

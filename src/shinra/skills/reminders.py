@@ -37,7 +37,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 from shinra.domain import quando as tempo
-from shinra.services.intenti.lingue import schemi
+from shinra.infra.lingue import schemi
 
 logger = logging.getLogger("Shinra.Promemoria")
 

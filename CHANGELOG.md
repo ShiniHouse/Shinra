@@ -15,6 +15,10 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Modificato
+- **Il caricatore delle lingue sta in `infra/lingue`** (era `services/intenti/lingue`). E' uno spostamento
+  senza cambiare comportamento: serve perche' gli strumenti (le `skills`) possano leggere la lingua di chi parla
+  senza dipendere dai servizi (#207). Toglie dal debito dell'architettura le tre skill che leggono il tempo
+  detto a parole (#205) e ne lascia una voce, la rotta che elenca le lingue.
 - **L'intervista di apprendimento si svolge nella lingua di chi risponde** (#207, prima parte). I passi,
   le domande, i suggerimenti, i riepiloghi, i saluti, i rifiuti, i nomi dei dispositivi, la descrizione di una routine
   proposta e le parole di «si'», «no» e «salta» stanno nella sezione `intervista` del file della lingua; il prompt

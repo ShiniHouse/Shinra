@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from shinra.domain import quando as quando_dominio
 from shinra.infra.db import depositi
-from shinra.services.intenti.lingue import Schemi, schemi
+from shinra.infra.lingue import Schemi, schemi
 
 logger = logging.getLogger("Shinra.TimerEngine")
 

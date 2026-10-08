@@ -14,8 +14,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from shinra.infra.lingue import lingue_disponibili, schemi
 from shinra.services import agenti
-from shinra.services.intenti.lingue import lingue_disponibili, schemi
 from shinra.skills.registry import TOOL_HANDLERS, TOOLS_SCHEMA
 
 CORPUS = Path(__file__).resolve().parent.parent.parent / "banco" / "corpus.yaml"

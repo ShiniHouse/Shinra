@@ -20,7 +20,7 @@ from typing import Any, Dict, Optional
 
 from shinra.domain import manutenzione as dominio
 from shinra.domain import quando as tempo
-from shinra.services.intenti.lingue import schemi
+from shinra.infra.lingue import schemi
 
 logger = logging.getLogger("Shinra.Manutenzione")
 

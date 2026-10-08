@@ -46,7 +46,7 @@ async def list_users():
 @router.get("/lingue")
 async def list_lingue():
     """Le lingue che Shinra sa parlare, per il menu del profilo (issue #36)."""
-    from shinra.services.intenti.lingue import elenco_lingue
+    from shinra.infra.lingue import elenco_lingue
 
     return elenco_lingue()
 

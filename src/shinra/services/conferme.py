@@ -118,7 +118,7 @@ def _scaduta(c: Conferma) -> None:
 
 
 def _frase(chiave: str, **valori: Any) -> str:
-    from shinra.services.intenti.lingue import schemi
+    from shinra.infra.lingue import schemi
 
     return schemi("").dice(chiave, **valori)
 

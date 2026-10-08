@@ -41,7 +41,7 @@ ciascuno collegato ai suoi strumenti e a nessun altro.
 Il router non usa il modello: guarda **le parole** della frase, nella lingua di
 chi parla. «Tapparella» porta a *clima e tapparelle*, «consumato» a *energia*,
 «meteo» a *informazioni*, «serratura» a *dispositivi*. I file delle lingue
-(`src/shinra/services/intenti/lingue/it.yaml` e `en.yaml`, sezione
+(`src/shinra/infra/lingue/it.yaml` e `en.yaml`, sezione
 `agente.domini`) hanno le parole di ogni dominio.
 
 - **Una frase tocca un dominio**: il modello vede solo gli strumenti di quello.

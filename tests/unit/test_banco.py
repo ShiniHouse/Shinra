@@ -962,7 +962,7 @@ def test_ogni_richiesta_che_ha_uno_strumento_riceve_gli_strumenti(voci):
     scadenze, energia, «metti il clima a 22», «porta la tapparella al 40»... Il
     modello le riceveva senza strumenti e non poteva che inventare la risposta. Lo
     stesso vale per qualunque richiesta nuova che si aggiunga al corpus."""
-    from shinra.services.intenti.lingue import schemi
+    from shinra.infra.lingue import schemi
 
     parole = schemi("it").parole_azione
     senza = [v["frase"] for v in voci if v.get("attesi") and not any(k in v["frase"].lower() for k in parole)]
@@ -973,7 +973,7 @@ def test_ogni_richiesta_che_ha_uno_strumento_riceve_gli_strumenti(voci):
 def test_le_chiacchierate_non_ricevono_il_catalogo_intero(voci):
     """Il catalogo pesa ~4000 token: darlo a «ciao come stai» rallenta ogni risposta
     per niente, su una macchina che gia' fatica."""
-    from shinra.services.intenti.lingue import schemi
+    from shinra.infra.lingue import schemi
 
     parole = schemi("it").parole_azione
     ricevono = [
@@ -989,7 +989,7 @@ def test_le_chiacchierate_non_ricevono_il_catalogo_intero(voci):
 
 def test_l_inglese_ha_le_stesse_famiglie_di_parole(voci):
     """Il file della lingua inglese deve coprire almeno gli stessi domini."""
-    from shinra.services.intenti.lingue import schemi
+    from shinra.infra.lingue import schemi
 
     italiano, inglese = schemi("it").parole_azione, schemi("en").parole_azione
 

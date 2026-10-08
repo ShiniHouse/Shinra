@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:  # pragma: no cover
-    from shinra.services.intenti.lingue import Schemi
+    from shinra.infra.lingue import Schemi
     from shinra.services.memory import ConversationMemory
     from shinra.services.user_manager import UserProfile
 
@@ -53,7 +53,7 @@ class Richiesta:
     @property
     def schemi(self) -> "Schemi":
         """Gli schemi e le frasi nella lingua di chi ha scritto."""
-        from shinra.services.intenti.lingue import schemi
+        from shinra.infra.lingue import schemi
 
         return schemi(self.lingua)
 

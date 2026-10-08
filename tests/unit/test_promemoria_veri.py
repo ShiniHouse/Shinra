@@ -29,7 +29,7 @@ import pytest
 
 from shinra.domain import quando as tempo
 from shinra.infra.db import depositi
-from shinra.services.intenti.lingue import schemi
+from shinra.infra.lingue import schemi
 from shinra.services.timer_engine import timer_engine
 from shinra.skills import reminders
 

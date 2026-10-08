@@ -88,7 +88,7 @@ che non sa niente della casa.
 
 **3. Il prompt.** Se il tool e' di un dominio che il modello deve sapere
 scegliere, aggiungi una riga a `prompt.regole` in **tutti** i file di
-`src/shinra/services/intenti/lingue/` (`it.yaml`, `en.yaml`). Il nome del tool
+`src/shinra/infra/lingue/` (`it.yaml`, `en.yaml`). Il nome del tool
 resta identico in ogni lingua: e' codice.
 
 **4. I permessi.** Se il tool comanda un dispositivo di Home Assistant, il
@@ -146,7 +146,7 @@ stesso intento con due persone di lingue diverse.
 
 ## 3. Aggiungere una lingua
 
-Un file `src/shinra/services/intenti/lingue/<codice>.yaml` con **le stesse
+Un file `src/shinra/infra/lingue/<codice>.yaml` con **le stesse
 chiavi** di `it.yaml`. Non si tocca il codice: lo prova un test che ne inventa
 una. Il caricatore dice per nome quale chiave manca.
 

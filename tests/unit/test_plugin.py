@@ -12,8 +12,8 @@ import pytest
 
 from shinra import percorsi
 from shinra.domain import sensibilita
+from shinra.infra.lingue import schemi
 from shinra.services import agenti, plugin, registro
-from shinra.services.intenti.lingue import schemi
 from shinra.services.plugin import (
     Contesto,
     ManifestoNonValido,
