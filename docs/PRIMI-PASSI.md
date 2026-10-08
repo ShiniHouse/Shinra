@@ -113,8 +113,11 @@ si apre di là.
 
 **Conoscenza casa → Shinra Istruisci**.
 
-Sono sei domande sulla casa, sulle abitudini, su chi ci vive. Quello che
-racconti finisce nella conoscenza e viene ripescato quando serve a rispondere.
+Sono una dozzina di domande, **una per volta**, sulla casa, sulle abitudini, su chi
+ci vive. Quello che racconti finisce nella conoscenza e viene ripescato quando serve a
+rispondere. **Non rifà le domande a cui la casa ha già una risposta**: se i profili e le
+stanze ci sono già, o se hai già detto la città, salta quel passo e te lo dice («In casa
+ci sono già Alessio e Sonia: salto la domanda»).
 
 Due cose da sapere prima di cominciare, perché ti risparmiano tempo:
 
