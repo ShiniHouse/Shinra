@@ -10,13 +10,45 @@ from __future__ import annotations
 import pytest
 
 from shinra.domain import contesto
+from shinra.infra.db import depositi
 from shinra.infra.lingue import lingue_disponibili, schemi
+from shinra.services import registro
 from shinra.services.agent import ShinraAgent
 from shinra.services.user_manager import UserProfile
 from shinra.skills import domini_casa
 
-# Le fixture `casa` (Home Assistant che annota) e `da_web` stanno in test_domini_casa.
-from tests.unit.test_domini_casa import casa, da_web  # noqa: F401
+STATI = [
+    {
+        "entity_id": "lock.porta_ingresso",
+        "state": "locked",
+        "attributes": {"friendly_name": "Porta d'ingresso"},
+    },
+]
+
+
+@pytest.fixture
+def casa(monkeypatch):
+    """Home Assistant che annota invece di eseguire: una serratura chiusa."""
+
+    class FintoClient:
+        async def call_service(self, dominio, servizio, dati=None):
+            return {"success": True}
+
+        async def stati_correnti(self):
+            return list(STATI)
+
+    monkeypatch.setattr("shinra.infra.homeassistant.client.client_home_assistant", lambda: FintoClient())
+    depositi.alias.sostituisci_tutto(
+        [{"id": "a1", "alias": "porta d'ingresso", "entity_id": "lock.porta_ingresso"}]
+    )
+    yield
+
+
+@pytest.fixture
+def da_web():
+    """Il contesto di una richiesta che arriva dalla dashboard."""
+    registro.apri_contesto(attore="alessio", canale="web")
+    yield
 
 
 @pytest.fixture(autouse=True)
@@ -27,7 +59,7 @@ def lingua_pulita():
 
 
 @pytest.mark.asyncio
-async def test_la_stessa_serratura_risponde_a_ciascuno_nella_sua_lingua(casa, da_web) -> None:  # noqa: F811
+async def test_la_stessa_serratura_risponde_a_ciascuno_nella_sua_lingua(casa, da_web) -> None:
     contesto.dichiara_lingua("it")
     it = await domini_casa.comanda_serratura("lock.porta_ingresso", "blocca")
     contesto.dichiara_lingua("en")
@@ -39,7 +71,7 @@ async def test_la_stessa_serratura_risponde_a_ciascuno_nella_sua_lingua(casa, da
 
 
 @pytest.mark.asyncio
-async def test_lo_stato_si_dice_nella_lingua_giusta(casa, da_web) -> None:  # noqa: F811
+async def test_lo_stato_si_dice_nella_lingua_giusta(casa, da_web) -> None:
     contesto.dichiara_lingua("en")
     en = await domini_casa.comanda_serratura("lock.porta_ingresso", "stato")
     contesto.dichiara_lingua("it")
@@ -50,21 +82,21 @@ async def test_lo_stato_si_dice_nella_lingua_giusta(casa, da_web) -> None:  # no
 
 
 @pytest.mark.asyncio
-async def test_un_errore_di_azione_si_dice_nella_lingua_giusta(casa, da_web) -> None:  # noqa: F811
+async def test_un_errore_di_azione_si_dice_nella_lingua_giusta(casa, da_web) -> None:
     contesto.dichiara_lingua("en")
     esito = await domini_casa.comanda_serratura("lock.porta_ingresso", "esplodi")
     assert esito["error"] == "Action «esplodi» is not supported for a lock."
 
 
 @pytest.mark.asyncio
-async def test_senza_lingua_nel_contesto_si_segue_l_installazione(casa, da_web) -> None:  # noqa: F811
+async def test_senza_lingua_nel_contesto_si_segue_l_installazione(casa, da_web) -> None:
     contesto.dichiara_lingua("")
     esito = await domini_casa.comanda_serratura("lock.porta_ingresso", "blocca")
     assert esito["message"] == "Porta d'ingresso chiusa."
 
 
 @pytest.mark.asyncio
-async def test_la_lingua_di_una_richiesta_non_resta_alla_successiva(casa, da_web) -> None:  # noqa: F811
+async def test_la_lingua_di_una_richiesta_non_resta_alla_successiva(casa, da_web) -> None:
     """Dichiarare vuoto azzera: la richiesta dopo non parla la lingua di quella prima."""
     contesto.dichiara_lingua("en")
     contesto.dichiara_lingua("")
