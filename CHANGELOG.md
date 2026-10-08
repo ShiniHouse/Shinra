@@ -15,6 +15,14 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Modificato
+- **L'intervista trasforma un'abitudine in una routine controllata sulla casa vera** (#210, seconda
+  parte). La proposta del modello passa da quattro filtri prima di arrivare a chi risponde: ogni
+  dispositivo deve esistere in Home Assistant (o essere un alias che ne indica uno), ogni azione
+  di un tipo noto e nei limiti, niente di delicato (serrature, allarme, garage), e la routine,
+  trasformata nel grafo dell'editor, deve reggere la validazione e percorrersi fino in fondo con
+  una **prova a secco** che non chiama nessun servizio. Il messaggio mostra i passi con i nomi veri
+  e cosa si e' scartato. Al salvataggio la proposta si ricontrolla (torna dal browser) e si salva il
+  grafo, non l'elenco piatto. Con Home Assistant spento non si propone niente.
 - **L'intervista dà un nome ai dispositivi veri** (#210, prima parte). Dopo le domande sulla casa
   chiede, per fino a sei dispositivi di Home Assistant che non hanno ancora un alias (luci, prese,
   tapparelle, clima, ventilatori), «come lo chiami in casa?». Il nome si salva dopo il «sì» e solo

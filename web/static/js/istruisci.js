@@ -105,8 +105,13 @@ function renderLearningStep(data) {
     // Routine Proposal
     if (data.proposed_routine && data.proposed_routine.name) {
         currentProposedRoutine = data.proposed_routine;
+        // I passi con i nomi veri e la prova a secco li scrive il server (#210):
+        // la descrizione del modello non e' piu' tutto quello che si vede.
+        const passi = data.proposed_routine.anteprima || data.proposed_routine.description || '';
+        const prova = data.proposed_routine.prova ? ` (${data.proposed_routine.prova})` : '';
         document.getElementById('learning-routine-desc').innerText =
-            `Ho notato una possibile routine "${data.proposed_routine.name}": ${data.proposed_routine.description || 'Automazione personalizzata'}.`;
+            `Ho notato una possibile routine "${data.proposed_routine.name}":\n${passi}${prova}`;
+        document.getElementById('learning-routine-desc').style.whiteSpace = 'pre-line';
         routineBox.classList.remove('hidden');
     } else {
         routineBox.classList.add('hidden');

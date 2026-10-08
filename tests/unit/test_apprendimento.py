@@ -91,7 +91,12 @@ async def test_estrae_i_fatti_dalla_risposta(monkeypatch) -> None:
             },
         }
 
+    async def casa():
+        return {"light.cucina": "Luce cucina"}, []
+
     monkeypatch.setattr(motore.ollama, "genera_json", modello)
+    # La proposta passa dal controllo sulla casa vera (#210): qui la casa e' finta.
+    monkeypatch.setattr("shinra.services.intervista_routine.leggi_la_casa", lambda _archivio: casa())
     esito = await motore._extract_knowledge_and_routines(INTERVIEW_STEPS[2], "Mi sveglio alle 7")
 
     assert len(esito["facts"]) == 2
