@@ -1,12 +1,12 @@
-# Storia delle fasi 0.1.0 – 0.5.0
+# Storia delle fasi 0.1.0 – 0.6.0
 
-Le schede di lavoro delle cinque fasi chiuse, in un solo documento. Ogni scheda è stata una
+Le schede di lavoro delle sei fasi chiuse, in un solo documento. Ogni scheda è stata una
 issue su GitHub (il numero è nel titolo) e un file in `docs/backlog/`; a fase chiusa i file
 sono stati uniti qui, perché non servivano più come lavoro da importare e facevano rumore
 in cartella. Di ciascuna restano il **perché** (contesto), il **cosa** e, dove c'è, **com'è andata**.
 I criteri di accettazione sono stati tolti: erano la lista di controllo del lavoro, e il lavoro è finito.
 
-Gli originali completi stanno nella cronologia di Git, al tag `v0.5.0`:
+Gli originali completi stanno nella cronologia di Git, al tag della fase (`v0.5.0` per la 0.5.0, `v0.6.0` per la 0.6.0):
 
 ```bash
 git show v0.5.0:docs/backlog/v0.1.0/07-sec-05-segreti-fuori-da-git.md
@@ -22,6 +22,7 @@ in [`docs/release/`](release/).
 - [0.3.0 — Copertura](#030--copertura) — 8 schede
 - [0.4.0 — Proattività](#040--proattivita) — 7 schede
 - [0.5.0 — Prodotto](#050--prodotto) — 12 schede
+- [0.6.0 — Il Cervello](#060--il-cervello) — 13 schede
 
 ## 0.1.0 — Impianto chiuso
 
@@ -1909,3 +1910,568 @@ sono lavoro a se'.
 #### Chiusa alla 0.5.0, il collaudo alla 0.6.0
 
 Le guide sono scritte e difese da test (#204). Il collaudo di chi non le ha scritte — l'unica cosa che un documento non puo' fare — e' la [#208](backlog/v0.7.0/208-collaudo-della-documentazione.md).
+
+## 0.6.0 — Il Cervello
+
+### #183 — test(agente): un banco di prova che misura quale modello sceglie lo strumento giusto
+
+*tipo: attivita', area: core*
+
+#### Contesto
+
+La `0.6.0` poggia su una scommessa: che il modello locale, servito da Ollama,
+scelga lo strumento giusto e gli passi gli argomenti giusti anche quando la
+richiesta e' ambigua o richiede piu' passaggi. Oggi nessuno ha misurato
+quanto spesso succeda. Senza il dato, gli agenti per dominio e i piani a piu'
+passaggi sono una scommessa.
+
+Per questo e' la **prima** scheda della fase: decide quanto sono ambiziose
+le altre.
+
+#### Cosa fare
+
+- Un corpus di 30-50 richieste reali in italiano, ciascuna con lo strumento atteso e gli argomenti attesi (luci, clima, tapparelle, timer, allarme, domande senza strumento, richieste ambigue)
+- Un sottoinsieme a piu' passaggi («prepara la casa per la sera»)
+- Uno script che esegue il corpus contro un modello Ollama a scelta e produce una tabella: modello, strumento giusto %, argomenti giusti %, cicli infiniti, secondi per risposta
+- Un entity_id inventato dal modello conta come errore grave, a parte
+- Il corpus e i risultati stanno nel repository; il banco non gira in CI (serve Ollama) ma e' ripetibile con un solo comando
+
+#### Com'e' andata, e cosa manca
+
+**Fatto: il banco.** `banco/corpus.yaml` (57 richieste in 14 categorie, comprese le frasi
+ambigue e sconosciute in cui indovinare e' sbagliato, e i tentativi di far fare al modello
+cio' che non deve), `banco/mondo.yaml` (la casa finta), `scripts/banco_tool_calling.py` e
+`banco/README.md` con i comandi. Riproduce il ciclo dell'agente: stesso prompt, strumenti
+solo se la frase li chiama e solo al primo giro, `num_ctx` di produzione. 43 test
+(`test_banco.py`) provano il banco senza Ollama: un modello perfetto prende il massimo su tutto
+il corpus, un modello muto no, e il ciclo gira contro un Ollama finto.
+
+**Il banco ha trovato due difetti nel programma prima ancora di misurare un modello:**
+
+1. **Il prompt non ci sta nel contesto.** Il prompt di sistema (~870 token) piu' gli schemi
+   dei 36 strumenti (~4200) fanno circa **5000 token**; il client usa `num_ctx` **1024**
+   (2048 se `max_tokens` supera 250). Ollama taglia il contesto: il modello sceglie fra
+   strumenti che non ha visto. `--prova` lo dice senza bisogno di Ollama. **Da confermare con
+   le misure**: la colonna «Troncati» del banco.
+2. **Gli strumenti non arrivavano al modello per meta' delle richieste.** L'agente li passa
+   solo se la frase contiene una delle `parole_azione`. Con un modello perfetto, **24 richieste
+   su 48** che hanno uno strumento non ne contenevano nessuna: liste, agenda, scadenze, energia,
+   «metti il clima a 22», «porta la tapparella al 40»... Il modello le riceveva senza strumenti
+   e non poteva che inventare la risposta. **Corretto qui**: le parole sono state allargate (it e
+   en) e un test lo verifica su ogni richiesta del corpus.
+
+**Cosa manca per chiudere la scheda, e non lo puo' fare il codice:** i criteri di accettazione
+chiedono la tabella per almeno due modelli **sull'hardware di casa** (i5-8500T, 16 GB, niente
+GPU) e la frase su quale modello e' il minimo. Servono le misure vere: comandi in
+`banco/README.md`. La scheda resta aperta finche' i risultati non sono in `banco/risultati/`.
+
+#### Com'e' finita (2026-10-06)
+
+**La scheda e' chiusa come non pianificata per cio' che manca.** Il banco c'e', e ha fatto il suo lavoro: ha trovato e fatto
+correggere cinque difetti veri (il prompt tagliato, gli strumenti che non arrivavano al modello, la cache distrutta dall'ora,
+gli alias contati male, il ripiego sul catalogo intero). Le misure sono in `banco/risultati/` con le analisi.
+
+**Misurato un solo modello**, `qwen2.5:3b`, in sei configurazioni (contesto 1024, 2048, 4096 e 8192; catalogo intero e agenti)
+su due macchine (l'i5-8500T di casa e un portatile i7-1355U). Non regge le soglie dell'ADR 0008:
+
+| | Catalogo intero @ 8192 | Agenti @ 4096 |
+| :--- | ---: | ---: |
+| Strumento giusto | 72,8% | 79,8% |
+| Mediana | 131 s | 28,7 s |
+
+**Cosa cambia nel piano:** il modello locale e' il ripiego, non la strada principale. I comandi semplici di ogni giorno li
+risolvono gli intenti in meno di 0,2 secondi, senza modello; gli agenti di dominio rendono il ripiego piu' corto e piu'
+sicuro, ma non lo rendono veloce.
+
+**Il secondo modello non si misura.** Servirebbe un 7B, che non sta nella memoria assegnata a Ollama sul server di casa
+(6 GB, con 4,7 GB solo di pesi), e il proprietario non ha intenzione di cambiare hardware: la tabella per due modelli
+bloccherebbe la tabella di marcia per un dato che non cambierebbe nessuna decisione. Se un giorno l'hardware cambia, il
+banco e' pronto: un comando, un'ora.
+
+### #184 — docs(adr): agenti specializzati per dominio invece di un modello con tutti gli strumenti
+
+*tipo: attivita', area: documentazione*
+
+#### Contesto
+
+Un modello locale piccolo sbaglia di piu' quando ha davanti tutti gli
+strumenti. La proposta e' dividere: un router sceglie un agente di dominio
+(clima, sicurezza, energia, agenda, luci) e ogni agente vede solo i propri
+strumenti. Va deciso per iscritto prima di costruirlo, come per gli ADR 0001-0007.
+
+#### Cosa fare
+
+- Scrivere l'ADR 0008: contesto, decisione, alternative scartate (un solo agente con tutti gli strumenti; un agente per strumento; planner esterno), conseguenze
+- Dire cosa succede quando il router sbaglia dominio
+- Dire come un agente dichiara i propri strumenti e perche' non puo' vedere quelli degli altri
+- Legare la decisione ai numeri del banco di prova, non a una impressione
+
+#### Com'e' andata
+
+L'ADR [0008](adr/0008-agenti-per-dominio.md) e' scritto, indicizzato e **Proposto**: diventa
+Accettato quando il banco, rifatto con gli agenti di dominio, supera le soglie scritte dentro.
+Cita i due giri sull'i5-8500T (strumento giusto 72,8% a contesto 8192, 131 s a richiesta, prompt
+tagliato a 514 token in produzione) e dice cosa cambierebbe se il banco desse un altro risultato.
+Il router e gli agenti sono la #190; la misura sul banco e' nell'analisi del giro con gli agenti.
+
+### #185 — feat(cervello): un endpoint che descrive tutto quello che Shinra sa e fa, come grafo
+
+*tipo: funzione, area: core*
+
+#### Contesto
+
+La scheda «Il Cervello» mostra un grafo: nodi e collegamenti. Tutto il
+materiale esiste gia' nel database e nel codice — stanze, dispositivi, alias,
+routine, regole, conoscenza, skill — ma nessuno lo espone come grafo. Questa
+scheda e' il lato server: un solo endpoint che aggrega, con i permessi giusti.
+
+#### Cosa fare
+
+- `GET /api/cervello` restituisce `{nodi, collegamenti, clusters, sistemi, contatori, troncato}`
+- Tipi di nodo: stanza, dispositivo, alias, routine, regola, voce di conoscenza, skill, agente
+- Collegamenti veri, non decorativi: dispositivo -> stanza, alias -> dispositivo, regola -> dispositivi che comanda, routine -> nodi dell'editor, voce di conoscenza -> argomento
+- I contatori (collegamenti, sistemi attivi, agenti pronti) si calcolano dagli stessi dati, cosi' non possono divergere dal grafo
+- Ogni **sistema** (una famiglia di cose: le regole, le routine, Home Assistant, il modello, le fonti di notizie...) porta `stato` — `attivo`, `fermo` o `non_raggiungibile` — e un `motivo` leggibile quando non e' attivo. Lo stato si legge da cio' che il programma sa gia' (regole disattivate, ultimo esito del client di Home Assistant, risposta di Ollama), non si calcola nel browser
+- Ogni nodo appartiene a un cluster con un `nome` da mostrare sul grafo (stanze, dispositivi, regole, routine, conoscenza, strumenti, agenti)
+- Rispetta ruoli e permessi: un profilo vede solo cio' che puo' gia' vedere altrove
+- Il contenuto delle voci di conoscenza non esce: solo titolo e argomento
+- Un tetto ai nodi e il raggruppamento in cluster oltre quella soglia, deciso dal server
+
+#### Com'e' andata
+
+- Il grafo lo costruisce `domain/cervello.py` (puro: elenchi in, grafo fuori); lo
+  raccoglie `services/cervello.py` (database, catalogo degli strumenti, stato dei
+  sistemi); lo serve `api/routes_cervello.py`.
+- **Il contenuto dei fatti non esce**: un nodo di conoscenza porta l'argomento, mai
+  il testo, e un test cerca la frase segreta in tutta la risposta. Chi non ha il
+  permesso `conoscenza.leggi` non vede nemmeno i nodi.
+- **Lo stato dei sistemi viene dal programma**: Home Assistant dal canale degli
+  eventi, il modello da Ollama (con quattro decimi di secondo di attesa e venti
+  secondi di cache, cosi' un modello spento non blocca la scheda), le regole dal
+  database, le notizie dalle fonti, le notifiche dalle iscrizioni. Un modello
+  configurato ma non scaricato dice quale comando serve.
+- **«Fermo» per le regole e' letterale**: basta una regola disattivata perche' il
+  sistema «Regole» risulti fermo, col nome di chi e' spenta. Se risultasse troppo
+  rumoroso, la soglia si cambia in un punto solo (`_stato_delle_regole`).
+- **Gli agenti non esistono ancora** (#190): `agenti_noti()` ritorna una lista
+  vuota e il contatore dice zero. Il grafo e i contatori sono gia' pronti a
+  riceverli.
+- Misurato su un server vero con Home Assistant e Ollama spenti: 0,46 s la prima
+  volta, 11 ms con la cache. Su una casa di 500 alias e 300 fatti, sotto il secondo.
+
+### #186 — feat(frontend): la scheda Cervello, il grafo interattivo della casa
+
+*tipo: funzione, area: frontend*
+
+#### Contesto
+
+La parte visibile della fase: un grafo interattivo, per cluster, con i
+contatori in alto, che mostra quello che Shinra sa. Il riferimento e' l'idea
+vista in un video (una base di conoscenza resa come grafo), non l'estetica:
+Shinra deve avere la propria.
+
+Vincoli dell'ADR 0006: niente bundler. Il frontend resta in file inclusi sotto
+le cinquecento righe, con ESLint e Prettier in CI.
+
+#### Cosa fare
+
+- Una scheda «Cervello» nella navigazione, dentro i tre ingressi esistenti (nessun quarto ingresso)
+- Grafo a forze, pan e zoom, clic su un nodo per selezionarlo e doppio clic (o Invio) per aprire la scheda vera dell'oggetto (la routine nell'editor, la regola, i dispositivi, la conoscenza) — vedi «Com'e' andata»
+- Cluster colorati per tipo, etichette leggibili, legenda
+- **Il nome di ogni cluster scritto sul grafo**, grande e sospeso accanto al suo gruppo di nodi (nel riferimento: CONTENUTI, FINANZA, AGENTI, ARCHIVIO...): a colpo d'occhio si legge dove sta cosa, senza aprire la legenda
+- Contatori reali: collegamenti, sistemi attivi, agenti pronti
+- **Lo stato di ogni sistema, in chiaro e in colore**: attivo, fermo, non raggiungibile. Un sistema spento — una regola disattivata, Home Assistant irraggiungibile, un modello che non risponde — si vede in rosso sul suo cluster, con la ragione al passaggio del mouse o alla tastiera (nel riferimento: «RISPOSTE OUTREACH: FERMO»). Il dato viene dall'endpoint della #185, non si indovina nel browser
+- **Un pannello di controllo del grafo**: mostra/nascondi per tipo di nodo, ricerca di un nodo per nome, e le forze (distanza e attrazione) regolabili. Serve a chi ha centinaia di nodi e vuole guardarne un tipo solo; le scelte si ricordano per dispositivo
+- **Modalita' a schermo intero**, pensata per un tablet a muro: niente barre, contatori grandi, e il grafo che si aggiorna da solo. E' lo stesso tablet su supporto che l'ADR 0007 indica per la parola di attivazione
+- Tema chiaro e scuro, e un modo di ridurre il movimento per chi lo chiede al sistema
+- Ogni valore mostrato e' scappato: un dispositivo chiamato `<img onerror=...>` non deve eseguire niente
+- Libreria servita dal repository, non da un CDN: la casa non deve dipendere da internet per disegnarsi
+- Stato vuoto che insegna la mossa successiva, come le altre liste
+
+#### Com'e' andata
+
+Quattro moduli e un pezzo di markup, tutti sotto le cinquecento righe:
+`cervello_fisica.js` (il layout, puro), `cervello_stile.js` (colori e limiti),
+`cervello_disegno.js` (il canvas, il mouse, la tastiera), `cervello.js` (la scheda) e
+`parti/cervello.html`. Sta dietro «Configurazione»: i tre ingressi restano tre.
+
+- **Nessuna libreria.** Il layout e' un piccolo motore a forze (repulsione, molle,
+  ammasso per cluster, gravita') di circa duecento righe: 240 nodi si dispongono in 39 ms,
+  deterministici, e si provano con `node`. Una libreria sarebbe stata un file di terzi da
+  tenere aggiornato per un uso cosi' piccolo, e il vincolo era niente CDN.
+- **Decisione: un clic seleziona, il doppio clic (o Invio) apre.** La scheda diceva «clic
+  per aprire», ma aprire al primo clic portava fuori dalla scheda ogni volta che si voleva
+  solo vedere cosa e' collegato a cosa. La selezione mostra il dettaglio, con un pulsante
+  «Apri».
+- **Tutto si legge anche senza il canvas.** Sotto il grafo c'e' un elenco di pulsanti, uno
+  per nodo; `data-nodi-visibili` dice quanti se ne vedono; l'annuncio per i lettori di
+  schermo dice cosa e' selezionato.
+- **Il nome di un nodo e' testo.** Nel canvas passa da `fillText`; nell'elenco e nel
+  dettaglio da `_html`. Un test nel browser mette un dispositivo chiamato
+  `<img onerror=...>` e verifica che non esegua niente.
+- **Le etichette dei cluster non si sovrappongono**, e la vista segue il grafo mentre si
+  assesta: si e' visto guardando il disegno su un server vero, non dai test.
+- Il movimento ridotto (`prefers-reduced-motion`) fa nascere il grafo gia' disposto e fermo;
+  a grafo quieto il ciclo di disegno si ferma.
+
+**Non fatto, e va detto:**
+
+- **Le prestazioni su un telefono e su un tablet** non sono misurate: e' la #187. Qui il
+  tetto dei 400 nodi, il disegno a richiesta e il movimento ridotto sono le prime difese, ma
+  nessuno ha ancora contato i fotogrammi su un dispositivo vero.
+- **Il grafo non si illumina** quando Shinra lavora: e' la #189, che aspetta gli eventi
+  dell'agente (#188).
+- **L'aspetto non copia gli screenshot di riferimento**, e non voleva: l'idea e' la stessa,
+  il disegno e' di Shinra. Se lo si vuole piu' vicino, e' un criterio nuovo.
+- **La modalita' a schermo intero e' provata in logica, non su un tablet a muro.**
+- Un tema chiaro e' coperto dai colori `[scuro, chiaro]` e dal fatto che i test di colore del
+  progetto passano; non e' stato guardato a occhio con il tema chiaro acceso.
+- **Non guardata su uno schermo di telefono**: il layout e' a una colonna sotto i 1024 pixel e i
+  test del browser girano a 1400, ma l'aspetto su un telefono vero e' da vedere con la #187.
+
+### #187 — perf(frontend): il grafo regge un telefono e un mini-PC
+
+*tipo: attivita', area: frontend*
+
+#### Contesto
+
+Un grafo con centinaia di nodi e' bello su un portatile e puo' andare a
+scatti su un telefono o su un tablet appeso al muro, che e' proprio l'hardware
+che il progetto indica per la parola di attivazione. Una demo che scatta non
+serve a nessuno.
+
+#### Cosa fare
+
+- Misurare i fotogrammi al secondo su tre dispositivi veri: portatile (60 fps misurati), telefono e tablet (a occhio, senza contatore: vedi sotto)
+- ~~Raggruppare in cluster oltre una soglia di nodi~~ — sostituito dalla modalita' leggera: le misure dicono che il costo e' l'animazione, non il numero di nodi disegnati. I gruppi si nascondono gia' dalla legenda
+- Ridurre il lavoro quando la scheda non e' in primo piano o il grafo e' fermo (un grafo assestato non richiede fotogrammi; a scheda chiusa un evento dell'agente non ne richiede: test che fallisce senza la guardia)
+- Un interruttore per la modalita' leggera, scelto in automatico oltre 400 nodi (Forze del grafo → Modalita' leggera; la scelta di chi guarda vince e si ricorda)
+
+#### Com'e' andata
+
+**Misurato con un browser vero a CPU rallentata**, non con un telefono vero: `MISURA_GRAFO=1 npx playwright test cervello-prestazioni`
+(`tests/gesti/cervello-prestazioni.spec.mjs`). Un grafo sintetico con seme fisso (~1,3 collegamenti per nodo, otto gruppi),
+Edge su un portatile i7-1355U. Fotogrammi al secondo **mentre il grafo si assesta** (il momento piu' caro), prima della
+modalita' leggera:
+
+| Nodi | CPU normale | 4x piu' lenta | 6x piu' lenta |
+| ---: | ---: | ---: | ---: |
+| 100 | 60 | 58 | — |
+| 300 | 60 | 51–54 | 38–41 |
+| 600 | 60 | 38–39 | **25** |
+| 1000 | 59 | **25** | **12** (18 s per assestarsi) |
+
+Dopo l'assestamento, **zero fotogrammi** a ogni dimensione: un tablet appeso al muro non lavora.
+
+**Cosa e' cambiato:** la **modalita' leggera** — il grafo si dispone in un colpo e poi sta fermo, come con il movimento ridotto —
+si accende da sola oltre i 400 nodi e si sceglie a mano; con 600 o 1000 nodi il grafo e' pronto in meno di un quarto di secondo
+dopo il caricamento, a qualunque velocita' di CPU. Sotto i 400 nodi resta l'animazione (36 fps o piu' anche a 6x). E a scheda
+chiusa un evento dell'agente non fa piu' disegnare una tela che nessuno vede (prima: 73 fotogrammi per evento).
+
+**Un telefono vero (2026-10-06):** un iPhone (modello non annotato), Safari, 89 nodi e 133 collegamenti, agenti compresi (la
+modalita' leggera resta spenta). Chi l'ha provato dice che si e' assestato in **meno di tre secondi** e che si muove **fluido**:
+un giudizio a occhio, senza un contatore di fotogrammi. Coerente con le misure: a 90 nodi anche un browser sei volte piu'
+lento di un portatile fa 40 fps o piu'.
+
+**Un tablet vero (2026-10-06):** un iPad mini, Safari, lo stesso grafo (89 nodi, 133 collegamenti, 9 agenti pronti): «uguale,
+velocissimo». Anche questo a occhio.
+
+**Cosa resta, e non e' di questa scheda:** i dispositivi veri sono stati provati con 89 nodi, sotto la soglia della modalita' leggera.
+Se un giorno il grafo supera i 400 nodi, la stessa prova con la modalita' leggera accesa va ripetuta: oggi esiste solo la misura
+in un browser a CPU rallentata.
+
+### #188 — feat(agente): il ciclo dell'agente racconta cosa sta facendo, evento per evento
+
+*tipo: funzione, area: core*
+
+#### Contesto
+
+Perche' il grafo si illumini quando Shinra lavora, il ciclo che ascolta una
+richiesta, consulta la conoscenza, sceglie una skill e comanda un
+dispositivo deve emettere eventi. Il bus di eventi e il canale verso la
+dashboard esistono gia': manca che il ciclo dell'agente li usi per raccontarsi.
+
+#### Cosa fare
+
+- Eventi tipizzati: richiesta ricevuta, conoscenza consultata (quali voci), skill scelta, dispositivo comandato, risposta data, errore
+- Ogni evento porta l'identificativo del nodo del grafo a cui si riferisce
+- Il canale degli eventi verso la dashboard li inoltra solo al profilo che ha fatto la richiesta (un altro utente non deve vedere cosa chiede un familiare)
+- Il contenuto della richiesta non viaggia nell'evento: solo il tipo e i nodi toccati
+- Emettere un evento non puo' rallentare ne' rompere una risposta
+
+#### Com'e' andata
+
+- `domain/eventi_agente.py`: sei tipi (`agente.richiesta`, `.conoscenza`, `.skill`, `.dispositivo`,
+  `.risposta`, `.errore`) e il modo di costruirli. Un evento accetta solo booleani, numeri e un
+  `motivo` da due parole: la frase, gli argomenti di uno strumento, il testo di un fatto e il
+  messaggio di un errore **non possono** entrarci (`ValueError`).
+- `services/cronaca.py`: l'agente chiama questi metodi nei suoi punti di passaggio. Ogni evento
+  parte in un compito a parte, senza attenderlo, e ogni eccezione si ferma li'.
+- I nodi sono quelli del grafo del Cervello: `strumento:<nome>`, `dispositivo:<entity_id>`,
+  `fatto:<id>`, `sistema:modello`. «Richiesta ricevuta» non ha nodo: non si sa ancora se rispondera'
+  un intento o il modello.
+- `/ws/eventi`: gli eventi `agente.*` arrivano solo al profilo che ha fatto la richiesta; il
+  proprietario non viene inoltrato al browser. Senza autenticazione la casa e' di tutti.
+- Limite noto: la conoscenza consultata ha i nodi solo quando il recupero seleziona i fatti
+  (oltre venticinque); sotto, il prompt li manda tutti e non c'e' una scelta da raccontare.
+
+### #189 — feat(frontend): il grafo vivo, si illumina quando Shinra lavora
+
+*tipo: funzione, area: frontend*
+
+#### Contesto
+
+E' la parte che fa effetto: si fa una domanda e si vedono accendersi i nodi
+che Shinra consulta e comanda. Non va costruita prima che l'agente sia
+affidabile: un bel grafo che si illumina su una risposta sbagliata e' una
+demo, non un prodotto. Dipende dalla scheda degli eventi dell'agente.
+
+#### Cosa fare
+
+- Ogni evento dell'agente accende il nodo corrispondente e i collegamenti verso di esso, con dissolvenza
+- Un percorso leggibile: dalla richiesta alla skill, al dispositivo
+- Un errore si vede (nodo in rosso), non scompare
+- Rispetta la riduzione del movimento: senza animazioni il nodo cambia solo colore
+- Un registro in chiaro accanto al grafo con le stesse informazioni, per chi non vede bene o legge con un lettore di schermo
+
+#### Com'e' andata
+
+- `cervello_attivita.js`: gli eventi `agente.*` diventano accensioni sul disegno (alone, collegamenti
+  del nodo, percorso tratteggiato modello → fatti → strumento → dispositivo → modello) e voci di un
+  **registro in chiaro** (`role="log"`, `aria-live`) accanto al grafo. Disegno e registro nascono dallo
+  stesso evento: non possono dire cose diverse.
+- Il percorso **non e' un collegamento del grafo**: ha un altro tratto (tratteggiato), dura pochi
+  secondi, e le tappe parallele (i fatti consultati) non sono messe in fila.
+- Un errore resta rosso 20 s (le accensioni normali 4 s) e il registro lo scrive in rosa.
+- **Movimento ridotto**: nessuna dissolvenza, il nodo e' acceso o spento.
+- **Fermo se non succede niente**: nessun ciclo di disegno e nessun timer (un solo `setTimeout`,
+  armato solo con qualcosa di acceso). `data-animando` sul canvas lo rende osservabile ai test.
+- Backend: il modello di Ollama e' ora un nodo del grafo (`agente:modello`, collegato a tutti gli
+  strumenti) perche' gli eventi abbiano da dove partire; un secondo evento `agente.richiesta` con
+  `al_modello` segna quando la richiesta passa al modello; uno strumento fallito emette `agente.errore`
+  con il nodo dello strumento (e del dispositivo, se c'era).
+- Limite noto: gli eventi arrivano solo al profilo che ha fatto la richiesta; chi guarda il Cervello
+  da un'altra sessione non vede lavorare la casa per conto di altri (scelta di riservatezza di #188).
+- Come dice il contesto della scheda, questo non va preso come prova che l'agente e' affidabile: la
+  misura sul modello vero (#183) resta da fare.
+
+### #190 — feat(agente): un router e gli agenti di dominio, ciascuno con i propri strumenti
+
+*tipo: funzione, area: core*
+
+#### Contesto
+
+Attua la decisione dell'ADR 0008. Oggi un solo ciclo vede tutti gli strumenti.
+Con un router e agenti di dominio, ciascun agente vede solo quelli del proprio
+ambito: meno scelte davanti, meno errori con un modello piccolo.
+
+#### Cosa fare
+
+- Un registro degli agenti: nome, dominio, strumenti consentiti (le istruzioni sono quelle comuni del prompt: un agente non ne ha di proprie)
+- Un router che sceglie l'agente con regole e parole chiave per lingua. Il modello non serve (47 frasi su 48 del corpus hanno il dominio giusto) e la scelta e' nel log e nel campo `agenti` della risposta, non nel registro delle azioni
+- Primi agenti: otto, uno per modulo del catalogo (casa, clima e tapparelle, dispositivi, sicurezza, energia, informazioni, promemoria, agenda)
+- Un agente non puo' invocare uno strumento che non ha dichiarato, anche se il modello lo chiede
+- Se il router non sceglie, **il ripiego non e' il percorso di prima**: il modello non riceve strumenti e risponde a parole (il catalogo intero non ci sta nel contesto e invita a indovinare; #289)
+- Il `fast-path` sotto i 0,2 secondi resta com'e': un comando semplice non passa dal router
+
+#### Com'e' andata
+
+Fatti in quattro passi: il router e gli agenti (#284), la modalita' `--agenti` del banco (#285), il prompt di
+sistema stabile perche' la cache di Ollama lavori (#286), il ripiego senza strumenti (#289) e il controllo del
+bersaglio valido (#290). I numeri sono in `banco/risultati/` (`2026-10-05-i5-8500t-agenti-ANALISI.md`,
+`2026-10-05-i7-1355u-ANALISI.md`).
+
+Sul banco, con `qwen2.5:3b` e contesto 4096:
+
+| | Catalogo intero @ 8192 | Agenti, dopo la #289 (portatile) |
+| :--- | ---: | ---: |
+| Strumento giusto | 72,8% | **79,8%** |
+| Riuscite a pieno | 68/114 | **80/114** |
+| Inventate | 11 | **3** |
+| Mediana | 131 s | **28,7 s** |
+
+Gli agenti fanno meglio del ciclo unico, ma **non raggiungono le soglie dell'ADR 0008** (85% strumento giusto,
+75% argomenti, al massimo 1 inventata, mediana sotto 15 s): l'ADR resta Proposto. Il guadagno e' soprattutto di
+tempo; con questo modello e queste CPU la precisione resta sotto la soglia, e per tempi da voce serve altro hardware.
+
+Cio' che resta fuori da questa scheda:
+
+- **«spegni tutto»** e **«accendi la luce»** vengono riconosciute dal router ed eseguite, anche se sono ambigue.
+  Decisione del 2026-10-06: **restano cosi'**. Una conferma per i comandi che toccano piu' dispositivi si potra'
+  aggiungere se la casa ne mostrera' il bisogno.
+- Le frasi su due domini ricevono i due agenti uniti, non sono scomposte in due passaggi: se serve, e' la #191.
+- Il clima (2/8 sul banco) e gli argomenti troppo rigidi del corpus sono lavoro a parte.
+
+### #192 — feat(sicurezza): le azioni sensibili chiedono sempre conferma, anche dentro un piano
+
+*tipo: funzione, area: sicurezza, gravita': alta*
+
+#### Contesto
+
+Un principio permanente di Shinra e' che il modello non e' fidato. Un agente
+che pianifica da solo e puo' comandare una serratura o disinserire l'allarme
+e' esattamente il caso in cui quel principio deve diventare codice. Questa
+scheda e' obbligatoria: la fase non si chiude senza.
+
+#### Cosa fare
+
+- Una classificazione degli strumenti: sicuri, sensibili (serrature, allarme, apertura di garage e porte), vietati agli agenti
+- Un'azione sensibile dentro un piano sospende il piano e chiede conferma al profilo che l'ha richiesto, sul canale da cui e' arrivata
+- Da un canale senza identita' sicura (Alexa senza riconoscimento della voce) un'azione sensibile non parte, e lo dice
+- Una conferma scade dopo pochi minuti e vale per quel solo piano
+- Ogni conferma, rifiuto e scadenza finisce nel registro delle azioni
+
+#### Com'e' andata
+
+- `domain/sensibilita.py`: tre classi (sicura, sensibile, vietata agli agenti) e un elenco di
+  strumenti sicuri; **uno strumento sconosciuto e' sensibile** (chiuso per difetto), e un test
+  fallisce finche' chi lo aggiunge non decide. Il bersaglio puo' essere un `entity_id` o un nome
+  naturale: «serratura ingresso» vale come `lock.porta_ingresso`.
+- `services/conferme.py` + intento `conferma`: l'azione sensibile non parte, si ricorda cosa e'
+  stato chiesto (argomenti compresi) e a chi; il «si'» di **quella persona su quel canale** la
+  esegue una volta sola. Il «si'» lo legge un intento che viene prima del modello: il modello non
+  puo' darlo da solo. Una frase che non e' un si' secco («si', ma prima...») non conferma.
+- Tre minuti di validita'; alla scadenza non parte niente e si scrive nel registro anche se nessuno
+  ha piu' parlato. Ogni richiesta, conferma, rifiuto, scadenza e annullamento va nel registro
+  (strumento e bersaglio, mai gli argomenti: possono contenere il codice dell'allarme).
+- Voce non riconosciuta, o nessun canale a cui chiedere (lo scheduler): l'azione viene rifiutata, e lo dice.
+- **Rete di sicurezza in fondo**: `call_service` e `chiama_con_risposta` rifiutano una chiamata che
+  apre/disarma quando l'ha scelta il modello senza conferma — copre cio' che il varco non vede
+  (un passo dentro una modalita' attivata dal modello).
+- Tolte le conferme «ripeti la richiesta» che stavano dentro i due strumenti: erano per dispositivo e
+  non per persona (la conferma di un profilo valeva per un altro), e su Alexa soltanto.
+- **Piani e agenti (#190, #191)** non esistono ancora: ereditano il varco perche' il varco sta alla
+  porta di ogni strumento. Un piano che riceve `conferma_richiesta` deve sospendersi; la sospensione e'
+  del piano e arrivera' con lui.
+- Limiti noti: gli script di Home Assistant e le scene lanciate da `activate_scene_or_routine` sono
+  trattati per nome (gli script sono sempre sensibili, le scene no); le modalita' scritte da una
+  persona e attivate da una **frase** (non dal modello) non chiedono conferma: sono scelte esplicite.
+  Le regole e le routine automatiche (`regole`, scheduler) non passano da qui: sono cose che una
+  persona ha configurato apposta.
+
+### #195 — test(casa): una regola e un piano scattano davvero in una casa vera
+
+*tipo: attivita', area: core*
+
+#### Contesto
+
+Il criterio della `0.4.0` «una regola creata dall'interfaccia scatta da sola
+su un evento reale» e' ancora **da verificare in casa**: il motore funziona e
+i test coprono la catena, ma nessuno ha guardato una regola scattare davvero.
+Nella `0.5.0` sono venuti fuori tre difetti della stessa forma, tutti in
+funzioni spedite e mai eseguite. La `0.6.0` aggiunge agenti e piani: lo stesso
+rischio, moltiplicato.
+
+#### Cosa fare
+
+- Una lista di verifiche da eseguire in casa, con esito: regola su evento, regola a orario, regola sul sole, piano a piu' passaggi, conferma di un'azione sensibile
+- Per ciascuna: cosa si e' fatto, cosa si e' visto, cosa diceva il registro delle azioni
+- Ogni difetto trovato diventa una issue, con un test che lo avrebbe trovato
+- Aggiornare la roadmap: il criterio della `0.4.0` passa da «da verificare» a «verificato» o a «non raggiunto»
+
+#### Com'e' andata
+
+Provata in casa l'8 ottobre 2026, con la lista in [`docs/VERIFICA-IN-CASA.md`](VERIFICA-IN-CASA.md). **Verificate, con una riga del registro:** una regola a un orario e una regola su un timer che spegne una presa da sola. **Non provate:** lo scatto vero di una regola sul sole (il calcolo e' giusto), una regola con una condizione (non ce n'era una) e la conferma di un'azione sensibile (nessuna serratura, allarme o garage in casa: sono coperte solo dai test). Il piano a piu' passaggi e' passato alla `0.7.0` e poi a dopo la `1.0.0` (#191). Difetti trovati in casa e corretti: il motore non ascoltava `timer.scaduto` (#307), un dispositivo inesistente veniva accettato (#312), il push bloccava il server (#311), l'errore di uno strumento veniva nascosto (#310), il push non arrivava sui telefoni (#302, #304).
+
+### #196 — refactor(backend): nessun file del backend sopra le cinquecento righe, e un test a dirlo
+
+*tipo: attivita', area: core*
+
+#### Contesto
+
+Nel frontend il tetto delle cinquecento righe e' gia' applicato da un test.
+Nel backend tre file lo superano: `skills/registry.py` (circa 850 righe),
+`api/routes_admin.py` (circa 850) e `api/app.py` (circa 700). Sono anche i
+posti dove gli agenti della `0.6.0` toccheranno di piu': meglio sistemarli
+prima, non dopo.
+
+#### Cosa fare
+
+- Dividere `skills/registry.py` per dominio, in modo che il registro degli agenti possa riusare la stessa scomposizione — `skills/catalogo/`, otto moduli; `registry.py` da 854 a 93 righe
+- Dividere `api/routes_admin.py` per area — `routes_utenti`, `routes_casa`, `routes_impostazioni`, `routes_attivita`
+- Portare `api/app.py` sotto il tetto — 460 righe; il ciclo di vita e' in `api/ciclo_di_vita.py`
+- Un test che fallisce se un file di `src/shinra/` supera il tetto, con eventuali eccezioni elencate una per una come in `test_architettura.py` — `test_dimensione_backend.py`
+
+#### Com'e' andata
+
+- `skills/registry.py` era 710 righe di schemi piu' il codice che li esegue. Adesso
+  ogni dominio ha il suo modulo in `skills/catalogo/` con due elenchi,
+  `GESTORI` e `SCHEMI`; il registro li somma ed esegue. Il giorno che gli agenti
+  di dominio (#190) vorranno vedere solo i propri strumenti, la divisione e'
+  fatta.
+- `routes_admin.py` (889 righe) e' sparito: le rotte stanno in quattro file per
+  area, ciascuno con lo stesso router protetto per difetto.
+- `app.py` (726 righe) ha perso il ciclo di vita (`ciclo_di_vita.py`): cosa si
+  prepara all'avvio e cosa si ferma allo spegnimento.
+- **Restano cinque file sopra le 500 righe**, congelati al loro massimo in
+  `test_dimensione_backend.py` con il motivo: `infra/db/depositi.py` (702),
+  `services/interview_engine.py` (592, lo riscrivono la #209 e la #210),
+  `services/regole.py` (534), `domain/grafo.py` (520), `infra/db/modelli.py` (508).
+  La scheda ne nominava tre; questi cinque non erano nel perimetro, e il test li
+  tiene dal crescere. Un file in elenco che rientra nel tetto fa fallire il
+  test finche' non lo si toglie: l'elenco puo' solo accorciarsi.
+
+### #197 — ci(tipi): mypy obbligatorio anche su api e channels
+
+*tipo: attivita', area: infra*
+
+#### Contesto
+
+Nella CI mypy e' obbligatorio su `config`, `domain`, `infra`, `services` e
+`skills`, e solo informativo su `api` e `channels`: proprio i livelli che
+ricevono l'input esterno. Il passaggio a obbligatorio dipende da quanti
+errori ci sono oggi, che va misurato prima.
+
+#### Cosa fare
+
+- Contare gli errori di mypy su `api` e `channels`
+- Correggerli, o annotarli uno per uno con il motivo, come si fa per le eccezioni di architettura
+- Togliere `continue-on-error` dal passo della CI
+
+#### Com'e' andata
+
+Gli errori erano **due, in un file solo** (`channels/alexa/verifica_firma.py`): meno di
+quanto si temesse, e uno dei due era un difetto vero.
+
+- `get_values_for_type` su una estensione tipizzata come generica: si chiedeva l'estensione
+  per OID invece che per classe. Corretto con `get_extension_for_class`.
+- **`verify(..., None)`**: un certificato firmato con Ed25519 non ha `signature_hash_algorithm`,
+  e passarlo a `verify` sollevava un `TypeError` che nessuno gestiva. Su un endpoint pubblico
+  (`/api/alexa`) vuol dire un **500** a una richiesta con un certificato strano, e un 500 che
+  racconta che la verifica e' arrivata fin li'. Adesso e' un rifiuto come gli altri; un test
+  costruisce un certificato Ed25519 vero e verifica che prima falliva (`TypeError`) e ora no.
+
+Nessun errore e' stato soppresso: non ce n'e' bisogno. La CI e' obbligatoria su tutto
+`src/shinra` (132 file), e il comando in `docs/SVILUPPO.md` e' diventato `mypy src/shinra`.
+
+### #198 — docs: la guida al Cervello, agli agenti e ai piani
+
+*tipo: attivita', area: documentazione*
+
+#### Contesto
+
+Una funzione che non si capisce non esiste. La `0.6.0` porta tre cose nuove
+per l'utente: il grafo, gli agenti che dividono il lavoro e le conferme sulle
+azioni sensibili. Vanno dette per chi installa Shinra senza essere chi l'ha
+scritta, nello stesso stile di `PRIMI-PASSI.md` e `PROBLEMI.md`.
+
+#### Cosa fare
+
+- Una guida «Il Cervello»: cosa si vede, cosa significano i nodi e i colori, come si apre un oggetto
+- Una guida agli agenti: cosa sa fare ciascuno, cosa succede quando il router sbaglia
+- Una guida alle conferme: quali azioni le chiedono, da quali canali, cosa succede se scadono
+- Nuove voci in `PROBLEMI.md`, scritte solo per guasti davvero incontrati
+- Aggiornare la tabella «cosa resta in casa» del README e le note di rilascio
+
+#### Com'e' andata
+
+Tre guide (`docs/CERVELLO.md`, `docs/AGENTI.md`, `docs/CONFERME.md`), due guasti veri in `PROBLEMI.md` (il prompt
+tagliato e Ollama ucciso per memoria) e due voci fra «cose che sembrano guasti», le note di rilascio in
+`docs/release/v0.6.0.md` (marcate *in preparazione* finche' non c'e' il tag), il `CHANGELOG` e il README.
+
+**Il primo criterio e' stato chiuso il 2026-10-07**: un familiare che non ha scritto le guide ha letto `CERVELLO.md`,
+`AGENTI.md` e `CONFERME.md` e, riferisce chi vive qui, **ha capito tutto**. E' un giudizio a voce, senza un elenco di frasi
+da riscrivere: non ha segnalato punti poco chiari. Due limiti, dichiarati: la persona **ha letto ma non ha eseguito** la
+conferma di un'azione sensibile (in casa non c'e' una serratura, un allarme o un garage: vedi la voce 5 di
+`docs/VERIFICA-IN-CASA.md`), e il giudizio e' di una persona sola.
+**La guida ai piani** non c'e': i piani sono passati alla `0.7.0` (#191).

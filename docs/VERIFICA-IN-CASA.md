@@ -3,7 +3,7 @@
 Il motore delle regole funziona nei test, e i test non guardano una casa vera. Nella `0.5.0` sono venuti fuori tre
 difetti della stessa forma, tutti in funzioni spedite e mai eseguite; la `0.6.0` aggiunge agenti, conferme e notifiche,
 quindi lo stesso rischio, moltiplicato. Questa è la lista delle prove da fare **in casa**, da chi ci vive, con l'esito
-scritto accanto ([#195](backlog/v0.6.0/195-verifica-in-casa.md)).
+scritto accanto ([#195](storia-delle-fasi.md)).
 
 **Regola della lista:** una voce è «verificata» solo se esiste una riga del registro che la prova. Se ti sembra che
 abbia funzionato ma il registro non dice niente, la voce è **da capire**, non verificata.
