@@ -8,10 +8,13 @@ si dice perche', cosi' chi risponde sa che la casa ha letto e non e' un buco.
 
 La funzione che decide e' pura: riceve i dati, non li va a cercare. Chi la usa
 (`dati_della_casa`) li legge dal database; i test le passano quelli che vogliono.
+Le frasi che dice sono nella lingua di chi risponde (#207).
 """
 
 import unicodedata
 from typing import Any, Dict, Iterable, List, Optional
+
+from shinra.services.intervista_comune import dice
 
 # Una casa con un solo profilo non ha ancora detto «chi vive qui»: serve
 # almeno una seconda persona perche' l'elenco dica qualcosa di piu' di chi
@@ -25,11 +28,11 @@ def _senza_accenti(testo: str) -> str:
     return "".join(c for c in scomposto if unicodedata.category(c) != "Mn")
 
 
-def _elenco(voci: Iterable[str]) -> str:
+def _elenco(voci: Iterable[str], lingua: str = "") -> str:
     voci = list(voci)
     if len(voci) <= 1:
         return "".join(voci)
-    return ", ".join(voci[:-1]) + " e " + voci[-1]
+    return ", ".join(voci[:-1]) + dice(lingua, "elenco_e") + voci[-1]
 
 
 def dati_della_casa(data_store: Any) -> Dict[str, Any]:
@@ -46,17 +49,17 @@ def dati_della_casa(data_store: Any) -> Dict[str, Any]:
     return {"profili": profili, "stanze": stanze, "fatti": fatti}
 
 
-def cosa_si_sa(passo: Dict[str, Any], dati: Dict[str, Any]) -> Optional[str]:
+def cosa_si_sa(passo: Dict[str, Any], dati: Dict[str, Any], lingua: str = "") -> Optional[str]:
     """Una frase che dice cosa si sa gia', o `None` se la domanda va fatta."""
     fonte = passo.get("noto")
     if fonte == "profili":
         nomi: List[str] = list(dati.get("profili") or [])
         if len(nomi) >= MINIMO_PROFILI:
-            return f"In casa ci sono gia' {_elenco(nomi)}"
+            return dice(lingua, "noto_profili", nomi=_elenco(nomi, lingua))
     elif fonte == "stanze":
         stanze: List[str] = list(dati.get("stanze") or [])
         if len(stanze) >= MINIMO_STANZE:
-            return f"Conosco gia' queste stanze: {_elenco(stanze)}"
+            return dice(lingua, "noto_stanze", nomi=_elenco(stanze, lingua))
 
     parole = [_senza_accenti(p) for p in passo.get("parole") or ()]
     if parole:
@@ -65,5 +68,5 @@ def cosa_si_sa(passo: Dict[str, Any], dati: Dict[str, Any]) -> Optional[str]:
                 continue
             testo = _senza_accenti(str(fatto.get("text") or ""))
             if any(p in testo for p in parole):
-                return f"Ho gia' annotato: «{fatto['text']}»"
+                return dice(lingua, "noto_fatto", fatto=fatto["text"])
     return None

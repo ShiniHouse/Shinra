@@ -9,6 +9,8 @@ Il modello non entra: l'elenco dei dispositivi viene da Home Assistant e il
 nome lo scrive chi risponde. **Nessuna entita' inventata puo' entrare negli
 alias**, perche' l'`entity_id` non lo scrive nessuno che non sia Home
 Assistant: sta nel passo, e il passo lo costruisce il codice.
+
+Le frasi stanno nel file della lingua di chi risponde (#207).
 """
 
 import logging
@@ -18,8 +20,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from shinra.services.intervista_comune import (
     FASE_CONFERMA,
     LIMITE_CORREZIONI,
+    dice,
     e_affermativa,
     e_negativa,
+    normalizza,
+    sezione,
+    vuole_saltare,
 )
 
 logger = logging.getLogger("Shinra.Interview")
@@ -28,31 +34,12 @@ logger = logging.getLogger("Shinra.Interview")
 # serve a «accendi la luce del corridoio».
 DOMINI_DA_NOMINARE = ("light", "switch", "cover", "climate", "fan", "media_player")
 
-ETICHETTE = {
-    "light": "luce",
-    "switch": "presa o interruttore",
-    "cover": "tapparella o tenda",
-    "climate": "clima",
-    "fan": "ventilatore",
-    "media_player": "lettore multimediale",
-}
-
 # Quanti dispositivi si chiedono in una sola intervista: l'elenco vero di una
 # casa ne ha centinaia, e un'intervista di cento domande non la finisce nessuno.
 LIMITE_DISPOSITIVI = 6
 
 MAX_PAROLE = 6
 MAX_LUNGHEZZA = 60
-
-SALTA = frozenset({"salta", "no", "niente", "nulla", "nessuno", "lascia perdere", "non so", "boh", "basta"})
-
-
-def _normalizza(testo: str) -> str:
-    return re.sub(r"\s+", " ", re.sub(r"[^a-zà-ÿ0-9]+", " ", (testo or "").lower())).strip()
-
-
-def vuole_saltare(risposta: str) -> bool:
-    return _normalizza(risposta) in SALTA
 
 
 def alias_proposto(risposta: str) -> Optional[str]:
@@ -69,18 +56,18 @@ def alias_proposto(risposta: str) -> Optional[str]:
     return pulito
 
 
-def passo_alias(dispositivo: Dict[str, Any]) -> Dict[str, Any]:
+def passo_alias(dispositivo: Dict[str, Any], lingua: str = "") -> Dict[str, Any]:
     """Il passo dell'intervista per un dispositivo vero."""
     dominio = dispositivo["entity_id"].split(".")[0]
     nome = dispositivo.get("friendly_name") or dispositivo["entity_id"]
-    etichetta = ETICHETTE.get(dominio, dominio)
+    etichetta = sezione(lingua)["etichette"].get(dominio, dominio)
     return {
         "id": f"alias:{dispositivo['entity_id']}",
         "kind": "alias",
         "category": "alias",
-        "title": "Il nome di un dispositivo",
-        "question": f"Come chiami in casa «{nome}» ({etichetta})?",
-        "hint": "es. la luce del corridoio. Rispondi «salta» per lasciarlo com'e'.",
+        "title": dice(lingua, "alias_titolo"),
+        "question": dice(lingua, "alias_domanda", nome=nome, etichetta=etichetta),
+        "hint": dice(lingua, "alias_hint"),
         "entity_id": dispositivo["entity_id"],
         "dominio": dominio,
     }
@@ -120,14 +107,11 @@ async def dispositivi_senza_nome(limite: int = LIMITE_DISPOSITIVI) -> List[Dict[
 
 def alias_gia_usato(nome: str, alias_esistenti: List[Dict[str, Any]], entity_id: str) -> Optional[str]:
     """Se lo stesso nome indica gia' un altro dispositivo, dice quale."""
-    voluto = _normalizza(nome)
+    voluto = normalizza(nome)
     for a in alias_esistenti:
-        if _normalizza(str(a.get("alias") or "")) == voluto and a.get("entity_id") != entity_id:
+        if normalizza(str(a.get("alias") or "")) == voluto and a.get("entity_id") != entity_id:
             return str(a.get("entity_id") or "")
     return None
-
-
-SUGGERIMENTO_ALIAS = "Rispondi «sì» per salvare, «no» per lasciarlo com'e', oppure scrivi un altro nome."
 
 
 class TurniAlias:
@@ -135,7 +119,7 @@ class TurniAlias:
 
     Servono `_avanza` e `_stesso_passo` del motore: la classe e' un mixin e si
     usa solo li'. Il nome si salva **dopo** il «si'»: un alias rifiutato non
-    entra nel database.
+    entra nel database. Le frasi sono nella lingua della sessione.
     """
 
     if TYPE_CHECKING:
@@ -165,53 +149,45 @@ class TurniAlias:
         return self._chiedi_alias(session, step, risposta, archivio)
 
     def _chiedi_alias(self, session, step, risposta: str, archivio) -> Dict[str, Any]:
-        if vuole_saltare(risposta):
-            return self._avanza(session, "Va bene, lo lascio com'e'. ", [], None, True)
+        lingua = session.get("lingua", "")
+        if vuole_saltare(risposta, lingua):
+            return self._avanza(session, dice(lingua, "alias_lascio"), [], None, True)
         nome = alias_proposto(risposta)
         if nome is None:
             if session["insistito"]:
-                return self._avanza(session, "Non ho capito un nome: lo lascio com'e'. ", [], None, True)
+                return self._avanza(session, dice(lingua, "alias_non_capito"), [], None, True)
             session["insistito"] = True
-            return self._stesso_passo(
-                session,
-                step,
-                "Un nome e' breve, di poche parole: come lo chiameresti a voce? Oppure rispondi «salta».",
-                True,
-            )
+            return self._stesso_passo(session, step, dice(lingua, "alias_breve"), True)
         altro = alias_gia_usato(nome, archivio.get_aliases(), step["entity_id"])
         if altro:
             return self._stesso_passo(
-                session,
-                step,
-                f"«{nome}» e' gia' il nome di {altro}: scegline un altro, oppure rispondi «salta».",
-                True,
+                session, step, dice(lingua, "alias_gia_preso", nome=nome, altro=altro), True
             )
         session["fase"] = FASE_CONFERMA
         session["in_attesa"] = [{"text": nome, "category": "alias"}]
         return self._stesso_passo(
             session,
             step,
-            f"Lo chiamerai «{nome}». E' giusto?",
+            dice(lingua, "alias_conferma", nome=nome),
             True,
             capiti=session["in_attesa"],
-            suggerimento=SUGGERIMENTO_ALIAS,
+            suggerimento=dice(lingua, "alias_suggerimento"),
         )
 
     def _conferma_alias(self, session, step, risposta: str, archivio) -> Dict[str, Any]:
-        if e_affermativa(risposta):
+        lingua = session.get("lingua", "")
+        if e_affermativa(risposta, lingua):
             nome = session["in_attesa"][0]["text"]
             archivio.salva_alias(
                 {"alias": nome, "entity_id": step["entity_id"], "room": "", "domain": step["dominio"]}
             )
             session["alias_creati"] = session.get("alias_creati", 0) + 1
-            return self._avanza(session, f"Fatto: da ora «{nome}» e' questo dispositivo. ", [], None, True)
-        if e_negativa(risposta):
-            return self._avanza(session, "Va bene, lo lascio com'e'. ", [], None, True)
+            return self._avanza(session, dice(lingua, "alias_fatto", nome=nome), [], None, True)
+        if e_negativa(risposta, lingua):
+            return self._avanza(session, dice(lingua, "alias_lascio"), [], None, True)
         # Un altro nome: si riparte da li', una volta sola, poi si rinuncia.
         if session["correzioni"] >= LIMITE_CORREZIONI:
-            return self._avanza(
-                session, "Lo lascio com'e', per non farti riscrivere all'infinito. ", [], None, True
-            )
+            return self._avanza(session, dice(lingua, "alias_rinuncia"), [], None, True)
         session["correzioni"] += 1
         session["fase"] = "domanda"
         return self._chiedi_alias(session, step, risposta, archivio)

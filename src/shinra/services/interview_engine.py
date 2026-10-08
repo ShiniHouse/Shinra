@@ -9,12 +9,11 @@ from shinra.infra.data_store import data_store
 from shinra.infra.llm.ollama import OllamaClient
 from shinra.services.intervista_alias import TurniAlias, passo_alias
 from shinra.services.intervista_comune import (
-    AFFERMAZIONI,  # noqa: F401 - riesportati: li importano i test
     FASE_CONFERMA,
     FASE_DOMANDA,
     LIMITE_CORREZIONI,
-    NEGAZIONI,  # noqa: F401
-    SUGGERIMENTO_CONFERMA,
+    dice,
+    sezione,
 )
 from shinra.services.intervista_comune import (
     e_affermativa as _e_affermativa,
@@ -23,13 +22,18 @@ from shinra.services.intervista_comune import (
     e_negativa as _e_negativa,
 )
 from shinra.services.intervista_noto import cosa_si_sa, dati_della_casa
-from shinra.services.intervista_passi import INTERVIEW_STEPS
+from shinra.services.intervista_passi import INTERVIEW_STEPS, passi_per
 from shinra.services.intervista_routine import controlla_proposta, routine_da_salvare
 
 logger = logging.getLogger("Shinra.Interview")
 
+# Le frasi non sono qui: stanno nella sezione `intervista` del file della lingua di chi risponde (#207), e la
+# lingua e' quella della sessione. Qui restano le regole: cosa si chiede, quando si insiste, quando si salva.
+__all__ = ["INTERVIEW_STEPS", "LIMITE_CORREZIONI", "LearningInterviewEngine", "interview_engine"]
+_USATI_DAI_TEST = (_e_affermativa, _e_negativa)
 
-def _riconoscimento(interpretato: bool, quanti: int) -> str:
+
+def _riconoscimento(interpretato: bool, quanti: int, lingua: str = "") -> str:
     """Cosa si risponde dopo una risposta dell'utente.
 
     Fino alla #170 qui c'era una frase sola — «Ricevuto! Ho aggiunto N nuovi
@@ -42,41 +46,25 @@ def _riconoscimento(interpretato: bool, quanti: int) -> str:
     consegnare altre cinque risposte a qualcosa che non le sta leggendo.
     """
     if not interpretato:
-        return (
-            "Ho conservato la tua risposta, ma non sono riuscita a ricavarne niente "
-            "di preciso: il modello non ha risposto come mi serve. Controlla quale "
-            "modello e' configurato — per capire una frase e riassumerla ne serve "
-            "uno da qualche miliardo di parametri. Intanto proseguo. "
-        )
+        return dice(lingua, "riconoscimento_non_interpretato")
     if quanti:
-        return f"Ricevuto! Ho aggiunto {quanti} nuovi dettagli alla mia conoscenza. "
-    return (
-        "Ho letto, ma da questa risposta non ho ricavato niente da ricordare: "
-        "se ti va, piu' avanti riprendiamo con qualche dettaglio in piu'. "
-    )
+        return dice(lingua, "riconoscimento_n", quanti=quanti)
+    return dice(lingua, "riconoscimento_niente")
 
 
-def _chiusura(imparati: int, non_interpretate: int, alias_creati: int = 0) -> str:
+def _chiusura(imparati: int, non_interpretate: int, alias_creati: int = 0, lingua: str = "") -> str:
     """Il saluto finale, che non dice «ottimo lavoro» dopo sei fallimenti."""
-    nomi = (
-        f" Ho dato un nome a {alias_creati} dispositiv{'o' if alias_creati == 1 else 'i'}: da ora li capisco a voce."
-        if alias_creati
-        else ""
-    )
-    if non_interpretate:
-        return (
-            f"Intervista finita. Ho memorizzato {imparati} fatti, ma {non_interpretate} "
-            "delle tue risposte non sono riuscita a interpretarle: le ho conservate "
-            "cosi' come le hai scritte. Con un modello piu' capace vale la pena "
-            "rifarla — imparerei molto di piu' dalle stesse risposte." + nomi
+    nomi = ""
+    if alias_creati:
+        nomi = dice(
+            lingua, "chiusura_alias_uno" if alias_creati == 1 else "chiusura_alias_piu", n=alias_creati
         )
-    return (
-        f"Ottimo lavoro! Intervista completata. Ho memorizzato {imparati} fatti sulla "
-        "tua casa e calibrato le mie risposte per te e la tua famiglia." + nomi
-    )
+    if non_interpretate:
+        return dice(lingua, "chiusura_errori", imparati=imparati, non_interpretate=non_interpretate) + nomi
+    return dice(lingua, "chiusura_ok", imparati=imparati) + nomi
 
 
-def _riepilogo(fatti: List[Dict[str, str]]) -> str:
+def _riepilogo(fatti: List[Dict[str, str]], lingua: str = "") -> str:
     """Cosa si e' capito, **prima** di salvarlo.
 
     Fino alla #170 l'intervista salvava e proseguiva: un'interpretazione
@@ -85,15 +73,10 @@ def _riepilogo(fatti: List[Dict[str, str]]) -> str:
     risposto ha ancora in mente cosa intendeva dire.
     """
     elenco = "\n".join(f"• {f['text']}" for f in fatti)
-    return (
-        "Ho capito questo:\n"
-        f"{elenco}\n"
-        "È giusto? Rispondi «sì» e lo salvo. Se ho capito male, riscrivimelo come lo "
-        "diresti tu; se preferisci lasciar perdere, rispondi «no»."
-    )
+    return dice(lingua, "riepilogo", elenco=elenco)
 
 
-def _insistenza(step: Dict[str, Any], interpretato: bool) -> str:
+def _insistenza(step: Dict[str, Any], interpretato: bool, lingua: str = "") -> str:
     """Si chiede di approfondire **una volta sola**, con un esempio concreto.
 
     Prima una risposta di due parole veniva accettata e si passava oltre: la
@@ -102,17 +85,13 @@ def _insistenza(step: Dict[str, Any], interpretato: bool) -> str:
     «boh» la si abbandona a meta' — e a quel punto non impara niente di
     niente.
     """
-    apertura = (
-        "Non sono riuscita a ricavarne niente di preciso."
-        if not interpretato
-        else "Da questa risposta non ho ricavato niente da ricordare."
-    )
-    esempio = re.sub(r"^es\.\s*", "", str(step.get("hint") or "")).strip()
-    coda = f"\nPer esempio: «{esempio}»" if esempio else ""
-    return f"{apertura} Ci riprovo una volta sola, poi passo oltre.\n{step['question']}{coda}"
+    apertura = dice(lingua, "insistenza_vuota" if interpretato else "insistenza_non_interpretato")
+    esempio = re.sub(r"^(?:es\.|e\.g\.)\s*", "", str(step.get("hint") or ""), flags=re.IGNORECASE).strip()
+    coda = dice(lingua, "per_esempio", esempio=esempio) if esempio else ""
+    return dice(lingua, "insistenza", apertura=apertura, domanda=step["question"], esempio=coda)
 
 
-def _primo_da_chiedere(partenza: int, passi: List[Dict[str, Any]]) -> tuple:
+def _primo_da_chiedere(partenza: int, passi: List[Dict[str, Any]], lingua: str = "") -> tuple:
     """Dal passo `partenza` in poi, il primo che la casa non sa gia'.
 
     Ritorna `(indice, saltati)`: `saltati` sono le frasi che dicono cosa si e'
@@ -122,7 +101,7 @@ def _primo_da_chiedere(partenza: int, passi: List[Dict[str, Any]]) -> tuple:
     saltati: List[str] = []
     indice = partenza
     while indice < len(passi):
-        noto = cosa_si_sa(passi[indice], dati)
+        noto = cosa_si_sa(passi[indice], dati, lingua)
         if not noto:
             break
         saltati.append(noto)
@@ -130,10 +109,10 @@ def _primo_da_chiedere(partenza: int, passi: List[Dict[str, Any]]) -> tuple:
     return indice, saltati
 
 
-def _frase_dei_saltati(saltati: List[str]) -> str:
+def _frase_dei_saltati(saltati: List[str], lingua: str = "") -> str:
     if not saltati:
         return ""
-    return " ".join(f"{s}: salto la domanda." for s in saltati) + " "
+    return " ".join(dice(lingua, "salto", noto=s) for s in saltati) + " "
 
 
 class LearningInterviewEngine(TurniAlias):
@@ -149,11 +128,16 @@ class LearningInterviewEngine(TurniAlias):
         return self._active_sessions.get(user_id)
 
     def start_session(
-        self, user_id: str = "alessio", dispositivi: Optional[List[Dict[str, Any]]] = None
+        self,
+        user_id: str = "alessio",
+        dispositivi: Optional[List[Dict[str, Any]]] = None,
+        lingua: str = "",
     ) -> Dict[str, Any]:
-        passi = list(INTERVIEW_STEPS) + [passo_alias(d) for d in dispositivi or []]
+        """Apre l'intervista, nella lingua di chi risponde (vuota: quella dell'installazione)."""
+        passi = passi_per(lingua) + [passo_alias(d, lingua) for d in dispositivi or []]
         session: Dict[str, Any] = {
             "passi": passi,
+            "lingua": lingua,
             "user_id": user_id,
             "is_active": True,
             "current_step_index": 0,
@@ -175,7 +159,7 @@ class LearningInterviewEngine(TurniAlias):
             "started_at": datetime.now().isoformat(),
         }
         self._active_sessions[user_id] = session
-        indice, saltati = _primo_da_chiedere(0, passi)
+        indice, saltati = _primo_da_chiedere(0, passi, lingua)
         if indice >= len(passi):
             session["is_active"] = False
             return {
@@ -183,8 +167,7 @@ class LearningInterviewEngine(TurniAlias):
                 "step_index": indice,
                 "total_steps": len(session["passi"]),
                 "fase": FASE_DOMANDA,
-                "message": _frase_dei_saltati(saltati)
-                + "Non ho niente da chiedere: la casa mi ha gia' detto tutto quello che serve.",
+                "message": _frase_dei_saltati(saltati, lingua) + dice(lingua, "niente_da_chiedere"),
                 "capiti": [],
                 "suggerimento": None,
                 "is_complete": True,
@@ -193,10 +176,7 @@ class LearningInterviewEngine(TurniAlias):
         session["current_step_index"] = indice
         first_step = passi[indice]
 
-        greeting = (
-            "Modalità Apprendimento attivata. Ti farò qualche breve domanda, una per volta, per imparare "
-            "a gestire la tua casa al meglio. " + _frase_dei_saltati(saltati) + first_step["question"]
-        )
+        greeting = dice(lingua, "saluto") + _frase_dei_saltati(saltati, lingua) + first_step["question"]
         return {
             "is_active": True,
             "step_index": indice,
@@ -225,8 +205,9 @@ class LearningInterviewEngine(TurniAlias):
         self, session: Dict[str, Any], step: Dict[str, Any], answer_text: str
     ) -> Dict[str, Any]:
         """La risposta alla domanda del passo. Non salva ancora niente."""
+        lingua = session.get("lingua", "")
         session["answers"][step["id"]] = answer_text
-        estratto = await self._extract_knowledge_and_routines(step, answer_text)
+        estratto = await self._extract_knowledge_and_routines(step, answer_text, lingua)
         interpretato = bool(estratto.get("interpretato", True))
         fatti = estratto.get("facts") or []
         routine = estratto.get("proposed_routine")
@@ -235,7 +216,7 @@ class LearningInterviewEngine(TurniAlias):
         # perche' il modello non l'ha interpretata. Si chiede una volta sola.
         if (not interpretato or not fatti) and not session["insistito"]:
             session["insistito"] = True
-            return self._stesso_passo(session, step, _insistenza(step, interpretato), interpretato)
+            return self._stesso_passo(session, step, _insistenza(step, interpretato, lingua), interpretato)
 
         if not interpretato:
             # La frase e' rimasta grezza: e' gia' sua parola per parola, e
@@ -244,10 +225,12 @@ class LearningInterviewEngine(TurniAlias):
             # che non si e' capito.
             session["non_interpretate"] += 1
             salvati = self._salva(session, step, fatti)
-            return self._avanza(session, _riconoscimento(False, len(salvati)), salvati, routine, False)
+            return self._avanza(
+                session, _riconoscimento(False, len(salvati), lingua), salvati, routine, False
+            )
 
         if not fatti:
-            return self._avanza(session, _riconoscimento(True, 0), [], routine, True)
+            return self._avanza(session, _riconoscimento(True, 0, lingua), [], routine, True)
 
         return self._chiedi_conferma(session, step, fatti, routine)
 
@@ -255,18 +238,19 @@ class LearningInterviewEngine(TurniAlias):
         self, session: Dict[str, Any], step: Dict[str, Any], answer_text: str
     ) -> Dict[str, Any]:
         """La risposta al riepilogo: un «sì», un «no», o una correzione."""
-        if _e_affermativa(answer_text):
+        lingua = session.get("lingua", "")
+        if _e_affermativa(answer_text, lingua):
             salvati = self._salva(session, step, session.get("in_attesa") or [])
             return self._avanza(
                 session,
-                _riconoscimento(True, len(salvati)),
+                _riconoscimento(True, len(salvati), lingua),
                 salvati,
                 session.get("routine_in_attesa"),
                 True,
             )
 
-        if _e_negativa(answer_text):
-            return self._avanza(session, "Va bene, non salvo niente di questo passo. ", [], None, True)
+        if _e_negativa(answer_text, lingua):
+            return self._avanza(session, dice(lingua, "non_salvo"), [], None, True)
 
         # Tutto il resto e' una correzione: si riparte da cio' che ha scritto
         # lui adesso, non da cio' che si era capito prima.
@@ -274,7 +258,7 @@ class LearningInterviewEngine(TurniAlias):
         session["correzioni"] += 1
         session["answers"][step["id"]] = answer_text
 
-        estratto = await self._extract_knowledge_and_routines(step, answer_text)
+        estratto = await self._extract_knowledge_and_routines(step, answer_text, lingua)
         interpretato = bool(estratto.get("interpretato", True))
         fatti = estratto.get("facts") or []
         routine = estratto.get("proposed_routine")
@@ -286,9 +270,9 @@ class LearningInterviewEngine(TurniAlias):
             session["non_interpretate"] += 1
         salvati = self._salva(session, step, fatti)
         prefisso = (
-            "Salvo così e proseguo, per non farti riscrivere all'infinito. "
+            dice(lingua, "salvo_cosi")
             if salvati and not ancora
-            else _riconoscimento(interpretato, len(salvati))
+            else _riconoscimento(interpretato, len(salvati), lingua)
         )
         return self._avanza(session, prefisso, salvati, routine, interpretato)
 
@@ -299,16 +283,17 @@ class LearningInterviewEngine(TurniAlias):
         fatti: List[Dict[str, str]],
         routine: Optional[Dict[str, Any]],
     ) -> Dict[str, Any]:
+        lingua = session.get("lingua", "")
         session["fase"] = FASE_CONFERMA
         session["in_attesa"] = fatti
         session["routine_in_attesa"] = routine
         return self._stesso_passo(
             session,
             step,
-            _riepilogo(fatti),
+            _riepilogo(fatti, lingua),
             True,
             capiti=fatti,
-            suggerimento=SUGGERIMENTO_CONFERMA,
+            suggerimento=dice(lingua, "suggerimento_conferma"),
         )
 
     def _salva(
@@ -366,6 +351,7 @@ class LearningInterviewEngine(TurniAlias):
         interpretato: bool,
     ) -> Dict[str, Any]:
         """Il passo e' chiuso: si azzera il suo stato e si va al successivo."""
+        lingua = session.get("lingua", "")
         session["fase"] = FASE_DOMANDA
         session["in_attesa"] = []
         session["routine_in_attesa"] = None
@@ -375,16 +361,22 @@ class LearningInterviewEngine(TurniAlias):
         proposta = ""
         if routine and routine.get("name"):
             session["proposed_routines"].append(routine)
-            proposta = (
-                f"\n\n💡 Ho notato una possibile routine, «{routine['name']}»:\n"
-                f"{routine.get('anteprima', '')}\n"
-                f"Prova a secco: {routine.get('prova', 'non fatta')}."
-                + (f" Ho scartato: {'; '.join(routine['scartate'])}." if routine.get("scartate") else "")
-                + " Vuoi che la crei? La potrai modificare nell'editor."
+            scartate = (
+                dice(lingua, "routine_scartate", elenco="; ".join(routine["scartate"]))
+                if routine.get("scartate")
+                else ""
+            )
+            proposta = dice(
+                lingua,
+                "routine_proposta",
+                nome=routine["name"],
+                anteprima=routine.get("anteprima", ""),
+                prova=routine.get("prova", dice(lingua, "routine_prova_non_fatta")),
+                scartate=scartate,
             )
 
-        prossimo, saltati = _primo_da_chiedere(session["current_step_index"] + 1, session["passi"])
-        prefisso += _frase_dei_saltati(saltati)
+        prossimo, saltati = _primo_da_chiedere(session["current_step_index"] + 1, session["passi"], lingua)
+        prefisso += _frase_dei_saltati(saltati, lingua)
         if prossimo < len(session["passi"]):
             session["current_step_index"] = prossimo
             passo = session["passi"][prossimo]
@@ -411,7 +403,7 @@ class LearningInterviewEngine(TurniAlias):
             "total_steps": len(session["passi"]),
             "fase": FASE_DOMANDA,
             "message": prefisso
-            + _chiusura(imparati, session["non_interpretate"], session.get("alias_creati", 0)),
+            + _chiusura(imparati, session["non_interpretate"], session.get("alias_creati", 0), lingua),
             "new_facts": salvati,
             "capiti": [],
             "suggerimento": None,
@@ -421,31 +413,22 @@ class LearningInterviewEngine(TurniAlias):
             "summary": {"total_facts": imparati, "proposed_routines": session["proposed_routines"]},
         }
 
-    async def _extract_knowledge_and_routines(self, step: Dict[str, Any], user_answer: str) -> Dict[str, Any]:
+    async def _extract_knowledge_and_routines(
+        self, step: Dict[str, Any], user_answer: str, lingua: str = ""
+    ) -> Dict[str, Any]:
         if not user_answer or len(user_answer.strip()) < 3:
             return {"facts": [], "proposed_routine": None}
 
-        prompt = f"""Sei l'assistente IA Shinra. Analizza la risposta dell'utente durante un'intervista ed estrai le informazioni da memorizzare.
-
-Argomento: {step['title']} (Categoria: {step['category']})
-Domanda: "{step['question']}"
-Risposta: "{user_answer}"
-
-Estrai:
-1. Una lista di 'facts' atomici e chiari in forma di frasi descrittive in terza persona (es. "La sveglia nei feriali è alle ore 7:00").
-2. Se l'utente ha descritto una sequenza di azioni o abitudini, crea un oggetto 'proposed_routine' con 'name', 'description', 'trigger_phrases' e una lista 'actions' (con type 'ha_device', 'tts' o 'delay'). Altrimenti metti null.
-
-Rispondi ESCLUSIVAMENTE con un JSON:
-{{
-  "facts": [
-    {{"text": "Frase descrittiva 1", "category": "{step['category']}"}}
-  ],
-  "proposed_routine": null
-}}"""
+        # Il prompt e' nella lingua di chi risponde: un modello a cui si parla in inglese risponde meglio
+        # se anche le istruzioni lo sono, e i fatti che estrae restano nella lingua della persona.
+        intervista = sezione(lingua)
+        prompt = intervista["prompt_estrazione"].format(
+            titolo=step["title"], categoria=step["category"], domanda=step["question"], risposta=user_answer
+        )
 
         dati = await self.ollama.genera_json(
             prompt=prompt,
-            system="Rispondi solo con JSON valido. Non aggiungere markdown o spiegazioni.",
+            system=intervista["sistema_estrazione"],
             temperature=0.1,
         )
 
@@ -477,7 +460,7 @@ Rispondi ESCLUSIVAMENTE con un JSON:
         return {
             "facts": self._fatti_validi(dati.get("facts"), step),
             "proposed_routine": await controlla_proposta(
-                self._routine_valida(dati.get("proposed_routine")), data_store
+                self._routine_valida(dati.get("proposed_routine")), data_store, lingua
             ),
             "interpretato": True,
         }
@@ -523,11 +506,11 @@ Rispondi ESCLUSIVAMENTE con un JSON:
         )
         return grezza
 
-    async def conferma_routine_proposta(self, proposta: Dict[str, Any]) -> Dict[str, Any]:
+    async def conferma_routine_proposta(self, proposta: Dict[str, Any], lingua: str = "") -> Dict[str, Any]:
         """Salva la routine proposta, dopo averla ricontrollata (vedi `intervista_routine`)."""
-        pulita = await routine_da_salvare(proposta, data_store)
+        pulita = await routine_da_salvare(proposta, data_store, lingua)
         if pulita is None:
-            return {"success": False, "error": "La routine non supera il controllo sulla casa vera."}
+            return {"success": False, "error": dice(lingua, "routine_non_supera")}
         return self.confirm_routine(pulita)
 
     def confirm_routine(self, routine_data: Dict[str, Any]) -> Dict[str, Any]:

@@ -155,8 +155,13 @@ Le sezioni `tempo` e `timer` sono le parole del tempo: i numeri in lettere, le u
 legge il `Lessico` della lingua, e un test controlla che nessuna parola italiana resti nel dominio (#205).
 
 La lingua si sceglie per persona nella scheda del profilo, o per tutta la casa
-con `assistant.language`. Restano italiani, per ora: le etichette della dashboard e i messaggi degli strumenti.
+con `assistant.language`. Restano italiani, per ora: le etichette della dashboard e i messaggi degli strumenti (l'intervista no, #207).
 Gli strumenti che leggono il tempo (promemoria, calendario, scadenze) usano la lingua dell'installazione.
+
+La sezione `intervista` e' l'intervista di apprendimento: ogni passo (titolo, domanda, suggerimento, parole di «la casa
+lo sa gia'»), ogni frase (`testi`), le parole di sì/no/salta, i nomi dei comandi di una routine e il prompt di estrazione
+per il modello. Una lingua nuova la traduce per intero, e il caricatore dice per nome cosa manca. In YAML `no` senza
+apici e' «falso»: la chiave delle negazioni si chiama `nega`.
 
 ---
 
