@@ -220,6 +220,12 @@ class SalvataggioConfig(BaseModel):
     da_conservare: int = 14
 
 
+class PluginConfig(BaseModel):
+    """I plugin abilitati (#193): i nomi delle cartelle in `plugins/`. Nessuno per difetto."""
+
+    abilitati: list[str] = Field(default_factory=list)
+
+
 class AppConfig(BaseModel):
     server: ServerConfig = Field(default_factory=ServerConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
@@ -232,6 +238,7 @@ class AppConfig(BaseModel):
     energia: EnergiaConfig = Field(default_factory=EnergiaConfig)
     voce: VoceConfig = Field(default_factory=VoceConfig)
     salvataggio: SalvataggioConfig = Field(default_factory=SalvataggioConfig)
+    plugin: PluginConfig = Field(default_factory=PluginConfig)
 
 
 # --------------------------------------------------------------------------

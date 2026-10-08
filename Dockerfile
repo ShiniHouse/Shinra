@@ -64,6 +64,7 @@ COPY web/ ./web/
 COPY migrazioni/ ./migrazioni/
 COPY alembic.ini run.py ./
 COPY scripts/ ./scripts/
+COPY plugins/ ./plugins/
 
 # L'esempio di configurazione sta **fuori** da `/app/config`, perche' quella
 # cartella e' un volume: un volume vuoto montato sopra nasconderebbe il file,

@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from shinra import percorsi
 from shinra.api import sicurezza
 from shinra.config.settings import (
     assicura_segreto_sessione,
@@ -23,7 +24,7 @@ from shinra.config.settings import (
 )
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.scheduler.motore import scheduler
-from shinra.services import eventi_casa, permessi, registro
+from shinra.services import eventi_casa, permessi, plugin, registro
 from shinra.services.allarme import allarme
 from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.consegna import registra_canali
@@ -178,6 +179,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     _prepara_archivio()
 
     _prepara_accesso()
+
+    # I plugin abilitati (#193). Un plugin che non parte finisce nel log e non ferma il resto.
+    plugin.attiva(percorsi.PLUGIN, settings.plugin.abilitati)
 
     # Scheduler: da qui timer e promemoria scattano lato server, anche a
     # browser chiuso e attraverso i riavvii.
