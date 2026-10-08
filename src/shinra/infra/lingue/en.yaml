@@ -441,6 +441,16 @@ intervista:
   sistema_estrazione: "Answer only with valid JSON. Do not add markdown or explanations."
 
 messaggi:
+  serratura_stato: "{nome} is {stato}."
+  serratura_stato_locked: "locked"
+  serratura_stato_unlocked: "unlocked"
+  serratura_stato_jammed: "jammed"
+  serratura_chiusa: "{nome} locked."
+  serratura_aperta: "{nome} unlocked."
+  serratura_non_chiusa: "I couldn't lock {nome}."
+  serratura_non_aperta: "I couldn't unlock {nome}."
+  serratura_azione_ignota: "Action «{azione}» is not supported for a lock."
+  serratura_da_voce: "I won't unlock {nome} by voice: I don't know who is speaking. If you set up Alexa voice profiles and link your voice to a profile in the settings, I'll be able to. Meanwhile you can unlock it from the dashboard."
   temperatura_sensori_illeggibili: "I can't read the home sensors."
   temperatura_nessun_sensore: "I can't find a temperature sensor in the house."
   temperatura_nessun_sensore_in: "I can't find a temperature sensor in {stanza}."

@@ -15,6 +15,11 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Modificato
+- **Gli strumenti dicono il loro esito nella lingua di chi ha chiesto** (#207, seconda parte). La lingua del
+  profilo viaggia nel contesto della richiesta, come l'attore e il canale (`contesto.lingua_corrente()`, dichiarata
+  dall'agente), e lo strumento la legge senza che nessuno gliela passi. Per cominciare la **serratura**: due profili,
+  uno italiano e uno inglese, comandano la stessa e ricevono ciascuno l'esito nella propria lingua. Un test conta le
+  frasi italiane che gli strumenti restituiscono ancora (95 in 15 file, da 101): e' un debito che cala, file per file.
 - **Il caricatore delle lingue sta in `infra/lingue`** (era `services/intenti/lingue`). E' uno spostamento
   senza cambiare comportamento: serve perche' gli strumenti (le `skills`) possano leggere la lingua di chi parla
   senza dipendere dai servizi (#207). Toglie dal debito dell'architettura le tre skill che leggono il tempo

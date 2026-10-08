@@ -50,6 +50,9 @@ class ContestoRichiesta:
     # attribuire un comando alla stanza sbagliata accende la luce di
     # qualcun altro, che e' peggio che chiedere quale.
     stanza: str = ""
+    # La lingua di chi parla (#207): quella del profilo, o vuota per «quella dell'installazione». Gli strumenti
+    # la leggono per dire il loro esito nella lingua giusta, senza che nessuno gliela passi.
+    lingua: str = ""
 
 
 _contesto: ContextVar[Optional[ContestoRichiesta]] = ContextVar("contesto_richiesta", default=None)
@@ -144,6 +147,15 @@ def dichiara_stanza(stanza: str) -> None:
 
 def stanza_corrente() -> str:
     return contesto().stanza or ""
+
+
+def dichiara_lingua(lingua: str) -> None:
+    """Da qui si parla questa lingua. Vuota: quella dell'installazione, e azzera la precedente."""
+    contesto().lingua = (lingua or "").strip()
+
+
+def lingua_corrente() -> str:
+    return contesto().lingua or ""
 
 
 # ---------------------------------------------------------------- da chi viene
