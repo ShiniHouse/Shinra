@@ -6,8 +6,8 @@ import logging
 from typing import Optional
 
 from shinra.config.settings import settings
+from shinra.infra.lingue import schemi
 from shinra.services.intenti.base import Intento, Richiesta, Risposta, registra
-from shinra.services.intenti.lingue import schemi
 from shinra.skills.registry import execute_tool
 
 logger = logging.getLogger("Shinra.Intenti")

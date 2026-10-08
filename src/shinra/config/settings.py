@@ -84,7 +84,7 @@ class AssistantConfig(BaseModel):
     name: str = "Kyra"
     default_city: str = "Roma"
     # La lingua con cui Shinra **capisce** una frase: quale file di
-    # `services/intenti/lingue/` usare per gli schemi degli intenti.
+    # `infra/lingue/` usare per gli schemi degli intenti.
     #
     # Questo campo c'era gia' stato, e fu tolto: si chiamava `language`,
     # nessuna riga lo leggeva, e `test_ogni_opzione_di_configurazione_ha_un_

@@ -5,7 +5,7 @@ in sviluppo un file di dati accanto al codice si trova sempre. Un'installazione
 vera — `pip install .`, che e' quella dell'immagine Docker — copia invece solo
 i `.py` piu' cio' che `package-data` dichiara.
 
-Il difetto che ha fatto nascere questo file: `services/intenti/lingue/it.yaml`,
+Il difetto che ha fatto nascere questo file: `infra/lingue/it.yaml`,
 gli schemi con cui Shinra capisce una frase, non era dichiarato. Nell'immagine
 Shinra sarebbe partita, avrebbe risposto 200, avrebbe lasciato entrare — e poi
 **nessun intento** avrebbe funzionato. Nemmeno il lavoro della CI che avvia
@@ -93,7 +93,7 @@ def test_la_lingua_di_ripiego_e_dentro_il_pacchetto():
     passa da un intento diventa un errore.
     """
     schemi = _dichiarati()
-    relativo = "services/intenti/lingue/it.yaml"
+    relativo = "infra/lingue/it.yaml"
     assert (PACCHETTO / relativo).is_file(), "l'italiano non c'e' piu' nel sorgente"
     assert any(fnmatch.fnmatch(relativo, s) for s in schemi), (
         "l'italiano non entra in un'installazione vera: Shinra partirebbe, "

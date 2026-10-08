@@ -238,7 +238,7 @@ class Mondo:
 def prompt_di_sistema(mondo: Mondo) -> str:
     """Lo stesso prompt dell'agente, con la casa finta."""
     from shinra.config.prompt_templates import get_system_prompt
-    from shinra.services.intenti.lingue import schemi
+    from shinra.infra.lingue import schemi
     from shinra.services.user_manager import UserProfile
 
     profilo = UserProfile(id="alessio", name="Alessio", role="admin", age_group="adult")
@@ -259,7 +259,7 @@ def contesto_di_richiesta(mondo: Mondo) -> str:
     della produzione, dove l'ora cambiava ogni minuto.
     """
     from shinra.config.prompt_templates import get_contesto_della_richiesta
-    from shinra.services.intenti.lingue import schemi
+    from shinra.infra.lingue import schemi
 
     return get_contesto_della_richiesta(
         lingua=schemi("it"), home_context_summary=mondo.dati.get("riassunto_casa", "")
@@ -415,8 +415,8 @@ async def esegui_voce(
     visti = tutti_gli_strumenti
     scelti: list[str] = []
     if agenti and servono:
+        from shinra.infra.lingue import schemi
         from shinra.services import agenti as servizio_agenti
-        from shinra.services.intenti.lingue import schemi
 
         scelti = servizio_agenti.scegli(frase, schemi("it"))
         visti = servizio_agenti.schemi_di(scelti)
@@ -735,7 +735,7 @@ async def principale(args: argparse.Namespace) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     from shinra.config.settings import settings
-    from shinra.services.intenti.lingue import schemi
+    from shinra.infra.lingue import schemi
     from shinra.skills.registry import TOOLS_SCHEMA
 
     mondo = Mondo.carica()

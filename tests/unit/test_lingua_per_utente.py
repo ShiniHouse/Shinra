@@ -15,8 +15,8 @@ import pytest
 
 from shinra.config.prompt_templates import get_system_prompt
 from shinra.infra.db import depositi
+from shinra.infra.lingue import lingue_disponibili, schemi
 from shinra.services.intenti import Richiesta, instrada
-from shinra.services.intenti.lingue import lingue_disponibili, schemi
 from shinra.services.memory import ConversationMemory
 from shinra.services.user_manager import UserProfile
 

@@ -12,8 +12,8 @@ import pytest
 import shinra.services.interview_engine as modulo
 from shinra.infra.data_store import DataStore
 from shinra.infra.db import importazione
+from shinra.infra.lingue import schemi
 from shinra.services import intervista_routine as ir
-from shinra.services.intenti.lingue import schemi
 from shinra.services.interview_engine import LearningInterviewEngine
 from shinra.services.intervista_passi import INTERVIEW_STEPS, STRUTTURA, passi_per
 

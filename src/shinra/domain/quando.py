@@ -13,7 +13,7 @@ non lo dice.
 
 **Nessuna parola di nessuna lingua sta qui** (#205). I numeri in lettere, le
 unita' di tempo, i nomi dei giorni e dei mesi, «domani», «stasera», le
-preposizioni stanno nel file della lingua (`intenti/lingue/*.yaml`, sezione
+preposizioni stanno nel file della lingua (`infra/lingue/*.yaml`, sezione
 `tempo`) e arrivano come `Lessico`. Il dominio non importa il caricatore: la
 lingua e' un argomento, come per i resto degli schemi. Qui restano le **ore**
 di default, che non sono parole: chi dice «domani mattina» un'ora la sta

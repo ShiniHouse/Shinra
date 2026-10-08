@@ -25,7 +25,7 @@ def get_system_prompt(
     parlando; qui non si importa il caricatore perche' `config/` sta sotto
     `services/`, e si tipizza `Any` per la stessa ragione.
 
-    I pezzi stanno nel file della lingua (`services/intenti/lingue/`), non qui:
+    I pezzi stanno nel file della lingua (`infra/lingue/`), non qui:
     il modello risponde nella lingua in cui gli si parla, quindi un prompt
     italiano davanti a una persona che scrive in inglese darebbe risposte in
     un italiano incerto. La lingua e' quella del profilo, se l'ha scelta; se

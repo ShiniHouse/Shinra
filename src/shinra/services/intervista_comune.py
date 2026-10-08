@@ -10,7 +10,7 @@ nella propria. `lingua` e' il codice della lingua del profilo; vuoto vuol dire Â
 import re
 from typing import Any, Mapping
 
-from shinra.services.intenti.lingue import schemi
+from shinra.infra.lingue import schemi
 
 # Le due fasi di un passo. Fino alla #170 ce n'era una sola: si rispondeva e
 # l'intervista salvava. Adesso in mezzo c'e' la conferma.

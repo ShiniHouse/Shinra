@@ -31,7 +31,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, FrozenSet, List, Sequence
 
-from shinra.services.intenti.lingue import Schemi
+from shinra.infra.lingue import Schemi
 from shinra.skills.catalogo import (
     agenda,
     casa,
