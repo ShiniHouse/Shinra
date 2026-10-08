@@ -1,7 +1,7 @@
 ---
 title: "feat(llm): un modello esterno opzionale, spento di default"
 issue: 194
-milestone: "v0.7.0"
+milestone: "Dopo la 1.0.0"
 labels: ["tipo: funzione", "area: integrazioni", "area: sicurezza", "stato: da valutare"]
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "feat(llm): Ollama su un'altra macchina della rete, scelto da configurazione e protetto"
 issue: 240
-milestone: "v0.7.0"
+milestone: "Dopo la 1.0.0"
 labels: ["tipo: funzione", "area: infra", "area: sicurezza"]
 ---
 

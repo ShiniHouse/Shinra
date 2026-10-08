@@ -1,7 +1,7 @@
 ---
 title: "feat(distribuzione): l'add-on per Home Assistant OS"
 issue: 282
-milestone: "v0.7.0"
+milestone: "Dopo la 1.0.0"
 labels: ["tipo: funzione", "area: infra"]
 ---
 

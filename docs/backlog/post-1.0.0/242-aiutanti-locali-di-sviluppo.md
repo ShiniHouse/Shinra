@@ -1,7 +1,7 @@
 ---
 title: "feat(strumenti): aiutanti locali per il lavoro ripetitivo dello sviluppo, con il guadagno misurato"
 issue: 242
-milestone: "v0.7.0"
+milestone: "Dopo la 1.0.0"
 labels: ["tipo: funzione", "area: infra"]
 ---
 
