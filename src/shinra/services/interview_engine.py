@@ -151,7 +151,7 @@ class LearningInterviewEngine(TurniAlias):
         self, user_id: str = "alessio", dispositivi: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         passi = list(INTERVIEW_STEPS) + [passo_alias(d) for d in dispositivi or []]
-        session = {
+        session: Dict[str, Any] = {
             "passi": passi,
             "user_id": user_id,
             "is_active": True,

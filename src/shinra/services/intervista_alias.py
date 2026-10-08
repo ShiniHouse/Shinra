@@ -13,7 +13,7 @@ Assistant: sta nel passo, e il passo lo costruisce il codice.
 
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from shinra.services.intervista_comune import (
     FASE_CONFERMA,
@@ -137,6 +137,27 @@ class TurniAlias:
     usa solo li'. Il nome si salva **dopo** il «si'»: un alias rifiutato non
     entra nel database.
     """
+
+    if TYPE_CHECKING:
+        # Li definisce il motore: qui servono solo a mypy, che da un mixin non li vede.
+        def _avanza(
+            self,
+            session: Dict[str, Any],
+            prefisso: str,
+            salvati: List[Dict[str, Any]],
+            routine: Optional[Dict[str, Any]],
+            interpretato: bool,
+        ) -> Dict[str, Any]: ...
+
+        @staticmethod
+        def _stesso_passo(
+            session: Dict[str, Any],
+            step: Dict[str, Any],
+            messaggio: str,
+            interpretato: bool,
+            capiti: Optional[List[Dict[str, str]]] = None,
+            suggerimento: Optional[str] = None,
+        ) -> Dict[str, Any]: ...
 
     def _turno_alias(self, session, step, risposta: str, archivio) -> Dict[str, Any]:
         if session.get("fase") == FASE_CONFERMA:
