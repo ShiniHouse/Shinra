@@ -109,7 +109,7 @@ scattare in una casa vera. Note: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.
 | [`docs/VERIFICA-IN-CASA.md`](docs/VERIFICA-IN-CASA.md) | La lista delle prove da fare in una casa vera (regole, conferme), con l'esito accanto: chi vive qui la compila |
 | [`docs/ALEXA.md`](docs/ALEXA.md) | Come configurare la skill Alexa (Interaction Model, endpoint HTTPS, test) |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le fasi da `0.1.0` a `1.0.0` — con la `0.7.0` e la `0.8.0` — e i criteri di uscita di ciascuna |
-| [`docs/storia-delle-fasi.md`](docs/storia-delle-fasi.md) | Le schede di lavoro delle fasi chiuse (0.1.0–0.5.0): perché, cosa, com'è andata |
+| [`docs/storia-delle-fasi.md`](docs/storia-delle-fasi.md) | Le schede di lavoro delle fasi chiuse (0.1.0–0.6.0): perché, cosa, com'è andata |
 | [`docs/SVILUPPO.md`](docs/SVILUPPO.md) | Come si aggiunge uno strumento, un intento, una lingua, una rotta, una colonna, un'area della dashboard — e quale test ti dice cosa hai dimenticato |
 | [`docs/API.md`](docs/API.md) | Le rotte HTTP e chi le può chiamare. Generato dal codice: non invecchia |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Struttura attuale, struttura target e come si aggiunge un modulo nuovo |
