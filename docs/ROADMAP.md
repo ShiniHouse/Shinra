@@ -146,7 +146,7 @@ e non c'era hardware su cui farlo. Vedi la scheda.
 | 30 | Wake word locale (openWakeWord) — spostata dalla `v0.4.0` | **spostata alla `v0.6.0`** (#211): dove gira e' deciso (ADR 0007), il codice non c'e' |
 | 34 | Scomporre `index.html` (7.438 righe) in moduli ES | fatta (#144-#151, #176-#178, #200, moduli ES veri) |
 | 36 | Internazionalizzazione (stringhe ed espressioni regolari di intent) | chiusa in parte (#181, #203): il meccanismo, l'inglese e la lingua per persona. Il resto alla `v0.6.0` (#205, #206, #207) |
-| 37 | Immagine Docker e add-on per Home Assistant OS | chiusa in parte (#168, #169): la strada Docker. L'add-on alla `v0.7.0` (#282); la prova su Raspberry Pi 4 e' rimandata |
+| 37 | Immagine Docker e add-on per Home Assistant OS | chiusa in parte (#168, #169): la strada Docker. L'add-on dopo la `1.0.0` (#282); la prova su Raspberry Pi 4 e' rimandata |
 | 38 | Documentazione utente e guida all'installazione verificata | chiusa in parte (#167, #204): le guide sono scritte. Il collaudo di chi non le ha scritte alla `v0.6.0` (#208) |
 | 170 | L'intervista di apprendimento impara poco | chiusa in parte (#171, #174): dice quando non ha capito e mostra cosa ha capito. Il resto alla `v0.6.0` (#209, #210) |
 
@@ -330,22 +330,25 @@ e' una demo.
 ## v0.7.0 — Rifinitura
 
 > Si finisce quello che la `0.6.0` ha lasciato aperto — le lingue, l'intervista,
-> la voce, i plugin — e si prepara il terreno alla fase che viene dopo: Shinra
-> impara a usare un **server di inferenza dedicato** (un'altra macchina della rete
-> locale) e si misura se piccoli agenti locali possono fare il lavoro ripetitivo
-> dello sviluppo. Resta locale.
+> la voce, i plugin. Resta locale, e il modello e' **un di piu'**: comandi, regole,
+> timer e conferme funzionano senza (decisione del 2026-10-08).
 
-**Perche' in questo ordine.** La `0.8.0` aggiunge al prompt ricordi e riassunti, e
-un modello su una CPU senza scheda grafica e' gia' al limite (la `#183` lo ha
-misurato). Prima si decide *dove* gira il modello e *con che velocita'*, poi si
-costruisce sopra. Il residuo della `0.6.0` — lingue, intervista, voce — non ha
-dipendenze fra loro e si fa in parallelo. I tre lavori nuovi, con la ricerca sull'hardware
-e le schede, stanno in [`docs/proposte/v0.7.0/`](proposte/v0.7.0/README.md).
+**Perche' in questo ordine.** Il residuo della `0.6.0` — lingue, intervista, voce —
+non ha dipendenze fra loro e si fa in parallelo. La `0.8.0` aggiunge al prompt ricordi
+e riassunti, e un `qwen2.5:3b` su una CPU senza scheda grafica e' gia' al limite (la
+`#183` lo ha misurato).
+
+**Rimandate a dopo la `1.0.0` (2026-10-08).** Non hanno oggi un modo di essere provate
+in casa, o poggiano su un modello che il 3B non regge: i piani a piu' passaggi (#191,
+il banco dice 5/10), il modello esterno opzionale (#194), Ollama su un'altra macchina
+(#240, non c'e' una seconda macchina), l'add-on per Home Assistant OS (#282, il server
+e' un Debian), gli aiutanti locali di sviluppo (#242). Le schede sono in
+[`docs/backlog/post-1.0.0/`](backlog/post-1.0.0/); la ricerca sull'hardware resta in
+[`docs/proposte/v0.7.0/`](proposte/v0.7.0/README.md).
 
 | # | Lavoro | Area |
 | :-- | :--- | :--- |
 | 193 | Manifesto e permessi dei plugin | plugin |
-| 194 | Modello esterno opzionale, spento di default — *da valutare* | integrazioni |
 | 205 | Timer e promemoria capiscono piu' di una lingua — *residuo della #36* | i18n |
 | 206 | Le etichette della dashboard escono dal codice — *residuo della #36* | i18n |
 | 207 | I messaggi degli strumenti e dell'intervista nella lingua di chi parla — *residuo della #36* | i18n |
@@ -353,16 +356,9 @@ e le schede, stanno in [`docs/proposte/v0.7.0/`](proposte/v0.7.0/README.md).
 | 209 | Intervista: una domanda per volta, niente domande su cio' che la casa sa — *residuo della #170* | apprendimento |
 | 210 | Intervista: dalle entita' vere alle routine complete — *residuo della #170* | apprendimento |
 | 211 | La parola di attivazione nel browser — *residuo della #30* | voce |
-| 191 | Piani a piu' passaggi, con correzione — *spostata dalla `0.6.0`: il «piu' passaggi» del banco e' a 5/10 con gli agenti, e il piano e' il lavoro piu' grosso per un guadagno incerto* | agenti |
-| 282 | L'add-on per Home Assistant OS — *residuo della #37 (ex #212, ricreata dopo la cancellazione). La prova su Raspberry Pi 4 e' rimandata* | distribuzione |
-| 240 | Ollama su un'altra macchina della rete: configurazione, protezione, misura | infrastruttura |
-| 241 | Il banco di prova sull'hardware candidato, misurato e non stimato — *ridotta (2026-10-06): le prove si fanno sul portatile, un hardware nuovo non e' previsto* | misura |
-| 242 | Aiutanti locali per il lavoro di sviluppo, con il guadagno misurato | strumenti |
+| 241 | Il banco di prova sull'hardware candidato, misurato e non stimato — *chiusa: le prove si fanno sul portatile, un hardware nuovo non e' previsto* | misura |
 
 **Criteri di uscita**
-- Shinra usa un Ollama su un'altra macchina della rete locale, scelto da
-  configurazione; l'endpoint **non** e' raggiungibile da fuori la rete di casa e la
-  guida dice come proteggerlo (Ollama non ha autenticazione).
 - Il banco ha numeri **misurati** sull'hardware di casa e sul portatile di prova, con un solo
   modello (`qwen2.5:3b`). Un hardware nuovo non e' previsto (decisione del 2026-10-06): se cambia,
   il banco si rilancia con un comando.
@@ -370,9 +366,6 @@ e le schede, stanno in [`docs/proposte/v0.7.0/`](proposte/v0.7.0/README.md).
   la guardia di parita' (`#206`, `#207`, `#205`).
 - L'intervista fa una domanda per volta e produce routine complete (`#209`, `#210`).
 - La documentazione e' stata seguita da una persona che non l'ha scritta (`#208`).
-- Gli aiutanti locali hanno un esito **per tipo di compito** — si usano, oppure la
-  scheda dice che non convengono — e nessun loro output si applica senza una
-  verifica meccanica (test, linter, confronto).
 
 ---
 

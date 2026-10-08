@@ -17,6 +17,19 @@ prima significherebbe riscriverla dopo.
 | **Cucina come contesto** | v0.2.0 #11, v0.3.0 #25 | Leggere i passaggi di una ricetta a voce, tre timer con nomi diversi, aggiungere alla lista cio' che manca, abbassare la musica mentre parla. |
 | **Diario della casa** | v0.2.0 #12, v0.3.0 #19 | «Quanto ha funzionato il riscaldamento a gennaio rispetto a dicembre?», «A che ora rientra di solito Thomas?». E' il ritorno piu' alto dell'investimento nel database. |
 
+## Schede gia' scritte, rimandate dalla `0.7.0` (2026-10-08)
+
+Hanno una issue e una scheda, ma non un modo di essere provate in casa oggi. Si
+riprendono dopo la `1.0.0`, se la casa lo chiede.
+
+| Scheda | Perche' e' qui |
+| :--- | :--- |
+| [#191 Piani a piu' passaggi](191-piani-a-piu-passaggi.md) | Il banco dice 5/10 con gli agenti: lavoro grosso, guadagno incerto con il 3B |
+| [#194 Modello esterno opzionale](194-client-llm-esterno-opzionale.md) | Il modello e' un di piu'; un cloud opzionale tocca la promessa di privacy |
+| [#240 Ollama su un'altra macchina](240-ollama-su-un-server-dedicato.md) | Non c'e' una seconda macchina e non e' previsto comprarla |
+| [#242 Aiutanti locali di sviluppo](242-aiutanti-locali-di-sviluppo.md) | Strumenti dello sviluppatore, non del prodotto |
+| [#282 Add-on per Home Assistant OS](282-add-on-home-assistant.md) | Il server e' un Debian: non si potrebbe provare |
+
 ## Come si aprono
 
 Quando la `1.0.0` e' taggata, ognuna diventa una milestone `v1.1.0`, `v1.2.0` e

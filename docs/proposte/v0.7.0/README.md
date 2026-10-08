@@ -71,9 +71,9 @@ registrato nelle impostazioni dell'assistente e lo decidi tu. Si parte dallo scr
 
 ## 3. Le schede
 
-1. [#240 — Ollama su un'altra macchina della rete](../../backlog/v0.7.0/240-ollama-su-un-server-dedicato.md)
+1. [#240 — Ollama su un'altra macchina della rete](../../backlog/post-1.0.0/240-ollama-su-un-server-dedicato.md)
 2. [#241 — Il banco di prova sull'hardware candidato](../../backlog/v0.7.0/241-banco-sull-hardware-candidato.md)
-3. [#242 — Aiutanti locali per il lavoro di sviluppo](../../backlog/v0.7.0/242-aiutanti-locali-di-sviluppo.md)
+3. [#242 — Aiutanti locali per il lavoro di sviluppo](../../backlog/post-1.0.0/242-aiutanti-locali-di-sviluppo.md)
 
 Fonti della ricerca: confronti pubblicati da
 [LocalAIMaster](https://localaimaster.com/blog/apple-silicon-ai-buying-guide),

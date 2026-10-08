@@ -113,7 +113,7 @@ sudo /opt/Shinra/.venv/bin/python /opt/Shinra/scripts/registro.py --azione confe
 
 ## 6. Il piano a più passaggi
 
-➖ **Non applicabile alla `0.6.0`**: i piani sono passati alla `0.7.0` ([#191](backlog/v0.7.0/191-piani-a-piu-passaggi.md)).
+➖ **Non applicabile alla `0.6.0`**: i piani sono passati alla `0.7.0` ([#191](backlog/post-1.0.0/191-piani-a-piu-passaggi.md)).
 Si verificherà lì.
 
 ---
