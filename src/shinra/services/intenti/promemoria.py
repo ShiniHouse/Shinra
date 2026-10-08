@@ -52,12 +52,12 @@ class TimerEPromemoria(Intento):
     def applicabile(self, richiesta: Richiesta) -> bool:
         from shinra.services.timer_engine import timer_engine
 
-        return timer_engine.parse_timer_or_reminder(richiesta.testo) is not None
+        return timer_engine.parse_timer_or_reminder(richiesta.testo, richiesta.schemi) is not None
 
     async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
         from shinra.services.timer_engine import timer_engine
 
-        letto = timer_engine.parse_timer_or_reminder(richiesta.testo)
+        letto = timer_engine.parse_timer_or_reminder(richiesta.testo, richiesta.schemi)
         if not letto:
             return None
 

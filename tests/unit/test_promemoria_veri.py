@@ -29,8 +29,11 @@ import pytest
 
 from shinra.domain import quando as tempo
 from shinra.infra.db import depositi
+from shinra.services.intenti.lingue import schemi
 from shinra.services.timer_engine import timer_engine
 from shinra.skills import reminders
+
+LESSICO = schemi("it").tempo
 
 # Mercoledi' 9 settembre 2026, ore 10:00. Un giorno feriale a meta' mattina:
 # tutte le attese dei test sono calcolate da qui.
@@ -85,7 +88,7 @@ def scheduler_finto(monkeypatch):
 )
 def test_le_frasi_che_cadevano_nel_vuoto(frase, quando_atteso):
     """Il dominio le capisce tutte e dieci."""
-    assert tempo.quando(frase, ADESSO) == quando_atteso
+    assert tempo.quando(frase, ADESSO, lessico=LESSICO) == quando_atteso
 
 
 @pytest.mark.parametrize(
@@ -100,7 +103,7 @@ def test_le_frasi_che_cadevano_nel_vuoto(frase, quando_atteso):
 def test_il_quando_viene_tolto_dal_testo(frase, testo_atteso):
     """Un promemoria che suona dicendo «chiamare il dentista domani» e'
     fuorviante: quando suona, quel domani e' diventato oggi."""
-    testo, _ = tempo.separa(frase)
+    testo, _ = tempo.separa(frase, lessico=LESSICO)
 
     assert testo == testo_atteso
 
@@ -338,11 +341,11 @@ def test_cena_e_un_pasto_o_un_ora_secondo_la_preposizione(frase, e_un_ora):
     Marco» alle venti: il titolo mangiato dall'orario. L'ha trovato un test
     del calendario, non una rilettura.
     """
-    assert (tempo.quando(frase, ADESSO) is not None) is e_un_ora
+    assert (tempo.quando(frase, ADESSO, lessico=LESSICO) is not None) is e_un_ora
 
 
 def test_il_titolo_non_viene_mangiato_dall_orario():
-    testo, momento = tempo.separa("cena con Marco")
+    testo, momento = tempo.separa("cena con Marco", lessico=LESSICO)
 
     assert testo == "cena con marco"
     assert momento is None

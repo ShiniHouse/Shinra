@@ -37,6 +37,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 from shinra.domain import quando as tempo
+from shinra.services.intenti.lingue import schemi
 
 logger = logging.getLogger("Shinra.Promemoria")
 
@@ -106,9 +107,9 @@ async def add_reminder(text: str, time_info: str = "") -> Dict[str, Any]:
     # Il «quando» puo' arrivare nel parametro suo, o essere rimasto dentro al
     # testo: il modello scompone la frase come gli pare, e una persona che ha
     # detto «ricordami di chiamare il dentista domani» ha detto tutto.
-    momento = tempo.quando(time_info) if time_info else None
+    momento = tempo.quando(time_info, lessico=schemi().tempo) if time_info else None
     if momento is None:
-        testo_ripulito, momento = tempo.separa(testo)
+        testo_ripulito, momento = tempo.separa(testo, lessico=schemi().tempo)
         if momento is not None and testo_ripulito:
             testo = testo_ripulito
 
@@ -129,7 +130,7 @@ async def add_reminder(text: str, time_info: str = "") -> Dict[str, Any]:
     logger.info("Promemoria %s per %s: %s", voce.get("id"), attore, momento.isoformat())
 
     return _riuscito(
-        f"Ti ricordero' di {testo.lower()} {tempo.descrivi(momento)}.",
+        f"Ti ricordero' di {testo.lower()} {tempo.descrivi(momento, lessico=schemi().tempo)}.",
         promemoria=voce,
         quando=momento.isoformat(),
     )
@@ -162,7 +163,7 @@ async def list_reminders(solo_attivi: bool = True) -> Dict[str, Any]:
 def _quando_di(voce: Dict[str, Any]) -> str:
     grezzo = str(voce.get("remind_at") or "")
     try:
-        return tempo.descrivi(datetime.fromisoformat(grezzo))
+        return tempo.descrivi(datetime.fromisoformat(grezzo), lessico=schemi().tempo)
     except ValueError:
         return grezzo
 

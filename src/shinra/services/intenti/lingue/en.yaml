@@ -206,6 +206,89 @@ conferma:
   accetta: ["yes", "yes please", "yeah", "confirm", "confirmed", "ok", "okay", "go ahead", "do it", "sure", "yes confirm"]
   rifiuta: ["no", "no thanks", "cancel", "never mind", "don't", "stop", "do not do it", "refuse"]
 
+
+# Time in words (#205): what timers, reminders, deadlines and appointments read.
+# Regular expressions are single-quoted so backslashes stay as written. Words have no accents.
+tempo:
+  numeri:
+    a: 1
+    an: 1
+    one: 1
+    two: 2
+    three: 3
+    four: 4
+    five: 5
+    six: 6
+    seven: 7
+    eight: 8
+    nine: 9
+    ten: 10
+    fifteen: 15
+    twenty: 20
+    thirty: 30
+    forty: 40
+    sixty: 60
+    eleven: 11
+    twelve: 12
+    fifty: 50
+    ninety: 90
+  momenti:
+    morning: [morning]
+    noon: [noon, lunch]
+    afternoon: [afternoon]
+    evening: [evening, tonight, dinner]
+    night: [night]
+  pasti: [lunch, dinner]
+  prima_dei_pasti: '(?:at|for|after|before|around)'
+  settimana: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+  mesi: [january, february, march, april, may, june, july, august, september, october, november, december]
+  word_today: 'today'
+  word_tomorrow: 'tomorrow'
+  word_day_after_tomorrow: 'the\s+day\s+after\s+tomorrow'
+  next_weekday: 'next\s+{giorno}'
+  fra: 'in'
+  unita:
+    minutes: 'minutes?'
+    hours: 'hours?'
+    days: 'days?'
+    weeks: 'weeks?'
+    months: 'months?'
+  mezz_ora: 'in\s+half\s+an\s+hour'
+  alle: 'at'
+  e_mezza: ''
+  dopo_mezzogiorno: '(?:pm|p\.m\.|in the evening|in the afternoon|at night)'
+  date:
+    - '\b(?:on\s+the|on|the)\s+(?P<giorno>\d{1,2})(?:st|nd|rd|th)?(?:\s+(?:of\s+)?(?P<mese>@MESI@))?\b'
+    - '\b(?P<mese>@MESI@)\s+(?P<giorno>\d{1,2})(?:st|nd|rd|th)?\b'
+  extra:
+    - '\b(?:am|a\.m\.)\b'
+    - '\bin\s+the\s+(?:morning|afternoon|evening)\b'
+    - '\bthis\s+(?:morning|afternoon|evening)\b'
+    - '\bat\s+night\b'
+  servizio_finale: '(?:to|at|for|that|on|in)'
+  servizio_iniziale: '(?:to|that|i\s+(?:have|need)\s+to)'
+  frasi:
+    today: 'today at {ora}'
+    tomorrow: 'tomorrow at {ora}'
+    day_after_tomorrow: 'the day after tomorrow at {ora}'
+    weekday: '{giorno} at {ora}'
+    date: 'on {data} at {ora}'
+
+timer:
+  verbi: '(?:set|start|create|put\s+on)'
+  articolo: '(?:a\s+)?'
+  parola: 'timer'
+  prima_della_durata: '(?:(?:for|of)\s+)?'
+  unita:
+    secondi: 'seconds?'
+    minuti: 'minutes?'
+    ore: 'hours?'
+  prima_dell_etichetta: '(?:for|called|named)'
+  mezz_ora: 'half\s+an\s+hour|half-hour'
+  promemoria: '(?:remind\s+me|reminder)\s*(?:that\s+)?(?:i\s+(?:have|need)\s+to\s+)?(?:to\s+)?'
+  etichetta_predefinita: 'Timer'
+  unita_a_voce: {secondi: seconds, minuti: minutes, ore: hours}
+
 messaggi:
   temperatura_sensori_illeggibili: "I can't read the home sensors."
   temperatura_nessun_sensore: "I can't find a temperature sensor in the house."

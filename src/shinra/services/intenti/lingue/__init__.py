@@ -31,6 +31,8 @@ from typing import Any, Dict, Mapping, Tuple
 
 import yaml
 
+from shinra.domain import quando as quando_dominio
+
 CARTELLA = Path(__file__).parent
 LINGUA_DI_RIPIEGO = "it"
 
@@ -59,6 +61,22 @@ RICHIESTE: Tuple[Tuple[str, ...], ...] = (
     ("calendario", "giorni"),
     ("calendario", "mesi"),
     ("calendario", "formato_data"),
+    ("tempo",),
+    ("timer",),
+)
+
+# Le voci della sezione timer: le frasi che chiedono un timer o un promemoria (#205).
+CHIAVI_TIMER: Tuple[str, ...] = (
+    "verbi",
+    "articolo",
+    "parola",
+    "prima_della_durata",
+    "unita",
+    "prima_dell_etichetta",
+    "mezz_ora",
+    "promemoria",
+    "etichetta_predefinita",
+    "unita_a_voce",
 )
 
 # Le frasi che Shinra **dice**, una per chiave. Stanno qui e non in
@@ -154,6 +172,9 @@ class Schemi:
     giorni: Tuple[str, ...]
     mesi: Tuple[str, ...]
     formato_data: str
+    # Il tempo detto a parole, per domain/quando.py (#205), e le frasi dei timer.
+    tempo: quando_dominio.Lessico
+    timer: Mapping[str, Any]
     messaggi: Mapping[str, str]
     prompt: Mapping[str, str]
 
@@ -201,6 +222,9 @@ def _verifica(dati: Dict[str, Any], dove: Path) -> None:
                 mancanti.append(".".join(percorso))
                 break
             nodo = nodo[pezzo]
+    timer = dati.get("timer")
+    if isinstance(timer, dict):
+        mancanti.extend(f"timer.{k}" for k in CHIAVI_TIMER if not timer.get(k))
     if mancanti:
         raise LinguaIncompleta(f"{dove.name}: mancano {', '.join(mancanti)}")
 
@@ -212,6 +236,11 @@ def _compila(lingua: str) -> Schemi:
         raise FileNotFoundError(f"lingua «{lingua}» non trovata: ci sono {', '.join(lingue_disponibili())}")
     dati = yaml.safe_load(percorso.read_text(encoding="utf-8")) or {}
     _verifica(dati, percorso)
+
+    try:
+        tempo = quando_dominio.compila(dati["tempo"])
+    except quando_dominio.LessicoIncompleto as errore:
+        raise LinguaIncompleta(f"{percorso.name}: {errore}") from errore
 
     return Schemi(
         lingua=str(dati.get("lingua") or lingua),
@@ -239,6 +268,8 @@ def _compila(lingua: str) -> Schemi:
         giorni=tuple(dati["calendario"]["giorni"]),
         mesi=tuple(dati["calendario"]["mesi"]),
         formato_data=str(dati["calendario"]["formato_data"]),
+        tempo=tempo,
+        timer=dict(dati["timer"]),
         messaggi={k: str(v) for k, v in dati["messaggi"].items()},
         prompt={k: str(v) for k, v in dati["prompt"].items()},
     )
