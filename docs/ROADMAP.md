@@ -336,10 +336,14 @@ e' una demo.
 > la voce, i plugin. Resta locale, e il modello e' **un di piu'**: comandi, regole,
 > timer e conferme funzionano senza (decisione del 2026-10-08).
 
-**Perche' in questo ordine.** Il residuo della `0.6.0` — lingue, intervista, voce —
-non ha dipendenze fra loro e si fa in parallelo. La `0.8.0` aggiunge al prompt ricordi
-e riassunti, e un `qwen2.5:3b` su una CPU senza scheda grafica e' gia' al limite (la
-`#183` lo ha misurato).
+**Perche' in questo ordine (2026-10-08, dopo una sessione di domande).** Si parte da cio' che
+fa piu' male ogni giorno: l'**intervista** fa domande inutili (#209, #210). Le domande le
+decide il **codice**, dalle entita' vere di Home Assistant e dal database, una per volta; il
+modello serve solo a leggere la risposta libera. Poi la documentazione d'uso (#208) e i
+plugin (#193), poi le lingue (#205, #206, #207), che sono per un pubblico futuro e non si
+provano in casa, e per ultima la parola di attivazione (#211), solo con il riconoscimento del
+microfono sistemato. La `0.8.0` aggiunge al prompt ricordi e riassunti, e un `qwen2.5:3b` su
+una CPU senza scheda grafica e' gia' al limite (la `#183` lo ha misurato).
 
 **Rimandate a dopo la `1.0.0` (2026-10-08).** Non hanno oggi un modo di essere provate
 in casa, o poggiano su un modello che il 3B non regge: i piani a piu' passaggi (#191,
@@ -361,14 +365,22 @@ e' un Debian), gli aiutanti locali di sviluppo (#242). Le schede sono in
 | 211 | La parola di attivazione nel browser — *residuo della #30* | voce |
 | 241 | Il banco di prova sull'hardware candidato, misurato e non stimato — *chiusa: le prove si fanno sul portatile, un hardware nuovo non e' previsto* | misura |
 
-**Criteri di uscita**
+**Criteri di uscita.** La `0.7.0` si rilascia **appena l'intervista, i plugin e le guide sono
+provati**; cio' che non e' pronto si sposta e si scrive dove.
 - Il banco ha numeri **misurati** sull'hardware di casa e sul portatile di prova, con un solo
-  modello (`qwen2.5:3b`). Un hardware nuovo non e' previsto (decisione del 2026-10-06): se cambia,
-  il banco si rilancia con un comando.
-- Le etichette della dashboard e i messaggi degli strumenti sono in due lingue, con
-  la guardia di parita' (`#206`, `#207`, `#205`).
-- L'intervista fa una domanda per volta e produce routine complete (`#209`, `#210`).
-- La documentazione e' stata seguita da una persona che non l'ha scritta (`#208`).
+  modello (`qwen2.5:3b`) — fatto (#241, #183).
+- L'intervista fa **una domanda per volta**, non chiede cio' che la casa gia' sa, e produce routine
+  complete (`#209`, `#210`). Si prova **in casa con il modello vero**, e la scheda dice cosa ha
+  estratto e cosa no.
+- La documentazione **d'uso** e' stata seguita da una persona che non l'ha scritta (`#208`, con un
+  familiare, come la #198). L'installazione da zero su una macchina pulita e' un criterio della
+  `1.0.0`, non di questa fase: serve un secondo PC.
+- I plugin hanno un manifesto, permessi dichiarati e rispettati, e un plugin di esempio nel
+  repository (`#193`). **Solo codice del proprietario, in processo**: il codice di terzi non si
+  carica in questa fase.
+- *Se pronte:* le etichette della dashboard e i messaggi degli strumenti in due lingue, con la
+  guardia di parita' (`#205`, `#206`, `#207`); la parola di attivazione (`#211`) con una parola
+  gia' addestrata. Altrimenti passano alla `0.8.0` o a dopo la `1.0.0`.
 
 ---
 

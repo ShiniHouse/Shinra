@@ -13,6 +13,9 @@ codice altrui dentro un processo che comanda la casa e' la superficie di
 attacco peggiore possibile, quindi la scheda va in due tempi: prima il
 manifesto e i permessi, e solo se reggono si pensa all'isolamento.
 
+> **Ambizione (2026-10-08).** Solo manifesto e permessi, **in processo, con codice del proprietario**. Il codice di
+> terzi non si carica in questa fase: richiederebbe un processo separato, ed e' un'altra decisione.
+
 ## Cosa fare
 
 - [ ] Formato del manifesto: nome, versione, strumenti esposti, permessi richiesti (domini di Home Assistant, rete verso quali host, lettura della conoscenza)

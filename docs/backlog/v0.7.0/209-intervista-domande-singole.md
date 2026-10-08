@@ -15,6 +15,9 @@ vedono solo parlandoci:
 - chiede cose che la casa ha gia' nel database (chi abita qui, le stanze);
 - se la risposta e' troppo povera non insiste mai.
 
+> **Chi decide le domande (2026-10-08):** il **codice**, dalle entita' vere e dal database. Il modello serve solo a
+> leggere la risposta libera, quindi la scelta della domanda si prova senza modello.
+
 ## Cosa fare
 
 - [ ] Una domanda per volta: i passi che ne contengono piu' di una si dividono
