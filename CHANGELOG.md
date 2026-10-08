@@ -14,6 +14,16 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Modificato
+- **L'intervista fa una domanda per volta e non chiede cio' che la casa sa gia'** (#209). I sei passi
+  da tre domande l'uno sono diventati tredici da una: la scelta delle domande e' del codice, il modello
+  legge solo la risposta. Prima di ognuna guarda il database: i profili gia' registrati saltano «chi vive
+  qui», le stanze degli alias saltano «quali stanze», e un fatto gia' salvato nella stessa categoria con
+  la parola giusta salta la domanda corrispondente; l'intervista dice cosa ha saltato e perche'. Resta un
+  solo approfondimento per una risposta povera. I passi e il «gia' noto» stanno in
+  `intervista_passi.py` e `intervista_noto.py`.
+
+
 ---
 
 ## [0.6.0] - 2026-10-08 - Il Cervello

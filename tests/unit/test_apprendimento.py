@@ -328,7 +328,7 @@ async def test_quando_capisce_davvero_lo_dice_come_prima(archivio, monkeypatch) 
     motore = LearningInterviewEngine()
 
     async def capisce(prompt, system="", temperature=0.1):
-        return {"facts": [{"text": "La casa e' ad Arezzo"}, {"text": "L'appartamento e' al secondo piano"}]}
+        return {"facts": [{"text": "La casa e' ad Arezzo"}, {"text": "Il condominio ha un ascensore"}]}
 
     monkeypatch.setattr(motore.ollama, "genera_json", capisce)
 
@@ -438,7 +438,7 @@ def _motore(archivio, monkeypatch, risposte):
     return motore
 
 
-CAPITO = {"facts": [{"text": "La casa è ad Arezzo"}, {"text": "L'appartamento è al secondo piano"}]}
+CAPITO = {"facts": [{"text": "La casa è ad Arezzo"}, {"text": "Il condominio ha un ascensore"}]}
 
 # Quante correzioni di fila una persona sopporta prima di chiudere il modale.
 # E' questo il contratto che il riepilogo non deve rompere, e sta qui invece

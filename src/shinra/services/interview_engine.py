@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional
 from shinra.config import settings as impostazioni
 from shinra.infra.data_store import data_store
 from shinra.infra.llm.ollama import OllamaClient
+from shinra.services.intervista_noto import cosa_si_sa, dati_della_casa
+from shinra.services.intervista_passi import INTERVIEW_STEPS
 
 logger = logging.getLogger("Shinra.Interview")
 
@@ -166,50 +168,28 @@ def _insistenza(step: Dict[str, Any], interpretato: bool) -> str:
     return f"{apertura} Ci riprovo una volta sola, poi passo oltre.\n{step['question']}{coda}"
 
 
-INTERVIEW_STEPS = [
-    {
-        "id": "casa_base",
-        "category": "casa",
-        "title": "Casa e Indirizzo",
-        "question": "Perfetto! Iniziamo con la tua casa: in quale città o zona si trova, a che piano sei e quante stanze principali ci sono?",
-        "hint": "es. Vivo ad Arezzo in un appartamento al secondo piano con salotto, cucina, due camere e studio.",
-    },
-    {
-        "id": "famiglia",
-        "category": "famiglia",
-        "title": "Membri della Famiglia",
-        "question": "Chi vive con te in casa? Dimmi i loro nomi, le stanze in cui passano più tempo o eventuali ruoli.",
-        "hint": "es. Vivo con mia moglie Sonia e i miei figli Thomas e Christian. Thomas sta spesso nella cameretta.",
-    },
-    {
-        "id": "mattina",
-        "category": "abitudini",
-        "title": "Risveglio e Mattina",
-        "question": "Come inizia la tua tipica mattinata? A che ora ti svegli e quali dispositivi o luci vorresti accendere o controllare al risveglio?",
-        "hint": "es. Mi sveglio alle 7:00, accendo la luce in cucina, vorrei sentire le notizie e accendere la macchina del caffè.",
-    },
-    {
-        "id": "notte",
-        "category": "abitudini",
-        "title": "Sera e Buonanotte",
-        "question": "E la sera quando vai a dormire? C'è un orario tipico e cosa deve succedere in casa (spegnere tutto, abbassare le tapparelle, controllare il clima)?",
-        "hint": "es. Vado a letto verso le 23:30, vorrei spegnere tutte le luci della casa e abbassare il termostato a 18 gradi.",
-    },
-    {
-        "id": "relax",
-        "category": "abitudini",
-        "title": "Relax e Svago",
-        "question": "Quando ti rilassi a guardare un film o ad ascoltare musica, come ti piace impostare la stanza e le luci?",
-        "hint": "es. Quando guardo un film mi piace abbassare le luci del salotto al 15% e accendere la presa della TV.",
-    },
-    {
-        "id": "tecnico",
-        "category": "casa_tecnica",
-        "title": "Dati Tecnici ed Emergenze",
-        "question": "Infine, ci sono dettagli tecnici utili da ricordare? Come il nome della rete Wi-Fi per gli ospiti, dove si trova il contatore elettrico o un contatto importante?",
-        "hint": "es. La rete ospiti è CasaMia_Guest, il contatore è nel sottoscala all'ingresso.",
-    },
-]
+def _primo_da_chiedere(partenza: int) -> tuple:
+    """Dal passo `partenza` in poi, il primo che la casa non sa gia'.
+
+    Ritorna `(indice, saltati)`: `saltati` sono le frasi che dicono cosa si e'
+    saltato e perche'. Se resta niente da chiedere, `indice` e' la lunghezza.
+    """
+    dati = dati_della_casa(data_store)
+    saltati: List[str] = []
+    indice = partenza
+    while indice < len(INTERVIEW_STEPS):
+        noto = cosa_si_sa(INTERVIEW_STEPS[indice], dati)
+        if not noto:
+            break
+        saltati.append(noto)
+        indice += 1
+    return indice, saltati
+
+
+def _frase_dei_saltati(saltati: List[str]) -> str:
+    if not saltati:
+        return ""
+    return " ".join(f"{s}: salto la domanda." for s in saltati) + " "
 
 
 class LearningInterviewEngine:
@@ -247,15 +227,31 @@ class LearningInterviewEngine:
             "started_at": datetime.now().isoformat(),
         }
         self._active_sessions[user_id] = session
-        first_step = INTERVIEW_STEPS[0]
+        indice, saltati = _primo_da_chiedere(0)
+        if indice >= len(INTERVIEW_STEPS):
+            session["is_active"] = False
+            return {
+                "is_active": False,
+                "step_index": indice,
+                "total_steps": len(INTERVIEW_STEPS),
+                "fase": FASE_DOMANDA,
+                "message": _frase_dei_saltati(saltati)
+                + "Non ho niente da chiedere: la casa mi ha gia' detto tutto quello che serve.",
+                "capiti": [],
+                "suggerimento": None,
+                "is_complete": True,
+                "summary": {"total_facts": 0, "proposed_routines": []},
+            }
+        session["current_step_index"] = indice
+        first_step = INTERVIEW_STEPS[indice]
 
         greeting = (
-            "Modalità Apprendimento attivata. Ti farò qualche breve domanda per imparare a gestire la tua casa al meglio. "
-            + first_step["question"]
+            "Modalità Apprendimento attivata. Ti farò qualche breve domanda, una per volta, per imparare "
+            "a gestire la tua casa al meglio. " + _frase_dei_saltati(saltati) + first_step["question"]
         )
         return {
             "is_active": True,
-            "step_index": 0,
+            "step_index": indice,
             "step": first_step,
             "total_steps": len(INTERVIEW_STEPS),
             "fase": FASE_DOMANDA,
@@ -433,7 +429,8 @@ class LearningInterviewEngine:
                 f"\n\n💡 Ho notato una possibile routine: vuoi che crei l'automazione '{routine['name']}'?"
             )
 
-        prossimo = session["current_step_index"] + 1
+        prossimo, saltati = _primo_da_chiedere(session["current_step_index"] + 1)
+        prefisso += _frase_dei_saltati(saltati)
         if prossimo < len(INTERVIEW_STEPS):
             session["current_step_index"] = prossimo
             passo = INTERVIEW_STEPS[prossimo]
