@@ -288,7 +288,7 @@ il test sarebbe restato verde lo stesso.
 
 ---
 
-## v0.6.0 — Il Cervello
+## v0.6.0 — Il Cervello — rilasciata l'8 ottobre 2026
 
 > Shinra mostra quello che sa e quello che fa, e divide il lavoro fra agenti
 > che vedono solo i propri strumenti. Resta locale: i collegamenti esterni
