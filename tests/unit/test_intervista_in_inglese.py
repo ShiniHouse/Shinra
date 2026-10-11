@@ -166,8 +166,12 @@ def test_i_salti_si_dicono_in_inglese(archivio, monkeypatch) -> None:
     avanti = motore._avanza(sessione, "", [], None, True)
 
     assert avvio["step"]["id"] == "casa_citta"
-    assert "I already know these rooms: kitchen and lounge: I'll skip the question." in avanti["message"]
-    assert "The house already has Alessio and Sonia: I'll skip the question." in avanti["message"]
+    # Una frase sola, con un solo «salto»: a voce l'intervista non deve sembrare un disco rotto.
+    assert (
+        "I already know these rooms: kitchen and lounge. The house already has Alessio and Sonia. "
+        "I'll skip these questions." in avanti["message"]
+    )
+    assert avanti["message"].count("skip") == 1
 
 
 # ------------------------------------------- i nomi dei dispositivi e le routine

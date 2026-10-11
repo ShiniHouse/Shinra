@@ -331,7 +331,7 @@ intervista:
   salta: ["salta", "no", "niente", "nulla", "nessuno", "lascia perdere", "non so", "boh", "basta"]
   testi:
     saluto: "Modalità Apprendimento attivata. Ti farò qualche breve domanda, una per volta, per imparare a gestire la tua casa al meglio. "
-    salto: "{noto}: salto la domanda."
+    salto: "{noto}. Salto queste domande."
     niente_da_chiedere: "Non ho niente da chiedere: la casa mi ha già detto tutto quello che serve."
     riconoscimento_non_interpretato: "Ho conservato la tua risposta, ma non sono riuscita a ricavarne niente di preciso: il modello non ha risposto come mi serve. Controlla quale modello e' configurato — per capire una frase e riassumerla ne serve uno da qualche miliardo di parametri. Intanto proseguo. "
     riconoscimento_n: "Ricevuto! Ho aggiunto {quanti} nuovi dettagli alla mia conoscenza. "

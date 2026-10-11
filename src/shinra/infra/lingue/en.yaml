@@ -297,7 +297,7 @@ intervista:
   salta: ["skip", "no", "nothing", "none", "forget it", "i don't know", "i dont know", "dunno", "enough"]
   testi:
     saluto: "Learning mode is on. I'll ask you a few short questions, one at a time, to learn how to run your home. "
-    salto: "{noto}: I'll skip the question."
+    salto: "{noto}. I'll skip these questions."
     niente_da_chiedere: "I have nothing to ask: the house has already told me everything I need."
     riconoscimento_non_interpretato: "I kept your answer, but I couldn't make anything precise of it: the model didn't answer the way I need. Check which model is configured: understanding and summarising a sentence takes one with a few billion parameters. I'll go on for now. "
     riconoscimento_n: "Got it! I added {quanti} new details to what I know. "

@@ -163,3 +163,47 @@ async def test_una_risposta_povera_produce_un_solo_approfondimento(monkeypatch) 
     assert primo["step"]["id"] == INTERVIEW_STEPS[0]["id"], "non ha insistito"
     assert "una volta sola" in primo["message"]
     assert secondo["step"]["id"] == INTERVIEW_STEPS[1]["id"], "ha insistito una seconda volta"
+
+
+# ------------------------------------------------ i salti non si ripetono (provato in casa, 2026-10-11)
+
+
+def test_un_fatto_che_salta_due_domande_si_dice_una_volta_sola(monkeypatch) -> None:
+    """«Vivo ad Arezzo al secondo piano» risponde sia alla citta' sia al piano: prima si leggeva due volte,
+    ognuna con «salto la domanda», e a voce l'intervista sembrava un disco rotto."""
+    fatti = [{"text": "Vivo ad Arezzo al secondo piano", "category": "casa", "enabled": True}]
+    motore = _motore(monkeypatch, {**VUOTA, "fatti": fatti})
+
+    avvio = motore.start_session("prova")
+
+    assert avvio["message"].count("Arezzo") == 1, avvio["message"]
+    assert avvio["message"].count("Salto") + avvio["message"].count("salto") == 1, avvio["message"]
+
+
+@pytest.mark.asyncio
+async def test_una_cosa_gia_detta_non_si_ripete_nei_turni_dopo(monkeypatch) -> None:
+    dati = {**VUOTA, "profili": ["Alessio", "Sonia"], "stanze": ["cucina", "salotto"]}
+    motore = _motore(monkeypatch, dati)
+    motore.start_session("prova")
+    sessione = motore.get_session("prova")
+    sessione["current_step_index"] = INTERVIEW_STEPS.index(_passo("casa_piano"))
+
+    async def modello(prompt, system="", temperature=0.1):
+        return {"facts": [{"text": "Abita al terzo livello"}]}
+
+    monkeypatch.setattr(motore.ollama, "genera_json", modello)
+    monkeypatch.setattr(modulo.data_store, "add_knowledge_item", lambda **k: {"text": k["text"]})
+
+    await motore.process_answer("prova", "Al terzo")
+    primo = await motore.process_answer("prova", "sì")
+    assert "cucina" in primo["message"], "la prima volta va detto"
+
+    await motore.process_answer("prova", "Mia moglie e i miei figli")
+    secondo = await motore.process_answer("prova", "sì")
+    assert "cucina" not in secondo["message"], "ha ripetuto cio' che aveva gia' detto"
+
+
+def test_un_fatto_lungo_si_cita_accorciato() -> None:
+    lungo = "Vivo ad Arezzo " + "in un appartamento molto bello e luminoso " * 6
+    noto = cosa_si_sa(_passo("casa_citta"), {**VUOTA, "fatti": [{"text": lungo, "category": "casa"}]})
+    assert noto and len(noto) < 160, len(noto)
