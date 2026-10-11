@@ -19,9 +19,20 @@ from __future__ import annotations
 
 import inspect
 
+import pytest
+
 from shinra.infra.data_store import DataStore
 from shinra.infra.llm.ollama import OllamaClient
 from shinra.services.interview_engine import LearningInterviewEngine
+
+
+@pytest.fixture(autouse=True)
+def conferma_per_risposta(monkeypatch):
+    """Questi test descrivono la conferma dopo ogni risposta (`intervista_conferma: risposta`); quella di gruppo
+    (il predefinito) ha i suoi in `test_intervista_per_gruppo.py`."""
+    from shinra.config import settings as impostazioni
+
+    monkeypatch.setattr(impostazioni.settings.assistant, "intervista_conferma", "risposta")
 
 
 def test_data_store_espone_add_knowledge_item() -> None:

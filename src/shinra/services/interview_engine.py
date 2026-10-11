@@ -21,6 +21,7 @@ from shinra.services.intervista_comune import (
 from shinra.services.intervista_comune import (
     e_negativa as _e_negativa,
 )
+from shinra.services.intervista_gruppo import TurniGruppo, a_gruppi
 from shinra.services.intervista_noto import cosa_si_sa, dati_della_casa
 from shinra.services.intervista_passi import INTERVIEW_STEPS, passi_per
 from shinra.services.intervista_routine import controlla_proposta, routine_da_salvare
@@ -129,7 +130,7 @@ def _frase_dei_saltati(saltati: List[str], lingua: str = "", gia_detti: Optional
     return dice(lingua, "salto", noto=". ".join(n.rstrip(".") for n in nuovi)) + " "
 
 
-class LearningInterviewEngine(TurniAlias):
+class LearningInterviewEngine(TurniAlias, TurniGruppo):
     def __init__(self):
         self.ollama = OllamaClient()
         self._active_sessions: Dict[str, Dict[str, Any]] = {}
@@ -161,6 +162,9 @@ class LearningInterviewEngine(TurniAlias):
             "proposed_routines": [],
             # Cio' che si e' gia' detto di sapere gia': non si ripete nei turni dopo.
             "saltati_detti": [],
+            # Le risposte raccolte e non ancora confermate, se si conferma per gruppo (`intervista_gruppo`).
+            "gruppo": [],
+            "routine_gruppo": None,
             # Quante risposte il modello non e' riuscito a interpretare. Serve
             # a non chiudere l'intervista dicendo «ottimo lavoro» dopo sei
             # fallimenti di fila (#170).
@@ -219,6 +223,8 @@ class LearningInterviewEngine(TurniAlias):
         if current_step.get("kind") == "alias":
             return self._turno_alias(session, current_step, answer_text, data_store)
         if session.get("fase") == FASE_CONFERMA:
+            if session["gruppo"]:
+                return await self._turno_conferma_gruppo(session, current_step, answer_text)
             return await self._turno_conferma(session, current_step, answer_text)
         return await self._turno_domanda(session, current_step, answer_text)
 
@@ -246,13 +252,15 @@ class LearningInterviewEngine(TurniAlias):
             # che non si e' capito.
             session["non_interpretate"] += 1
             salvati = self._salva(session, step, fatti)
-            return self._avanza(
-                session, _riconoscimento(False, len(salvati), lingua), salvati, routine, False
+            return self._chiudi_o_prosegui(
+                session, step, _riconoscimento(False, len(salvati), lingua), salvati, routine, False
             )
 
         if not fatti:
-            return self._avanza(session, _riconoscimento(True, 0, lingua), [], routine, True)
+            return self._chiudi_o_prosegui(session, step, _riconoscimento(True, 0, lingua), [], routine, True)
 
+        if a_gruppi():
+            return self._accumula(session, step, fatti, routine)
         return self._chiedi_conferma(session, step, fatti, routine)
 
     async def _turno_conferma(
@@ -296,6 +304,12 @@ class LearningInterviewEngine(TurniAlias):
             else _riconoscimento(interpretato, len(salvati), lingua)
         )
         return self._avanza(session, prefisso, salvati, routine, interpretato)
+
+    def _prossimo_da_chiedere(self, session: Dict[str, Any]) -> int:
+        """L'indice del prossimo passo che la casa non sa gia' (per sapere se il gruppo finisce)."""
+        return _primo_da_chiedere(
+            session["current_step_index"] + 1, session["passi"], session.get("lingua", "")
+        )[0]
 
     def _chiedi_conferma(
         self,

@@ -295,8 +295,16 @@ intervista:
   afferma: ["yes", "y", "yeah", "yep", "ok", "okay", "right", "correct", "exactly", "sure", "confirm", "that's right", "thats right", "all right", "perfect"]
   nega: ["no", "n", "nope", "wrong", "nothing", "cancel", "skip", "forget it", "no thanks", "that's wrong", "thats wrong"]
   salta: ["skip", "no", "nothing", "none", "forget it", "i don't know", "i dont know", "dunno", "enough"]
+  togli: ["remove", "drop", "delete", "take out", "no"]
   testi:
     saluto: "Learning mode is on. I'll ask you a few short questions, one at a time, to learn how to run your home. "
+    raccolgo: "Noted. I'll show you everything at the end of this part. "
+    riepilogo_gruppo: "Here is what I understood:
+{elenco}
+Is that right? Answer «yes» and I'll save everything, «no» to drop everything. To remove one, write «remove 2»; if the last answer is wrong, write it again."
+    suggerimento_gruppo: "«yes» saves everything, «no» drops everything, «remove 2» removes item 2, or write the last answer again."
+    non_salvo_gruppo: "All right, I won't save anything from this part. "
+    tolto: "Removed: «{testo}»."
     salto: "{noto}. I'll skip these questions."
     niente_da_chiedere: "I have nothing to ask: the house has already told me everything I need."
     riconoscimento_non_interpretato: "I kept your answer, but I couldn't make anything precise of it: the model didn't answer the way I need. Check which model is configured: understanding and summarising a sentence takes one with a few billion parameters. I'll go on for now. "
