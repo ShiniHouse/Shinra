@@ -14,6 +14,12 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Corretto
+- **L'intervista non ripete piu' «salto la domanda»** (provato in casa, 2026-10-11). Ogni domanda saltata aveva
+  la sua frase, e un solo fatto che rispondeva a due domande si leggeva due volte. Adesso cio' che la casa sa gia'
+  si dice una volta sola (anche nei turni dopo), in una frase unica con un solo «salto queste domande», e un fatto
+  lungo si cita accorciato: il messaggio si ascolta a voce per intero.
+
 ### Modificato
 - **Gli strumenti dicono il loro esito nella lingua di chi ha chiesto** (#207, seconda parte). La lingua del
   profilo viaggia nel contesto della richiesta, come l'attore e il canale (`contesto.lingua_corrente()`, dichiarata

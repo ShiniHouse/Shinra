@@ -22,10 +22,18 @@ from shinra.services.intervista_comune import dice
 MINIMO_PROFILI = 2
 MINIMO_STANZE = 2
 
+# Un fatto citato per dire «lo so gia'» si accorcia: a voce lo si ascolta per intero.
+MAX_CITAZIONE = 90
+
 
 def _senza_accenti(testo: str) -> str:
     scomposto = unicodedata.normalize("NFD", testo.lower())
     return "".join(c for c in scomposto if unicodedata.category(c) != "Mn")
+
+
+def _citazione(testo: str) -> str:
+    testo = " ".join(testo.split())
+    return testo if len(testo) <= MAX_CITAZIONE else testo[: MAX_CITAZIONE - 1].rstrip() + "…"
 
 
 def _elenco(voci: Iterable[str], lingua: str = "") -> str:
@@ -68,5 +76,5 @@ def cosa_si_sa(passo: Dict[str, Any], dati: Dict[str, Any], lingua: str = "") ->
                 continue
             testo = _senza_accenti(str(fatto.get("text") or ""))
             if any(p in testo for p in parole):
-                return dice(lingua, "noto_fatto", fatto=fatto["text"])
+                return dice(lingua, "noto_fatto", fatto=_citazione(str(fatto["text"])))
     return None

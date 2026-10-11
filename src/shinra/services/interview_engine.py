@@ -109,10 +109,24 @@ def _primo_da_chiedere(partenza: int, passi: List[Dict[str, Any]], lingua: str =
     return indice, saltati
 
 
-def _frase_dei_saltati(saltati: List[str], lingua: str = "") -> str:
-    if not saltati:
+def _frase_dei_saltati(saltati: List[str], lingua: str = "", gia_detti: Optional[List[str]] = None) -> str:
+    """Cio' che la casa sa gia', detto **una volta sola** e in una frase sola.
+
+    Provando in casa (2026-10-11) l'intervista «ripeteva spesso salto»: ogni domanda saltata aveva la sua frase con
+    «salto la domanda», e un solo fatto («vivo ad Arezzo al secondo piano») che risponde a due domande si leggeva due
+    volte. Adesso: niente doppioni, niente cio' che si e' gia' detto in un turno prima, e un solo «salto queste
+    domande» in fondo. A voce il messaggio si ascolta per intero, quindi ogni parola in piu' pesa.
+    """
+    nuovi: List[str] = []
+    for s in saltati:
+        if s in nuovi or (gia_detti is not None and s in gia_detti):
+            continue
+        nuovi.append(s)
+    if gia_detti is not None:
+        gia_detti.extend(nuovi)
+    if not nuovi:
         return ""
-    return " ".join(dice(lingua, "salto", noto=s) for s in saltati) + " "
+    return dice(lingua, "salto", noto=". ".join(n.rstrip(".") for n in nuovi)) + " "
 
 
 class LearningInterviewEngine(TurniAlias):
@@ -145,6 +159,8 @@ class LearningInterviewEngine(TurniAlias):
             "answers": {},
             "learned_facts": [],
             "proposed_routines": [],
+            # Cio' che si e' gia' detto di sapere gia': non si ripete nei turni dopo.
+            "saltati_detti": [],
             # Quante risposte il modello non e' riuscito a interpretare. Serve
             # a non chiudere l'intervista dicendo «ottimo lavoro» dopo sei
             # fallimenti di fila (#170).
@@ -167,7 +183,8 @@ class LearningInterviewEngine(TurniAlias):
                 "step_index": indice,
                 "total_steps": len(session["passi"]),
                 "fase": FASE_DOMANDA,
-                "message": _frase_dei_saltati(saltati, lingua) + dice(lingua, "niente_da_chiedere"),
+                "message": _frase_dei_saltati(saltati, lingua, session["saltati_detti"])
+                + dice(lingua, "niente_da_chiedere"),
                 "capiti": [],
                 "suggerimento": None,
                 "is_complete": True,
@@ -176,7 +193,11 @@ class LearningInterviewEngine(TurniAlias):
         session["current_step_index"] = indice
         first_step = passi[indice]
 
-        greeting = dice(lingua, "saluto") + _frase_dei_saltati(saltati, lingua) + first_step["question"]
+        greeting = (
+            dice(lingua, "saluto")
+            + _frase_dei_saltati(saltati, lingua, session["saltati_detti"])
+            + first_step["question"]
+        )
         return {
             "is_active": True,
             "step_index": indice,
@@ -376,7 +397,7 @@ class LearningInterviewEngine(TurniAlias):
             )
 
         prossimo, saltati = _primo_da_chiedere(session["current_step_index"] + 1, session["passi"], lingua)
-        prefisso += _frase_dei_saltati(saltati, lingua)
+        prefisso += _frase_dei_saltati(saltati, lingua, session["saltati_detti"])
         if prossimo < len(session["passi"]):
             session["current_step_index"] = prossimo
             passo = session["passi"][prossimo]
