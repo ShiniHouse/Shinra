@@ -329,8 +329,16 @@ intervista:
   afferma: ["si", "sì", "s", "ok", "okay", "va bene", "vabene", "giusto", "esatto", "esattamente", "corretto", "perfetto", "certo", "confermo", "conferma", "yes", "y", "tutto giusto", "e giusto", "è giusto", "sì esatto", "si esatto"]
   nega: ["no", "n", "nope", "sbagliato", "niente", "annulla", "salta", "lascia perdere", "no grazie", "non e giusto", "non è giusto"]
   salta: ["salta", "no", "niente", "nulla", "nessuno", "lascia perdere", "non so", "boh", "basta"]
+  togli: ["togli", "rimuovi", "elimina", "cancella", "no"]
   testi:
     saluto: "Modalità Apprendimento attivata. Ti farò qualche breve domanda, una per volta, per imparare a gestire la tua casa al meglio. "
+    raccolgo: "Prendo nota. Ti mostro tutto alla fine di questa parte. "
+    riepilogo_gruppo: "Ho capito questo:
+{elenco}
+È giusto? Rispondi «sì» e salvo tutto, «no» per scartare tutto. Per toglierne una scrivi «togli 2»; se l'ultima risposta è sbagliata, riscrivila."
+    suggerimento_gruppo: "«sì» salva tutto, «no» scarta tutto, «togli 2» toglie la voce 2, oppure riscrivi l'ultima risposta."
+    non_salvo_gruppo: "Va bene, non salvo niente di questa parte. "
+    tolto: "Tolto: «{testo}»."
     salto: "{noto}. Salto queste domande."
     niente_da_chiedere: "Non ho niente da chiedere: la casa mi ha già detto tutto quello che serve."
     riconoscimento_non_interpretato: "Ho conservato la tua risposta, ma non sono riuscita a ricavarne niente di preciso: il modello non ha risposto come mi serve. Controlla quale modello e' configurato — per capire una frase e riassumerla ne serve uno da qualche miliardo di parametri. Intanto proseguo. "

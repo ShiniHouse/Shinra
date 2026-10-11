@@ -21,6 +21,12 @@ installabile e utilizzabile.
   lungo si cita accorciato: il messaggio si ascolta a voce per intero.
 
 ### Modificato
+- **L'intervista conferma una volta per argomento, non dopo ogni risposta** (provata in casa, 2026-10-11: «poco
+  fluida»). Le risposte di uno stesso argomento (casa, famiglia, abitudini, dati tecnici) si raccolgono senza
+  salvare niente, e alla fine si mostra un riepilogo numerato: tredici domande fanno 17 turni invece di 26. Niente
+  entra nel database senza il «sì». Nel riepilogo: «sì» salva tutto, «no» scarta l'argomento, «togli 2» toglie la
+  voce 2, oppure si riscrive l'ultima risposta. Una routine proposta compare dopo la conferma. Chi vuole la
+  conferma dopo ogni risposta imposta `assistant.intervista_conferma: risposta`.
 - **Gli strumenti dicono il loro esito nella lingua di chi ha chiesto** (#207, seconda parte). La lingua del
   profilo viaggia nel contesto della richiesta, come l'attore e il canale (`contesto.lingua_corrente()`, dichiarata
   dall'agente), e lo strumento la legge senza che nessuno gliela passi. Per cominciare la **serratura**: due profili,

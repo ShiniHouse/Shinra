@@ -12,6 +12,16 @@ from shinra.services.interview_engine import LearningInterviewEngine
 from shinra.services.intervista_noto import cosa_si_sa
 from shinra.services.intervista_passi import INTERVIEW_STEPS
 
+
+@pytest.fixture(autouse=True)
+def conferma_per_risposta(monkeypatch):
+    """Questi test descrivono la conferma dopo ogni risposta (`intervista_conferma: risposta`); quella di gruppo
+    (il predefinito) ha i suoi in `test_intervista_per_gruppo.py`."""
+    from shinra.config import settings as impostazioni
+
+    monkeypatch.setattr(impostazioni.settings.assistant, "intervista_conferma", "risposta")
+
+
 VUOTA = {"profili": [], "stanze": [], "fatti": []}
 
 

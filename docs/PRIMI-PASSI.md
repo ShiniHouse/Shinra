@@ -137,9 +137,11 @@ Due cose da sapere prima di cominciare, perché ti risparmiano tempo:
   parametri non ci riesce, e te lo dice: «non sono riuscita a ricavarne niente
   di preciso». Se lo dice a ogni domanda, il problema è il modello — vedi
   [PROBLEMI.md](PROBLEMI.md#la-chat-risponde-male-o-non-fa-niente).
-- **Prima di salvare ti fa vedere cosa ha capito.** Leggilo. Se ha capito
-  male, riscrivi la frase come la diresti tu e lei rifà; se non ti va,
-  rispondi «no» e passa oltre. Quello che salvi resta, e una frase sbagliata
+- **Prima di salvare ti fa vedere cosa ha capito, alla fine di ogni argomento.** Le risposte sulla casa, sulla
+  famiglia, sulle abitudini e sui dati tecnici si raccolgono e ti vengono mostrate insieme, numerate: niente è
+  salvato finché non rispondi. «Sì» salva tutto; «no» scarta tutto l'argomento; **«togli 2»** toglie la voce 2 e
+  ti rimostra l'elenco; se l'ultima risposta è sbagliata, riscrivila. Se preferisci una conferma dopo ogni risposta,
+  `assistant.intervista_conferma: risposta` in `config/config.yaml`. Quello che salvi resta, e una frase sbagliata
   lì dentro torna a galla mesi dopo in una risposta strana.
 
 I fatti servono a far **dire** cose. Per far **fare** servono gli alias del

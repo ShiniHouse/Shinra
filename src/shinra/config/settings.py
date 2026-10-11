@@ -95,6 +95,9 @@ class AssistantConfig(BaseModel):
     # Una lingua che non esiste sul disco non spegne la casa: si ripiega
     # sull'italiano e lo scrive nel log.
     language: str = "it"
+    # Come l'intervista di apprendimento conferma cio' che ha capito: `gruppo` (predefinito) mostra un riepilogo
+    # alla fine di ogni argomento; `risposta` lo mostra dopo ogni singola risposta. Niente si salva senza il «si'».
+    intervista_conferma: str = "gruppo"
 
 
 class SecurityConfig(BaseModel):

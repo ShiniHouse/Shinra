@@ -82,7 +82,12 @@ CHIAVI_TIMER: Tuple[str, ...] = (
 
 # Le frasi dell'intervista di apprendimento (#207), sezione `intervista.testi`.
 CHIAVI_INTERVISTA: Tuple[str, ...] = (
-    "saluto", "salto", "niente_da_chiedere", "riconoscimento_non_interpretato", "riconoscimento_n",
+    "saluto",
+    "raccolgo",
+    "riepilogo_gruppo",
+    "suggerimento_gruppo",
+    "non_salvo_gruppo",
+    "tolto", "salto", "niente_da_chiedere", "riconoscimento_non_interpretato", "riconoscimento_n",
     "riconoscimento_niente", "chiusura_errori", "chiusura_ok", "chiusura_alias_uno", "chiusura_alias_piu",
     "riepilogo", "suggerimento_conferma", "insistenza_non_interpretato", "insistenza_vuota", "insistenza",
     "per_esempio", "non_salvo", "salvo_cosi", "routine_proposta", "routine_scartate", "routine_prova_non_fatta",
@@ -261,6 +266,7 @@ def _verifica(dati: Dict[str, Any], dove: Path) -> None:
                 "afferma",
                 "nega",
                 "salta",
+                "togli",
                 "comandi",
                 "etichette",
                 "passi",
