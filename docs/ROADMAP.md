@@ -399,6 +399,12 @@ viene dopo perche' ha bisogno di materiale e di fiducia: tutto cio' che scrive n
 toccano la promessa della `0.6.0` sulla rete locale. La proposta completa, con le
 ventinove schede (issue `#243`–`#271`), sta in [`docs/proposte/memoria-viva/`](proposte/memoria-viva/README.md).
 
+**Il multi-luogo (proposta del 2026-10-12).** Shinra deve sapere dove si trova chi parla e poter conoscere piu' abitazioni o
+luoghi oltre alla principale, con le **coordinate vere** prese dalla posizione di smartphone e PC. E' deciso che va in questa
+fase, insieme alla memoria (il luogo e' uno degli ambiti dei ricordi): un solo Shinra, piu' luoghi, «dove sei» da chi parla e dalla
+posizione, e la posizione resta sul server. La proposta, con le cinque fette e le regole di privacy, e' in
+[`docs/proposte/luoghi/`](proposte/luoghi/README.md); le schede si aprono dopo l'ok del proprietario.
+
 | # | Lavoro | Area |
 | :-- | :--- | :--- |
 | 243 | ADR: chi vede e chi puo' cambiare cio' che Shinra ricorda | decisione |
