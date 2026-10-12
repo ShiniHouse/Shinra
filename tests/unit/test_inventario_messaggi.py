@@ -69,7 +69,6 @@ def _chiave(nodo: ast.AST | None) -> str:
 DEBITO: dict[str, int] = {
     "calendario.py": 4,
     "clima.py": 8,
-    "domini_casa.py": 18,  # la serratura e' tradotta (#207); restano media player, aspirapolvere, ventilatore
     "energia.py": 9,
     "ha_tools.py": 5,
     "liste.py": 9,

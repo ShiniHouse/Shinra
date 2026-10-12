@@ -153,36 +153,36 @@ async def comanda_media(
 
     if azione in ("volume", "imposta_volume"):
         if volume is None:
-            return _fallito("Serve un volume da 0 a 100.")
+            return _fallito(messaggio("media_serve_volume"))
         # Home Assistant vuole 0.0-1.0. Il modello parla in percentuale
         # perche' e' cosi' che ne parlano le persone.
         livello = max(0, min(100, int(volume))) / 100
         esito = await _chiama("media_player", "volume_set", {"entity_id": entita, "volume_level": livello})
         return (
-            _riuscito(f"Volume di {nome} al {int(livello * 100)} per cento.")
+            _riuscito(messaggio("media_volume", nome=nome, valore=int(livello * 100)))
             if esito.get("success")
-            else _fallito(f"Non sono riuscito a cambiare il volume di {nome}.")
+            else _fallito(messaggio("media_non_volume", nome=nome))
         )
 
     if azione in ("sorgente", "cambia_sorgente"):
         if not sorgente:
-            return _fallito("Serve il nome della sorgente.")
+            return _fallito(messaggio("media_serve_sorgente"))
         esito = await _chiama("media_player", "select_source", {"entity_id": entita, "source": sorgente})
         return (
-            _riuscito(f"{nome} passa a {sorgente}.")
+            _riuscito(messaggio("media_sorgente", nome=nome, sorgente=sorgente))
             if esito.get("success")
-            else _fallito(f"Non sono riuscito a cambiare sorgente su {nome}.")
+            else _fallito(messaggio("media_non_sorgente", nome=nome))
         )
 
     servizio = _SERVIZI_MEDIA.get(azione)
     if not servizio:
-        return _fallito(f"Azione «{azione}» non prevista per un media player.")
+        return _fallito(messaggio("azione_media_ignota", azione=azione))
 
     esito = await _chiama("media_player", servizio, {"entity_id": entita})
     return (
-        _riuscito(f"Fatto su {nome}: {azione}.")
+        _riuscito(messaggio("dispositivo_fatto_su", nome=nome, azione=azione))
         if esito.get("success")
-        else _fallito(f"Non sono riuscito a eseguire «{azione}» su {nome}.")
+        else _fallito(messaggio("dispositivo_azione_fallita", nome=nome, azione=azione))
     )
 
 
@@ -224,20 +224,20 @@ async def comanda_aspirapolvere(entity_id: str, azione: str, stanza: Optional[st
             {"entity_id": entita, "command": "app_segment_clean", "params": [stanza]},
         )
         return (
-            _riuscito(f"{nome} sta pulendo {stanza}.")
+            _riuscito(messaggio("aspirapolvere_stanza", nome=nome, stanza=stanza))
             if esito.get("success")
-            else _fallito(f"{nome} non accetta la pulizia per stanze da qui.")
+            else _fallito(messaggio("aspirapolvere_no_stanza", nome=nome))
         )
 
     servizio = _SERVIZI_ASPIRAPOLVERE.get(azione)
     if not servizio:
-        return _fallito(f"Azione «{azione}» non prevista per un aspirapolvere.")
+        return _fallito(messaggio("azione_aspirapolvere_ignota", azione=azione))
 
     esito = await _chiama("vacuum", servizio, {"entity_id": entita})
     return (
-        _riuscito(f"Fatto su {nome}: {azione}.")
+        _riuscito(messaggio("dispositivo_fatto_su", nome=nome, azione=azione))
         if esito.get("success")
-        else _fallito(f"Non sono riuscito a eseguire «{azione}» su {nome}.")
+        else _fallito(messaggio("dispositivo_azione_fallita", nome=nome, azione=azione))
     )
 
 
@@ -263,22 +263,27 @@ async def comanda_ventilatore(
 
     if azione in ("velocita", "imposta_velocita"):
         if velocita is None:
-            return _fallito("Serve una velocita' da 0 a 100.")
+            return _fallito(messaggio("ventilatore_serve_velocita"))
         percentuale = max(0, min(100, int(velocita)))
         esito = await _chiama("fan", "set_percentage", {"entity_id": entita, "percentage": percentuale})
         return (
-            _riuscito(f"{nome} al {percentuale} per cento.")
+            _riuscito(messaggio("ventilatore_velocita", nome=nome, valore=percentuale))
             if esito.get("success")
-            else _fallito(f"Non sono riuscito a cambiare velocita' a {nome}.")
+            else _fallito(messaggio("ventilatore_non_velocita", nome=nome))
         )
 
     if azione in ("oscilla", "oscillazione"):
         acceso = True if oscillazione is None else bool(oscillazione)
         esito = await _chiama("fan", "oscillate", {"entity_id": entita, "oscillating": acceso})
         return (
-            _riuscito(f"Oscillazione di {nome} {'attivata' if acceso else 'disattivata'}.")
+            _riuscito(
+                messaggio(
+                    "ventilatore_oscillazione_attiva" if acceso else "ventilatore_oscillazione_disattiva",
+                    nome=nome,
+                )
+            )
             if esito.get("success")
-            else _fallito(f"Non sono riuscito a cambiare l'oscillazione di {nome}.")
+            else _fallito(messaggio("ventilatore_non_oscillazione", nome=nome))
         )
 
     if azione in ("accendi", "on", "turn_on"):
@@ -287,17 +292,17 @@ async def comanda_ventilatore(
             dati["percentage"] = max(0, min(100, int(velocita)))
         esito = await _chiama("fan", "turn_on", dati)
         return (
-            _riuscito(f"{nome} acceso.")
+            _riuscito(messaggio("ventilatore_acceso", nome=nome))
             if esito.get("success")
-            else _fallito(f"Non sono riuscito ad accendere {nome}.")
+            else _fallito(messaggio("ventilatore_non_acceso", nome=nome))
         )
 
     if azione in ("spegni", "off", "turn_off"):
         esito = await _chiama("fan", "turn_off", {"entity_id": entita})
         return (
-            _riuscito(f"{nome} spento.")
+            _riuscito(messaggio("ventilatore_spento", nome=nome))
             if esito.get("success")
-            else _fallito(f"Non sono riuscito a spegnere {nome}.")
+            else _fallito(messaggio("ventilatore_non_spento", nome=nome))
         )
 
-    return _fallito(f"Azione «{azione}» non prevista per un ventilatore.")
+    return _fallito(messaggio("azione_ventilatore_ignota", azione=azione))

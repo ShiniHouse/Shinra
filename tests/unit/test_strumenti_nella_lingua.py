@@ -23,6 +23,9 @@ STATI = [
         "state": "locked",
         "attributes": {"friendly_name": "Porta d'ingresso"},
     },
+    {"entity_id": "media_player.salotto", "state": "playing", "attributes": {"friendly_name": "TV salotto"}},
+    {"entity_id": "vacuum.robot", "state": "docked", "attributes": {"friendly_name": "Robottino"}},
+    {"entity_id": "fan.camera", "state": "off", "attributes": {"friendly_name": "Ventilatore camera"}},
 ]
 
 
@@ -142,3 +145,85 @@ async def test_l_agente_dichiara_la_lingua_del_profilo(monkeypatch) -> None:
         "en",
         "",
     ], "la lingua del profilo non e' arrivata nel contesto, o e' rimasta alla richiesta dopo"
+
+
+# ------------------------------------------- lettore multimediale, aspirapolvere, ventilatore
+
+
+async def _dice(lingua, funzione, *args, **kwargs):
+    contesto.dichiara_lingua(lingua)
+    return await funzione(*args, **kwargs)
+
+
+@pytest.mark.asyncio
+async def test_il_lettore_multimediale_risponde_nella_lingua_di_chi_ha_chiesto(casa, da_web) -> None:
+    it = await _dice("it", domini_casa.comanda_media, "media_player.salotto", "volume", volume=40)
+    en = await _dice("en", domini_casa.comanda_media, "media_player.salotto", "volume", volume=40)
+    assert it["message"] == "Volume di TV salotto al 40 per cento."
+    assert en["message"] == "TV salotto volume set to 40 percent."
+
+    assert (await _dice("en", domini_casa.comanda_media, "media_player.salotto", "pausa"))["message"] == (
+        "Done on TV salotto: pausa."
+    )
+    assert (await _dice("en", domini_casa.comanda_media, "media_player.salotto", "volume"))["error"] == (
+        "I need a volume from 0 to 100."
+    )
+    assert (await _dice("en", domini_casa.comanda_media, "media_player.salotto", "salta"))["error"] == (
+        "Action «salta» is not supported for a media player."
+    )
+
+
+@pytest.mark.asyncio
+async def test_l_aspirapolvere_risponde_nella_lingua_di_chi_ha_chiesto(casa, da_web) -> None:
+    it = await _dice("it", domini_casa.comanda_aspirapolvere, "vacuum.robot", "avvia", stanza="cucina")
+    en = await _dice("en", domini_casa.comanda_aspirapolvere, "vacuum.robot", "avvia", stanza="cucina")
+    assert it["message"] == "Robottino sta pulendo cucina."
+    assert en["message"] == "Robottino is cleaning cucina."
+
+    err = await _dice("en", domini_casa.comanda_aspirapolvere, "vacuum.robot", "vola")
+    assert err["error"] == "Action «vola» is not supported for a vacuum."
+
+
+@pytest.mark.asyncio
+async def test_il_ventilatore_risponde_nella_lingua_di_chi_ha_chiesto(casa, da_web) -> None:
+    pares = [
+        (("accendi",), {}, "Ventilatore camera acceso.", "Ventilatore camera turned on."),
+        (("spegni",), {}, "Ventilatore camera spento.", "Ventilatore camera turned off."),
+        (
+            ("velocita",),
+            {"velocita": 60},
+            "Ventilatore camera al 60 per cento.",
+            "Ventilatore camera at 60 percent.",
+        ),
+        (
+            ("oscilla",),
+            {"oscillazione": True},
+            "Oscillazione di Ventilatore camera attivata.",
+            "Ventilatore camera oscillation turned on.",
+        ),
+        (
+            ("oscilla",),
+            {"oscillazione": False},
+            "Oscillazione di Ventilatore camera disattivata.",
+            "Ventilatore camera oscillation turned off.",
+        ),
+    ]
+    for args, kwargs, atteso_it, atteso_en in pares:
+        it = await _dice("it", domini_casa.comanda_ventilatore, "fan.camera", *args, **kwargs)
+        en = await _dice("en", domini_casa.comanda_ventilatore, "fan.camera", *args, **kwargs)
+        assert (it["message"], en["message"]) == (atteso_it, atteso_en)
+
+    assert (await _dice("en", domini_casa.comanda_ventilatore, "fan.camera", "velocita"))["error"] == (
+        "I need a speed from 0 to 100."
+    )
+    assert (await _dice("it", domini_casa.comanda_ventilatore, "fan.camera", "gira"))["error"] == (
+        "Azione «gira» non prevista per un ventilatore."
+    )
+
+
+def test_ogni_lingua_ha_le_frasi_dei_tre_strumenti() -> None:
+    chiavi = [k for k in schemi("it").messaggi if k.startswith(("media_", "ventilatore_", "aspirapolvere_"))]
+    assert len(chiavi) >= 17
+    for lingua in lingue_disponibili():
+        mancano = [k for k in chiavi if k not in schemi(lingua).messaggi]
+        assert mancano == [], f"{lingua}: {mancano}"
