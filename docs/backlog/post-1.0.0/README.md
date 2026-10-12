@@ -25,6 +25,8 @@ riprendono dopo la `1.0.0`, se la casa lo chiede.
 | Scheda | Perche' e' qui |
 | :--- | :--- |
 | [#191 Piani a piu' passaggi](191-piani-a-piu-passaggi.md) | Il banco dice 5/10 con gli agenti: lavoro grosso, guadagno incerto con il 3B |
+| [#206 Etichette della dashboard in due lingue](206-etichette-della-dashboard-tradotte.md) | Per un pubblico futuro: non si prova in casa e non blocca il rilascio |
+| [#211 Parola di attivazione](211-parola-di-attivazione.md) | Dipende dal riconoscimento del microfono (Whisper `small` ha scritto «pardon») e dai falsi positivi, da misurare su audio registrato |
 | [#194 Modello esterno opzionale](194-client-llm-esterno-opzionale.md) | Il modello e' un di piu'; un cloud opzionale tocca la promessa di privacy |
 | [#240 Ollama su un'altra macchina](240-ollama-su-un-server-dedicato.md) | Non c'e' una seconda macchina e non e' previsto comprarla |
 | [#242 Aiutanti locali di sviluppo](242-aiutanti-locali-di-sviluppo.md) | Strumenti dello sviluppatore, non del prodotto |

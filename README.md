@@ -38,9 +38,9 @@ casa vera e cosa no**: [`docs/release/v0.6.0.md`](docs/release/v0.6.0.md).
 
 **Cosa la `0.6.0` non fa, e dove è scritto.** I piani a più passaggi, il modello esterno
 opzionale, Ollama su un'altra macchina, l'add-on per Home Assistant OS e gli aiutanti locali di
-sviluppo sono **dopo la `1.0.0`**. La parola di attivazione (#211), timer e promemoria in più
-lingue (#205), le etichette della dashboard in due lingue (#206), l'intervista che fa una domanda
-per volta (#209, #210) e il collaudo delle guide (#208) sono nella **`0.7.0`**. La `0.8.0`, *Memoria
+sviluppo, e anche la parola di attivazione (#211) e le etichette della dashboard in due lingue
+(#206), sono **dopo la `1.0.0`**. Timer e promemoria in più lingue (#205), l'intervista che fa
+una domanda per volta (#209, #210) e il collaudo delle guide (#208) sono nella **`0.7.0`**. La `0.8.0`, *Memoria
 viva*, viene dopo. Il quadro completo è nella [ROADMAP](docs/ROADMAP.md), e [qui sotto](#-dove-sta-andando) in breve.
 
 La `0.4.0` aveva fatto smettere alla casa di aspettare la domanda: routine che

@@ -1,7 +1,7 @@
 ---
 title: "feat(i18n): le etichette della dashboard escono dal codice"
 issue: 206
-milestone: "v0.7.0"
+milestone: "Dopo la 1.0.0"
 labels: ["tipo: funzione", "area: frontend"]
 ---
 
