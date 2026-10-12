@@ -21,6 +21,9 @@ installabile e utilizzabile.
   lungo si cita accorciato: il messaggio si ascolta a voce per intero.
 
 ### Modificato
+- **Lettore multimediale, aspirapolvere e ventilatore dicono il loro esito nella lingua di chi ha chiesto** (#207,
+  terza parte): 23 frasi in `it` e `en`. Con questi `domini_casa.py` e' a zero nell'inventario degli strumenti, che passa
+  da 95 a 77 frasi italiane ancora nel codice.
 - **L'intervista conferma una volta per argomento, non dopo ogni risposta** (provata in casa, 2026-10-11: «poco
   fluida»). Le risposte di uno stesso argomento (casa, famiglia, abitudini, dati tecnici) si raccolgono senza
   salvare niente, e alla fine si mostra un riepilogo numerato: tredici domande fanno 17 turni invece di 26. Niente
