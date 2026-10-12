@@ -14,6 +14,12 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+---
+
+## [0.7.0] - 2026-10-12 - Rifinitura
+
+Note complete: [`docs/release/v0.7.0.md`](docs/release/v0.7.0.md).
+
 ### Corretto
 - **L'intervista non ripete piu' «salto la domanda»** (provato in casa, 2026-10-11). Ogni domanda saltata aveva
   la sua frase, e un solo fatto che rispondeva a due domande si leggeva due volte. Adesso cio' che la casa sa gia'
