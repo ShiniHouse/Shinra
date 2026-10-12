@@ -1,7 +1,7 @@
 ---
 title: "feat(voce): la parola di attivazione nel browser (openWakeWord)"
 issue: 211
-milestone: "v0.7.0"
+milestone: "Dopo la 1.0.0"
 labels: ["tipo: funzione", "area: core", "area: frontend"]
 ---
 

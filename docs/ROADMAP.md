@@ -345,6 +345,9 @@ provano in casa, e per ultima la parola di attivazione (#211), solo con il ricon
 microfono sistemato. La `0.8.0` aggiunge al prompt ricordi e riassunti, e un `qwen2.5:3b` su
 una CPU senza scheda grafica e' gia' al limite (la `#183` lo ha misurato).
 
+**Rimandate a dopo la `1.0.0` (2026-10-12): le etichette della dashboard in due lingue (#206) e la parola di attivazione (#211).**
+Per un pubblico futuro la prima, e rischiosa la seconda (dipende dal microfono): non bloccano il rilascio.
+
 **Rimandate a dopo la `1.0.0` (2026-10-08).** Non hanno oggi un modo di essere provate
 in casa, o poggiano su un modello che il 3B non regge: i piani a piu' passaggi (#191,
 il banco dice 5/10), il modello esterno opzionale (#194), Ollama su un'altra macchina
@@ -356,13 +359,11 @@ e' un Debian), gli aiutanti locali di sviluppo (#242). Le schede sono in
 | # | Lavoro | Area |
 | :-- | :--- | :--- |
 | 193 | Manifesto e permessi dei plugin | plugin |
-| 205 | Timer e promemoria capiscono piu' di una lingua — *residuo della #36* | i18n |
-| 206 | Le etichette della dashboard escono dal codice — *residuo della #36* | i18n |
-| 207 | I messaggi degli strumenti e dell'intervista nella lingua di chi parla — *residuo della #36* | i18n |
+| 205 | Timer e promemoria capiscono piu' di una lingua — *residuo della #36* — **chiusa (2026-10-12)** | i18n |
+| 207 | I messaggi degli strumenti e dell'intervista nella lingua di chi parla — *residuo della #36*: intervista e serratura fatti, il resto cala con l'inventario | i18n |
 | 208 | Collaudo della documentazione da parte di chi non l'ha scritta — *residuo della #38* | documentazione |
 | 209 | Intervista: una domanda per volta, niente domande su cio' che la casa sa — *residuo della #170* | apprendimento |
 | 210 | Intervista: dalle entita' vere alle routine complete — *residuo della #170* | apprendimento |
-| 211 | La parola di attivazione nel browser — *residuo della #30* | voce |
 | 241 | Il banco di prova sull'hardware candidato, misurato e non stimato — *chiusa: le prove si fanno sul portatile, un hardware nuovo non e' previsto* | misura |
 
 **Criteri di uscita.** La `0.7.0` si rilascia **appena l'intervista, i plugin e le guide sono
@@ -378,9 +379,9 @@ provati**; cio' che non e' pronto si sposta e si scrive dove.
 - I plugin hanno un manifesto, permessi dichiarati e rispettati, e un plugin di esempio nel
   repository (`#193`). **Solo codice del proprietario, in processo**: il codice di terzi non si
   carica in questa fase.
-- *Se pronte:* le etichette della dashboard e i messaggi degli strumenti in due lingue, con la
-  guardia di parita' (`#205`, `#206`, `#207`); la parola di attivazione (`#211`) con una parola
-  gia' addestrata. Altrimenti passano alla `0.8.0` o a dopo la `1.0.0`.
+- *Se pronti:* i messaggi degli strumenti nella lingua di chi parla (`#207`): l'intervista e la serratura sono fatte, il resto
+  cala file per file con un'inventario che impedisce di salire (`tests/unit/test_inventario_messaggi.py`). Le etichette della
+  dashboard (`#206`) e la parola di attivazione (`#211`) sono a dopo la `1.0.0`.
 
 ---
 
