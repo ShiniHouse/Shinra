@@ -360,7 +360,7 @@ e' un Debian), gli aiutanti locali di sviluppo (#242). Le schede sono in
 | :-- | :--- | :--- |
 | 193 | Manifesto e permessi dei plugin | plugin |
 | 205 | Timer e promemoria capiscono piu' di una lingua — *residuo della #36* — **chiusa (2026-10-12)** | i18n |
-| 207 | I messaggi degli strumenti e dell'intervista nella lingua di chi parla — *residuo della #36*: intervista e serratura fatti, il resto cala con l'inventario | i18n |
+| 207 | I messaggi degli strumenti e dell'intervista nella lingua di chi parla — *residuo della #36*: **chiusa in parte (2026-10-12)**: intervista, serratura, lettore multimediale, aspirapolvere e ventilatore; il resto, che richiede domini a dati, e' la #334 dopo la `1.0.0` | i18n |
 | 208 | Collaudo della documentazione da parte di chi non l'ha scritta — *residuo della #38* | documentazione |
 | 209 | Intervista: una domanda per volta, niente domande su cio' che la casa sa — *residuo della #170* | apprendimento |
 | 210 | Intervista: dalle entita' vere alle routine complete — *residuo della #170* | apprendimento |
@@ -379,9 +379,10 @@ provati**; cio' che non e' pronto si sposta e si scrive dove.
 - I plugin hanno un manifesto, permessi dichiarati e rispettati, e un plugin di esempio nel
   repository (`#193`). **Solo codice del proprietario, in processo**: il codice di terzi non si
   carica in questa fase.
-- *Se pronti:* i messaggi degli strumenti nella lingua di chi parla (`#207`): l'intervista e la serratura sono fatte, il resto
-  cala file per file con un'inventario che impedisce di salire (`tests/unit/test_inventario_messaggi.py`). Le etichette della
-  dashboard (`#206`) e la parola di attivazione (`#211`) sono a dopo la `1.0.0`.
+- I messaggi degli strumenti nella lingua di chi parla (`#207`): **fatti l'intervista e cinque strumenti**; il resto richiede
+  che i domini restituiscano dati e passa alla `#334`, dopo la `1.0.0`. Un'inventario (`tests/unit/test_inventario_messaggi.py`)
+  impedisce che le frasi italiane negli strumenti aumentino. Le etichette della dashboard (`#206`) e la parola di attivazione
+  (`#211`) sono a dopo la `1.0.0`.
 
 ---
 
