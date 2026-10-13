@@ -22,6 +22,6 @@ state scartate alternative ragionevoli. Non serve per le decisioni ovvie.
 | [0006](0006-niente-bundler.md) | Niente bundler: moduli ES serviti come sono | Accettato |
 | [0007](0007-parola-di-attivazione-nel-browser.md) | La parola di attivazione si ascolta nel browser | Accettato |
 | [0008](0008-agenti-per-dominio.md) | Agenti per dominio, non un modello con tutti gli strumenti | Proposto |
-| [0009](0009-privacy-della-memoria.md) | Chi vede e chi puo' cambiare cio' che Shinra ricorda | Proposto |
+| [0009](0009-privacy-della-memoria.md) | Chi vede e chi può cambiare ciò che Shinra ricorda | Proposto |
 | [0010](0010-la-conversazione-si-conserva.md) | Si conserva la conversazione, e in che forma | Proposto |
-| [0011](0011-canali-esterni.md) | Canali esterni: cosa puo' passare da un servizio di terzi | Proposto |
+| [0011](0011-canali-esterni.md) | Canali esterni: cosa può passare da un servizio di terzi | Proposto |
