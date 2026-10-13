@@ -1,0 +1,74 @@
+# Il corpus del banco della memoria (#269).
+#
+# `ricordi`: quello che la casa sa. `domande`: cosa si chiede, e quali ricordi servono per rispondere (`attesi`).
+# Una domanda con `attesi: []` non ha risposta fra i ricordi: il recupero giusto e' non trovare niente.
+# `tipo` serve solo a leggere i risultati per categoria.
+
+ricordi:
+  - {id: r01, testo: "La password del wifi di casa e' Girasole2024"}
+  - {id: r02, testo: "Il router si trova nello studio, sopra la libreria"}
+  - {id: r03, testo: "La caldaia e' una Vaillant, l'ultima revisione e' stata a marzo"}
+  - {id: r04, testo: "Il codice del cancello e' 4471"}
+  - {id: r05, testo: "Marco, il figlio maggiore, va a dormire alle 22"}
+  - {id: r06, testo: "Sofia e' allergica alle arachidi"}
+  - {id: r07, testo: "La cena in famiglia e' alle 20 e 30 di solito"}
+  - {id: r08, testo: "Il cane si chiama Briciola e si porta fuori alle 7 e alle 19"}
+  - {id: r09, testo: "I rifiuti dell'organico escono il lunedi e il giovedi sera"}
+  - {id: r10, testo: "La carta si ritira il martedi mattina"}
+  - {id: r11, testo: "La lavatrice e' in bagno e finisce il ciclo in due ore"}
+  - {id: r12, testo: "Il termostato del salotto sta a 20 gradi di giorno e 18 di notte"}
+  - {id: r13, testo: "Le tapparelle della camera da letto si chiudono al tramonto"}
+  - {id: r14, testo: "L'idraulico di fiducia e' Rossi, numero 333 1234567"}
+  - {id: r15, testo: "La macchina elettrica si carica di notte nel box"}
+  - {id: r16, testo: "Alessio lavora da casa il mercoledi e il venerdi"}
+  - {id: r17, testo: "La luce del corridoio si accende da sola dopo il tramonto"}
+  - {id: r18, testo: "Il medico di famiglia e' la dottoressa Bianchi, studio in via Roma"}
+  - {id: r19, testo: "L'aspirapolvere robot passa il martedi e il sabato alle 10"}
+  - {id: r20, testo: "Il codice dell'allarme non si scrive qui: lo sa solo chi vive in casa"}
+  - {id: r21, testo: "La televisione del salotto e' una LG, il telecomando e' nel cassetto"}
+  - {id: r22, testo: "In taverna c'e' il pannello del fotovoltaico con l'inverter"}
+  - {id: r23, testo: "Il giardiniere viene ogni due settimane il sabato"}
+  - {id: r24, testo: "Il compleanno di Sofia e' il 14 maggio"}
+  - {id: r25, testo: "Il garage si apre con il telecomando grigio appeso alle chiavi"}
+  - {id: r26, testo: "La stanza degli ospiti ha il letto matrimoniale e la finestra sul giardino"}
+  - {id: r27, testo: "Marco ha il corso di nuoto il giovedi alle 17"}
+  - {id: r28, testo: "La filodiffusione si comanda dall'app della cucina"}
+  - {id: r29, testo: "Il contratto della luce scade a dicembre"}
+  - {id: r30, testo: "La stufa a pellet in soggiorno si accende solo a mano"}
+
+domande:
+  # --- dirette: le parole della domanda sono quelle del ricordo
+  - {id: d01, tipo: diretta, domanda: "Qual e' la password del wifi?", attesi: [r01]}
+  - {id: d02, tipo: diretta, domanda: "Dov'e' il router?", attesi: [r02]}
+  - {id: d03, tipo: diretta, domanda: "Qual e' il codice del cancello?", attesi: [r04]}
+  - {id: d04, tipo: diretta, domanda: "Chi e' allergico alle arachidi?", attesi: [r06]}
+  - {id: d05, tipo: diretta, domanda: "Quando escono i rifiuti dell'organico?", attesi: [r09]}
+  - {id: d06, tipo: diretta, domanda: "Come si chiama il cane?", attesi: [r08]}
+  # --- con altre parole: serve il significato, non il confronto testuale
+  - {id: d07, tipo: parafrasi, domanda: "Come mi collego a internet?", attesi: [r01]}
+  - {id: d08, tipo: parafrasi, domanda: "A che ora va a letto il ragazzo?", attesi: [r05]}
+  - {id: d09, tipo: parafrasi, domanda: "Quando passa il camion della carta?", attesi: [r10]}
+  - {id: d10, tipo: parafrasi, domanda: "Chi chiamo se perde un tubo?", attesi: [r14]}
+  - {id: d11, tipo: parafrasi, domanda: "Quanto e' calda la casa la notte?", attesi: [r12]}
+  - {id: d12, tipo: parafrasi, domanda: "Quando si ricarica l'auto?", attesi: [r15]}
+  # --- numeri e nomi propri: il confronto testuale vince sui vettori
+  - {id: d13, tipo: numero, domanda: "Il codice 4471 a cosa serve?", attesi: [r04]}
+  - {id: d14, tipo: numero, domanda: "Chi e' Rossi?", attesi: [r14]}
+  - {id: d15, tipo: numero, domanda: "Cosa c'e' alle 22?", attesi: [r05]}
+  # --- due ricordi insieme
+  - {id: d16, tipo: doppia, domanda: "Cosa devo portare fuori il giovedi?", attesi: [r09, r27]}
+  - {id: d17, tipo: doppia, domanda: "Quando viene qualcuno a occuparsi del giardino o delle pulizie?", attesi: [r23, r19]}
+  # --- senza risposta: non c'e' nulla da ricordare, e non deve uscire rumore
+  - {id: d18, tipo: senza_risposta, domanda: "Che tempo fa domani?", attesi: []}
+  - {id: d19, tipo: senza_risposta, domanda: "Raccontami una barzelletta", attesi: []}
+  - {id: d20, tipo: senza_risposta, domanda: "Quanto fa 12 per 12?", attesi: []}
+  # --- ambigue: il ricordo c'e' ma la frase e' vaga
+  - {id: d21, tipo: ambigua, domanda: "A che ora e' la cosa?", attesi: []}
+  - {id: d22, tipo: ambigua, domanda: "Dov'e' quello?", attesi: []}
+  # --- delicato: il ricordo dice di non scrivere il codice
+  - {id: d23, tipo: delicata, domanda: "Qual e' il codice dell'allarme?", attesi: [r20]}
+  - {id: d24, tipo: delicata, domanda: "Dimmi la password del wifi degli ospiti", attesi: [r01]}
+
+# Conversazioni per la compressione della storia (#255, #256): non ancora usate.
+# Si aggiungeranno qui con i fatti chiave che un riassunto deve conservare.
+conversazioni: []
