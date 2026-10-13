@@ -40,6 +40,16 @@ logger = logging.getLogger("Shinra.Conoscenza")
 LOTTO = 32
 
 
+ESTRATTO_MASSIMO = 90
+
+
+def _entrato(fatto: dominio.Fatto) -> dict[str, str]:
+    """Come un ricordo si mostra a chi ha chiesto: l'identificativo, la categoria e l'inizio del testo."""
+    testo = " ".join(fatto.testo.split())
+    estratto = testo if len(testo) <= ESTRATTO_MASSIMO else testo[: ESTRATTO_MASSIMO - 1].rstrip() + "…"
+    return {"id": fatto.identificativo, "categoria": fatto.categoria, "estratto": estratto}
+
+
 @dataclass(frozen=True)
 class Recuperati:
     """Cosa il recupero ha scelto per **una** domanda: il testo per il prompt e quali fatti ci sono entrati.
@@ -50,6 +60,9 @@ class Recuperati:
 
     testo: str
     fatti: list[Mapping[str, Any]] = field(default_factory=list)
+    # Tutto cio' che e' entrato nel prompt, anche quando si mandano tutti i fatti senza recuperare (#252): identificativo,
+    # categoria, estratto. `fatti` resta cio' che il recupero ha *scelto*, con i punteggi, per il grafo e per il debug.
+    entrati: list[Mapping[str, str]] = field(default_factory=list)
 
 
 class ServizioConoscenza:
@@ -162,7 +175,7 @@ class ServizioConoscenza:
             # Pochi fatti: si manda tutto, come prima. Nessuna chiamata di
             # embedding, nessuna latenza aggiunta, nessun rischio di
             # lasciare fuori quello giusto.
-            return Recuperati(dominio.tutti_come_prompt(fatti))
+            return Recuperati(dominio.tutti_come_prompt(fatti), [], [_entrato(f) for f in fatti])
 
         vettore_domanda: Optional[Sequence[float]] = None
         if any(f.vettore for f in fatti):
@@ -178,7 +191,7 @@ class ServizioConoscenza:
             # riempirebbe il prompt di rumore.
             return Recuperati("", spiegati)
 
-        return Recuperati(dominio.come_prompt(trovati), spiegati)
+        return Recuperati(dominio.come_prompt(trovati), spiegati, [_entrato(t.fatto) for t in trovati])
 
     async def per_la_domanda(self, domanda: str) -> str:
         """Come `recupera`, ma solo il testo; ricorda i fatti per `fatti_usati()` (la vista di debug)."""

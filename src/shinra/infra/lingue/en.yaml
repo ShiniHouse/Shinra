@@ -448,6 +448,20 @@ Is that right? Answer «yes» and I'll save everything, «no» to drop everythin
     }}
   sistema_estrazione: "Answer only with valid JSON. Do not add markdown or explanations."
 
+# What looks like an instruction aimed at Shinra, in a text about to become a memory (#264). Regular expressions,
+# case-insensitive. A text that contains one never becomes an active memory.
+sospetto:
+  - '\b(ignore|forget|disregard|override)\b.{0,40}\b(instruction|rule|previous|prior|limit|restriction)'
+  - '\b(from now on|from this moment|henceforth|going forward)\b'
+  - '\bwithout\b.{0,15}\b(confirmation|asking|pin|code|authori[sz]ation|permission)'
+  - '\b(you are now|pretend to be|act as|behave as|you must become)\b'
+  - '\b(system prompt|system instructions|developer message)\b'
+  - '\b(run|call|execute|invoke|use)\b.{0,25}\b(tool|command|function)\b'
+  - '\b(reveal|show|print|send|tell me|disclose)\b.{0,30}\b(password|code|pin|key|token|secret)'
+  - '\b(always|never)\b.{0,15}\b(obey|answer|comply|respond)\b'
+  - '\b(developer mode|jailbreak|root access|absolute admin)\b'
+  - '\b(disable|turn off|skip|bypass)\b.{0,25}\b(alarm|security|confirmation|checks|filters)'
+
 messaggi:
   serratura_stato: "{nome} is {stato}."
   serratura_stato_locked: "locked"

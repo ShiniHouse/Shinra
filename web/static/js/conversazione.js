@@ -18,7 +18,7 @@ function appendUserMessage(text) {
     container.scrollTop = container.scrollHeight;
 }
 
-function appendAssistantMessage(text, actions = []) {
+function appendAssistantMessage(text, actions = [], ricordi = []) {
     const container = document.getElementById('messages-container');
     const div = document.createElement('div');
     div.className = 'flex gap-3 max-w-2xl';
@@ -32,6 +32,20 @@ function appendAssistantMessage(text, actions = []) {
                         _html`<span class="px-2 py-0.5 rounded bg-indigo-950/70 border border-indigo-700/50 text-indigo-300 text-xs font-mono">⚡ ${a.tool}</span>`,
                 )}
             </div>
+        `;
+    }
+
+    // Cosa sapeva Shinra mentre rispondeva (#252): non un'etichetta di debug, la prima domanda di chi non si fida.
+    let ricordiUsati = _grezzo('');
+    if (ricordi && ricordi.length > 0) {
+        ricordiUsati = _html`
+            <details class="mt-2.5 pt-2 border-t border-slate-700/60 text-xs text-slate-400" data-ricordi-usati>
+                <summary class="cursor-pointer select-none hover:text-slate-200">${ricordi.length === 1 ? 'Ho usato 1 ricordo' : `Ho usato ${ricordi.length} ricordi`}</summary>
+                <ul class="mt-1.5 space-y-1 list-disc list-inside">
+                    ${ricordi.map((r) => _html`<li><span class="text-slate-500">${r.categoria}</span> · ${r.estratto}</li>`)}
+                </ul>
+                <button data-gesto="switchTab" data-testo="knowledge" class="mt-1.5 text-amber-400 hover:underline">Apri i ricordi</button>
+            </details>
         `;
     }
 
@@ -55,6 +69,7 @@ function appendAssistantMessage(text, actions = []) {
             </div>
             <p class="whitespace-pre-line">${text}</p>
             ${azioni}
+            ${ricordiUsati}
         </div>
     `;
     container.appendChild(div);
@@ -193,7 +208,7 @@ export async function handleSend(e) {
             return;
         }
         const data = await res.json();
-        appendAssistantMessage(data.response, data.actions);
+        appendAssistantMessage(data.response, data.actions, data.ricordi_usati);
         if (data.actions) data.actions.forEach((a) => logAction(a.tool, a.args, a.result));
     } catch (err) {
         hideTypingIndicator();
