@@ -33,6 +33,7 @@ import pytest
 
 from shinra.domain import recupero as dominio
 from shinra.infra.db import depositi
+from shinra.infra.db.vettori_in_cache import vettori_in_cache
 from shinra.services.conoscenza import ServizioConoscenza
 
 FATTI = [
@@ -594,3 +595,84 @@ async def test_la_risposta_della_chat_porta_i_ricordi_usati(monkeypatch):
     esito = await ShinraAgent().process_user_input("dove si trova la caldaia di casa")
 
     assert esito["ricordi_usati"] == [{"id": "k_1", "categoria": "casa", "estratto": "La caldaia"}]
+
+
+# ----------------------------------------------- la cache dei vettori (#248)
+
+
+def _vettori_riletti(monkeypatch):
+    """Conta quante volte si rilegge davvero la tabella dei vettori."""
+    letture = {"n": 0}
+    originale = depositi.embedding.tutti
+
+    def contata():
+        letture["n"] += 1
+        return originale()
+
+    monkeypatch.setattr(depositi.embedding, "tutti", contata)
+    return letture
+
+
+def test_i_vettori_non_si_rileggono_se_la_tabella_non_e_cambiata(monkeypatch):
+    depositi.embedding.salva("k_1", [0.1, 0.2], "m", "i1")
+    depositi.embedding.salva("k_2", [0.3, 0.4], "m", "i2")
+    vettori_in_cache.dimentica()
+    letture = _vettori_riletti(monkeypatch)
+
+    primo = vettori_in_cache.tutti()
+    secondo = vettori_in_cache.tutti()
+    terzo = vettori_in_cache.tutti()
+
+    assert letture["n"] == 1, "i vettori sono stati riletti a ogni richiesta"
+    assert primo is secondo is terzo
+    assert primo["k_1"]["vettore"] == (0.1, 0.2)
+
+
+def test_un_vettore_ricalcolato_invalida_la_cache(monkeypatch):
+    depositi.embedding.salva("k_1", [0.1, 0.2], "m", "i1")
+    vettori_in_cache.dimentica()
+    vettori_in_cache.tutti()
+    letture = _vettori_riletti(monkeypatch)
+
+    depositi.embedding.salva("k_1", [0.9, 0.8], "m", "i1-nuova")
+
+    assert vettori_in_cache.tutti()["k_1"]["vettore"] == (0.9, 0.8)
+    assert letture["n"] == 1
+
+
+def test_un_vettore_aggiunto_o_cancellato_invalida_la_cache():
+    depositi.embedding.salva("k_1", [0.1], "m", "i1")
+    vettori_in_cache.dimentica()
+    assert set(vettori_in_cache.tutti()) == {"k_1"}
+
+    depositi.embedding.salva("k_2", [0.2], "m", "i2")
+    assert set(vettori_in_cache.tutti()) == {"k_1", "k_2"}
+
+    depositi.embedding.cancella("k_1")
+    assert set(vettori_in_cache.tutti()) == {"k_2"}
+
+    depositi.embedding.dimentica_orfani(set())
+    assert vettori_in_cache.tutti() == {}
+
+
+async def test_il_recupero_dopo_aver_cancellato_un_fatto_non_lo_trova_piu(con_ollama):
+    """Il rischio della cache e' rispondere con un ricordo che la casa non sa piu': si prova col servizio intero."""
+    from shinra.infra.data_store import data_store
+
+    for testo, categoria in FATTI:
+        data_store.add_knowledge_item(testo, categoria)
+    riempi(100)
+    servizio = ServizioConoscenza()
+    await servizio.aggiorna_indice()
+
+    prima = await servizio.recupera("dove si trova la caldaia")
+    assert any("cantina" in f["testo"] for f in prima.fatti)
+
+    caldaia = next(f for f in depositi.fatti.elenco() if "caldaia" in f["text"])
+    depositi.fatti.cancella(caldaia["id"])
+    await servizio.aggiorna_indice()
+
+    dopo = await servizio.recupera("dove si trova la caldaia")
+    assert not any(
+        "cantina" in f["testo"] for f in dopo.fatti
+    ), "la cache ha restituito un ricordo cancellato"
