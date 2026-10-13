@@ -26,6 +26,7 @@ Riferimento: issue #32.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, field
 from typing import Any, Mapping, Optional, Sequence
 
 from shinra.domain import recupero as dominio
@@ -36,6 +37,18 @@ logger = logging.getLogger("Shinra.Conoscenza")
 # chiamata sola, e lotti troppo grandi lo tengono occupato mentre qualcuno
 # sta parlando alla casa.
 LOTTO = 32
+
+
+@dataclass(frozen=True)
+class Recuperati:
+    """Cosa il recupero ha scelto per **una** domanda: il testo per il prompt e quali fatti ci sono entrati.
+
+    Si restituisce invece di scriverlo nel servizio: il servizio e' uno solo e le richieste sono tante, due profili
+    che chiedono insieme non devono leggersi i ricordi a vicenda (#247).
+    """
+
+    testo: str
+    fatti: list[Mapping[str, Any]] = field(default_factory=list)
 
 
 class ServizioConoscenza:
@@ -131,8 +144,8 @@ class ServizioConoscenza:
             )
         return fuori
 
-    async def per_la_domanda(self, domanda: str) -> str:
-        """La conoscenza da mettere nel prompt per questa domanda.
+    async def recupera(self, domanda: str) -> Recuperati:
+        """La conoscenza da mettere nel prompt per questa domanda, e i fatti che ci sono entrati.
 
         E' il sostituto di `get_enabled_knowledge_summary()`, e produce la
         stessa forma: cambiare forma insieme al meccanismo vorrebbe dire non
@@ -141,16 +154,15 @@ class ServizioConoscenza:
         from shinra.infra.llm import embedding
 
         fatti = self._con_vettori()
-        self.ultimo_recupero = []
 
         if not fatti:
-            return "Nessuna informazione personalizzata registrata."
+            return Recuperati("Nessuna informazione personalizzata registrata.")
 
         if not dominio.serve_recuperare(len(fatti)):
             # Pochi fatti: si manda tutto, come prima. Nessuna chiamata di
             # embedding, nessuna latenza aggiunta, nessun rischio di
             # lasciare fuori quello giusto.
-            return dominio.tutti_come_prompt(fatti)
+            return Recuperati(dominio.tutti_come_prompt(fatti))
 
         vettore_domanda: Optional[Sequence[float]] = None
         if any(f.vettore for f in fatti):
@@ -158,18 +170,27 @@ class ServizioConoscenza:
             vettore_domanda = calcolati[0] if calcolati else None
 
         trovati = dominio.cerca(domanda, fatti, vettore_domanda)
-        self.ultimo_recupero = dominio.spiega(trovati)
+        spiegati = dominio.spiega(trovati)
 
         if not trovati:
             # Niente di pertinente non e' un errore: la domanda non
             # riguardava la casa. Mandare i primi cinque «meno lontani»
             # riempirebbe il prompt di rumore.
-            return ""
+            return Recuperati("", spiegati)
 
-        return dominio.come_prompt(trovati)
+        return Recuperati(dominio.come_prompt(trovati), spiegati)
+
+    async def per_la_domanda(self, domanda: str) -> str:
+        """Come `recupera`, ma solo il testo; ricorda i fatti per `fatti_usati()` (la vista di debug)."""
+        recuperati = await self.recupera(domanda)
+        self.ultimo_recupero = list(recuperati.fatti)
+        return recuperati.testo
 
     def fatti_usati(self) -> list[Mapping[str, Any]]:
-        """Quali fatti hanno contribuito all'ultima risposta.
+        """Quali fatti hanno contribuito all'**ultima** risposta di chiunque: solo per la vista di debug.
+
+        Con richieste concorrenti e' un'istantanea, non un'attribuzione: chi deve sapere quali fatti sono entrati
+        nella *sua* richiesta usa `recupera()` e legge `Recuperati.fatti` (#247).
 
         Quando l'assistente risponde una cosa strana, la prima domanda e'
         «da dove l'ha presa».
