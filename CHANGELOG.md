@@ -14,7 +14,20 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+---
+
+## [0.7.0] - 2026-10-13 - Rifinitura
+
+Note complete: [`docs/release/v0.7.0.md`](docs/release/v0.7.0.md).
+
 ### Corretto
+- **Un plugin non veniva mai raggiunto** (provato in casa, 2026-10-13). L'agente da' gli strumenti al modello solo se la frase
+  ha una «parola d'azione» del catalogo, e le `parole` di un plugin non contavano: «Tira un dado» non arrivava a nessun agente, il
+  registro restava vuoto e il numero lo inventava il modello. Adesso contano, e il manifesto del dado usa radici corte («dado»,
+  «dadi») invece di frasi intere.
+- **Una risposta sbagliata del modello si autoalimentava** (misurato sul modello vero). Con la storia pulita il modello chiama il
+  dado 3 volte su 3; con una sola risposta inventata fra i messaggi precedenti 0 su 3, e imita quella risposta. Se un plugin e'
+  stato scelto e il modello non chiama lo strumento, l'agente riprova una volta con la sola richiesta, senza storia.
 - **L'intervista non ripete piu' «salto la domanda»** (provato in casa, 2026-10-11). Ogni domanda saltata aveva
   la sua frase, e un solo fatto che rispondeva a due domande si leggeva due volte. Adesso cio' che la casa sa gia'
   si dice una volta sola (anche nei turni dopo), in una frase unica con un solo «salto queste domande», e un fatto

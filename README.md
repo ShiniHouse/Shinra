@@ -6,42 +6,39 @@ Il nome *Shinra* nasce dall'unione concettuale con **Shinigami** (死神 — ent
 
 ---
 
-## 🚧 Stato del progetto — beta, all'ultima release: la `0.6.0`
+## 🚧 Stato del progetto — beta, all'ultima release: la `0.7.0`
 
 Shinra è in **beta** e procede per fasi verso la `1.0.0`. Ogni versione minor
 corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino
 alla `1.0.0` una minor può introdurre modifiche incompatibili.
 
-**L'ultima release è la `0.6.0`**, *Il Cervello*: la casa diventa visibile e più sicura. Un
-grafo che mostra cosa sa e cosa fa Shinra, otto agenti che dividono il lavoro del modello, le
-azioni delicate — serrature, allarme, garage — che non partono mai sulla parola del modello,
-e le notifiche push attivabili dal telefono. Note complete, con **cosa è stato provato in una
-casa vera e cosa no**: [`docs/release/v0.6.0.md`](docs/release/v0.6.0.md).
+**L'ultima release è la `0.7.0`**, *Rifinitura*: la casa impara a parlare con chi ci vive. L'intervista di
+apprendimento fa una domanda per volta, non chiede ciò che la casa sa già, dà un nome ai dispositivi veri e propone
+routine controllate sulla casa vera; i plugin hanno un manifesto con permessi dichiarati; timer e promemoria si
+capiscono anche in inglese. Note complete, con **cosa è stato provato in una casa vera e cosa no**:
+[`docs/release/v0.7.0.md`](docs/release/v0.7.0.md).
 
-**Dentro la `0.6.0`:**
+**Dentro la `0.7.0`:**
 
-- **Il Cervello** (#185–#189): il grafo di stanze, dispositivi, alias, routine, regole, conoscenza,
-  strumenti e agenti, con lo stato dei sistemi e il racconto di cosa fa Shinra mentre lavora.
-  Guida: [`docs/CERVELLO.md`](docs/CERVELLO.md).
-- **Agenti di dominio e un router** (#190, [ADR 0008](docs/adr/0008-agenti-per-dominio.md), *Proposto*):
-  otto agenti, ciascuno con i propri strumenti; uno strumento non dichiarato non parte nemmeno
-  se il modello lo nomina. Con il modello di casa (`qwen2.5:3b`, CPU senza scheda grafica):
-  strumento giusto 79,8% invece di 72,8%, 28,7 s a richiesta invece di 131. **Non raggiunge le
-  soglie dell'ADR**: il modello è un di più, e comandi, regole e timer funzionano senza.
-- **Le azioni sensibili chiedono sempre conferma** (#192): serrature, allarme, garage e script.
-  Provate dai test; **non** in una casa vera (non c'era una serratura).
-- **Un banco di prova del modello** (#183) che ha trovato e fatto correggere cinque difetti.
-- **Le notifiche push si attivano dal dispositivo** (#29): provate su un iPhone vero.
-- **Verificato in casa** (#195): una regola a un orario e una regola su un timer che spegne una
-  presa da sola. Lo scatto vero di una regola sul sole non è ancora stato visto.
-- **La pagina delle automazioni spiega cosa è un'automazione e cosa una routine.**
+- **L'intervista, rifatta** (#209, #210): una domanda per volta, niente domande sul già noto, **una conferma per
+  argomento** con un riepilogo numerato («sì», «no», «togli 2»), e niente entra nel database senza il «sì».
+- **Nomi ai dispositivi veri e routine dall'abitudine** (#210): il nome si salva solo sull'identificativo che ha
+  scritto Home Assistant; la routine proposta passa da quattro filtri e da una **prova a secco** che non tocca la casa.
+- **I plugin** (#193, [`docs/PLUGIN.md`](docs/PLUGIN.md)): manifesto e permessi dichiarati, **solo codice tuo, dentro il
+  processo**; serrature, allarme e script non si possono dichiarare.
+- **Le lingue** (#205, #207): timer e promemoria in inglese, l'intervista nella lingua del profilo, e la lingua di chi
+  parla che arriva agli strumenti (serratura, lettore multimediale, aspirapolvere, ventilatore).
+- **Le guide d'uso lette da un familiare** (#208): tutto chiaro.
 
-**Cosa la `0.6.0` non fa, e dove è scritto.** I piani a più passaggi, il modello esterno
-opzionale, Ollama su un'altra macchina, l'add-on per Home Assistant OS e gli aiutanti locali di
-sviluppo, e anche la parola di attivazione (#211) e le etichette della dashboard in due lingue
-(#206), sono **dopo la `1.0.0`**. Timer e promemoria in più lingue (#205), l'intervista che fa
-una domanda per volta (#209, #210) e il collaudo delle guide (#208) sono nella **`0.7.0`**. La `0.8.0`, *Memoria
-viva*, viene dopo. Il quadro completo è nella [ROADMAP](docs/ROADMAP.md), e [qui sotto](#-dove-sta-andando) in breve.
+**Cosa la `0.7.0` non fa, e dove è scritto.** Le etichette della dashboard in due lingue (#206), la parola di
+attivazione (#211) e gli altri strumenti nella lingua di chi parla (#334) sono **dopo la `1.0.0`**; i piani a più
+passaggi, il modello esterno, Ollama su un'altra macchina, l'add-on per Home Assistant OS e gli aiutanti di sviluppo
+anche. I **luoghi** (più abitazioni e il «dove sei», con le coordinate di smartphone e PC) sono nella **`0.8.0`**,
+*Memoria viva*, insieme alla memoria. Il quadro completo è nella [ROADMAP](docs/ROADMAP.md), e [qui
+sotto](#-dove-sta-andando) in breve.
+
+**Dentro la `0.6.0`** *(la release prima)*: il grafo del Cervello, gli agenti di dominio, le conferme per le azioni
+sensibili e le notifiche push dal telefono. Note: [`docs/release/v0.6.0.md`](docs/release/v0.6.0.md).
 
 La `0.4.0` aveva fatto smettere alla casa di aspettare la domanda: routine che
 partono da sole, la voce che resta in casa, passkey e notifiche push.
@@ -129,6 +126,9 @@ scattare in una casa vera. Note: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.
 >   rifiuta ogni richiesta.
 > - I segreti rimasti in `config/config.yaml` vengono spostati in `.env` al
 >   primo avvio e cancellati da lì.
+> - **Dalla `0.6.0` alla `0.7.0` non c'è nessuna migrazione.** Il caricatore delle lingue si è spostato in
+>   `infra/lingue` (conta solo a chi lo importa da fuori); due opzioni nuove, entrambe facoltative:
+>   `plugin.abilitati` e `assistant.intervista_conferma`.
 > - **Dalla `0.5.0` alla `0.6.0` non c'è nessuna migrazione.** Con gli agenti conviene alzare il
 >   contesto del modello: `llm.num_ctx: 4096` in `config/config.yaml` (vedi
 >   [`docs/AGENTI.md`](docs/AGENTI.md)). Le notifiche push si attivano da Impostazioni → Notifiche.
@@ -173,7 +173,7 @@ Il traguardo è la `1.0.0`, e il cammino ha un ordine. Ogni fase è rilasciabile
 | Fase | Tema | Cosa porta |
 | :--- | :--- | :--- |
 | **`0.6.0`** *(rilasciata l'8 ottobre 2026)* | **Il Cervello** | Il grafo vivo della casa, le azioni sensibili — serrature, allarme, garage — che chiedono sempre conferma, un banco di prova che misura quale modello sceglie lo strumento giusto, gli agenti di dominio, le notifiche push dal telefono |
-| **`0.7.0`** | **Rifinitura** | Le lingue (dashboard, timer, messaggi), un'intervista che fa una domanda per volta, la parola di attivazione, i plugin con permessi dichiarati. Piani a più passaggi, modello esterno opzionale, Ollama su un'altra macchina, l'add-on per Home Assistant OS e gli aiutanti locali sono **dopo la `1.0.0`** |
+| **`0.7.0`** *(rilasciata il 13 ottobre 2026)* | **Rifinitura** | L'intervista rifatta (una domanda per volta, nomi ai dispositivi veri, routine controllate sulla casa vera, una conferma per argomento), i plugin con permessi dichiarati, timer e promemoria in inglese e gli strumenti nella lingua di chi parla (in parte) |
 | **`0.8.0`** | **Memoria viva** | Shinra ricorda — e tu vedi cosa, lo correggi, glielo fai dimenticare. La storia vecchia diventa un riassunto, di notte la casa «ci ripensa» **proponendo** (mai decidendo), e un canale di messaggistica esterno è un'opzione spenta di default |
 | **`1.0.0`** | **Stabile** | Se non ci sono intoppi, subito dopo: trenta giorni di esercizio reale senza regressioni, installazione da zero verificata, nessun difetto grave aperto |
 
