@@ -13,6 +13,16 @@ logger = logging.getLogger(__name__)
 _NON_TOOL_MODELS = {"gemma", "gemma2", "gemma3", "deepseek-r1", "phi", "phi3"}
 
 
+def risposta_massima() -> int:
+    """Quanti token al massimo il modello puo' scrivere in una risposta (0 nelle impostazioni = 150)."""
+    return settings.llm.max_tokens if getattr(settings.llm, "max_tokens", 0) else 150
+
+
+def contesto_in_uso() -> int:
+    """Il `num_ctx` che si manda a Ollama: quello configurato, o 1024 (risposte brevi) / 2048."""
+    return settings.llm.num_ctx or (1024 if risposta_massima() <= 250 else 2048)
+
+
 class OllamaClient:
     def __init__(self, base_url: Optional[str] = None, model: Optional[str] = None):
         self._base_url = base_url
@@ -164,7 +174,7 @@ class OllamaClient:
         max_tok = (
             settings.llm.max_tokens if hasattr(cfg.llm, "max_tokens") and settings.llm.max_tokens else 150
         )
-        num_ctx = settings.llm.num_ctx or (1024 if max_tok <= 250 else 2048)
+        num_ctx = contesto_in_uso()
         payload = {
             "model": curr_model,
             "messages": messages,
