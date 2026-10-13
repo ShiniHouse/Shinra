@@ -120,7 +120,7 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 | :--- | :--- | :--- | :--- |
 | GET | `/api/knowledge` | sessione aperta | Elenca i fatti della conoscenza di casa. |
 | POST | `/api/knowledge` | permesso `conoscenza.scrivi` | Aggiunge o aggiorna un fatto della conoscenza di casa. |
-| DELETE | `/api/knowledge/{item_id}` | permesso `conoscenza.scrivi` | Cancella un fatto della conoscenza di casa. |
+| DELETE | `/api/knowledge/{item_id}` | permesso `conoscenza.scrivi` | Cancella un fatto della conoscenza di casa, con il suo vettore. Il registro scrive che e' successo, non cosa. |
 
 ### `learning`
 
