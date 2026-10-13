@@ -29,11 +29,10 @@ from typing import Any, Optional, Sequence
 
 import yaml
 
-BASE = Path(__file__).resolve().parent.parent
-BANCO = BASE / "banco" / "memoria"
-sys.path.insert(0, str(BASE / "src"))
+from shinra import percorsi
+from shinra.domain import recupero
 
-from shinra.domain import recupero  # noqa: E402
+BANCO = percorsi.RADICE / "banco" / "memoria"
 
 Vettore = Sequence[float]
 
