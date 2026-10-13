@@ -217,7 +217,9 @@ class ShinraAgent:
         # Attiva i tools complessi solo se il messaggio contiene richieste di domotica o ricerca web attiva
         # Le parole che fanno passare gli strumenti al modello, nella lingua di chi parla.
         ACTION_KEYWORDS = lingua.parole_azione
-        needs_action_tools = any(kw in user_text.lower() for kw in ACTION_KEYWORDS)
+        needs_action_tools = any(kw in user_text.lower() for kw in ACTION_KEYWORDS) or agenti.e_di_un_plugin(
+            user_text
+        )
 
         # Gli agenti di dominio (ADR 0008, issue #190): il router guarda la frase e dice
         # quali domini la prendono, e il modello vede soltanto i loro strumenti. Se nessuna
