@@ -376,3 +376,46 @@ def test_un_timer_creato_dall_api_arriva_sul_websocket(archivio, cliente_autenti
     assert evento["dati"]["etichetta"] == "pasta"
     assert "pasta" in evento["frase"]
     assert modulo_timer.timer_engine.get_timers()[0]["completed"] is True
+
+
+# ----------------------------------------------------- il compito giornaliero a ora fissa (#259)
+
+
+async def _niente() -> None:
+    return None
+
+
+async def test_un_compito_giornaliero_scatta_all_ora_fissa(servizio):
+    assert servizio.programma_giornaliero("notte:prova", _niente, ora=3, minuto=30)
+    job = next(j for j in servizio.job_programmati() if j["id"] == "notte:prova")
+    prossima = datetime.fromisoformat(job["prossima_esecuzione"])
+    assert (prossima.hour, prossima.minute) == (3, 30), "l'ora e' quella locale, non quella UTC"
+
+
+async def test_riprogrammare_lo_stesso_compito_non_lo_duplica(servizio):
+    """L'archivio e' persistente: a ogni avvio il compito viene riprogrammato, e deve restare uno."""
+    servizio.programma_giornaliero("notte:prova", _niente, ora=3)
+    servizio.programma_giornaliero("notte:prova", _niente, ora=4)
+    jobs = [j for j in servizio.job_programmati() if j["id"] == "notte:prova"]
+    assert len(jobs) == 1
+    assert datetime.fromisoformat(jobs[0]["prossima_esecuzione"]).hour == 4
+
+
+async def test_un_compito_giornaliero_sopravvive_al_riavvio(archivio):
+    primo = ServizioScheduler()
+    primo.avvia()
+    primo.programma_giornaliero("notte:prova", _niente, ora=2)
+    primo.ferma()
+
+    secondo = ServizioScheduler()
+    secondo.avvia()
+    try:
+        assert any(j["id"] == "notte:prova" for j in secondo.job_programmati())
+    finally:
+        secondo.ferma()
+
+
+async def test_un_orario_impossibile_non_si_programma(servizio):
+    assert servizio.programma_giornaliero("notte:male", _niente, ora=25) is False
+    assert servizio.programma_giornaliero("notte:male", _niente, ora=3, minuto=60) is False
+    assert not any(j["id"] == "notte:male" for j in servizio.job_programmati())
