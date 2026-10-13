@@ -515,6 +515,7 @@ messaggi:
   risultato_operazione: "Result of {tool}: {risultato}. Now write a short, natural reply for the user."
 
 prompt:
+  riprova_strumenti: "Use the right tool to answer the request."
   intro: "You are {assistente}, an intelligent home assistant. Reference city: {citta}."
   adesso: "Today is {adesso}."
   utente_anonimo: "User"

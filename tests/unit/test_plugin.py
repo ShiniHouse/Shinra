@@ -378,3 +378,100 @@ async def test_una_chiacchiera_non_da_strumenti_al_modello(agente_con_dado) -> N
     agente, arrivi = agente_con_dado
     await agente.process_user_input("ciao come stai oggi")
     assert arrivi[0]["tools"] is None
+
+
+# ------------------------- il modello non chiama lo strumento: si riprova una volta, senza la storia
+#
+# Provato il 2026-10-13 sul modello vero (qwen2.5:3b, Ollama del server): con la storia pulita il dado si chiama 3 volte su 3;
+# con una sola risposta inventata fra i messaggi precedenti, 0 su 3, e il modello imita quella risposta.
+
+
+@pytest.fixture
+def agente_che_inventa(monkeypatch):
+    """Il modello finto: con la storia risponde a parole (inventando); con la sola richiesta chiama lo strumento."""
+    from shinra.services.agent import ShinraAgent
+
+    plugin.attiva(percorsi.PLUGIN, ["esempio_dado"])
+    arrivi: list = []
+    impostazioni = {"riprova_chiama": True}
+
+    async def chat(self, messages, tools=None, temperature=None, **k):
+        arrivi.append(
+            {
+                "n": len(messages),
+                "tools": [t["function"]["name"] for t in tools] if tools else None,
+                "t": temperature,
+                "utente": messages[-1]["content"],
+            }
+        )
+        if tools and len(messages) > 2:
+            return {"success": True, "message": {"content": "Il dado giallo e' venuto 5.", "tool_calls": []}}
+        if tools:
+            chiama = (
+                [{"function": {"name": "esempio_dado_tira", "arguments": {"facce": 6}}}]
+                if impostazioni["riprova_chiama"]
+                else []
+            )
+            return {
+                "success": True,
+                "message": {"content": "" if chiama else "Non so.", "tool_calls": chiama},
+            }
+        return {"success": True, "message": {"content": "Ecco il tuo dado.", "tool_calls": []}}
+
+    monkeypatch.setattr("shinra.infra.llm.ollama.OllamaClient.chat", chat)
+    yield ShinraAgent(), arrivi, impostazioni
+
+
+@pytest.mark.asyncio
+async def test_se_il_modello_non_chiama_lo_strumento_si_riprova_senza_storia(agente_che_inventa) -> None:
+    agente, arrivi, _ = agente_che_inventa
+
+    esito = await agente.process_user_input("Tira un dado")
+
+    primo, riprova = arrivi[0], arrivi[1]
+    assert primo["tools"] == ["esempio_dado_tira"] and primo["n"] > 2
+    assert riprova["n"] == 2, "la riprova doveva avere solo il sistema e la richiesta"
+    assert riprova["tools"] == ["esempio_dado_tira"] and riprova["t"] == 0.1
+    assert riprova["utente"] == "Tira un dado", "la riprova ha portato dietro il contesto"
+    assert [a["tool"] for a in esito["actions"]] == ["esempio_dado_tira"]
+    assert "E' uscito" in esito["actions"][0]["result"]["messaggio"], "il numero non l'ha tirato il plugin"
+    assert (
+        esito["response"] == "Ecco il tuo dado."
+    ), "la risposta inventata non doveva arrivare a chi ha chiesto"
+    assert registro.voci(azione="tool.esempio_dado_tira")[0]["dettagli"]["plugin"] == "esempio_dado"
+
+
+@pytest.mark.asyncio
+async def test_se_anche_la_riprova_non_chiama_si_tiene_la_prima_risposta(agente_che_inventa) -> None:
+    agente, arrivi, impostazioni = agente_che_inventa
+    impostazioni["riprova_chiama"] = False
+
+    esito = await agente.process_user_input("Tira un dado")
+
+    assert len(arrivi) == 2, "ha riprovato piu' di una volta"
+    assert esito["actions"] == []
+    assert esito["response"] == "Il dado giallo e' venuto 5."
+
+
+@pytest.mark.asyncio
+async def test_se_il_modello_chiama_lo_strumento_non_si_riprova(agente_con_dado) -> None:
+    agente, arrivi = agente_con_dado
+    await agente.process_user_input("Tira un dado")
+    assert (
+        len(arrivi) == 2
+    ), "la prima chiamata porta lo strumento, la seconda legge il risultato: nessuna riprova"
+
+
+@pytest.mark.asyncio
+async def test_senza_un_plugin_non_si_riprova(monkeypatch) -> None:
+    from shinra.services.agent import ShinraAgent
+
+    arrivi: list = []
+
+    async def chat(self, messages, tools=None, **k):
+        arrivi.append(len(messages))
+        return {"success": True, "message": {"content": "Quale?", "tool_calls": []}}
+
+    monkeypatch.setattr("shinra.infra.llm.ollama.OllamaClient.chat", chat)
+    await ShinraAgent().process_user_input("regola il termostato")
+    assert 2 not in arrivi, "ha riprovato senza storia per una richiesta che non e' di un plugin"

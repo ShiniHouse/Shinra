@@ -551,6 +551,7 @@ messaggi:
 # Il prompt di sistema, a pezzi. La lingua in cui il modello risponde si
 # decide qui: risponde in quella in cui gli si parla.
 prompt:
+  riprova_strumenti: "Usa lo strumento adatto per rispondere alla richiesta."
   intro: "Sei {assistente}, assistente domestico intelligente. Città di riferimento: {citta}."
   adesso: "Oggi è {adesso}."
   utente_anonimo: "Utente"
