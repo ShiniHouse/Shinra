@@ -482,6 +482,20 @@ intervista:
     }}
   sistema_estrazione: "Rispondi solo con JSON valido. Non aggiungere markdown o spiegazioni."
 
+# Cio' che somiglia a un'istruzione rivolta a Shinra, in un testo che sta per diventare un ricordo (#264). Espressioni
+# regolari, senza distinzione di maiuscole. Un testo che ne contiene una non diventa un ricordo attivo.
+sospetto:
+  - '\b(ignora|dimentica|scorda|annulla)\b.{0,40}\b(istruzion|regol|precedent|limit|restrizion)'
+  - '\b(da ora|da adesso|d''ora in poi|d''ora in avanti|da questo momento)\b'
+  - '\bsenza\b.{0,15}\b(conferma|chiedere|pin|codice|autorizzazione|permesso)'
+  - '\b(sei ora|diventa|comportati come|fingi di essere|fai finta di essere|agisci come)\b'
+  - '\b(prompt di sistema|istruzioni di sistema|system prompt)\b'
+  - '\b(esegui|chiama|lancia|usa)\b.{0,25}\b(strumento|tool|comando|funzione)\b'
+  - '\b(rivela|mostra|stampa|invia|dimmi|comunica)\b.{0,30}\b(password|codice|pin|chiave|token|segreto)'
+  - '\b(rispondi|rispondere|obbedisci|obbedire)\b.{0,20}\b(sempre|a chiunque|a qualsiasi)'
+  - '\b(modalita'' sviluppatore|jailbreak|amministratore assoluto)\b'
+  - '\b(disattiva|spegni|ignora|salta)\b.{0,25}\b(allarme|sicurezza|conferma|controlli|filtri)'
+
 messaggi:
   serratura_stato: "{nome} e' {stato}."
   serratura_stato_locked: "chiusa"
