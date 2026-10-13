@@ -94,6 +94,22 @@ def togli_agente(nome: str) -> None:
     AGENTI.pop(nome, None)
 
 
+def e_di_un_plugin(testo: str) -> bool:
+    """Qualche plugin riconosce questa frase con le sue parole?
+
+    L'agente dà gli strumenti al modello solo se la frase contiene una «parola d'azione» del catalogo (accendi,
+    spegni, luce…). Un plugin ha le sue parole (`parole` del manifesto), che il catalogo non conosce: senza questo
+    controllo «tira un dado» non arrivava mai a nessun agente e il modello inventava il numero (provato in casa,
+    2026-10-13: nessuna riga nel registro, il «4» non l'aveva tirato il plugin).
+    """
+    minuscolo = testo.lower()
+    return any(
+        a.parole and any(p and p in minuscolo for p in a.parole)
+        for nome, a in AGENTI.items()
+        if nome.startswith("plugin_")
+    )
+
+
 def scegli(testo: str, lingua: Schemi) -> List[str]:
     """I nomi degli agenti che prendono la richiesta, dal piu' al meno pertinente.
 

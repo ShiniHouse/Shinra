@@ -113,6 +113,28 @@ def test_il_manifesto_dice_tutti_i_problemi_insieme() -> None:
 # ------------------------------------------------------------ il caricamento
 
 
+@pytest.mark.parametrize(
+    "frase",
+    [
+        "Tira il dado",  # detto a voce in casa, il 2026-10-13: con le frasi intere nel manifesto non combaciava
+        "tira un dado per favore",
+        "lancia il dado a 20 facce",
+        "tira i dadi",
+        "fammi tirare un dado",
+        "TIRA IL DADO",
+    ],
+)
+def test_il_dado_si_riconosce_comunque_lo_si_dica(frase) -> None:
+    plugin.attiva(percorsi.PLUGIN, ["esempio_dado"])
+    assert agenti.scegli(frase, schemi("it")) == ["plugin_esempio_dado"], frase
+
+
+@pytest.mark.parametrize("frase", ["accendi la luce del salotto", "che tempo fa domani", "che ore sono"])
+def test_il_dado_non_ruba_le_richieste_degli_altri(frase) -> None:
+    plugin.attiva(percorsi.PLUGIN, ["esempio_dado"])
+    assert "plugin_esempio_dado" not in agenti.scegli(frase, schemi("it")), frase
+
+
 def test_il_plugin_di_esempio_si_carica_e_un_agente_lo_sceglie() -> None:
     caricati, errori = plugin.attiva(percorsi.PLUGIN, ["esempio_dado"])
 
@@ -299,3 +321,60 @@ def test_uno_strumento_di_plugin_scaricato_torna_sensibile(tmp_path) -> None:
     plugin.attiva(tmp_path, ["demo"])
     plugin.disattiva()
     assert sensibilita.classifica("demo_saluta") == sensibilita.SENSIBILE
+
+
+# ------------------------------------- dal messaggio alla riga di registro, per il percorso vero dell'agente
+#
+# Il router da solo (`agenti.scegli`) e' la parte facile. In casa, il 2026-10-13, «Tira un dado» non e' arrivato a
+# nessun agente: l'agente da' gli strumenti al modello solo se la frase contiene una «parola d'azione» del catalogo, e
+# «tira un dado» non ne ha. Il plugin era caricato, il router lo sceglieva, e il modello inventava il numero. I test
+# sopra non lo vedevano perche' non passavano dall'agente.
+
+
+@pytest.fixture
+def agente_con_dado(monkeypatch):
+    """L'agente vero con il modello finto: registra cosa gli arriva e chiama lo strumento che gli si dice."""
+    from shinra.services.agent import ShinraAgent
+
+    plugin.attiva(percorsi.PLUGIN, ["esempio_dado"])
+    arrivi: list = []
+    risposte = [
+        {
+            "success": True,
+            "message": {
+                "content": "",
+                "tool_calls": [{"function": {"name": "esempio_dado_tira", "arguments": {"facce": 6}}}],
+            },
+        },
+        {"success": True, "message": {"content": "Ecco il tuo dado.", "tool_calls": []}},
+    ]
+
+    async def chat(self, messages, tools=None, **k):
+        arrivi.append({"tools": [t["function"]["name"] for t in tools] if tools else None})
+        return risposte[min(len(arrivi) - 1, len(risposte) - 1)]
+
+    monkeypatch.setattr("shinra.infra.llm.ollama.OllamaClient.chat", chat)
+    yield ShinraAgent(), arrivi
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "frase", ["Tira un dado", "Tira il dado", "lancia il dado a 20 facce", "tira i dadi"]
+)
+async def test_il_modello_riceve_lo_strumento_del_dado_e_il_registro_lo_dice(agente_con_dado, frase) -> None:
+    agente, arrivi = agente_con_dado
+
+    esito = await agente.process_user_input(frase)
+
+    assert arrivi[0]["tools"] == ["esempio_dado_tira"], "lo strumento non e' arrivato al modello"
+    assert [a["tool"] for a in esito["actions"]] == ["esempio_dado_tira"]
+    assert "E' uscito" in esito["actions"][0]["result"]["messaggio"], "il numero non l'ha tirato il plugin"
+    voce = registro.voci(azione="tool.esempio_dado_tira")[0]
+    assert voce["dettagli"]["plugin"] == "esempio_dado", "il registro non dice quale plugin ha tirato"
+
+
+@pytest.mark.asyncio
+async def test_una_chiacchiera_non_da_strumenti_al_modello(agente_con_dado) -> None:
+    agente, arrivi = agente_con_dado
+    await agente.process_user_input("ciao come stai oggi")
+    assert arrivi[0]["tools"] is None
