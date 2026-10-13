@@ -218,6 +218,7 @@ class ShinraAgent:
         cronaca.richiesta_al_modello()
         recuperati = await servizio_conoscenza.recupera(richiesta.testo)
         conoscenza = recuperati.testo
+        ricordi_usati = list(recuperati.entrati)
         cronaca.conoscenza_consultata(recuperati.fatti)
 
         # Il prompt di sistema e' sempre lo stesso fra una richiesta e l'altra: cosi' Ollama
@@ -363,6 +364,7 @@ class ShinraAgent:
                         "user": profile.model_dump() if profile else None,
                         "success": True,
                         "agenti": agenti_scelti,
+                        "ricordi_usati": ricordi_usati,
                     }
 
             conversation_messages.append(message)
@@ -403,6 +405,7 @@ class ShinraAgent:
             "actions": actions_taken,
             "user": profile.model_dump() if profile else None,
             "success": True,
+            "ricordi_usati": ricordi_usati,
         }
 
 

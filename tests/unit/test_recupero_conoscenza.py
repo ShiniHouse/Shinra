@@ -532,3 +532,65 @@ async def test_senza_fatti_lo_dice(senza_ollama):
     servizio = ServizioConoscenza()
 
     assert "Nessuna informazione" in await servizio.per_la_domanda("qualunque cosa")
+
+
+# ------------------------------------------- cosa e' entrato nel prompt, per chi ha chiesto (#252)
+
+
+async def test_con_pochi_fatti_si_dice_lo_stesso_cosa_e_entrato(con_ollama):
+    """Sotto la soglia si mandano tutti i fatti e il recupero non sceglie niente: l'indicatore deve dirlo lo stesso."""
+    from shinra.infra.data_store import data_store
+
+    for testo, categoria in FATTI:
+        data_store.add_knowledge_item(testo, categoria)
+
+    recuperati = await ServizioConoscenza().recupera("dove si trova la caldaia")
+
+    assert recuperati.fatti == [], "sotto la soglia il recupero non sceglie"
+    assert len(recuperati.entrati) == len(FATTI)
+    assert {e["categoria"] for e in recuperati.entrati} == {"casa", "famiglia"}
+    assert all(set(e) == {"id", "categoria", "estratto"} for e in recuperati.entrati)
+
+
+async def test_con_molti_fatti_entrano_solo_quelli_scelti(con_ollama):
+    from shinra.infra.data_store import data_store
+
+    for testo, categoria in FATTI:
+        data_store.add_knowledge_item(testo, categoria)
+    riempi(100)
+    servizio = ServizioConoscenza()
+    await servizio.aggiorna_indice()
+
+    recuperati = await servizio.recupera("dove si trova la caldaia")
+
+    assert 0 < len(recuperati.entrati) <= dominio.MASSIMO_FATTI
+    assert any("cantina" in e["estratto"] for e in recuperati.entrati)
+    assert len(recuperati.entrati) == len(recuperati.fatti)
+
+
+async def test_un_estratto_lungo_si_accorcia_e_non_ha_a_capo():
+    from shinra.services.conoscenza import ESTRATTO_MASSIMO, _entrato
+
+    lungo = "parola " * 60 + "\nfine"
+    estratto = _entrato(dominio.Fatto("k_1", lungo, "casa"))["estratto"]
+    assert len(estratto) <= ESTRATTO_MASSIMO and estratto.endswith("…") and "\n" not in estratto
+
+
+async def test_la_risposta_della_chat_porta_i_ricordi_usati(monkeypatch):
+    from shinra.services.agent import ShinraAgent
+    from shinra.services.conoscenza import Recuperati, servizio_conoscenza
+
+    async def recupera(domanda):
+        return Recuperati(
+            "- La caldaia e' in cantina", [], [{"id": "k_1", "categoria": "casa", "estratto": "La caldaia"}]
+        )
+
+    async def chat(self, messages, tools=None, temperature=None, **k):
+        return {"success": True, "message": {"content": "In cantina.", "tool_calls": []}}
+
+    monkeypatch.setattr(servizio_conoscenza, "recupera", recupera)
+    monkeypatch.setattr("shinra.infra.llm.ollama.OllamaClient.chat", chat)
+
+    esito = await ShinraAgent().process_user_input("dove si trova la caldaia di casa")
+
+    assert esito["ricordi_usati"] == [{"id": "k_1", "categoria": "casa", "estratto": "La caldaia"}]
