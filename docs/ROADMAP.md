@@ -330,7 +330,7 @@ e' una demo.
 
 ---
 
-## v0.7.0 — Rifinitura — rilasciata il 12 ottobre 2026
+## v0.7.0 — Rifinitura — rilasciata il 13 ottobre 2026
 
 > Si finisce quello che la `0.6.0` ha lasciato aperto — le lingue, l'intervista,
 > la voce, i plugin. Resta locale, e il modello e' **un di piu'**: comandi, regole,

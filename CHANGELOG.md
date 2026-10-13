@@ -16,7 +16,7 @@ installabile e utilizzabile.
 
 ---
 
-## [0.7.0] - 2026-10-12 - Rifinitura
+## [0.7.0] - 2026-10-13 - Rifinitura
 
 Note complete: [`docs/release/v0.7.0.md`](docs/release/v0.7.0.md).
 

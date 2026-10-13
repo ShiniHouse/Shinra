@@ -173,7 +173,7 @@ Il traguardo è la `1.0.0`, e il cammino ha un ordine. Ogni fase è rilasciabile
 | Fase | Tema | Cosa porta |
 | :--- | :--- | :--- |
 | **`0.6.0`** *(rilasciata l'8 ottobre 2026)* | **Il Cervello** | Il grafo vivo della casa, le azioni sensibili — serrature, allarme, garage — che chiedono sempre conferma, un banco di prova che misura quale modello sceglie lo strumento giusto, gli agenti di dominio, le notifiche push dal telefono |
-| **`0.7.0`** *(rilasciata il 12 ottobre 2026)* | **Rifinitura** | L'intervista rifatta (una domanda per volta, nomi ai dispositivi veri, routine controllate sulla casa vera, una conferma per argomento), i plugin con permessi dichiarati, timer e promemoria in inglese e gli strumenti nella lingua di chi parla (in parte) |
+| **`0.7.0`** *(rilasciata il 13 ottobre 2026)* | **Rifinitura** | L'intervista rifatta (una domanda per volta, nomi ai dispositivi veri, routine controllate sulla casa vera, una conferma per argomento), i plugin con permessi dichiarati, timer e promemoria in inglese e gli strumenti nella lingua di chi parla (in parte) |
 | **`0.8.0`** | **Memoria viva** | Shinra ricorda — e tu vedi cosa, lo correggi, glielo fai dimenticare. La storia vecchia diventa un riassunto, di notte la casa «ci ripensa» **proponendo** (mai decidendo), e un canale di messaggistica esterno è un'opzione spenta di default |
 | **`1.0.0`** | **Stabile** | Se non ci sono intoppi, subito dopo: trenta giorni di esercizio reale senza regressioni, installazione da zero verificata, nessun difetto grave aperto |
 
