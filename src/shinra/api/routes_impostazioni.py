@@ -47,8 +47,11 @@ async def save_knowledge(item: Dict[str, Any]):
 
 @router.delete("/knowledge/{item_id}", dependencies=[Depends(richiedi_permesso(permessi.SCRIVI_CONOSCENZA))])
 async def delete_knowledge(item_id: str):
-    """Cancella un fatto della conoscenza di casa."""
-    return {"success": data_store.cancella_fatto(item_id)}
+    """Cancella un fatto della conoscenza di casa, con il suo vettore. Il registro scrive che e' successo, non cosa."""
+    cancellato = data_store.cancella_fatto(item_id)
+    if cancellato:
+        registro.registra("ricordo.cancellato", dettagli={"id": item_id})
+    return {"success": cancellato}
 
 
 # --- SOURCES (RSS) ENDPOINTS ---

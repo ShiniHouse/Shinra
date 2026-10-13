@@ -91,7 +91,15 @@ class DataStore:
         return depositi.fatti.salva(dati)
 
     def cancella_fatto(self, identificativo: str) -> bool:
-        return depositi.fatti.cancella(identificativo)
+        """Cancella un ricordo **e il suo vettore**.
+
+        Un vettore e' una copia numerica del testo: lasciarlo fino alla prossima reindicizzazione vorrebbe dire che
+        «dimentica» non ha dimenticato (#253).
+        """
+        cancellato = depositi.fatti.cancella(identificativo)
+        if cancellato:
+            depositi.embedding.cancella(identificativo)
+        return cancellato
 
     def add_knowledge_item(
         self, text: str, category: str = "generale", enabled: bool = True
