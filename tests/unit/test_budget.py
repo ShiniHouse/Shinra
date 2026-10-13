@@ -87,23 +87,42 @@ def test_l_ordine_dichiarato_e_gli_intoccabili() -> None:
     assert not set(budget.ORDINE_DI_TAGLIO) & set(budget.INTOCCABILI)
 
 
-def test_l_agente_scrive_nel_log_quanto_pesa_il_prompt(monkeypatch, caplog) -> None:
+def test_l_agente_scrive_nel_log_quanto_pesa_il_prompt(monkeypatch) -> None:
     """Il prompt si misura a ogni richiesta che arriva al modello, e un prompt che non ci sta lo dice con un avviso."""
+    from shinra.services.agent import ShinraAgent
+
+    scritte: list = []
+
+    class Registro:
+        def __getattr__(self, livello):
+            return lambda messaggio, *a, **k: scritte.append((livello, str(messaggio)))
+
+    monkeypatch.setattr("shinra.services.agent.logger", Registro())
+    monkeypatch.setattr("shinra.services.agent.contesto_in_uso", lambda: 256)
+    messaggi = [
+        {"role": "system", "content": "s" * 3 * 400},
+        {"role": "user", "content": "ciao come stai oggi"},
+    ]
+    ShinraAgent._misura_il_prompt(messaggi, [], "")
+
+    righe = [(liv, m) for liv, m in scritte if "sistema=" in m]
+    assert righe, "nessuna riga sul peso del prompt"
+    livello, riga = righe[0]
+    assert "totale=" in riga and "domanda=" in riga
+    assert livello == "warning" and "SFORA" in riga, "con 256 di contesto doveva sforare"
+
+
+def test_l_agente_misura_il_prompt_a_ogni_richiesta_al_modello(monkeypatch) -> None:
     import asyncio
-    import logging
 
     from shinra.services.agent import ShinraAgent
+
+    viste: list = []
+    monkeypatch.setattr(ShinraAgent, "_misura_il_prompt", staticmethod(lambda m, s, c: viste.append(len(m))))
 
     async def chat(self, messages, tools=None, temperature=None, **k):
         return {"success": True, "message": {"content": "Ciao.", "tool_calls": []}}
 
     monkeypatch.setattr("shinra.infra.llm.ollama.OllamaClient.chat", chat)
-    monkeypatch.setattr("shinra.services.agent.contesto_in_uso", lambda: 256)
-    with caplog.at_level(logging.INFO, logger="Shinra"):
-        asyncio.run(ShinraAgent().process_user_input("ciao come stai oggi"))
-    righe = [r for r in caplog.records if "sistema=" in r.getMessage()]
-    assert righe, "nessuna riga sul peso del prompt"
-    assert "totale=" in righe[0].getMessage() and "domanda=" in righe[0].getMessage()
-    assert (
-        righe[0].levelno == logging.WARNING and "SFORA" in righe[0].getMessage()
-    ), "con 256 di contesto doveva sforare"
+    asyncio.run(ShinraAgent().process_user_input("Tira un dado e dimmi quanto fa la somma di due numeri"))
+    assert viste, "il prompt non e' stato misurato"
