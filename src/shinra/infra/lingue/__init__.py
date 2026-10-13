@@ -64,6 +64,7 @@ RICHIESTE: Tuple[Tuple[str, ...], ...] = (
     ("tempo",),
     ("timer",),
     ("intervista",),
+    ("sospetto",),
 )
 
 # Le voci della sezione timer: le frasi che chiedono un timer o un promemoria (#205).
@@ -230,6 +231,8 @@ class Schemi:
     timer: Mapping[str, Any]
     # L'intervista di apprendimento: passi, frasi, parole di si'/no e prompt (#207).
     intervista: Mapping[str, Any]
+    # Cio' che somiglia a un ordine rivolto a Shinra, dentro un testo che sta per diventare un ricordo (#264).
+    sospetto: Tuple[re.Pattern, ...]
     messaggi: Mapping[str, str]
     prompt: Mapping[str, str]
 
@@ -351,6 +354,7 @@ def _compila(lingua: str) -> Schemi:
         tempo=tempo,
         timer=dict(dati["timer"]),
         intervista=dict(dati["intervista"]),
+        sospetto=tuple(re.compile(str(p), re.IGNORECASE) for p in dati["sospetto"]),
         messaggi={k: str(v) for k, v in dati["messaggi"].items()},
         prompt={k: str(v) for k, v in dati["prompt"].items()},
     )
