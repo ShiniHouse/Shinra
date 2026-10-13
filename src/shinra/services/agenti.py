@@ -94,6 +94,11 @@ def togli_agente(nome: str) -> None:
     AGENTI.pop(nome, None)
 
 
+def schemi_dei_plugin(nomi: Sequence[str]) -> List[Dict[str, Any]]:
+    """Gli schemi dei soli plugin fra questi agenti (per riprovare con la richiesta nuda)."""
+    return [schema for n in nomi if n.startswith("plugin_") and n in AGENTI for schema in AGENTI[n].schemi]
+
+
 def e_di_un_plugin(testo: str) -> bool:
     """Qualche plugin riconosce questa frase con le sue parole?
 

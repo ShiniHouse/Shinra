@@ -72,6 +72,28 @@ class ShinraAgent:
         with come_modello():
             return await execute_tool(nome, argomenti)
 
+    async def _riprova_senza_storia(
+        self, testo: str, agenti_scelti: List[str], lingua: Any
+    ) -> List[Dict[str, Any]]:
+        """Le chiamate che il modello fa alla sola richiesta, con i soli strumenti dei plugin scelti (o vuota)."""
+        schemi_plugin = agenti.schemi_dei_plugin(agenti_scelti)
+        if not schemi_plugin:
+            return []
+        logger.info(
+            "[Shinra] Nessuno strumento chiamato: riprovo senza la storia (%s)", ", ".join(agenti_scelti)
+        )
+        risposta = await self.ollama.chat(
+            messages=[
+                {"role": "system", "content": lingua.prompt_di("riprova_strumenti")},
+                {"role": "user", "content": testo},
+            ],
+            tools=schemi_plugin,
+            temperature=0.1,
+        )
+        if not risposta.get("success"):
+            return []
+        return list((risposta.get("message") or {}).get("tool_calls") or [])
+
     async def process_user_input(
         self,
         user_text: str,
@@ -255,6 +277,17 @@ class ShinraAgent:
             message = response.get("message", {})
             tool_calls = message.get("tool_calls", [])
             content = message.get("content", "")
+
+            # Gli strumenti di un plugin c'erano e il modello non ne ha chiamato nessuno: si riprova UNA volta con la
+            # sola richiesta, senza la storia. Provato il 2026-10-13: con la storia pulita il modello chiama il dado
+            # 3 volte su 3, con una sola risposta inventata fra i messaggi precedenti 0 su 3 e imita quella risposta
+            # («Il dado giallo e' venuto 5»): una risposta sbagliata si autoalimenta.
+            if not tool_calls and iteration == 0 and not re.search(r"\[TOOL:", content):
+                riprovati = await self._riprova_senza_storia(user_text, agenti_scelti, lingua)
+                if riprovati:
+                    tool_calls = riprovati
+                    content = ""
+                    message = {"role": "assistant", "content": "", "tool_calls": riprovati}
 
             # Se non ci sono tool calls nativi, cerca comandi testuali [TOOL: nome {...}]
             if not tool_calls:
