@@ -12,6 +12,10 @@ labels: ["tipo: funzione", "area: core"]
 `max_history = 10` e' un numero scelto una volta. Con un prompt di 5000 token e un contesto di 2048, dieci
 scambi sono troppi; con un modello a contesto largo, troppo pochi.
 
+> **Misurato il 2026-10-13 (qwen2.5:3b):** piu' storia grezza non e' sempre meglio. Con una sola risposta inventata fra
+> i messaggi il modello non chiama piu' lo strumento (0 su 3, contro 3 su 3 senza storia). Oggi l'agente rimedia riprovando
+> una volta senza storia (#338); la finestra adattiva deve poter scartare i turni sospetti, non solo i piu' vecchi.
+
 ## Cosa fare
 
 - [ ] Il numero di turni grezzi e' quello che resta del budget dopo sistema, strumenti e ricordi

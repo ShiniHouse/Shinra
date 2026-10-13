@@ -12,6 +12,10 @@ labels: ["tipo: funzione", "area: core"]
 Oggi i turni oltre i dieci scambi **spariscono**. Una finestra mobile li sostituisce con un riassunto
 breve davanti ai turni recenti, e lo conserva.
 
+> **Misurato il 2026-10-13 (qwen2.5:3b):** una sola risposta sbagliata nella storia fa imitare il modello invece di
+> chiamare lo strumento (0 su 3, contro 3 su 3 a storia pulita). Un riassunto che ricopia una risposta inventata la rende
+> permanente: il riassunto va scritto dal codice dai fatti verificati (strumenti chiamati, esiti), non dalle frasi del modello.
+
 ## Cosa fare
 
 - [ ] Tabella `riassunti_conversazione` (profilo, periodo, testo, turni coperti, modello usato, creato)
