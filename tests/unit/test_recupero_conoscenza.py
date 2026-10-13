@@ -532,3 +532,84 @@ async def test_senza_fatti_lo_dice(senza_ollama):
     servizio = ServizioConoscenza()
 
     assert "Nessuna informazione" in await servizio.per_la_domanda("qualunque cosa")
+
+
+# ----------------------------------------------- la cache dei vettori (#248)
+
+
+def _vettori_riletti(monkeypatch):
+    """Conta quante volte si rilegge davvero la tabella dei vettori."""
+    letture = {"n": 0}
+    originale = depositi.embedding.tutti
+
+    def contata():
+        letture["n"] += 1
+        return originale()
+
+    monkeypatch.setattr(depositi.embedding, "tutti", contata)
+    return letture
+
+
+def test_i_vettori_non_si_rileggono_se_la_tabella_non_e_cambiata(monkeypatch):
+    depositi.embedding.salva("k_1", [0.1, 0.2], "m", "i1")
+    depositi.embedding.salva("k_2", [0.3, 0.4], "m", "i2")
+    depositi.embedding._firma_cache = None
+    letture = _vettori_riletti(monkeypatch)
+
+    primo = depositi.embedding.tutti_in_cache()
+    secondo = depositi.embedding.tutti_in_cache()
+    terzo = depositi.embedding.tutti_in_cache()
+
+    assert letture["n"] == 1, "i vettori sono stati riletti a ogni richiesta"
+    assert primo is secondo is terzo
+    assert primo["k_1"]["vettore"] == (0.1, 0.2)
+
+
+def test_un_vettore_ricalcolato_invalida_la_cache(monkeypatch):
+    depositi.embedding.salva("k_1", [0.1, 0.2], "m", "i1")
+    depositi.embedding._firma_cache = None
+    depositi.embedding.tutti_in_cache()
+    letture = _vettori_riletti(monkeypatch)
+
+    depositi.embedding.salva("k_1", [0.9, 0.8], "m", "i1-nuova")
+
+    assert depositi.embedding.tutti_in_cache()["k_1"]["vettore"] == (0.9, 0.8)
+    assert letture["n"] == 1
+
+
+def test_un_vettore_aggiunto_o_cancellato_invalida_la_cache():
+    depositi.embedding.salva("k_1", [0.1], "m", "i1")
+    depositi.embedding._firma_cache = None
+    assert set(depositi.embedding.tutti_in_cache()) == {"k_1"}
+
+    depositi.embedding.salva("k_2", [0.2], "m", "i2")
+    assert set(depositi.embedding.tutti_in_cache()) == {"k_1", "k_2"}
+
+    depositi.embedding.cancella("k_1")
+    assert set(depositi.embedding.tutti_in_cache()) == {"k_2"}
+
+    depositi.embedding.dimentica_orfani(set())
+    assert depositi.embedding.tutti_in_cache() == {}
+
+
+async def test_il_recupero_dopo_aver_cancellato_un_fatto_non_lo_trova_piu(con_ollama):
+    """Il rischio della cache e' rispondere con un ricordo che la casa non sa piu': si prova col servizio intero."""
+    from shinra.infra.data_store import data_store
+
+    for testo, categoria in FATTI:
+        data_store.add_knowledge_item(testo, categoria)
+    riempi(100)
+    servizio = ServizioConoscenza()
+    await servizio.aggiorna_indice()
+
+    prima = await servizio.recupera("dove si trova la caldaia")
+    assert any("cantina" in f["testo"] for f in prima.fatti)
+
+    caldaia = next(f for f in depositi.fatti.elenco() if "caldaia" in f["text"])
+    depositi.fatti.cancella(caldaia["id"])
+    await servizio.aggiorna_indice()
+
+    dopo = await servizio.recupera("dove si trova la caldaia")
+    assert not any(
+        "cantina" in f["testo"] for f in dopo.fatti
+    ), "la cache ha restituito un ricordo cancellato"

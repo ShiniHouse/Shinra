@@ -129,7 +129,7 @@ class ServizioConoscenza:
     def _con_vettori(self) -> list[dominio.Fatto]:
         from shinra.infra.db import depositi
 
-        vettori = depositi.embedding.tutti()
+        vettori = depositi.embedding.tutti_in_cache()
         fuori = []
         for fatto in self._fatti_attivi():
             identificativo = str(fatto["id"])
@@ -139,7 +139,7 @@ class ServizioConoscenza:
                     identificativo=identificativo,
                     testo=str(fatto.get("text") or ""),
                     categoria=str(fatto.get("category") or "generale"),
-                    vettore=list(salvato.get("vettore") or []) or None,
+                    vettore=salvato.get("vettore") or None,
                 )
             )
         return fuori
