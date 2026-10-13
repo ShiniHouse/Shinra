@@ -22,6 +22,7 @@ from typing import Any, Optional
 
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
@@ -136,6 +137,31 @@ class ServizioScheduler:
         self._scheduler.add_job(
             funzione,
             trigger=IntervalTrigger(hours=ore),
+            id=identificativo,
+            replace_existing=True,
+            misfire_grace_time=3600,
+            coalesce=True,
+        )
+        return True
+
+    def programma_giornaliero(self, identificativo: str, funzione: Any, ora: int, minuto: int = 0) -> bool:
+        """Un lavoro che gira ogni giorno alla stessa ora **locale** (#259).
+
+        L'intervallo (`programma_periodico`) non basta: «ogni 24 ore» deriva di qualche secondo a ogni riavvio e non cade
+        mai alle tre di notte. Qui l'ora e' fissa e segue il fuso della macchina, quindi anche l'ora legale.
+        `replace_existing` e `coalesce`: l'archivio e' persistente, e un riavvio non deve duplicare il lavoro ne'
+        recuperare dieci notti perse una dopo l'altra.
+        """
+        if not self.attivo or self._scheduler is None:
+            return False
+        if not (0 <= ora <= 23 and 0 <= minuto <= 59):
+            logger.error("Ora non valida per %s: %s:%s", identificativo, ora, minuto)
+            return False
+        from tzlocal import get_localzone
+
+        self._scheduler.add_job(
+            funzione,
+            trigger=CronTrigger(hour=ora, minute=minuto, timezone=get_localzone()),
             id=identificativo,
             replace_existing=True,
             misfire_grace_time=3600,
