@@ -216,8 +216,9 @@ class ShinraAgent:
             ha_summary = await self.ha.get_relevant_entities_summary()
 
         cronaca.richiesta_al_modello()
-        conoscenza = await servizio_conoscenza.per_la_domanda(richiesta.testo)
-        cronaca.conoscenza_consultata(servizio_conoscenza.fatti_usati())
+        recuperati = await servizio_conoscenza.recupera(richiesta.testo)
+        conoscenza = recuperati.testo
+        cronaca.conoscenza_consultata(recuperati.fatti)
 
         # Il prompt di sistema e' sempre lo stesso fra una richiesta e l'altra: cosi' Ollama
         # riusa quello che ha gia' letto. Cio' che cambia (che ora e', lo stato dei

@@ -468,6 +468,48 @@ async def test_si_sa_quali_fatti_hanno_contribuito(con_ollama):
     assert all(0 <= u["punteggio"] <= 1 for u in usati)
 
 
+async def test_due_richieste_insieme_non_si_leggono_i_ricordi_a_vicenda(con_ollama):
+    """#247: i fatti usati si restituiscono per richiesta. Prima stavano in una lista del servizio, e due profili che
+    chiedevano insieme si sovrascrivevano: chi leggeva dopo vedeva i ricordi dell'altro."""
+    import asyncio
+
+    from shinra.infra.data_store import data_store
+
+    for testo, categoria in FATTI:
+        data_store.add_knowledge_item(testo, categoria)
+    riempi(100)
+
+    servizio = ServizioConoscenza()
+    await servizio.aggiorna_indice()
+
+    caldaia, medico = await asyncio.gather(
+        servizio.recupera("dove si trova la caldaia"),
+        servizio.recupera("qual e' il telefono del medico di base"),
+    )
+
+    assert any("cantina" in f["testo"] for f in caldaia.fatti)
+    assert not any(
+        "dottor Rossi" in f["testo"] for f in caldaia.fatti
+    ), "la richiesta della caldaia legge il medico"
+    assert any("dottor Rossi" in f["testo"] for f in medico.fatti)
+    assert not any("cantina" in f["testo"] for f in medico.fatti), "la richiesta del medico legge la caldaia"
+    assert "cantina" in caldaia.testo and "cantina" not in medico.testo
+
+
+async def test_il_recupero_non_scrive_nulla_nel_servizio(con_ollama):
+    """`recupera` e' puro rispetto al servizio: solo `per_la_domanda` aggiorna l'istantanea di debug."""
+    from shinra.infra.data_store import data_store
+
+    for testo, categoria in FATTI:
+        data_store.add_knowledge_item(testo, categoria)
+    riempi(100)
+    servizio = ServizioConoscenza()
+    await servizio.aggiorna_indice()
+
+    await servizio.recupera("dove si trova la caldaia")
+    assert servizio.fatti_usati() == []
+
+
 async def test_lo_stato_dice_se_il_recupero_e_semantico(con_ollama):
     """`semantico: false` con dei fatti presenti vuol dire che il modello non
     e' installato: dirlo evita di credere che la ricerca funzioni male."""
