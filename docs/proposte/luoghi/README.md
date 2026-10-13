@@ -2,7 +2,7 @@
 
 > **Stato: proposta (12 ottobre 2026), decisa nelle linee generali dal proprietario.** Va nella `0.8.0` insieme alla
 > memoria ([#245](../memoria-viva/README.md)): il luogo è uno degli ambiti dei ricordi, accanto alle persone e alla casa.
-> Le schede non sono ancora aperte: si aprono, con la loro issue, dopo l'ok del proprietario.
+> Le schede sono aperte: #342, #343, #344, #345 e #346 (fette a–e).
 
 ## 1. Cosa è stato chiesto
 
