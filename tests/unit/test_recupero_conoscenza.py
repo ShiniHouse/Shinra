@@ -33,6 +33,7 @@ import pytest
 
 from shinra.domain import recupero as dominio
 from shinra.infra.db import depositi
+from shinra.infra.db.vettori_in_cache import vettori_in_cache
 from shinra.services.conoscenza import ServizioConoscenza
 
 FATTI = [
@@ -553,12 +554,12 @@ def _vettori_riletti(monkeypatch):
 def test_i_vettori_non_si_rileggono_se_la_tabella_non_e_cambiata(monkeypatch):
     depositi.embedding.salva("k_1", [0.1, 0.2], "m", "i1")
     depositi.embedding.salva("k_2", [0.3, 0.4], "m", "i2")
-    depositi.embedding._firma_cache = None
+    vettori_in_cache.dimentica()
     letture = _vettori_riletti(monkeypatch)
 
-    primo = depositi.embedding.tutti_in_cache()
-    secondo = depositi.embedding.tutti_in_cache()
-    terzo = depositi.embedding.tutti_in_cache()
+    primo = vettori_in_cache.tutti()
+    secondo = vettori_in_cache.tutti()
+    terzo = vettori_in_cache.tutti()
 
     assert letture["n"] == 1, "i vettori sono stati riletti a ogni richiesta"
     assert primo is secondo is terzo
@@ -567,29 +568,29 @@ def test_i_vettori_non_si_rileggono_se_la_tabella_non_e_cambiata(monkeypatch):
 
 def test_un_vettore_ricalcolato_invalida_la_cache(monkeypatch):
     depositi.embedding.salva("k_1", [0.1, 0.2], "m", "i1")
-    depositi.embedding._firma_cache = None
-    depositi.embedding.tutti_in_cache()
+    vettori_in_cache.dimentica()
+    vettori_in_cache.tutti()
     letture = _vettori_riletti(monkeypatch)
 
     depositi.embedding.salva("k_1", [0.9, 0.8], "m", "i1-nuova")
 
-    assert depositi.embedding.tutti_in_cache()["k_1"]["vettore"] == (0.9, 0.8)
+    assert vettori_in_cache.tutti()["k_1"]["vettore"] == (0.9, 0.8)
     assert letture["n"] == 1
 
 
 def test_un_vettore_aggiunto_o_cancellato_invalida_la_cache():
     depositi.embedding.salva("k_1", [0.1], "m", "i1")
-    depositi.embedding._firma_cache = None
-    assert set(depositi.embedding.tutti_in_cache()) == {"k_1"}
+    vettori_in_cache.dimentica()
+    assert set(vettori_in_cache.tutti()) == {"k_1"}
 
     depositi.embedding.salva("k_2", [0.2], "m", "i2")
-    assert set(depositi.embedding.tutti_in_cache()) == {"k_1", "k_2"}
+    assert set(vettori_in_cache.tutti()) == {"k_1", "k_2"}
 
     depositi.embedding.cancella("k_1")
-    assert set(depositi.embedding.tutti_in_cache()) == {"k_2"}
+    assert set(vettori_in_cache.tutti()) == {"k_2"}
 
     depositi.embedding.dimentica_orfani(set())
-    assert depositi.embedding.tutti_in_cache() == {}
+    assert vettori_in_cache.tutti() == {}
 
 
 async def test_il_recupero_dopo_aver_cancellato_un_fatto_non_lo_trova_piu(con_ollama):

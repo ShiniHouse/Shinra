@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, Optional, Sequence
 
 from shinra.domain import recupero as dominio
+from shinra.infra.db.vettori_in_cache import vettori_in_cache
 
 logger = logging.getLogger("Shinra.Conoscenza")
 
@@ -127,9 +128,8 @@ class ServizioConoscenza:
     # ------------------------------------------------------ il recupero
 
     def _con_vettori(self) -> list[dominio.Fatto]:
-        from shinra.infra.db import depositi
 
-        vettori = depositi.embedding.tutti_in_cache()
+        vettori = vettori_in_cache.tutti()
         fuori = []
         for fatto in self._fatti_attivi():
             identificativo = str(fatto["id"])

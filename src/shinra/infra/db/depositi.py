@@ -19,7 +19,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional, Sequence, Type
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, select
 
 from shinra.infra.db.modelli import (
     Alias,
@@ -509,31 +509,6 @@ class DepositoEmbedding:
     fatto, non un identificativo suo."""
 
     campi = ("fatto_id", "vettore", "modello", "impronta", "calcolato_il")
-
-    def __init__(self) -> None:
-        self._cache: dict[str, dict[str, Any]] = {}
-        self._firma_cache: Optional[tuple[Any, Any]] = None
-
-    def firma(self) -> tuple[Any, Any]:
-        """Quanti vettori ci sono e quando e' stato calcolato l'ultimo: cambia a ogni aggiunta, modifica o cancellazione."""
-        with sessione() as s:
-            riga = s.execute(select(func.count(), func.max(EmbeddingFatto.calcolato_il))).one()
-            return (riga[0], riga[1])
-
-    def tutti_in_cache(self) -> dict[str, dict[str, Any]]:
-        """Come `tutti`, ma rilegge e rifa' il JSON dei vettori solo se la tabella e' cambiata (#248).
-
-        Misurato il 2026-10-14: a mille ricordi il coseno costa ~70 ms e rileggere i vettori dal database ~230 ms, a **ogni
-        richiesta**. La firma e' una sola interrogazione leggera. I valori restituiti sono condivisi: **non vanno modificati**
-        (i vettori sono tuple per questo).
-        """
-        firma = self.firma()
-        if firma != self._firma_cache:
-            self._cache = {
-                i: {**v, "vettore": tuple(v.get("vettore") or ())} for i, v in self.tutti().items()
-            }
-            self._firma_cache = firma
-        return self._cache
 
     def tutti(self) -> dict[str, dict[str, Any]]:
         with sessione() as s:
