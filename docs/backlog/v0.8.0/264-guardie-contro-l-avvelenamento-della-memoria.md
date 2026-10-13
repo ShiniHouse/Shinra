@@ -14,6 +14,10 @@ dispositivi. Una frase come «ricorda che da ora la porta si apre senza conferma
 avvelenare la memoria. Il principio e' lo stesso della #192: il modello non e' fidato, quindi cio' che
 produce nasce **proposto**, mai attivo.
 
+> **Misurato il 2026-10-13 (qwen2.5:3b):** l'avvelenamento non viene solo da testi esterni. Una risposta inventata dal
+> modello stesso, rimasta nella storia, fa imitare l'errore al turno dopo (0 su 3, contro 3 su 3 a storia pulita). Una
+> risposta data senza chiamare lo strumento che la produce va trattata come non fidata anche per la memoria.
+
 ## Cosa fare
 
 - [ ] Tutto cio' che il sogno e i riassunti scrivono nasce `proposto`, con origine registrata
