@@ -422,11 +422,21 @@ def agente_che_inventa(monkeypatch):
     yield ShinraAgent(), arrivi, impostazioni
 
 
+def _storia_avvelenata():
+    """Una conversazione in cui il modello ha gia' inventato un numero senza tirare il dado."""
+    from shinra.services.memory import ConversationMemory
+
+    memoria = ConversationMemory()
+    memoria.add_user_message("Tira un dado")
+    memoria.add_assistant_message("Il dado giallo e' venuto 3.")
+    return memoria
+
+
 @pytest.mark.asyncio
 async def test_se_il_modello_non_chiama_lo_strumento_si_riprova_senza_storia(agente_che_inventa) -> None:
     agente, arrivi, _ = agente_che_inventa
 
-    esito = await agente.process_user_input("Tira un dado")
+    esito = await agente.process_user_input("Tira un dado", session_memory=_storia_avvelenata())
 
     primo, riprova = arrivi[0], arrivi[1]
     assert primo["tools"] == ["esempio_dado_tira"] and primo["n"] > 2
@@ -446,7 +456,7 @@ async def test_se_anche_la_riprova_non_chiama_si_tiene_la_prima_risposta(agente_
     agente, arrivi, impostazioni = agente_che_inventa
     impostazioni["riprova_chiama"] = False
 
-    esito = await agente.process_user_input("Tira un dado")
+    esito = await agente.process_user_input("Tira un dado", session_memory=_storia_avvelenata())
 
     assert len(arrivi) == 2, "ha riprovato piu' di una volta"
     assert esito["actions"] == []
