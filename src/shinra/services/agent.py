@@ -5,11 +5,12 @@ from typing import Any, Dict, List, Optional
 
 from shinra.config.prompt_templates import get_contesto_della_richiesta, get_system_prompt
 from shinra.config.settings import settings
+from shinra.domain import budget
 from shinra.domain.contesto import come_modello, dichiara_lingua
 from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.lingue import schemi
-from shinra.infra.llm.ollama import OllamaClient
+from shinra.infra.llm.ollama import OllamaClient, contesto_in_uso, risposta_massima
 from shinra.services import agenti
 from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.cronaca import Cronaca
@@ -71,6 +72,33 @@ class ShinraAgent:
             }
         with come_modello():
             return await execute_tool(nome, argomenti)
+
+    @staticmethod
+    def _misura_il_prompt(
+        messaggi: List[Dict[str, Any]], schemi: List[Dict[str, Any]], conoscenza: str
+    ) -> None:
+        """Dice nel log quanto pesa ogni parte del prompt (#244). Solo misura: non taglia niente.
+
+        Ollama taglia l'inizio in silenzio quando il prompt supera `num_ctx`; qui si vede prima, e di quanto.
+        """
+        try:
+            sistema = str(messaggi[0].get("content", "")) if messaggi else ""
+            ultimo = str(messaggi[-1].get("content", "")) if len(messaggi) > 1 else ""
+            m = budget.misura(
+                contesto_in_uso(),
+                risposta_massima(),
+                sistema=sistema,
+                strumenti=json.dumps(schemi, ensure_ascii=False) if schemi else "",
+                ricordi=conoscenza or "",
+                storia=messaggi[1:-1],
+                domanda=ultimo.replace(conoscenza, "") if conoscenza else ultimo,
+            )
+            if m.sfora:
+                logger.warning(f"[Shinra] Il prompt non ci sta nel contesto: {m.come_riga()}")
+            else:
+                logger.info(f"[Shinra] Prompt: {m.come_riga()}")
+        except Exception:  # la misura non deve mai far fallire una richiesta
+            logger.debug("[Shinra] Misura del prompt non riuscita", exc_info=True)
 
     async def _riprova_senza_storia(
         self, testo: str, agenti_scelti: List[str], lingua: Any
@@ -251,6 +279,8 @@ class ShinraAgent:
         schemi_visti = agenti.schemi_di(agenti_scelti)
         if agenti_scelti:
             logger.info(f"[Shinra] Agenti di dominio scelti: {', '.join(agenti_scelti)}")
+
+        self._misura_il_prompt(conversation_messages, schemi_visti if needs_action_tools else [], conoscenza)
 
         for iteration in range(max_tool_iterations):
             user_label = profile.name if profile else "Utente"
