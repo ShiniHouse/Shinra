@@ -1,12 +1,12 @@
-# Storia delle fasi 0.1.0 – 0.6.0
+# Storia delle fasi 0.1.0 – 0.7.0
 
-Le schede di lavoro delle sei fasi chiuse, in un solo documento. Ogni scheda è stata una
+Le schede di lavoro delle sette fasi chiuse, in un solo documento. Ogni scheda è stata una
 issue su GitHub (il numero è nel titolo) e un file in `docs/backlog/`; a fase chiusa i file
 sono stati uniti qui, perché non servivano più come lavoro da importare e facevano rumore
 in cartella. Di ciascuna restano il **perché** (contesto), il **cosa** e, dove c'è, **com'è andata**.
 I criteri di accettazione sono stati tolti: erano la lista di controllo del lavoro, e il lavoro è finito.
 
-Gli originali completi stanno nella cronologia di Git, al tag della fase (`v0.5.0` per la 0.5.0, `v0.6.0` per la 0.6.0):
+Gli originali completi stanno nella cronologia di Git, al tag della fase (`v0.5.0`, `v0.6.0`, `v0.7.0`):
 
 ```bash
 git show v0.5.0:docs/backlog/v0.1.0/07-sec-05-segreti-fuori-da-git.md
@@ -23,6 +23,7 @@ in [`docs/release/`](release/).
 - [0.4.0 — Proattività](#040--proattivita) — 7 schede
 - [0.5.0 — Prodotto](#050--prodotto) — 12 schede
 - [0.6.0 — Il Cervello](#060--il-cervello) — 13 schede
+- [0.7.0 — Rifinitura](#070--rifinitura) — 7 schede
 
 ## 0.1.0 — Impianto chiuso
 
@@ -1804,7 +1805,7 @@ dimenticato.
 
 #### Chiusa alla 0.5.0, il resto alla 0.6.0
 
-Chiusa con il meccanismo (#181, #203). Il lavoro che resta ha tre schede nella `v0.6.0`: [#205](backlog/v0.7.0/205-timer-e-promemoria-in-piu-lingue.md) (timer e promemoria), [#206](backlog/post-1.0.0/206-etichette-della-dashboard-tradotte.md) (le etichette della dashboard) e [#207](backlog/v0.7.0/207-messaggi-delle-skill-tradotti.md) (i messaggi degli strumenti e dell'intervista). Il criterio «nessuna stringa visibile resta nel codice» e' della #206 e della #207.
+Chiusa con il meccanismo (#181, #203). Il lavoro che resta ha tre schede nella `v0.6.0`: [#205](#070--rifinitura) (timer e promemoria), [#206](backlog/post-1.0.0/206-etichette-della-dashboard-tradotte.md) (le etichette della dashboard) e [#207](#070--rifinitura) (i messaggi degli strumenti e dell'intervista). Il criterio «nessuna stringa visibile resta nel codice» e' della #206 e della #207.
 
 ### #37 — feat(distribuzione): immagine Docker e add-on per Home Assistant OS
 
@@ -1909,7 +1910,7 @@ sono lavoro a se'.
 
 #### Chiusa alla 0.5.0, il collaudo alla 0.6.0
 
-Le guide sono scritte e difese da test (#204). Il collaudo di chi non le ha scritte — l'unica cosa che un documento non puo' fare — e' la [#208](backlog/v0.7.0/208-collaudo-della-documentazione.md).
+Le guide sono scritte e difese da test (#204). Il collaudo di chi non le ha scritte — l'unica cosa che un documento non puo' fare — e' la [#208](#070--rifinitura).
 
 ## 0.6.0 — Il Cervello
 
@@ -2475,3 +2476,226 @@ da riscrivere: non ha segnalato punti poco chiari. Due limiti, dichiarati: la pe
 conferma di un'azione sensibile (in casa non c'e' una serratura, un allarme o un garage: vedi la voce 5 di
 `docs/VERIFICA-IN-CASA.md`), e il giudizio e' di una persona sola.
 **La guida ai piani** non c'e': i piani sono passati alla `0.7.0` (#191).
+
+
+## 0.7.0 — Rifinitura
+
+### #193 — feat(plugin): un manifesto per le skill aggiuntive, con permessi dichiarati
+
+*tipo: funzione, area: core, area: sicurezza*
+
+#### Contesto
+
+Oggi aggiungere una capacita' vuol dire modificare il codice. Un plugin e' una
+cartella con un manifesto che dice cosa fa e di cosa ha bisogno. Caricare
+codice altrui dentro un processo che comanda la casa e' la superficie di
+attacco peggiore possibile, quindi la scheda va in due tempi: prima il
+manifesto e i permessi, e solo se reggono si pensa all'isolamento.
+
+> **Ambizione (2026-10-08).** Solo manifesto e permessi, **in processo, con codice del proprietario**. Il codice di
+> terzi non si carica in questa fase: richiederebbe un processo separato, ed e' un'altra decisione.
+
+#### Cosa fare
+
+- Formato del manifesto: nome, versione, strumenti esposti, permessi richiesti (domini di Home Assistant, rete verso quali host, lettura della conoscenza)
+- Un plugin non dichiarato non si carica; un permesso non dichiarato non si concede
+- Un plugin di terzi e' spento finche' l'utente non lo abilita, leggendo i permessi che chiede
+- Il registro delle azioni dice quale plugin ha fatto cosa
+- Un plugin che va in errore non abbatte il servizio
+- Decisione scritta su dove gira: nel processo oppure in un processo separato, con il perche'
+
+#### Com'e' andata
+
+Fatta con le PR #323 (formato, permessi, `Contesto`, plugin di esempio `esempio_dado`), #337 e #338. **Solo codice del
+proprietario, dentro il processo**: i permessi sono un patto verificabile, non una prigione. **Provata in casa il 2026-10-13**, con
+la riga di registro `tool.esempio_dado_tira` (esito `ok`, `plugin: esempio_dado`) — e ha trovato due difetti veri: le `parole` del
+manifesto erano frasi intere e l'agente dava gli strumenti al modello solo se la frase aveva una «parola d'azione» del catalogo
+(il plugin era caricato ma irraggiungibile, #337); e una sola risposta inventata fra i messaggi precedenti faceva imitare il modello
+invece di chiamare lo strumento (0 su 3, contro 3 su 3 a storia pulita): l'agente adesso riprova una volta senza storia (#338).
+**Non c'e'** ancora una schermata per leggere i permessi prima di abilitare: per ora la guida (`docs/PLUGIN.md`) e il log all'avvio.
+
+### #205 — feat(i18n): timer e promemoria capiscono piu' di una lingua
+
+*tipo: funzione, area: core*
+
+#### Contesto
+
+Residuo della #36. Le frasi che Shinra capisce sono in un file per lingua, e
+quelle che dice pure, tranne un pezzo: il parser che legge «timer di dieci
+minuti» e «ricordami domani mattina di...». Vive in `domain/quando.py` e in
+`services/timer_engine.py`, e ha le parole italiane dentro: i numeri, le unita',
+i giorni della settimana, «domani», «stasera», «fra due giorni».
+
+In inglese la richiesta arriva al modello, che usa il tool dei promemoria:
+funziona, ma e' il percorso lento e meno affidabile per la cosa che si dice
+piu' spesso in cucina.
+
+#### Cosa fare
+
+- Portare nei file delle lingue (`intenti/lingue/*.yaml`) i numeri in lettere, le unita' di tempo, i nomi dei giorni, le parole relative («domani», «dopodomani», «stasera», «fra N giorni») e i verbi che introducono un promemoria
+- `domain/quando.py` e `timer_engine.parse_timer_or_reminder` leggono la lingua di chi parla (`richiesta.schemi`), senza importare il caricatore dal dominio: la lingua arriva come argomento
+- L'inglese: «set a timer for ten minutes for the pasta», «remind me tomorrow morning to call the dentist»
+- Le chiavi nuove nell'elenco del caricatore, cosi' una lingua incompleta si dice per nome
+
+#### Com'e' andata
+
+Fatta con la PR #324, chiusa il 2026-10-12. Il lessico del tempo (numeri, unita', giorni, mesi, «domani», «stasera») e le frasi
+che chiedono un timer stanno nei file delle lingue; il dominio riceve un `Lessico` e un test controlla che nessuna parola italiana
+ci resti. Lo stesso timer e lo stesso promemoria in italiano e in inglese producono lo stesso istante. **Non verificato:** frasi
+inglesi dette a un microfono (qui sono scritte). Gli strumenti che leggono il tempo usano la lingua dell'installazione.
+
+### #207 — feat(i18n): i messaggi degli strumenti e dell'intervista nella lingua di chi parla
+
+*tipo: funzione, area: core*
+
+#### Contesto
+
+Residuo della #36. Gli strumenti che il modello chiama (`skills/`) e il motore
+dell'intervista restituiscono frasi italiane scritte nel codice: «Non trovo un
+sensore...», «Fatto: serratura bloccata», le domande e i riepiloghi
+dell'apprendimento. Il modello le rilegge e di solito le traduce da solo, ma
+quando una frase va alla persona cosi' com'e' (il messaggio di un tool
+mostrato dalla dashboard, l'intervista, un rifiuto) resta italiana.
+
+#### Cosa fare
+
+- Inventario: elencare i messaggi che arrivano alla persona senza passare dal modello (un test che cerca le stringhe italiane nei valori restituiti dagli strumenti)
+- Portarli nei file delle lingue, sotto `messaggi`, con le chiavi dichiarate nel caricatore
+- L'intervista: i testi dei passi, delle domande e dei riepiloghi (`interview_engine.py`) leggono la lingua del profilo
+- I tool leggono la lingua di chi ha chiesto (`contesto.profilo_corrente()`) senza che il dominio la importi
+
+#### Com'e' andata
+
+Chiusa in parte il 2026-10-12, con le PR #325, #326, #327 e #333. **Fatti:** l'intervista per intero nella lingua del profilo
+(passi, domande, riepiloghi, nomi dei dispositivi, routine proposte, parole di si'/no, prompt per il modello); la lingua di chi parla
+nel contesto della richiesta; la serratura, il lettore multimediale, l'aspirapolvere e il ventilatore. **Non fatto (criterio 3):**
+l'inventario non e' a zero (77 frasi in 14 file, contate da `test_inventario_messaggi.py`, che impedisce che salgano). Scoperto
+lavorandoci: le frasi italiane stanno anche nei moduli `domain/` (`NOMI`, `riassumi`, `NonSaFarlo`), non solo nelle skill, quindi
+tradurre bene vuol dire far restituire dati ai domini: e' la #334, dopo la `1.0.0`. Il caricatore delle lingue si e' spostato in
+`infra/lingue`, cosi' le skill lo usano senza dipendere dai servizi.
+
+### #208 — docs: collaudo della documentazione da parte di chi non l'ha scritta
+
+*tipo: attivita', area: documentazione*
+
+#### Contesto
+
+Residuo della #38. Le guide d'installazione, di sviluppo e il riferimento delle
+API sono scritti e difesi da test (#204), ma un test non sa se una pagina si
+capisce. Il collaudo della #180 l'ha fatto una volta, sul README di allora;
+le pagine di adesso non le ha seguite nessuno che non le abbia scritte.
+
+E' un criterio che nessun documento puo' chiudere da solo: serve una persona e
+una macchina pulita.
+
+> **Ridotta (2026-10-08).** Alla `0.7.0` si chiude il collaudo delle **guide d'uso** (`PRIMI-PASSI`, `PROBLEMI`,
+> `CERVELLO`, `AGENTI`, `CONFERME`, `VERIFICA-IN-CASA`) con un familiare, come per la #198. L'installazione da
+> zero su una macchina pulita (Docker e Debian) e la guida allo sviluppo richiedono un secondo PC e un'altra
+> persona: sono il criterio 3 della `1.0.0`, non di questa fase.
+
+#### Cosa fare
+
+- *(alla `1.0.0`)* Una persona che non ha scritto le pagine, su una macchina senza Shinra ne' Ollama, segue **solo** `docs/INSTALLAZIONE.md` (Docker) e poi `docs/PRIMI-PASSI.md`, e annota ogni punto in cui serve sapere qualcosa che non c'e'
+- *(alla `1.0.0`)* Lo stesso per l'installazione a mano su Debian
+- *(alla `1.0.0`)* Una seconda persona segue `docs/SVILUPPO.md` per aggiungere uno strumento inventato, senza leggere il codice dell'agente
+- Ogni punto annotato diventa una correzione alle pagine, con la tabella «cosa mancava» come nella #38
+- Il README e le guide nominano solo cose che il collaudo ha visto funzionare
+
+#### Com'e' andata
+
+Ridotta alle guide d'uso e chiusa il 2026-10-11: un familiare che non le ha scritte le ha lette e ha riferito che e' tutto
+chiaro, senza punti da correggere. L'installazione da zero su una macchina pulita (Docker e Debian) e la guida allo sviluppo seguite da
+un'altra persona richiedono un secondo PC: sono il criterio 3 della `1.0.0`.
+
+### #209 — feat(apprendimento): una domanda per volta, e niente domande su cio' che la casa gia' sa
+
+*tipo: funzione, area: core*
+
+#### Contesto
+
+Residuo della #170, tappa uno. L'intervista adesso dice quando non ha capito e
+mostra cosa ha capito prima di salvarlo (#171, #174). Restano i difetti che si
+vedono solo parlandoci:
+
+- le domande sono tre in una, e chi risponde ne coglie una;
+- chiede cose che la casa ha gia' nel database (chi abita qui, le stanze);
+- se la risposta e' troppo povera non insiste mai.
+
+> **Chi decide le domande (2026-10-08):** il **codice**, dalle entita' vere e dal database. Il modello serve solo a
+> leggere la risposta libera, quindi la scelta della domanda si prova senza modello.
+
+#### Cosa fare
+
+- Una domanda per volta: i passi che ne contengono piu' di una si dividono
+- Prima di ogni domanda si guarda il database: un fatto gia' presente si salta, o si chiede di confermarlo invece di ridirlo
+- Se l'estrazione non tira fuori niente, si chiede **una volta sola** di approfondire, con un esempio concreto, poi si passa oltre
+- Il riepilogo prima di salvare resta com'e'
+
+#### Com'e' andata
+
+Fatta con le PR #320, #329 e #330. Tredici passi da una domanda (prima sei da tre), scelti dal codice; prima di ognuno si
+guarda il database (profili, stanze, fatti annotati) e **la domanda su cio' che la casa sa gia' si salta**; un solo approfondimento per
+una risposta povera. **Provata in casa il 2026-10-11 e il 2026-10-13**, e ha trovato due difetti: «ripete spesso salto» (ogni domanda
+saltata aveva la sua frase, e un fatto che rispondeva a due domande si leggeva due volte: #329) e «poco fluida» (una conferma dopo
+ogni risposta, 26 turni: **una conferma per argomento**, con riepilogo numerato e «togli N», 17 turni: #330; `assistant.intervista_conferma:
+risposta` riporta la vecchia). Il 2026-10-13 il primo argomento ha salvato tre fatti dopo la conferma (22 → 25 fatti nel log).
+
+### #210 — feat(apprendimento): l'intervista parte dalle entita' vere e produce routine complete
+
+*tipo: funzione, area: core*
+
+#### Contesto
+
+Residuo della #170, tappa due. Finche' l'intervista raccoglie fatti in prosa, la
+casa non impara a *fare* niente di nuovo. Il salto e' che ogni risposta diventi
+una capacita': un alias per un dispositivo vero, una routine che si puo'
+provare subito.
+
+#### Cosa fare
+
+- Parte dalle entita' di Home Assistant, stanza per stanza: per ciascuna chiede come si chiama in casa, e la risposta diventa un alias
+- Trasforma un'abitudine detta a parole in una routine completa (innesco, condizioni, azioni) usando il grafo dell'editor, mostrata prima di salvare
+- La routine proposta si prova con il simulatore (la casa non cambia) prima di confermarla
+- Un alias o una routine rifiutati non entrano nel database
+
+#### Com'e' andata
+
+Fatta con le PR #321 (un nome ai dispositivi veri) e #322 (la routine controllata). Il nome si salva solo dopo il «si'» e solo
+sull'`entity_id` che ha scritto Home Assistant; la routine proposta dal modello passa da quattro filtri (dispositivo vero o alias,
+azione nota e nei limiti, niente di delicato, prova a secco del grafo che non chiama nessun servizio), si mostra coi nomi veri e al
+salvataggio si ricontrolla. **Non provata in casa:** nel log non c'e' traccia dei nomi ai dispositivi ne' di una routine proposta
+(dichiarata «da provare» nelle note di rilascio). Con un 3B la proposta puo' essere scartata senza che si veda niente: da misurare.
+
+### #241 — test(llm): il banco di prova sull'hardware candidato, misurato e non stimato
+
+*tipo: attivita', area: core*
+
+> **Dipende da:** il banco della #183 e l'Ollama su un server dedicato.
+>
+> **Ridotta il 2026-10-06.** Non e' previsto un hardware nuovo: le prove si fanno **sul portatile** (i7-1355U, in carica) e sul
+> server di casa, con un solo modello. Il banco resta pronto se un giorno l'hardware cambia (un comando, un'ora).
+
+#### Contesto
+
+Sull'hardware di casa non c'e' una misura: le cifre che circolano (qualche token al secondo su una CPU senza
+GPU, 20 e oltre su un Mac con memoria unificata, 10–18 su un mini PC con GPU integrata) vengono da blog, non da
+questa casa. Prima di spendere, si misura con **lo stesso banco** su ogni candidata, in modo che i numeri siano
+confrontabili.
+
+Su CPU il costo piu' alto e' leggere il prompt a ogni richiesta (circa 5000 token), non scrivere la risposta: la
+tabella deve dire *entrambe* le cose.
+
+#### Cosa fare
+
+- Eseguire il banco sull'hardware attuale (i5-8500T) con i modelli scelti: `qwen2.5:3b`, sei configurazioni
+- Eseguirlo su una seconda macchina: il portatile i7-1355U (non un Mac mini: l'acquisto non e' previsto)
+- Per ogni coppia macchina/modello: scelte giuste, argomenti giusti, **troncati** (fatto), **mediana e p90** (fatto); tempo di lettura del prompt, token al secondo in scrittura e picco di memoria **non misurati a parte** (si leggono solo come stime dai tempi)
+- Salvare i risultati in `banco/risultati/` e riassumerli in una tabella (le analisi `*-ANALISI.md`)
+- ~~La guida dice quale hardware serve per quale modello, con i numeri~~ — non applicabile: nessun hardware nuovo da consigliare
+
+#### Com'e' andata
+
+Chiusa nella forma ridotta: le prove si fanno sul portatile (i7-1355U) e sul server di casa, con un solo modello (`qwen2.5:3b`),
+e non e' previsto un hardware nuovo (decisione del 2026-10-06). **Misurato:** con questo hardware `qwen2.5:3b` non basta per le
+soglie dell'ADR 0008 (strumento giusto 79,8% contro 85%, ~29 s contro 15 s), e il portatile non e' piu' veloce del server. Il banco
+resta pronto se un giorno l'hardware cambia (un comando, un'ora): vedi `banco/risultati/`.
