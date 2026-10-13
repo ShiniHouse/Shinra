@@ -405,7 +405,7 @@ ventinove schede (issue `#243`–`#271`), sta in [`docs/proposte/memoria-viva/`]
 luoghi oltre alla principale, con le **coordinate vere** prese dalla posizione di smartphone e PC. E' deciso che va in questa
 fase, insieme alla memoria (il luogo e' uno degli ambiti dei ricordi): un solo Shinra, piu' luoghi, «dove sei» da chi parla e dalla
 posizione, e la posizione resta sul server. La proposta, con le cinque fette e le regole di privacy, e' in
-[`docs/proposte/luoghi/`](proposte/luoghi/README.md); le schede si aprono dopo l'ok del proprietario.
+[`docs/proposte/luoghi/`](proposte/luoghi/README.md); le cinque schede sono aperte: `#342`–`#346`.
 
 | # | Lavoro | Area |
 | :-- | :--- | :--- |
