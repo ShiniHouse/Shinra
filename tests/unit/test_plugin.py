@@ -113,6 +113,28 @@ def test_il_manifesto_dice_tutti_i_problemi_insieme() -> None:
 # ------------------------------------------------------------ il caricamento
 
 
+@pytest.mark.parametrize(
+    "frase",
+    [
+        "Tira il dado",  # detto a voce in casa, il 2026-10-13: con le frasi intere nel manifesto non combaciava
+        "tira un dado per favore",
+        "lancia il dado a 20 facce",
+        "tira i dadi",
+        "fammi tirare un dado",
+        "TIRA IL DADO",
+    ],
+)
+def test_il_dado_si_riconosce_comunque_lo_si_dica(frase) -> None:
+    plugin.attiva(percorsi.PLUGIN, ["esempio_dado"])
+    assert agenti.scegli(frase, schemi("it")) == ["plugin_esempio_dado"], frase
+
+
+@pytest.mark.parametrize("frase", ["accendi la luce del salotto", "che tempo fa domani", "che ore sono"])
+def test_il_dado_non_ruba_le_richieste_degli_altri(frase) -> None:
+    plugin.attiva(percorsi.PLUGIN, ["esempio_dado"])
+    assert "plugin_esempio_dado" not in agenti.scegli(frase, schemi("it")), frase
+
+
 def test_il_plugin_di_esempio_si_carica_e_un_agente_lo_sceglie() -> None:
     caricati, errori = plugin.attiva(percorsi.PLUGIN, ["esempio_dado"])
 

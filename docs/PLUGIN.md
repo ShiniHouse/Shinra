@@ -53,7 +53,7 @@ Il manifesto (`plugin.json`):
   "versione": "1.0.0",
   "descrizione": "Tira un dado: un plugin di esempio, senza nessun permesso.",
   "strumenti": ["esempio_dado_tira"],
-  "parole": ["tira un dado", "lancia un dado"],
+  "parole": ["dado", "dadi"],
   "permessi": {}
 }
 ```
@@ -62,7 +62,7 @@ Il manifesto (`plugin.json`):
 | :--- | :--- |
 | `nome` | Come la cartella: minuscolo, lettere, cifre e `_` |
 | `strumenti` | Gli strumenti che il modello vede. Ognuno si chiama `<nome>_…`, così i nomi non si confondono con quelli di Shinra |
-| `parole` | Le parole con cui il router sceglie questo plugin (come per gli [agenti](AGENTI.md)): ogni plugin è un agente, e il modello vede solo i suoi strumenti |
+| `parole` | Le parole con cui il router sceglie questo plugin (come per gli [agenti](AGENTI.md)): ogni plugin è un agente, e il modello vede solo i suoi strumenti. **Sono pezzi di parola cercati nella frase** (minuscolo, senza accenti): scegli le radici corte («dado», «dadi») e non le frasi intere («tira un dado»), altrimenti «tira il dado» non combacia e il modello non riceve nessuno strumento. Non troppo generiche: una parola come «luce» ruberebbe le richieste degli altri |
 | `permessi.domini_ha` | I tipi di dispositivo che può comandare (`light`, `switch`, `cover`, …). Mai `lock`, `alarm_control_panel`, `script` |
 | `permessi.rete` | Gli host che può raggiungere, solo nomi (`api.esempio.it`, senza `https://` né porte) |
 | `permessi.conoscenza` | `true` se può leggere la conoscenza della casa |
