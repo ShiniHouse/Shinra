@@ -8,7 +8,7 @@ from typing import Any, Optional
 from sqlalchemy import select, update
 
 from shinra.infra.db.depositi import Deposito, _come_dizionario
-from shinra.infra.db.modelli import Luogo
+from shinra.infra.db.modelli_luoghi import Luogo
 from shinra.infra.db.motore import sessione
 
 
