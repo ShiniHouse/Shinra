@@ -97,12 +97,21 @@ def test_un_fatto_torna_indietro_come_e_entrato(archivio):
 
     letto = depositi.fatti.per_id("k_1")
 
-    assert letto == {
+    assert {k: letto[k] for k in ("id", "text", "category", "enabled")} == {
         "id": "k_1",
         "text": "Il contatore e' nel sottoscala",
         "category": "casa",
         "enabled": True,
     }
+    # Un ricordo scritto come prima nasce della casa, attivo, a importanza media e mai usato (#245).
+    assert (letto["proprietario"], letto["origine"], letto["importanza"], letto["usi"], letto["stato"]) == (
+        "",
+        "manuale",
+        3,
+        0,
+        "attivo",
+    )
+    assert letto["ultimo_uso"] is None and letto["luogo_id"] == ""
 
 
 def test_le_liste_e_i_dizionari_sopravvivono(archivio):

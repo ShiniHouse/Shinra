@@ -43,6 +43,7 @@ from shinra.infra.db.modelli import (
     VoceLista,
     VoceSentita,
 )
+from shinra.infra.db.modelli_ricordi import CAMPI_DEL_RICORDO
 from shinra.infra.db.motore import sessione
 
 logger = logging.getLogger("Shinra.Archivio")
@@ -165,7 +166,7 @@ class DepositoRuoli(Deposito):
 
 class DepositoFatti(Deposito):
     modello = Fatto
-    campi = ("id", "text", "category", "enabled")
+    campi = CAMPI_DEL_RICORDO
 
     def aggiungi_fatto(self, testo: str, categoria: str = "generale", attivo: bool = True) -> dict[str, Any]:
         pulito = (testo or "").strip()
@@ -510,6 +511,9 @@ class DepositoEmbedding:
     fatto, non un identificativo suo."""
 
     campi = ("fatto_id", "vettore", "modello", "impronta", "calcolato_il")
+    # Cresce a ogni scrittura di questo processo: la cache dei vettori non puo' fidarsi del solo orologio (su Windows due
+    # scritture ravvicinate hanno lo stesso `calcolato_il`).
+    versione = 0
 
     def tutti(self) -> dict[str, dict[str, Any]]:
         with sessione() as s:
@@ -517,6 +521,7 @@ class DepositoEmbedding:
             return {str(r.fatto_id): _come_dizionario(r, self.campi) for r in righe}
 
     def salva(self, fatto_id: str, vettore: list[float], modello: str, impronta: str) -> None:
+        DepositoEmbedding.versione += 1
         with sessione() as s:
             riga = s.get(EmbeddingFatto, fatto_id)
             if riga is None:
@@ -528,6 +533,7 @@ class DepositoEmbedding:
             riga.calcolato_il = datetime.now(timezone.utc)
 
     def cancella(self, fatto_id: str) -> bool:
+        DepositoEmbedding.versione += 1
         with sessione() as s:
             riga = s.get(EmbeddingFatto, fatto_id)
             if riga is None:
@@ -541,6 +547,7 @@ class DepositoEmbedding:
         Senza, un fatto cancellato dall'interfaccia lascerebbe il suo vettore
         nell'archivio per sempre — e a ogni recupero si confronterebbe con
         qualcosa che la casa non sa piu'."""
+        DepositoEmbedding.versione += 1
         with sessione() as s:
             righe = s.scalars(select(EmbeddingFatto)).all()
             tolti = 0

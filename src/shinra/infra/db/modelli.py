@@ -17,20 +17,14 @@ riscrittura invece di una copia.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Optional
 
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
 
-
-def adesso() -> datetime:
-    return datetime.now(timezone.utc)
-
-
-class Base(DeclarativeBase):
-    pass
+from shinra.infra.db.base import Base, adesso
 
 
 class Utente(Base):
@@ -72,18 +66,6 @@ class Ruolo(Base):
     descrizione: Mapped[Optional[str]] = mapped_column(Text, default="")
     permessi: Mapped[list[str]] = mapped_column(JSON, default=list)
     predefinito: Mapped[bool] = mapped_column(Boolean, default=False)
-
-
-class Fatto(Base):
-    """Un'informazione sulla casa, imparata o inserita a mano."""
-
-    __tablename__ = "knowledge"
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    text: Mapped[str] = mapped_column(Text, nullable=False)
-    category: Mapped[str] = mapped_column(String(64), default="generale", index=True)
-    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    creato_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
 
 
 class Alias(Base):
@@ -414,31 +396,6 @@ class Regola(Base):
     ultimo_esito: Mapped[str] = mapped_column(String(200), default="")
 
 
-class EmbeddingFatto(Base):
-    """Il vettore di un fatto, con l'impronta del testo da cui e' nato.
-
-    L'impronta e' la parte che fa lavorare il ricalcolo da solo: se il testo
-    del fatto cambia, l'impronta salvata non corrisponde piu' e il vettore
-    viene rifatto — senza che nessuno debba ricordarsi di chiamare qualcosa
-    quando modifica un fatto. Un vettore vecchio non da' errore: da' risposte
-    sbagliate, che e' peggio.
-
-    Anche il nome del modello e' salvato: cambiare modello di embedding
-    cambia lo spazio vettoriale, e confrontare vettori di due modelli diversi
-    produce numeri che sembrano punteggi e non lo sono.
-
-    Riferimento: issue #32.
-    """
-
-    __tablename__ = "embedding_fatti"
-
-    fatto_id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    vettore: Mapped[list[Any]] = mapped_column(JSON, default=list)
-    modello: Mapped[str] = mapped_column(String(120), default="")
-    impronta: Mapped[str] = mapped_column(String(64), default="", index=True)
-    calcolato_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
-
-
 class VoceSentita(Base):
     """Una voce che ha parlato a un Echo, associata o no a un profilo.
 
@@ -508,3 +465,9 @@ class Passkey(Base):
     tipo_dispositivo: Mapped[str] = mapped_column(String(32), default="")
     creata_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
     ultimo_uso: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+# I ricordi e i luoghi stanno in file loro; da qui restano raggiungibili come prima, e **registrano le loro tabelle** nel
+# catalogo: chi importa `modelli` (le migrazioni, i controlli di schema) le vede tutte, senza doverne conoscere i file.
+from shinra.infra.db.modelli_luoghi import Luogo  # noqa: E402, F401
+from shinra.infra.db.modelli_ricordi import EmbeddingFatto, Fatto  # noqa: E402, F401

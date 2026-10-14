@@ -22,12 +22,12 @@ from shinra.infra.db.motore import sessione
 class VettoriInCache:
     def __init__(self) -> None:
         self._cache: dict[str, dict[str, Any]] = {}
-        self._firma: Optional[tuple[Any, Any]] = None
+        self._firma: Optional[tuple[Any, ...]] = None
 
-    def firma(self) -> tuple[Any, Any]:
+    def firma(self) -> tuple[Any, ...]:
         with sessione() as s:
             riga = s.execute(select(func.count(), func.max(EmbeddingFatto.calcolato_il))).one()
-            return (riga[0], riga[1])
+            return (riga[0], riga[1], deposito_embedding.versione)
 
     def tutti(self) -> dict[str, dict[str, Any]]:
         firma = self.firma()
