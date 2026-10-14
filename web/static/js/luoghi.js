@@ -63,14 +63,11 @@ function _datiDelModulo() {
 }
 
 async function _invia(daPersona, corpo) {
-    const opzioni = {
-        method: 'POST',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(corpo),
-    };
+    const intestazioni = getAuthHeaders({ 'Content-Type': 'application/json' });
+    const body = JSON.stringify(corpo);
     const res = daPersona
-        ? await fetch('/api/luoghi/da-persona', opzioni)
-        : await fetch('/api/luoghi', opzioni);
+        ? await fetch('/api/luoghi/da-persona', { method: 'POST', headers: intestazioni, body })
+        : await fetch('/api/luoghi', { method: 'POST', headers: intestazioni, body });
     if (!res.ok) {
         _messaggio(await _detail(res), true);
         return false;
