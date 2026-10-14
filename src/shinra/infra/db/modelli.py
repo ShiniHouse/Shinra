@@ -49,6 +49,8 @@ class Utente(Base):
     notes: Mapped[Optional[str]] = mapped_column(Text, default="")
     # Vuota: la lingua dell'installazione (issue #36).
     lingua: Mapped[str] = mapped_column(String(16), default="", server_default="")
+    # La persona o il telefono di Home Assistant da cui si sa dove e' (#343). Vuota: posizione spenta.
+    entita_posizione: Mapped[str] = mapped_column(String(120), default="", server_default="")
     creato_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
     aggiornato_il: Mapped[datetime] = mapped_column(DateTime, default=adesso, onupdate=adesso)
 

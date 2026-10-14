@@ -137,6 +137,7 @@ class DepositoUtenti(Deposito):
         "restricted_topics",
         "notes",
         "lingua",
+        "entita_posizione",
     )
     ordine = "name"
 

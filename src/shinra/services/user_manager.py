@@ -22,6 +22,8 @@ class UserProfile(BaseModel):
     # La lingua in cui questa persona parla e riceve risposta. Vuota vuol
     # dire «quella dell'installazione»: chi non ha mai scelto non cambia nulla.
     lingua: str = ""
+    # La persona o il telefono di Home Assistant da cui si sa dove e' (#343). Vuota: posizione spenta.
+    entita_posizione: str = ""
 
 
 GUEST_PROFILE = UserProfile(
