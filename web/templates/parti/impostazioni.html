@@ -199,15 +199,15 @@
                         </div>
                         <p class="text-[11px] text-slate-500">Da un PC la posizione è approssimativa (rete, non GPS): il raggio del luogo si allarga di conseguenza. Per più precisione registrala dal telefono.</p>
                         <div class="flex flex-wrap gap-2 items-center">
-                            <input type="text" id="luogo-entita" placeholder="person.alessio" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
+                            <select id="luogo-entita" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200"><option value="">Scegli un telefono o una persona…</option></select>
                             <button type="button" data-gesto="registraDalTelefono" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Dalla posizione di un telefono (Home Assistant)</button>
                         </div>
                         <div class="pt-3 mt-1 border-t border-slate-700/60 space-y-2">
                             <p class="text-slate-300 font-semibold">La mia posizione</p>
                             <p id="posizione-stato" class="text-xs text-slate-400">…</p>
-                            <p class="text-[11px] text-slate-500">Se colleghi la tua persona di Home Assistant, Shinra sa in quale dei luoghi registrati ti trovi. Non conserva dove sei stato e non dice mai le coordinate. Lasciando vuoto e premendo «Spegni» non sei più localizzato.</p>
+                            <p class="text-[11px] text-slate-500">Se colleghi la tua persona di Home Assistant, Shinra sa in quale dei luoghi registrati ti trovi. Non conserva dove sei stato e non dice mai le coordinate. Premendo «Spegni» non sei più localizzato.</p>
                             <div class="flex flex-wrap gap-2 items-center">
-                                <input type="text" id="posizione-entita" placeholder="person.alessio" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
+                                <select id="posizione-entita" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200"><option value="">Scegli il tuo telefono o la tua persona…</option></select>
                                 <button type="button" data-gesto="collegaLaMiaPosizione" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Collega</button>
                                 <button type="button" data-gesto="spegniLaMiaPosizione" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold">Spegni</button>
                             </div>

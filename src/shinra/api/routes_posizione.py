@@ -25,6 +25,12 @@ class PosizioneIn(BaseModel):
     entita: str = ""
 
 
+@router.get("/candidati")
+async def candidati() -> Dict[str, Any]:
+    """Le persone e i telefoni di Home Assistant fra cui scegliere, col nome leggibile e se mandano una posizione."""
+    return {"candidati": posizione.candidati()}
+
+
 @router.get("/io")
 async def dove_sono(request: Request) -> Dict[str, Any]:
     """In quale luogo si trova chi chiede: il nome del luogo, «in giro», «ignota» o «spenta». Mai le coordinate."""
