@@ -9,14 +9,16 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 import feedparser
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from shinra.api.sicurezza import (
     richiedi_amministratore,
     richiedi_autenticazione,
     richiedi_permesso,
+    utente_corrente,
 )
 from shinra.config.settings import AppConfig, reload_settings, save_config, settings
+from shinra.domain import ricordi as regole_dei_ricordi
 from shinra.infra.data_store import data_store
 from shinra.services import permessi, registro
 
@@ -33,21 +35,46 @@ router = APIRouter(
 
 # --- KNOWLEDGE ENDPOINTS ---
 @router.get("/knowledge")
-async def list_knowledge():
-    """Elenca i fatti della conoscenza di casa."""
-    return data_store.get_knowledge()
+async def list_knowledge(request: Request):
+    """Elenca i fatti che chi chiede puo' vedere: quelli della casa e i **propri** privati (ADR 0009)."""
+    profilo = utente_corrente(request)
+    return [
+        f
+        for f in data_store.get_knowledge()
+        if regole_dei_ricordi.e_visibile_a(f, profilo.id if profilo else "")
+    ]
 
 
 @router.post("/knowledge", dependencies=[Depends(richiedi_permesso(permessi.SCRIVI_CONOSCENZA))])
-async def save_knowledge(item: Dict[str, Any]):
-    """Aggiunge o aggiorna un fatto della conoscenza di casa."""
-    salvato = data_store.salva_fatto(item)
+async def save_knowledge(item: Dict[str, Any], request: Request):
+    """Aggiunge o aggiorna un fatto. Uno privato si scrive solo a nome proprio; il proprietario non si cambia."""
+    profilo = utente_corrente(request)
+    mio = profilo.id if profilo else ""
+    dati = dict(item)
+    esistente = next((f for f in data_store.get_knowledge() if f.get("id") == dati.get("id")), None)
+    if esistente is not None:
+        if not regole_dei_ricordi.e_visibile_a(esistente, mio):
+            # Non si conferma nemmeno che esista: e' il privato di un altro.
+            raise HTTPException(status_code=404, detail="Fatto non trovato.")
+        if "proprietario" in dati and (dati["proprietario"] or "") != regole_dei_ricordi.proprietario_di(
+            esistente
+        ):
+            raise HTTPException(status_code=403, detail="Il proprietario di un ricordo non si cambia.")
+    elif dati.get("proprietario") not in (None, "", mio):
+        raise HTTPException(status_code=403, detail="Un ricordo privato si scrive solo a nome proprio.")
+    salvato = data_store.salva_fatto(dati)
     return {"success": True, "item": salvato}
 
 
 @router.delete("/knowledge/{item_id}", dependencies=[Depends(richiedi_permesso(permessi.SCRIVI_CONOSCENZA))])
-async def delete_knowledge(item_id: str):
-    """Cancella un fatto della conoscenza di casa, con il suo vettore. Il registro scrive che e' successo, non cosa."""
+async def delete_knowledge(item_id: str, request: Request):
+    """Cancella un fatto della casa o un proprio ricordo privato, con il suo vettore. Il registro scrive che e' successo, non cosa."""
+    profilo = utente_corrente(request)
+    esistente = next((f for f in data_store.get_knowledge() if f.get("id") == item_id), None)
+    if esistente is not None and not regole_dei_ricordi.e_visibile_a(
+        esistente, profilo.id if profilo else ""
+    ):
+        return {"success": False}  # il privato di un altro: per chi chiede e' come se non ci fosse
     cancellato = data_store.cancella_fatto(item_id)
     if cancellato:
         registro.registra("ricordo.cancellato", dettagli={"id": item_id})

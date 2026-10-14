@@ -216,7 +216,7 @@ class ShinraAgent:
             ha_summary = await self.ha.get_relevant_entities_summary()
 
         cronaca.richiesta_al_modello()
-        recuperati = await servizio_conoscenza.recupera(richiesta.testo)
+        recuperati = await servizio_conoscenza.recupera(richiesta.testo, profile.id if profile else "")
         conoscenza = recuperati.testo
         ricordi_usati = list(recuperati.entrati)
         cronaca.conoscenza_consultata(recuperati.fatti)
@@ -358,6 +358,7 @@ class ShinraAgent:
                     )
                     mem.add_assistant_message(final_text)
                     cronaca.risposta_data(dal_modello=True)
+                    servizio_conoscenza.segna_usati([r["id"] for r in ricordi_usati])
                     return {
                         "response": final_text,
                         "actions": actions_taken,
@@ -400,6 +401,7 @@ class ShinraAgent:
         fallback = lingua.dice("dati_verificati")
         mem.add_assistant_message(fallback)
         cronaca.risposta_data(dal_modello=True)
+        servizio_conoscenza.segna_usati([r["id"] for r in ricordi_usati])
         return {
             "response": fallback,
             "actions": actions_taken,

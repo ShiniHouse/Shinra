@@ -13,9 +13,9 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
-from shinra.api.sicurezza import richiedi_autenticazione, richiedi_permesso
+from shinra.api.sicurezza import richiedi_autenticazione, richiedi_permesso, utente_corrente
 from shinra.services import permessi
 from shinra.services.conoscenza import servizio_conoscenza
 
@@ -40,9 +40,10 @@ async def stato() -> Dict[str, Any]:
 
 
 @router.get("/fatti-usati")
-async def fatti_usati() -> Dict[str, Any]:
-    """I fatti che hanno contribuito all'ultima risposta, con i punteggi."""
-    return {"fatti": servizio_conoscenza.fatti_usati()}
+async def fatti_usati(request: Request) -> Dict[str, Any]:
+    """I fatti che hanno contribuito all'ultima risposta **di chi chiede**, con i punteggi."""
+    profilo = utente_corrente(request)
+    return {"fatti": servizio_conoscenza.fatti_usati(profilo.id if profilo else "")}
 
 
 @router.post("/reindicizza", dependencies=[Depends(richiedi_permesso(permessi.SCRIVI_CONOSCENZA))])
