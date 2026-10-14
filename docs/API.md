@@ -41,7 +41,7 @@ I dettagli del flusso con le passkey e dei dispositivi fidati stanno nell'ADR
 l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 `/openapi.json`.
 
-## Le rotte (100)
+## Le rotte (106)
 
 ### `alexa`
 
@@ -228,6 +228,17 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 | GET | `/api/reminders` | sessione aperta | Elenca i promemoria in attesa. |
 | POST | `/api/reminders` | sessione aperta | Crea un promemoria. |
 | DELETE | `/api/reminders/{reminder_id}` | sessione aperta | Cancella un promemoria. |
+
+### `ricordi`
+
+| Metodo | Percorso | Chi | Cosa fa |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/ricordi` | sessione aperta | I ricordi che chi chiede vede: della casa e propri, con i filtri per ambito, origine, stato e importanza. |
+| POST | `/api/ricordi` | sessione aperta | Scrive un ricordo, della casa o proprio. Serve il permesso di insegnare cose nuove all'assistente. |
+| POST | `/api/ricordi/dimentica-tutto-di-me` | sessione aperta | Cancella tutti i ricordi privati di chi chiede (non quelli della casa). Serve la conferma esplicita. |
+| GET | `/api/ricordi/miei` | sessione aperta | Solo i ricordi privati di chi chiede. |
+| PATCH | `/api/ricordi/{identificativo}` | sessione aperta | Corregge un ricordo (testo, categoria, importanza, stato, acceso/spento). Il privato di un altro non esiste. |
+| DELETE | `/api/ricordi/{identificativo}` | sessione aperta | Cancella un ricordo e il suo vettore. Il proprio privato sempre; quelli della casa solo chi puo' scriverla. |
 
 ### `ruoli`
 

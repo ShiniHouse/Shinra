@@ -177,7 +177,7 @@ class DepositoFatti(Deposito):
         # prompt di ogni risposta: i doppioni si pagano a ogni domanda.
         with sessione() as s:
             for riga in s.scalars(select(Fatto)).all():
-                if (riga.text or "").strip().casefold() == pulito.casefold():
+                if not riga.proprietario and (riga.text or "").strip().casefold() == pulito.casefold():
                     return _come_dizionario(riga, self.campi)
 
         return self.aggiungi(

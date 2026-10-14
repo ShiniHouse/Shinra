@@ -311,6 +311,13 @@ def test_ogni_rotta_che_cambia_qualcosa_dichiara_un_permesso():
         # La posizione e' personale come le notifiche: ognuno collega o scollega la **propria**, sull'utente della sessione.
         # Un permesso statico non protegge niente (lo avrebbero tutti) o impedirebbe a qualcuno di spegnere la propria.
         ("PUT", "/api/posizione/io"),
+        # I ricordi: chi vede e chi cambia cosa dipende dal **proprietario** del ricordo e non si esprime con un permesso fisso
+        # (ADR 0009): il proprio privato lo cambia e lo cancella chi lo possiede, quello della casa chi puo' scriverla. Il
+        # controllo sta nel servizio (`services/ricordi.py`), con i suoi test su ogni rotta; scrivere chiede comunque il permesso.
+        ("POST", "/api/ricordi"),
+        ("PATCH", "/api/ricordi/{identificativo}"),
+        ("DELETE", "/api/ricordi/{identificativo}"),
+        ("POST", "/api/ricordi/dimentica-tutto-di-me"),
         ("POST", "/api/posizione/segnala"),  # l'app dice dove e': vale solo per chi l'ha scelta come fonte
         ("POST", "/api/notifiche/sottoscrivi"),
         ("POST", "/api/notifiche/dimentica"),
