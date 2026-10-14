@@ -11,7 +11,7 @@ from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.lingue import schemi
 from shinra.infra.llm.ollama import OllamaClient, contesto_in_uso, risposta_massima
-from shinra.services import agenti
+from shinra.services import agenti, riassunti
 from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.cronaca import Cronaca
 from shinra.services.intenti import Richiesta, instrada
@@ -239,6 +239,13 @@ class ShinraAgent:
             # a duecento fatti, non a venti.
             custom_knowledge=conoscenza,
         )
+
+        # Cio' che resta delle conversazioni precedenti di QUESTA persona (#255): un riassunto dai fatti verificati, mai le
+        # risposte libere del modello, mai quello di un altro profilo.
+        if profile:
+            precedente = riassunti.per_il_prompt(profile.id, profile.role)
+            if precedente:
+                contesto_richiesta += "\n\n" + lingua.dice("riassunto_titolo") + " " + precedente
 
         # Cio' che gli intenti hanno raccolto senza rispondere: oggi solo
         # l'estratto di Wikipedia, che informa il modello invece di essere

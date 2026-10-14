@@ -24,7 +24,7 @@ from shinra.config.settings import (
 )
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.scheduler.motore import scheduler
-from shinra.services import eventi_casa, permessi, plugin, registro
+from shinra.services import eventi_casa, permessi, plugin, registro, riassunti
 from shinra.services.allarme import allarme
 from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.consegna import registra_canali
@@ -214,6 +214,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # sarebbero un elenco che aspetta di essere aperto, cioe' un elenco
     # dimenticato (issue #25).
     servizio_manutenzione.avvia()
+    riassunti.avvia()
 
     # Un archivio della configurazione al giorno, senza doversene ricordare:
     # un backup che bisogna ricordarsi di fare e' un backup che non esiste
@@ -295,6 +296,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     servizio_notifiche.ferma()
     servizio_salvataggio.ferma()
     servizio_manutenzione.ferma()
+    riassunti.ferma()
     servizio_energia.ferma()
     servizio_simulazione.ferma()
     allarme.ferma()

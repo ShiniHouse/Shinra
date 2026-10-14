@@ -201,5 +201,13 @@ def dimentica_tutto_di_me(profilo: Any) -> int:
     for r in depositi.fatti.elenco():
         if regole.proprietario_di(r) == mio and data_store.cancella_fatto(str(r["id"])):
             quanti += 1
-    registro.registra("ricordi.dimenticati", dettagli={"profilo": mio, "quanti": quanti})
+    # Anche i riassunti delle sue conversazioni, e quella ancora in memoria (ADR 0010): «dimentica» non lascia copie.
+    from shinra.services import riassunti
+    from shinra.services.memory import gestore_memorie
+
+    quanti_riassunti = riassunti.dimentica(mio)
+    gestore_memorie.dimentica(mio)
+    registro.registra(
+        "ricordi.dimenticati", dettagli={"profilo": mio, "quanti": quanti, "riassunti": quanti_riassunti}
+    )
     return quanti
