@@ -45,11 +45,6 @@ ECCEZIONI: dict[str, tuple[int, str]] = {
         "Fuori dal perimetro della #196. Tetto congelato alla misura di oggi (520 righe): si divide "
         "la prossima volta che lo si tocca per altro.",
     ),
-    "infra/db/modelli.py": (
-        515,
-        "Fuori dal perimetro della #196. Tetto congelato alla misura di oggi (508 righe): gli schemi "
-        "di tutte le tabelle, si divide quando una tabella nuova lo porta oltre.",
-    ),
 }
 
 

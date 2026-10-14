@@ -8,7 +8,7 @@ from typing import Optional
 from sqlalchemy import Boolean, DateTime, Float, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from shinra.infra.db.modelli import Base
+from shinra.infra.db.base import Base
 
 
 class Luogo(Base):
