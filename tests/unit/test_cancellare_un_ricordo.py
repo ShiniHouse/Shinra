@@ -65,10 +65,11 @@ def test_dopo_la_cancellazione_il_testo_non_compare_in_nessuna_tabella():
     assert _in_tutto_il_database("7391-ZEBRA") == []
 
 
-async def test_la_rotta_scrive_nel_registro_che_e_avvenuto_non_cosa():
+async def test_la_rotta_scrive_nel_registro_che_e_avvenuto_non_cosa(monkeypatch):
+    monkeypatch.setattr(routes_impostazioni, "utente_corrente", lambda request: None)
     identificativo = _ricordo_con_vettore()
 
-    esito = await routes_impostazioni.delete_knowledge(identificativo)
+    esito = await routes_impostazioni.delete_knowledge(identificativo, None)
 
     assert esito == {"success": True}
     voci = registro.voci(azione="ricordo.cancellato")
@@ -82,8 +83,9 @@ async def test_la_rotta_scrive_nel_registro_che_e_avvenuto_non_cosa():
     assert _in_tutto_il_database("7391-ZEBRA") == [], "il registro ha riportato il testo nel database"
 
 
-async def test_cancellare_un_ricordo_che_non_c_e_non_scrive_nel_registro():
+async def test_cancellare_un_ricordo_che_non_c_e_non_scrive_nel_registro(monkeypatch):
+    monkeypatch.setattr(routes_impostazioni, "utente_corrente", lambda request: None)
     prima = len(registro.voci(azione="ricordo.cancellato"))
-    esito = await routes_impostazioni.delete_knowledge("k_inesistente")
+    esito = await routes_impostazioni.delete_knowledge("k_inesistente", None)
     assert esito == {"success": False}
     assert len(registro.voci(azione="ricordo.cancellato")) == prima
