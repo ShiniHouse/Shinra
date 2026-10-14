@@ -62,12 +62,15 @@ function _datiDelModulo() {
     };
 }
 
-async function _invia(percorso, corpo) {
-    const res = await fetch(`/api/luoghi${percorso}`, {
+async function _invia(daPersona, corpo) {
+    const opzioni = {
         method: 'POST',
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(corpo),
-    });
+    };
+    const res = daPersona
+        ? await fetch('/api/luoghi/da-persona', opzioni)
+        : await fetch('/api/luoghi', opzioni);
     if (!res.ok) {
         _messaggio(await _detail(res), true);
         return false;
@@ -87,7 +90,7 @@ export function registraQuestoLuogo() {
     _messaggio("Leggo la posizione… (il browser ti chiedera' il permesso)");
     navigator.geolocation.getCurrentPosition(
         (pos) =>
-            _invia('', {
+            _invia(false, {
                 ...dati,
                 latitudine: pos.coords.latitude,
                 longitudine: pos.coords.longitude,
@@ -105,7 +108,7 @@ export async function registraDalTelefono() {
     const entita = (document.getElementById('luogo-entita')?.value || '').trim();
     if (!dati.nome) return _messaggio('Dai un nome al luogo.', true);
     if (!entita) return _messaggio("Scrivi l'entita' del telefono (es. person.alessio).", true);
-    await _invia('/da-persona', { ...dati, entita });
+    await _invia(true, { ...dati, entita });
 }
 
 export async function cancellaLuogo(id) {
