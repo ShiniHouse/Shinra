@@ -11,7 +11,7 @@ from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.lingue import schemi
 from shinra.infra.llm.ollama import OllamaClient, contesto_in_uso, risposta_massima
-from shinra.services import agenti, riassunti
+from shinra.services import agenti, prompt_nel_budget, riassunti
 from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.cronaca import Cronaca
 from shinra.services.intenti import Richiesta, instrada
@@ -289,7 +289,14 @@ class ShinraAgent:
         if agenti_scelti:
             logger.info(f"[Shinra] Agenti di dominio scelti: {', '.join(agenti_scelti)}")
 
-        self._misura_il_prompt(conversation_messages, schemi_visti if needs_action_tools else [], conoscenza)
+        # La storia si adatta al budget (#257): cio' che resta del contesto dopo sistema, strumenti, ricordi e domanda.
+        strumenti_dati = schemi_visti if needs_action_tools else []
+        adattato = prompt_nel_budget.adatta(
+            conversation_messages, strumenti_dati, conoscenza, contesto_in_uso(), risposta_massima()
+        )
+        conversation_messages = adattato.messaggi
+        conoscenza = adattato.conoscenza
+        self._misura_il_prompt(conversation_messages, strumenti_dati, conoscenza)
 
         for iteration in range(max_tool_iterations):
             user_label = profile.name if profile else "Utente"
