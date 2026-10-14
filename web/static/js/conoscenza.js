@@ -4,6 +4,7 @@ import { _args, _grezzo, _html } from './sicurezza.js';
 import { safeCreateIcons } from './avvio.js';
 import { getAuthHeaders } from './accesso.js';
 import { closeModal, showModal } from './impostazioni.js';
+import { caricaRicordi } from './ricordi.js';
 
 const KNOWLEDGE_TEMPLATES = [
     {
@@ -178,37 +179,8 @@ export async function loadKnowledge() {
         const res = await fetch('/api/knowledge', { headers: getAuthHeaders() });
         const items = await res.json();
         _allKnowledgeItems = items;
-        const container = document.getElementById('knowledge-list');
-
-        if (!items.length) {
-            container.innerHTML = _html`<p class="text-xs text-slate-500 col-span-2 py-3 text-center">Nessun fatto memorizzato. Compila una categoria qui sopra o aggiungi un fatto libero.</p>`;
-        } else {
-            const catColors = {
-                casa: 'indigo',
-                famiglia: 'violet',
-                abitudini: 'sky',
-                salute: 'rose',
-                casa_tecnica: 'amber',
-                veicoli: 'green',
-                digitale: 'purple',
-                note_libere: 'slate',
-                generale: 'slate',
-            };
-            container.innerHTML = _html`${items.map((k) => {
-                const cat = k.category || 'generale';
-                const col = catColors[cat] || 'slate';
-                return _html`
-                <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex justify-between items-start gap-3 group hover:border-slate-700 transition">
-                    <div class="flex-1 min-w-0">
-                        <span class="px-2 py-0.5 rounded bg-${col}-950/60 border border-${col}-800 text-[10px] text-${col}-300 font-mono uppercase">${cat}</span>
-                        <p class="text-xs text-slate-200 mt-1.5 leading-relaxed">${k.text}</p>
-                    </div>
-                    <button data-gesto="deleteKnowledge" data-args="${_args(k.id)}" class="text-slate-600 hover:text-rose-400 transition p-1 opacity-0 group-hover:opacity-100 shrink-0" title="Elimina fatto">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                    </button>
-                </div>`;
-            })}`;
-        }
+        // La lista dei ricordi la disegna `ricordi.js` (casa e miei, con le loro azioni).
+        caricaRicordi();
         safeCreateIcons();
         renderKnowledgeTemplates(items);
     } catch (e) {

@@ -14,6 +14,7 @@ import './navigazione.js';
 import './voce.js';
 import './conversazione.js';
 import './conoscenza.js';
+import './ricordi.js';
 import './istruisci.js';
 import './fonti.js';
 import './dispositivi.js';
