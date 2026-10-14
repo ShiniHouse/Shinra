@@ -214,6 +214,10 @@ class UserManager:
             # questa riga, cambiare un nome lo cancellerebbe e chiuderebbe
             # fuori quella persona.
             dati["pin"] = esistente.get("pin")
+        if esistente and "entita_posizione" not in user.model_fields_set:
+            # Stessa ragione, per la posizione collegata (#343): la scheda Utenti non conosce il campo e non lo rimanda.
+            # Se non e' stato nominato, resta com'e'; per spegnerla si manda vuoto, e basta.
+            dati["entita_posizione"] = esistente.get("entita_posizione", "")
         depositi.utenti.salva(dati)
 
     def delete_user(self, user_id: str) -> bool:
