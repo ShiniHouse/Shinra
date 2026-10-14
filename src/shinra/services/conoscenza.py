@@ -26,7 +26,9 @@ Riferimento: issue #32.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass, field
+from datetime import timezone
 from typing import Any, Mapping, Optional, Sequence
 
 from shinra.domain import recupero as dominio
@@ -41,6 +43,22 @@ LOTTO = 32
 
 
 ESTRATTO_MASSIMO = 90
+
+# I pesi della storia dei ricordi (importanza, recenza, uso). Tutti a zero: il recupero di oggi. Si accendono solo con una
+# misura sul banco della memoria che dica che migliorano (#246); i test li cambiano con un monkeypatch.
+PESI_DEL_RECUPERO = dominio.Pesi()
+
+
+def _epoca(quando: Any) -> Optional[float]:
+    """Una data del database (senza fuso: e' UTC) in secondi dall'epoca; `None` se non c'e'."""
+    if quando is None:
+        return None
+    try:
+        if quando.tzinfo is None:
+            quando = quando.replace(tzinfo=timezone.utc)
+        return float(quando.timestamp())
+    except AttributeError:
+        return None
 
 
 def _entrato(fatto: dominio.Fatto) -> dict[str, str]:
@@ -153,6 +171,16 @@ class ServizioConoscenza:
                     testo=str(fatto.get("text") or ""),
                     categoria=str(fatto.get("category") or "generale"),
                     vettore=salvato.get("vettore") or None,
+                    importanza=int(fatto.get("importanza") or 3),
+                    usi=int(fatto.get("usi") or 0),
+                    ultimo=max(
+                        (
+                            e
+                            for e in (_epoca(fatto.get("ultimo_uso")), _epoca(fatto.get("aggiornato_il")))
+                            if e
+                        ),
+                        default=None,
+                    ),
                 )
             )
         return fuori
@@ -182,7 +210,7 @@ class ServizioConoscenza:
             calcolati = await embedding.calcola([domanda])
             vettore_domanda = calcolati[0] if calcolati else None
 
-        trovati = dominio.cerca(domanda, fatti, vettore_domanda)
+        trovati = dominio.cerca(domanda, fatti, vettore_domanda, pesi=PESI_DEL_RECUPERO, adesso=time.time())
         spiegati = dominio.spiega(trovati)
 
         if not trovati:
