@@ -9,6 +9,7 @@ from shinra.config.settings import settings
 from shinra.infra.lingue import schemi
 from shinra.services.intenti.base import Intento, Richiesta, Risposta, registra
 from shinra.skills.registry import execute_tool
+from shinra.skills.weather import meteo_di_un_luogo
 
 logger = logging.getLogger("Shinra.Intenti")
 
@@ -28,6 +29,17 @@ class Meteo(Intento):
 
     async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
         lingua = richiesta.schemi
+
+        # Un luogo registrato vince sulla citta' scritta nel file di configurazione: il nome nella frase («al mare»), poi
+        # la casa principale. Le coordinate restano qui dentro: nelle azioni va il nome, a Open-Meteo vanno arrotondate.
+        luogo = self._luogo_registrato(richiesta)
+        if luogo is not None:
+            esito = await meteo_di_un_luogo(str(luogo["nome"]), luogo["latitudine"], luogo["longitudine"])
+            richiesta.annota("get_weather", {"luogo": luogo["nome"], "days": 2}, esito)
+            if esito.get("success"):
+                return Risposta(self._frase(esito, richiesta.minuscolo, lingua))
+            return None  # nessuna risposta: ci pensi il modello
+
         citta = self.citta(richiesta.testo, lingua)
         argomenti = {"location": citta, "days": 2}
         esito = await execute_tool("get_weather", argomenti)
@@ -49,6 +61,20 @@ class Meteo(Intento):
                 return None
 
         return Risposta(self._frase(esito, richiesta.minuscolo, lingua))
+
+    @staticmethod
+    def _luogo_registrato(richiesta: Richiesta) -> Optional[dict]:
+        """Il luogo di cui si chiede il meteo: quello nominato nella frase, altrimenti la casa principale — ma solo se la
+        frase non nomina una citta' (`citta` la riconosce da «a Milano»): chi chiede di Milano non vuole la sua casa.
+        """
+        from shinra.services import luoghi
+
+        nominato = luoghi.nominato_nella_frase(richiesta.testo)
+        if nominato is not None:
+            return nominato
+        if richiesta.schemi.citta.search(richiesta.testo):
+            return None
+        return luoghi.principale()
 
     @staticmethod
     def citta(testo: str, lingua=None) -> str:

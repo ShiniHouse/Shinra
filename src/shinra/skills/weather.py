@@ -31,6 +31,81 @@ WMO_WEATHER_CODES = {
 }
 
 
+async def _meteo(
+    client: httpx.AsyncClient, lat: float, lon: float, localita: str, days: int
+) -> Dict[str, Any]:
+    """Il meteo per un punto, nella forma che gli intenti e il modello leggono."""
+    weather_url = "https://api.open-meteo.com/v1/forecast"
+    params: Dict[str, Any] = {
+        "latitude": lat,
+        "longitude": lon,
+        "current": [
+            "temperature_2m",
+            "relative_humidity_2m",
+            "apparent_temperature",
+            "weather_code",
+            "wind_speed_10m",
+        ],
+        "daily": [
+            "weather_code",
+            "temperature_2m_max",
+            "temperature_2m_min",
+            "precipitation_probability_max",
+            "sunrise",
+            "sunset",
+        ],
+        "timezone": "auto",
+        "forecast_days": max(1, min(days, 7)),
+    }
+    w_res = await client.get(weather_url, params=params)
+    w_data = w_res.json()
+
+    current = w_data.get("current", {})
+    daily = w_data.get("daily", {})
+
+    current_code = current.get("weather_code", 0)
+    current_desc = WMO_WEATHER_CODES.get(current_code, "Variabile")
+    current_temp = current.get("temperature_2m")
+    current_feels = current.get("apparent_temperature")
+    current_humidity = current.get("relative_humidity_2m")
+    current_wind = current.get("wind_speed_10m")
+
+    forecast_days = []
+    dates = daily.get("time", [])
+    codes = daily.get("weather_code", [])
+    max_temps = daily.get("temperature_2m_max", [])
+    min_temps = daily.get("temperature_2m_min", [])
+    precip_probs = daily.get("precipitation_probability_max", [])
+
+    for i in range(len(dates)):
+        day_label = "Oggi" if i == 0 else ("Domani" if i == 1 else dates[i])
+        forecast_days.append(
+            {
+                "data": dates[i],
+                "giorno": day_label,
+                "condizione": WMO_WEATHER_CODES.get(codes[i] if i < len(codes) else 0, "Non disponibile"),
+                "temp_max": max_temps[i] if i < len(max_temps) else None,
+                "temp_min": min_temps[i] if i < len(min_temps) else None,
+                "probabilita_pioggia": (
+                    f"{precip_probs[i]}%" if i < len(precip_probs) and precip_probs[i] is not None else "0%"
+                ),
+            }
+        )
+
+    return {
+        "success": True,
+        "localita": localita,
+        "adesso": {
+            "temperatura": f"{current_temp}°C",
+            "percepita": f"{current_feels}°C",
+            "condizione": current_desc,
+            "umidita": f"{current_humidity}%",
+            "vento": f"{current_wind} km/h",
+        },
+        "previsioni": forecast_days,
+    }
+
+
 async def get_weather(location: str = "Roma", days: int = 2) -> Dict[str, Any]:
     """
     Ottiene le previsioni meteo attuali e future (oggi, domani e giorni successivi) per una determinata città o località.
@@ -57,81 +132,27 @@ async def get_weather(location: str = "Roma", days: int = 2) -> Dict[str, Any]:
             city_name = place.get("name", location)
             country = place.get("country", "")
 
-            # 2. Richiesta meteo
-            weather_url = "https://api.open-meteo.com/v1/forecast"
-            params = {
-                "latitude": lat,
-                "longitude": lon,
-                "current": [
-                    "temperature_2m",
-                    "relative_humidity_2m",
-                    "apparent_temperature",
-                    "weather_code",
-                    "wind_speed_10m",
-                ],
-                "daily": [
-                    "weather_code",
-                    "temperature_2m_max",
-                    "temperature_2m_min",
-                    "precipitation_probability_max",
-                    "sunrise",
-                    "sunset",
-                ],
-                "timezone": "auto",
-                "forecast_days": max(1, min(days, 7)),
-            }
-            w_res = await client.get(weather_url, params=params)
-            w_data = w_res.json()
-
-            current = w_data.get("current", {})
-            daily = w_data.get("daily", {})
-
-            current_code = current.get("weather_code", 0)
-            current_desc = WMO_WEATHER_CODES.get(current_code, "Variabile")
-            current_temp = current.get("temperature_2m")
-            current_feels = current.get("apparent_temperature")
-            current_humidity = current.get("relative_humidity_2m")
-            current_wind = current.get("wind_speed_10m")
-
-            forecast_days = []
-            dates = daily.get("time", [])
-            codes = daily.get("weather_code", [])
-            max_temps = daily.get("temperature_2m_max", [])
-            min_temps = daily.get("temperature_2m_min", [])
-            precip_probs = daily.get("precipitation_probability_max", [])
-
-            for i in range(len(dates)):
-                day_label = "Oggi" if i == 0 else ("Domani" if i == 1 else dates[i])
-                forecast_days.append(
-                    {
-                        "data": dates[i],
-                        "giorno": day_label,
-                        "condizione": WMO_WEATHER_CODES.get(
-                            codes[i] if i < len(codes) else 0, "Non disponibile"
-                        ),
-                        "temp_max": max_temps[i] if i < len(max_temps) else None,
-                        "temp_min": min_temps[i] if i < len(min_temps) else None,
-                        "probabilita_pioggia": (
-                            f"{precip_probs[i]}%"
-                            if i < len(precip_probs) and precip_probs[i] is not None
-                            else "0%"
-                        ),
-                    }
-                )
-
-            return {
-                "success": True,
-                "localita": f"{city_name} ({country})",
-                "adesso": {
-                    "temperatura": f"{current_temp}°C",
-                    "percepita": f"{current_feels}°C",
-                    "condizione": current_desc,
-                    "umidita": f"{current_humidity}%",
-                    "vento": f"{current_wind} km/h",
-                },
-                "previsioni": forecast_days,
-            }
+            return await _meteo(client, lat, lon, f"{city_name} ({country})", days)
 
     except Exception as e:
         logger.error(f"Errore recupero meteo per {location}: {e}")
         return {"success": False, "error": str(e), "message": f"Errore nel recupero meteo per {location}."}
+
+
+async def meteo_di_un_luogo(
+    nome: str, latitudine: float, longitudine: float, days: int = 2
+) -> Dict[str, Any]:
+    """Il meteo di un luogo registrato. Non e' uno strumento del modello: lo chiamano gli intenti.
+
+    A un servizio di terzi vanno le coordinate **arrotondate a circa un chilometro**: Open-Meteo non deve conoscere
+    l'ingresso di casa. Nel risultato c'e' il nome del luogo, mai le coordinate.
+    """
+    from shinra.domain.luoghi import arrotonda_per_servizi_esterni
+
+    lat, lon = arrotonda_per_servizi_esterni(latitudine, longitudine)
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            return await _meteo(client, lat, lon, nome, days)
+    except Exception as e:
+        logger.error("Errore recupero meteo di un luogo registrato: %s", type(e).__name__)
+        return {"success": False, "error": str(e)}

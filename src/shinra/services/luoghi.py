@@ -112,3 +112,21 @@ def cancella(identificativo: str) -> bool:
     if fatto:
         registro.registra("luogo.cancellato", dettagli={"id": identificativo})
     return fatto
+
+
+def nominato_nella_frase(testo: str) -> Optional[dict[str, Any]]:
+    """Il luogo registrato che la frase nomina («che tempo fa al mare», «da mia madre»), se ce n'e' uno.
+
+    Si cerca il **nome intero** del luogo come parola, senza distinguere le maiuscole; fra piu' nomi vince il piu' lungo
+    («casa al mare» prima di «casa»). Un luogo il cui nome e' una parola comune puo' scattare quando non deve: e' il motivo
+    per cui il nome lo sceglie chi registra.
+    """
+    import re
+
+    basso = " ".join((testo or "").lower().split())
+    trovati = []
+    for luogo in deposito.elenco():
+        nome = " ".join(str(luogo["nome"]).lower().split())
+        if nome and re.search(rf"(?<!\w){re.escape(nome)}(?!\w)", basso):
+            trovati.append((len(nome), luogo))
+    return max(trovati, key=lambda c: c[0])[1] if trovati else None
