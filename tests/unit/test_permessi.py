@@ -308,6 +308,9 @@ def test_ogni_rotta_che_cambia_qualcosa_dichiara_un_permesso():
         # La protezione e' che ogni rotta lavora sull'utente della sessione:
         # `dimentica` rifiuta un endpoint che non e' tuo, e i test lo
         # verificano.
+        # La posizione e' personale come le notifiche: ognuno collega o scollega la **propria**, sull'utente della sessione.
+        # Un permesso statico non protegge niente (lo avrebbero tutti) o impedirebbe a qualcuno di spegnere la propria.
+        ("PUT", "/api/posizione/io"),
         ("POST", "/api/notifiche/sottoscrivi"),
         ("POST", "/api/notifiche/dimentica"),
         ("POST", "/api/notifiche/preferenze"),
