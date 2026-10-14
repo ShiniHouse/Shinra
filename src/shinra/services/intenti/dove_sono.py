@@ -23,7 +23,7 @@ class DoveSono(Intento):
     async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
         lingua = richiesta.schemi
         entita = getattr(richiesta.profilo, "entita_posizione", "") or ""
-        dove = posizione.dove_sei(entita)
+        dove = posizione.dove_sei(entita, profilo_id=getattr(richiesta.profilo, "id", "") or "")
 
         if dove.stato == posizione.IN_UN_LUOGO:
             return Risposta(lingua.dice("posizione_in_luogo", luogo=dove.luogo))
@@ -46,6 +46,7 @@ class DoveSono(Intento):
             posizione.SENZA_COORDINATE: "posizione_ignota_senza_coordinate",
             posizione.TROPPO_VECCHIA: "posizione_ignota_vecchia",
             posizione.COORDINATE_ILLEGGIBILI: "posizione_ignota_illeggibile",
+            posizione.APP_SENZA_SEGNALAZIONE: "posizione_ignota_app",
         }.get(dove.motivo or "", "posizione_ignota")
         return Risposta(lingua.dice(chiave, entita=entita, ore=(dove.eta_minuti or 0) // 60))
 

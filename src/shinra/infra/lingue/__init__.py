@@ -158,6 +158,7 @@ CHIAVI_MESSAGGI: Tuple[str, ...] = (
     "posizione_ignota_non_in_ha",
     "posizione_ignota_senza_coordinate",
     "posizione_ignota_vecchia",
+    "posizione_ignota_app",
     "posizione_ignota_illeggibile",
     "posizione_in_giro_vicino",
     "meteo_massima",

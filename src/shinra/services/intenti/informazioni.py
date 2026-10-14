@@ -78,7 +78,7 @@ class Meteo(Intento):
         # quello; altrimenti la casa principale.
         entita = getattr(richiesta.profilo, "entita_posizione", "") or ""
         if entita:
-            attuale = posizione.luogo_attuale(entita)
+            attuale = posizione.luogo_attuale(entita, getattr(richiesta.profilo, "id", "") or "")
             if attuale is not None:
                 return attuale
         return luoghi.principale()
