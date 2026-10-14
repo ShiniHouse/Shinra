@@ -102,7 +102,7 @@ async def test_fuori_da_ogni_luogo_dice_che_si_e_in_giro():
 
 async def test_senza_una_posizione_da_home_assistant_dice_che_non_lo_sa():
     risposta = await instrada(chiedi("dove sono?"))
-    assert "Non so dove sei adesso" in risposta.testo
+    assert "Non so dove sei" in risposta.testo and "non conosce" in risposta.testo
 
 
 async def test_la_risposta_non_contiene_coordinate():
@@ -154,3 +154,37 @@ async def test_senza_posizione_collegata_il_meteo_e_per_la_casa_principale(meteo
     persona(*UFFICIO)
     await instrada(chiedi("che tempo fa oggi", collegata=False))
     assert meteo == ["Casa"], "ha usato la posizione di chi non l'ha acceso"
+
+
+# ------------------------------------------------------- dire perche' non si sa
+
+
+async def test_in_giro_dice_il_luogo_piu_vicino_e_a_quanto():
+    persona(UFFICIO[0] + 0.0275, UFFICIO[1])  # ~3,1 km a nord dell'ufficio
+    testo = (await instrada(chiedi("dove sono?"))).testo
+    assert "Ufficio" in testo and "3,1 km" in testo, testo
+    assert "registrato nel punto sbagliato" in testo
+
+
+async def test_in_inglese_la_distanza_ha_il_punto():
+    persona(UFFICIO[0] + 0.0275, UFFICIO[1])
+    testo = (await instrada(chiedi("where am I?", lingua="en"))).testo
+    assert "3.1 km" in testo and "wrong spot" in testo
+
+
+async def test_ogni_motivo_del_non_so_ha_la_sua_frase():
+    senza = (await instrada(chiedi("dove sono?"))).testo
+    assert "non conosce «person.alessio»" in senza and "telefono giusto" in senza
+
+    cache_stati.aggiorna({"entity_id": "person.alessio", "state": "home", "attributes": {}})
+    assert "latitudine e longitudine" in (await instrada(chiedi("dove sono?"))).testo
+
+    cache_stati.aggiorna(
+        {
+            "entity_id": "person.alessio",
+            "state": "home",
+            "last_updated": datetime.fromtimestamp(0, tz=timezone.utc).isoformat(),
+            "attributes": {"latitude": 1.0, "longitude": 2.0},
+        }
+    )
+    assert "ore fa" in (await instrada(chiedi("dove sono?"))).testo
