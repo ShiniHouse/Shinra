@@ -2,12 +2,12 @@
     <header class="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-xl sticky top-0 z-50 transition-colors">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between">
             <!-- Living Core & Title -->
-            <div class="flex items-center gap-3">
-                <div id="header-living-core" class="living-core" title="Shinra Living Core">
+            <div class="flex items-center gap-3 min-w-0">
+                <div id="header-living-core" class="living-core shrink-0" title="Shinra Living Core">
                     <div class="living-core-halo"></div>
                     <i data-lucide="sparkles" class="w-5 h-5 text-white animate-pulse"></i>
                 </div>
-                <div>
+                <div class="min-w-0">
                     <div class="flex items-center gap-2">
                         <h1 class="text-xl font-extrabold bg-gradient-to-r from-amber-200 via-violet-200 to-indigo-300 dark:from-amber-200 dark:via-violet-200 dark:to-indigo-300 light:from-amber-700 light:via-violet-700 light:to-indigo-800 bg-clip-text text-transparent">Shinra</h1>
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">AI Hub</span>
@@ -17,10 +17,14 @@
                              suggerimento porta commit e ramo, che sono cio' che
                              identifica davvero il codice in esecuzione. -->
                         <span id="badge-versione"
-                              class="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide bg-slate-800/80 text-slate-400 border border-slate-700/80 cursor-default"
+                              class="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide bg-slate-800/80 text-slate-400 border border-slate-700/80 cursor-default"
                               title="{{ versione.descrizione }}{% if versione.ramo and versione.ramo != 'HEAD' %} · ramo {{ versione.ramo }}{% endif %}{% if versione.commit %} · commit {{ versione.commit }}{% endif %}">{{ versione.descrizione }}</span>
                         {% endif %}
                     </div>
+                    {% if versione %}
+                    <!-- Sul telefono la versione non ci sta accanto al titolo: va sotto, dove c'e' posto. -->
+                    <p class="sm:hidden text-[10px] text-slate-500 font-medium truncate">{{ versione.descrizione }}</p>
+                    {% endif %}
                     <p id="empathetic-greeting" class="text-[11px] text-slate-400 font-medium hidden sm:block">Buon pomeriggio. Casa pronta e accogliente.</p>
                 </div>
             </div>
@@ -71,7 +75,7 @@
             </div>
 
             <!-- Mobile Controls (Hamburger + Quick Theme Toggle) (< md) -->
-            <div class="flex md:hidden items-center gap-2">
+            <div class="flex md:hidden items-center gap-2 shrink-0">
                 <button data-gesto="cycleTheme" class="p-2 rounded-xl border border-slate-700/80 bg-slate-800/70 text-amber-400 transition" title="Cambia Tema">
                     <i data-lucide="sun-medium" class="w-4 h-4"></i>
                 </button>
