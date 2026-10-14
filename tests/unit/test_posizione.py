@@ -76,10 +76,21 @@ def test_senza_una_posizione_letta_non_si_inventa(stato):
     assert posizione.dove_sei("person.alessio").stato == posizione.IGNOTA
 
 
-def test_una_posizione_ferma_da_ore_non_vale():
-    ieri = datetime.fromtimestamp(time.time() - 3 * 3600, tz=timezone.utc)
+def test_una_posizione_ferma_da_un_giorno_non_vale():
+    ieri = datetime.fromtimestamp(time.time() - 13 * 3600, tz=timezone.utc)
     persona(*CASA, quando=ieri)
-    assert posizione.dove_sei("person.alessio").stato == posizione.IGNOTA, "ha indicato un posto di ore fa"
+    esito = posizione.dove_sei("person.alessio")
+    assert esito.stato == posizione.IGNOTA, "ha indicato un posto di ieri"
+    assert esito.motivo == posizione.TROPPO_VECCHIA and esito.eta_minuti >= 13 * 60 - 1
+
+
+def test_un_telefono_fermo_da_ore_vale_ancora():
+    """Un telefono che sta otto ore al lavoro non manda aggiornamenti: la sua posizione «vecchia» e' giusta."""
+    otto_ore_fa = datetime.fromtimestamp(time.time() - 8 * 3600, tz=timezone.utc)
+    persona(*CASA, quando=otto_ore_fa)
+    esito = posizione.dove_sei("person.alessio")
+    assert esito.stato == posizione.IN_UN_LUOGO and esito.luogo == "Casa"
+    assert esito.eta_minuti >= 8 * 60 - 1
 
 
 def test_una_posizione_recente_vale():
@@ -220,3 +231,28 @@ async def test_la_rotta_dei_candidati_risponde_con_l_elenco():
     )
     esito = await routes_posizione.candidati()
     assert [c["entita"] for c in esito["candidati"]] == ["person.alessio"]
+
+
+# ------------------------------------------------------ dire perche' non si sa (#343)
+
+
+def test_si_dice_perche_non_si_sa_dove_si_e():
+    assert posizione.dove_sei("person.alessio").motivo == posizione.NON_E_IN_HOME_ASSISTANT
+
+    cache_stati.aggiorna({"entity_id": "person.alessio", "state": "home", "attributes": {}})
+    assert posizione.dove_sei("person.alessio").motivo == posizione.SENZA_COORDINATE
+
+    cache_stati.aggiorna(
+        {"entity_id": "person.alessio", "state": "home", "attributes": {"latitude": "boh", "longitude": 1}}
+    )
+    assert posizione.dove_sei("person.alessio").motivo == posizione.COORDINATE_ILLEGGIBILI
+
+
+def test_in_giro_si_dice_il_luogo_piu_vicino_e_a_quanto_senza_coordinate():
+    persona(CASA[0] + 0.0275, CASA[1])  # ~3,1 km a nord di Casa
+    esito = posizione.dove_sei("person.alessio")
+    assert esito.stato == posizione.IN_GIRO
+    assert esito.vicino == "Casa" and 3000 <= esito.distanza_m <= 3200
+    assert esito.distanza_m % 100 == 0, "la distanza va arrotondata a cento metri"
+    dizionario = json.dumps(esito.come_dizionario())
+    assert "41.9" not in dizionario and "12.49" not in dizionario

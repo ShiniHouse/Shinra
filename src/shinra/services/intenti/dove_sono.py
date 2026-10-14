@@ -27,12 +27,35 @@ class DoveSono(Intento):
 
         if dove.stato == posizione.IN_UN_LUOGO:
             return Risposta(lingua.dice("posizione_in_luogo", luogo=dove.luogo))
+        if dove.stato == posizione.SPENTA:
+            return Risposta(lingua.dice("posizione_spenta"))
+        if dove.stato == posizione.IN_GIRO:
+            if dove.vicino and dove.distanza_m is not None:
+                return Risposta(
+                    lingua.dice(
+                        "posizione_in_giro_vicino",
+                        luogo=dove.vicino,
+                        distanza=_distanza_leggibile(dove.distanza_m, lingua.lingua),
+                    )
+                )
+            return Risposta(lingua.dice("posizione_in_giro"))
+
+        # Ignota: si dice perche', cosi' chi chiede sa cosa guardare.
         chiave = {
-            posizione.SPENTA: "posizione_spenta",
-            posizione.IGNOTA: "posizione_ignota",
-            posizione.IN_GIRO: "posizione_in_giro",
-        }[dove.stato]
-        return Risposta(lingua.dice(chiave))
+            posizione.NON_E_IN_HOME_ASSISTANT: "posizione_ignota_non_in_ha",
+            posizione.SENZA_COORDINATE: "posizione_ignota_senza_coordinate",
+            posizione.TROPPO_VECCHIA: "posizione_ignota_vecchia",
+            posizione.COORDINATE_ILLEGGIBILI: "posizione_ignota_illeggibile",
+        }.get(dove.motivo or "", "posizione_ignota")
+        return Risposta(lingua.dice(chiave, entita=entita, ore=(dove.eta_minuti or 0) // 60))
+
+
+def _distanza_leggibile(metri: int, lingua: str) -> str:
+    """«450 m» o «3,1 km» (con la virgola in italiano)."""
+    if metri < 1000:
+        return f"{metri} m"
+    km = f"{metri / 1000:.1f}"
+    return (km.replace(".", ",") if lingua == "it" else km) + " km"
 
 
 registra(DoveSono())

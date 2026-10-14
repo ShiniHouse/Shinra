@@ -128,11 +128,31 @@ async function cancellaLuogo(id) {
     await caricaLuoghi();
 }
 
-const FRASI_POSIZIONE = {
-    spenta: 'La tua posizione è spenta: Shinra non sa dove sei.',
-    ignota: 'Non so dove sei adesso (Home Assistant non manda la tua posizione, o è ferma da troppo).',
-    in_giro: 'Sei in giro: non in uno dei luoghi registrati.',
+const MOTIVI_POSIZIONE = {
+    non_in_home_assistant:
+        'Home Assistant non conosce questo telefono: controlla di aver scelto quello giusto.',
+    senza_coordinate:
+        "Home Assistant non manda latitudine e longitudine: nell'app Home Assistant del telefono la posizione deve essere attiva.",
+    troppo_vecchia: 'La posizione è ferma da troppo tempo (telefono spento o app chiusa?).',
+    coordinate_illeggibili: 'La posizione che manda Home Assistant non è leggibile.',
 };
+
+function _distanza(metri) {
+    return metri < 1000 ? `${metri} m` : `${(metri / 1000).toFixed(1).replace('.', ',')} km`;
+}
+
+function _fraseDellaPosizione(p) {
+    if (p.stato === 'in_un_luogo') return `Adesso sei: ${p.luogo}.`;
+    if (p.stato === 'spenta') return 'La tua posizione è spenta: scegli qui sotto il tuo telefono.';
+    if (p.stato === 'in_giro') {
+        const vicino = p.vicino
+            ? ` Il luogo più vicino è «${p.vicino}», a circa ${_distanza(p.distanza_m || 0)}: se non è vero, il luogo è stato registrato nel punto sbagliato.`
+            : '';
+        return `Sei in giro: non in uno dei luoghi registrati.${vicino}`;
+    }
+    const ore = p.eta_minuti ? ` (ultimo aggiornamento ${Math.round(p.eta_minuti / 60)} ore fa)` : '';
+    return `Non so dove sei adesso. ${MOTIVI_POSIZIONE[p.motivo] || ''}${p.motivo === 'troppo_vecchia' ? '' : ore}`.trim();
+}
 
 /** Riempie i due menu con le persone e i telefoni di Home Assistant, col nome che si legge. */
 async function caricaCandidati() {
@@ -171,8 +191,7 @@ async function caricaPosizione() {
             return;
         }
         const p = await res.json();
-        riga.textContent =
-            p.stato === 'in_un_luogo' ? `Adesso sei: ${p.luogo}.` : FRASI_POSIZIONE[p.stato] || '';
+        riga.textContent = _fraseDellaPosizione(p);
     } catch (err) {
         riga.textContent = `Non riesco a leggere la posizione: ${err.message}`;
     }
