@@ -366,12 +366,6 @@ async function saveNewKnowledge() {
     loadKnowledge();
 }
 
-async function deleteKnowledge(id) {
-    if (!confirm('Rimuovere questo fatto?')) return;
-    await fetch(`/api/knowledge/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
-    loadKnowledge();
-}
-
 // I gesti che il markup di quest'area puo' chiedere (#34). L'elenco e'
 // la stessa forma che avra' la lista di `export` il giorno dei moduli.
 Gesti.registra({
@@ -382,6 +376,5 @@ Gesti.registra({
     startLearningModal,
     submitLearningAnswer,
     toggleLearningMic,
-    deleteKnowledge,
     saveNewKnowledge,
 });
