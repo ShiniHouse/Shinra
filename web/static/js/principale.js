@@ -28,6 +28,7 @@ import './utenti.js';
 import './ruoli.js';
 import './passkey.js';
 import './impostazioni.js';
+import './luoghi.js';
 import './cervello_fisica.js';
 import './cervello_stile.js';
 import './cervello_scelte.js';

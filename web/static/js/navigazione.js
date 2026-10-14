@@ -5,6 +5,7 @@ import { _grezzo, _html } from './sicurezza.js';
 import { safeCreateIcons } from './avvio.js';
 import { getAuthHeaders } from './accesso.js';
 import { loadKnowledge } from './conoscenza.js';
+import { caricaLuoghi } from './luoghi.js';
 import { loadSources } from './fonti.js';
 import { loadAliases } from './dispositivi.js';
 import { loadModes } from './routine.js';
@@ -190,6 +191,7 @@ export function switchTab(tabId) {
         loadSettings();
         preparaSezioniImpostazioni();
         caricaNotifiche();
+        caricaLuoghi();
     }
 }
 

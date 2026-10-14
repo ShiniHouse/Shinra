@@ -170,6 +170,42 @@
                         </div>
                     </details>
 
+                    <!-- Luoghi -->
+                    <details class="sezione-impostazioni" data-sezione="luoghi">
+                        <summary>
+                            <div class="min-w-0">
+                                <h3 class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                                    <i data-lucide="map-pin" class="w-4 h-4 text-emerald-400"></i> Luoghi
+                                </h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">La casa principale e le altre abitazioni, registrate dal posto in cui sei.</p>
+                            </div>
+                            <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
+                        </summary>
+                        <div class="corpo-sezione space-y-3">
+                        <p class="text-[11px] text-slate-500">Le coordinate restano su questo server: non finiscono nei log, nel registro né nei salvataggi. Qui vedi solo una posizione approssimata a circa un chilometro.</p>
+                        <div id="luoghi-elenco" class="space-y-2"></div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input type="text" id="luogo-nome" placeholder="Nome (es. Casa al mare)" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <select id="luogo-tipo" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                                <option value="abitazione">Abitazione</option>
+                                <option value="lavoro">Lavoro</option>
+                                <option value="altro">Altro</option>
+                            </select>
+                            <input type="text" id="luogo-citta" placeholder="Città (facoltativa)" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <label class="flex items-center gap-2 text-slate-300"><input type="checkbox" id="luogo-principale"> È la casa principale</label>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" data-gesto="registraQuestoLuogo" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Registra questo luogo (posizione di questo dispositivo)</button>
+                        </div>
+                        <p class="text-[11px] text-slate-500">Da un PC la posizione è approssimativa (rete, non GPS): il raggio del luogo si allarga di conseguenza. Per più precisione registrala dal telefono.</p>
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <input type="text" id="luogo-entita" placeholder="person.alessio" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
+                            <button type="button" data-gesto="registraDalTelefono" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Dalla posizione di un telefono (Home Assistant)</button>
+                        </div>
+                        <p id="luoghi-esito" class="text-xs"></p>
+                        </div>
+                    </details>
+
                     <!-- Sintesi Vocale & Umanizzazione -->
                     <details class="sezione-impostazioni" data-sezione="voce">
                         <summary>
