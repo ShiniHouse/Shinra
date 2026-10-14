@@ -1,10 +1,10 @@
 # 0010 — Si conserva la conversazione, e in che forma
 
-- **Stato:** Proposto
+- **Stato:** Accettato
 - **Data:** 2026-10-13
 - **Attuazione:** milestone `v0.8.0`, issue #254 (riassunti: #255, #256; finestra: #257; sogno notturno: #258)
 
-> Bozza scritta per essere discussa: **nessuna di queste scelte è decisa** finché il proprietario non porta lo stato a `Accettato`.
+> Accettata il 2026-10-14 come proposta. Restano da fissare (valori predefiniti, cambiabili) la durata dei riassunti — 30 giorni — e che i minori abbiano solo l'argomento, senza il testo.
 
 ## Contesto
 
