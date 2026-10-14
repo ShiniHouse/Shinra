@@ -57,6 +57,18 @@ class DepositoRiassunti:
             query = query.order_by(RiassuntoConversazione.creato_il.desc()).limit(massimo)
             return [_come_dizionario(r) for r in s.scalars(query).all()]
 
+    def creati_tra(self, profilo: str, da: datetime, a: datetime) -> list[dict[str, Any]]:
+        """I riassunti di un profilo scritti in un periodo, dal piu' vecchio: li legge il sogno."""
+        with sessione() as s:
+            query = (
+                select(RiassuntoConversazione)
+                .where(RiassuntoConversazione.profilo == profilo)
+                .where(RiassuntoConversazione.creato_il >= da)
+                .where(RiassuntoConversazione.creato_il <= a)
+                .order_by(RiassuntoConversazione.creato_il)
+            )
+            return [_come_dizionario(r) for r in s.scalars(query).all()]
+
     def da_rifinire(self, creati_dopo: datetime, massimo: int = 20) -> list[dict[str, Any]]:
         """I riassunti scritti dal codice e non ancora riscritti, recenti: li guarda il compito notturno."""
         with sessione() as s:

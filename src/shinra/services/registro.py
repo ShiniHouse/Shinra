@@ -175,8 +175,9 @@ def voci(
     correlazione: Optional[str] = None,
     dal: Optional[datetime] = None,
     al: Optional[datetime] = None,
+    senza_attore: bool = False,
 ) -> list[dict[str, Any]]:
-    """Le voci piu' recenti, filtrate. E' cio' che risponde a «chi ha acceso cosa»."""
+    """Le voci piu' recenti, filtrate. E' cio' che risponde a «chi ha acceso cosa». `senza_attore`: le sole voci di sistema."""
     from sqlalchemy import select
 
     from shinra.infra.db.modelli import VoceRegistro
@@ -187,6 +188,8 @@ def voci(
         query = query.where(VoceRegistro.attore == attore)
     if azione:
         query = query.where(VoceRegistro.azione == azione)
+    if senza_attore:
+        query = query.where((VoceRegistro.attore.is_(None)) | (VoceRegistro.attore == ""))
     if canale:
         query = query.where(VoceRegistro.canale == canale)
     if esito:
