@@ -9,8 +9,8 @@ import { getAuthHeaders } from './accesso.js';
 
 const TIPI = { abitazione: 'Abitazione', lavoro: 'Lavoro', altro: 'Altro' };
 
-function _messaggio(testo, errore = false) {
-    const el = document.getElementById('luoghi-esito');
+function _messaggio(testo, errore = false, id = 'luoghi-esito') {
+    const el = document.getElementById(id);
     if (!el) return;
     el.textContent = testo;
     el.className = `text-xs ${errore ? 'text-rose-400' : 'text-emerald-400'}`;
@@ -180,14 +180,15 @@ async function caricaPosizione() {
 
 async function collegaLaMiaPosizione() {
     const entita = (document.getElementById('posizione-entita')?.value || '').trim();
-    if (!entita) return _messaggio('Scegli il tuo telefono o la tua persona, oppure premi «Spegni».', true);
+    // Si collega appena si sceglie: niente secondo pulsante da dimenticare. Tornare sulla voce vuota non fa niente.
+    if (!entita) return;
     const res = await fetch('/api/posizione/io', {
         method: 'PUT',
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ entita }),
     });
-    if (!res.ok) return _messaggio(await _detail(res), true);
-    _messaggio('Posizione collegata.');
+    if (!res.ok) return _messaggio(await _detail(res), true, 'posizione-esito');
+    _messaggio('Posizione collegata.', false, 'posizione-esito');
     await caricaPosizione();
 }
 
@@ -197,10 +198,10 @@ async function spegniLaMiaPosizione() {
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ entita: '' }),
     });
-    if (!res.ok) return _messaggio(await _detail(res), true);
+    if (!res.ok) return _messaggio(await _detail(res), true, 'posizione-esito');
     const campo = document.getElementById('posizione-entita');
     if (campo) campo.value = '';
-    _messaggio('Posizione spenta.');
+    _messaggio('Posizione spenta.', false, 'posizione-esito');
     await caricaPosizione();
 }
 
