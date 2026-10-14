@@ -65,6 +65,7 @@ RICHIESTE: Tuple[Tuple[str, ...], ...] = (
     ("timer",),
     ("intervista",),
     ("sospetto",),
+    ("posizione", "inneschi"),
 )
 
 # Le voci della sezione timer: le frasi che chiedono un timer o un promemoria (#205).
@@ -150,6 +151,10 @@ CHIAVI_MESSAGGI: Tuple[str, ...] = (
     "modalita_attivata",
     "meteo_domani",
     "meteo_adesso",
+    "posizione_spenta",
+    "posizione_ignota",
+    "posizione_in_giro",
+    "posizione_in_luogo",
     "meteo_massima",
     "condizione_variabile",
     "notizie_ultime",
@@ -233,6 +238,8 @@ class Schemi:
     intervista: Mapping[str, Any]
     # Cio' che somiglia a un ordine rivolto a Shinra, dentro un testo che sta per diventare un ricordo (#264).
     sospetto: Tuple[re.Pattern, ...]
+    # Le frasi che chiedono «dove sono?» (#343): espressioni che coprono la frase intera.
+    inneschi_posizione: Tuple[re.Pattern, ...]
     messaggi: Mapping[str, str]
     prompt: Mapping[str, str]
 
@@ -355,6 +362,7 @@ def _compila(lingua: str) -> Schemi:
         timer=dict(dati["timer"]),
         intervista=dict(dati["intervista"]),
         sospetto=tuple(re.compile(str(p), re.IGNORECASE) for p in dati["sospetto"]),
+        inneschi_posizione=tuple(re.compile(str(p), re.IGNORECASE) for p in dati["posizione"]["inneschi"]),
         messaggi={k: str(v) for k, v in dati["messaggi"].items()},
         prompt={k: str(v) for k, v in dati["prompt"].items()},
     )

@@ -450,6 +450,11 @@ Is that right? Answer «yes» and I'll save everything, «no» to drop everythin
 
 # What looks like an instruction aimed at Shinra, in a text about to become a memory (#264). Regular expressions,
 # case-insensitive. A text that contains one never becomes an active memory.
+# "Where am I?" and only that: the whole phrase, because "where are my keys?" is not a question about position (#343).
+posizione:
+  inneschi:
+    - '^\s*(well\s+|hey\s+|tell\s+me\s+)?(where\s+am\s+i|which\s+place\s+am\s+i\s+in)(\s+now|\s+right\s+now)?\s*[?!.]*\s*$'
+
 sospetto:
   - '\b(ignore|forget|disregard|override)\b.{0,40}\b(instruction|rule|previous|prior|limit|restriction)'
   - '\b(from now on|from this moment|henceforth|going forward)\b'
@@ -508,6 +513,10 @@ messaggi:
   modalita_attivata: "{nome} mode activated."
   meteo_domani: "Tomorrow in {localita}: {condizione}, high of {massima} and low of {minima} degrees."
   meteo_adesso: "In {localita} it is currently {temperatura}, {condizione}."
+  posizione_spenta: "I don't know where you are: your location is not linked. You can link it in Settings, under Places."
+  posizione_ignota: "I don't know where you are right now: Home Assistant is not sending me your location."
+  posizione_in_giro: "You are out and about: not at one of the places I know."
+  posizione_in_luogo: "You are at {luogo}."
   meteo_massima: " Expected high of {massima} degrees."
   condizione_variabile: "variable"
   notizie_ultime: "Latest news: {titoli}"
