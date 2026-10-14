@@ -143,7 +143,7 @@ def trova(
         candidata = _candidata(voce)
         if candidata is None:
             continue
-        gruppi[(attore, *candidata)].append(quando)
+        gruppi[(attore, candidata[0], candidata[1], candidata[2])].append(quando)
 
     trovate: list[Abitudine] = []
     for (profilo, strumento, bersaglio, verbo), momenti in gruppi.items():
