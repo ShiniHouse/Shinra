@@ -1,0 +1,53 @@
+/* ==================== IL TELEFONO ====================
+   Cio' che serve solo a una app installata su uno smartphone (PWA). Dalla prova su un iPhone: la pagina diventava piu'
+   larga dello schermo, l'intestazione si schiacciava (il logo tagliato a sinistra, il menu a destra) e tutto sembrava
+   allungato. Due difese: niente scorrimento laterale della pagina, e i blocchi flessibili possono restringersi invece di
+   spingere la pagina oltre i bordi. */
+html {
+  /* Su `html` e non su `body`: su `body` la barra in alto smetterebbe di restare ferma (`sticky`). */
+  overflow-x: hidden;
+  /* Il telefono non deve ingrandire il testo da solo quando gira lo schermo. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  min-width: 0;
+  max-width: 100vw;
+}
+@media (max-width: 639px) {
+  /* Sotto i 640 pixel nessun blocco della pagina puo' essere piu' largo dello schermo. */
+  main,
+  .tab-content {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+/* Su iPhone un campo con il testo sotto i 16 pixel fa ingrandire la pagina appena ci si tocca, e dopo resta ingrandita:
+   e' il «si allunga» di chi scrive in chat. Con 16 pixel il telefono non ingrandisce niente. */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    /* `!important` perche' le classi di Tailwind (`text-sm`) hanno piu' peso di un selettore di tag. */
+    font-size: 16px !important;
+  }
+}
+
+/* Un tocco su un pulsante non deve aspettare il doppio tocco (che sul telefono ingrandisce), ne' lasciare il riquadro
+   grigio del browser. */
+button,
+[role="button"],
+select,
+summary {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* L'app installata disegna fino ai bordi: in fondo, il campo dei messaggi non deve finire sotto la barra di casa
+   dell'iPhone. Vale solo se il telefono dichiara un margine di sicurezza. */
+@supports (padding: max(0px)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
