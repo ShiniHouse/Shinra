@@ -77,6 +77,7 @@ TABELLE: dict[str, str] = {
 FUORI: dict[str, str] = {
     "timers": "durano minuti: ripristinarne uno di tre mesi fa non ha senso",
     "reminders": "come sopra, e sono legati a un momento che e' passato",
+    "luoghi": "coordinate: un dato di posizione non deve stare in un archivio che si copia e si manda; si registrano di nuovo",
 }
 
 # Cosa si toglie da ogni riga prima di scriverla. La colonna `pin` e'

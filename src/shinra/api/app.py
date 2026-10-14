@@ -17,6 +17,7 @@ from shinra.api.routes_casa import router as casa_router
 from shinra.api.routes_cervello import router as cervello_router
 from shinra.api.routes_conoscenza import router as conoscenza_router
 from shinra.api.routes_impostazioni import router as impostazioni_router
+from shinra.api.routes_luoghi import router as luoghi_router
 from shinra.api.routes_notifiche import router as notifiche_router
 from shinra.api.routes_regole import router as regole_router
 from shinra.api.routes_utenti import router as utenti_router
@@ -163,6 +164,7 @@ app.include_router(attivita_router)  # protetto per difetto
 app.include_router(notifiche_router)  # protetto per difetto
 app.include_router(regole_router)  # protetto per difetto
 app.include_router(conoscenza_router)  # protetto per difetto
+app.include_router(luoghi_router)  # protetto per difetto
 app.include_router(voci_router)  # protetto per difetto
 app.include_router(voce_router)  # protetto per difetto
 

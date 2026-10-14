@@ -41,7 +41,7 @@ I dettagli del flusso con le passkey e dei dispositivi fidati stanno nell'ADR
 l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 `/openapi.json`.
 
-## Le rotte (91)
+## Le rotte (96)
 
 ### `alexa`
 
@@ -137,6 +137,16 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 | Metodo | Percorso | Chi | Cosa fa |
 | :--- | :--- | :--- | :--- |
 | GET | `/api/lingue` | sessione aperta | Le lingue che Shinra sa parlare, per il menu del profilo (issue #36). |
+
+### `luoghi`
+
+| Metodo | Percorso | Chi | Cosa fa |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/luoghi` | permesso `impostazioni.gestisci` | I luoghi registrati, con le coordinate arrotondate a circa un chilometro. |
+| POST | `/api/luoghi` | permesso `impostazioni.gestisci` | Registra il luogo in cui si e', dalle coordinate lette dal browser (la precisione di un PC e' bassa: va dichiarata). |
+| POST | `/api/luoghi/da-persona` | permesso `impostazioni.gestisci` | Registra un luogo dalla posizione che Home Assistant conosce di una persona o di un telefono. |
+| PUT | `/api/luoghi/{identificativo}` | permesso `impostazioni.gestisci` | Cambia nome, tipo, raggio, citta' o il luogo principale. Le coordinate non si ritoccano: si registra di nuovo. |
+| DELETE | `/api/luoghi/{identificativo}` | permesso `impostazioni.gestisci` | Cancella un luogo e, con lui, le sue coordinate. |
 
 ### `modes`
 
