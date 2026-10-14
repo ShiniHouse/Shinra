@@ -21,6 +21,7 @@ from shinra.api.routes_luoghi import router as luoghi_router
 from shinra.api.routes_notifiche import router as notifiche_router
 from shinra.api.routes_posizione import router as posizione_router
 from shinra.api.routes_regole import router as regole_router
+from shinra.api.routes_ricordi import router as ricordi_router
 from shinra.api.routes_utenti import router as utenti_router
 from shinra.api.routes_voce import router as voce_router
 from shinra.api.routes_voci import router as voci_router
@@ -166,6 +167,7 @@ app.include_router(notifiche_router)  # protetto per difetto
 app.include_router(regole_router)  # protetto per difetto
 app.include_router(conoscenza_router)  # protetto per difetto
 app.include_router(luoghi_router)  # protetto per difetto
+app.include_router(ricordi_router)  # protetto per difetto
 app.include_router(posizione_router)  # protetto per difetto
 app.include_router(voci_router)  # protetto per difetto
 app.include_router(voce_router)  # protetto per difetto
