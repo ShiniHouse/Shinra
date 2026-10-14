@@ -103,6 +103,7 @@ def test_chi_parla_al_modello_sta_in_un_elenco_chiuso():
     atteso = {
         "services/agent.py",  # la conversazione: misura il prompt a ogni richiesta
         "services/interview_engine.py",  # un prompt breve e fisso, senza storia ne' ricordi
+        "services/riassunti.py",  # la riscrittura notturna: un prompt breve, solo il riassunto, fuori da ogni risposta
         "infra/llm/ollama.py",  # il client stesso (genera_json chiama chat)
     }
     assert (

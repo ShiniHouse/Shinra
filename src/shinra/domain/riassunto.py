@@ -97,3 +97,69 @@ def riassumi(messaggi: Iterable[Mapping[str, Any]], sospetti: Sequence[Pattern[s
             compatte.append(a)
     esito.azioni = compatte[-AZIONI_MASSIME:]
     return esito
+
+
+# ------------------------------------------------------------ controllare una riscrittura (#256)
+
+# Una riscrittura puo' essere un po' piu' lunga del testo di base, non molto: serve a leggersi meglio, non a dire di piu'.
+FATTORE_LUNGHEZZA = 1.25
+LUNGHEZZA_MINIMA_CONSENTITA = 120
+LUNGHEZZA_PAROLA_CHIAVE = 5
+QUOTA_MINIMA_DI_PAROLE_CHIAVE = 0.5
+QUOTA_MINIMA_DI_RADICAMENTO = 0.35
+
+_PAROLE = re.compile(r"[^\W\d_]{%d,}" % LUNGHEZZA_PAROLA_CHIAVE, re.UNICODE)
+_NUMERI = re.compile(r"\d+")
+
+
+@dataclass(frozen=True)
+class EsitoRiscrittura:
+    accettata: bool
+    motivi: tuple[str, ...] = ()
+
+
+def controlla_riscrittura(
+    struttura: Mapping[str, Any],
+    testo_base: str,
+    riscritto: str,
+    sospetti: Sequence[Pattern[str]] = (),
+) -> EsitoRiscrittura:
+    """Se una riscrittura del modello puo' sostituire il testo scritto dal codice. **Nel dubbio, no.**
+
+    Il modello puo' rendere il testo piu' leggibile ma non aggiungere nulla: un riassunto che il modello ha arricchito e'
+    un riassunto che puo' contenere cio' che non e' successo. Si rifiuta se la riscrittura: e' vuota o su piu' righe o
+    troppo lunga; ha numeri che il testo di base non ha; ha la forma di una chiamata a uno strumento o di un ordine; perde
+    il nome di un'azione eseguita; perde la meta' delle parole delle richieste; oppure e' fatta per lo piu' di parole che
+    nel testo di base non c'erano (inventata).
+    """
+    motivi: list[str] = []
+    pulito = riscritto.strip()
+    unico = " ".join(pulito.split())
+    if not unico:
+        return EsitoRiscrittura(False, ("vuota",))
+    if "\n" in pulito or "\r" in pulito:
+        motivi.append("piu_righe")
+    if len(unico) > max(LUNGHEZZA_MINIMA_CONSENTITA, int(len(testo_base) * FATTORE_LUNGHEZZA)):
+        motivi.append("troppo_lunga")
+    if set(_NUMERI.findall(unico)) - set(_NUMERI.findall(testo_base)):
+        motivi.append("numeri_nuovi")
+    if avvelenamento.ha_forma_di_strumento(unico) or any(p.search(unico) for p in sospetti):
+        motivi.append("forma_di_ordine")
+
+    basso = unico.casefold()
+    azioni = [str(a.get("nome", "")).casefold() for a in struttura.get("azioni") or []]
+    if any(a and a not in basso for a in azioni):
+        motivi.append("azione_persa")
+
+    chiave_base = {w.casefold() for r in struttura.get("richieste") or [] for w in _PAROLE.findall(str(r))}
+    if chiave_base:
+        presenti = sum(1 for w in chiave_base if w in basso)
+        if presenti / len(chiave_base) < QUOTA_MINIMA_DI_PAROLE_CHIAVE:
+            motivi.append("richieste_perse")
+
+    nuove = {w.casefold() for w in _PAROLE.findall(unico)}
+    base_bassa = testo_base.casefold()
+    if nuove and sum(1 for w in nuove if w in base_bassa) / len(nuove) < QUOTA_MINIMA_DI_RADICAMENTO:
+        motivi.append("inventata")
+
+    return EsitoRiscrittura(not motivi, tuple(motivi))

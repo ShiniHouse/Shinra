@@ -11,7 +11,7 @@ from sqlalchemy import delete, select
 from shinra.infra.db.modelli_riassunti import RiassuntoConversazione
 from shinra.infra.db.motore import sessione
 
-CAMPI = ("id", "profilo", "creato_il", "scade_il", "testo", "turni", "origine", "modello")
+CAMPI = ("id", "profilo", "creato_il", "scade_il", "testo", "turni", "origine", "modello", "struttura")
 
 
 def _come_dizionario(riga: RiassuntoConversazione) -> dict[str, Any]:
@@ -28,6 +28,7 @@ class DepositoRiassunti:
         scade_il: datetime,
         origine: str = "codice",
         modello: str = "",
+        struttura: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         with sessione() as s:
             riga = RiassuntoConversazione(
@@ -39,6 +40,7 @@ class DepositoRiassunti:
                 scade_il=scade_il,
                 origine=origine,
                 modello=modello,
+                struttura=struttura,
             )
             s.add(riga)
             s.flush()
@@ -54,6 +56,30 @@ class DepositoRiassunti:
                 query = query.where(RiassuntoConversazione.scade_il > ancora_validi_a)
             query = query.order_by(RiassuntoConversazione.creato_il.desc()).limit(massimo)
             return [_come_dizionario(r) for r in s.scalars(query).all()]
+
+    def da_rifinire(self, creati_dopo: datetime, massimo: int = 20) -> list[dict[str, Any]]:
+        """I riassunti scritti dal codice e non ancora riscritti, recenti: li guarda il compito notturno."""
+        with sessione() as s:
+            query = (
+                select(RiassuntoConversazione)
+                .where(RiassuntoConversazione.origine == "codice")
+                .where(RiassuntoConversazione.creato_il >= creati_dopo)
+                .where(RiassuntoConversazione.struttura.is_not(None))
+                .order_by(RiassuntoConversazione.creato_il)
+                .limit(massimo)
+            )
+            return [_come_dizionario(r) for r in s.scalars(query).all()]
+
+    def riscrivi(self, identificativo: str, testo: str, modello: str) -> bool:
+        """Sostituisce il testo con una riscrittura accettata. Il profilo e la scadenza non cambiano."""
+        with sessione() as s:
+            riga = s.get(RiassuntoConversazione, identificativo)
+            if riga is None:
+                return False
+            riga.testo = testo
+            riga.origine = "modello"
+            riga.modello = modello
+            return True
 
     def dimentica_profilo(self, profilo: str) -> int:
         with sessione() as s:

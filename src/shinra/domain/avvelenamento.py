@@ -63,3 +63,8 @@ def valuta(testo: str, sospetti: Iterable[Pattern[str]] = ()) -> Verdetto:
         motivi.append(MOTIVO_ISTRUZIONE)
 
     return Verdetto(not motivi, tuple(motivi))
+
+
+def ha_forma_di_strumento(testo: str) -> bool:
+    """Se il testo ha la forma di una chiamata a uno strumento o di un messaggio di ruolo (`[TOOL:`, JSON, blocchi di codice)."""
+    return bool(_FORMA_DI_STRUMENTO.search(testo or ""))
