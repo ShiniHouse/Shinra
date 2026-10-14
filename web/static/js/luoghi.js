@@ -63,11 +63,18 @@ function _datiDelModulo() {
 }
 
 async function _invia(daPersona, corpo) {
-    const intestazioni = getAuthHeaders({ 'Content-Type': 'application/json' });
     const body = JSON.stringify(corpo);
     const res = daPersona
-        ? await fetch('/api/luoghi/da-persona', { method: 'POST', headers: intestazioni, body })
-        : await fetch('/api/luoghi', { method: 'POST', headers: intestazioni, body });
+        ? await fetch('/api/luoghi/da-persona', {
+              method: 'POST',
+              headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+              body,
+          })
+        : await fetch('/api/luoghi', {
+              method: 'POST',
+              headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+              body,
+          });
     if (!res.ok) {
         _messaggio(await _detail(res), true);
         return false;
@@ -80,7 +87,7 @@ async function _invia(daPersona, corpo) {
 }
 
 /** Registra il luogo in cui ci si trova, con la posizione che il browser di QUESTO dispositivo conosce. */
-export function registraQuestoLuogo() {
+function registraQuestoLuogo() {
     const dati = _datiDelModulo();
     if (!dati.nome) return _messaggio('Dai un nome al luogo.', true);
     if (!navigator.geolocation) return _messaggio('Questo browser non sa dove si trova.', true);
@@ -100,7 +107,7 @@ export function registraQuestoLuogo() {
 }
 
 /** Registra un luogo dalla posizione che Home Assistant conosce di un telefono o di una persona. */
-export async function registraDalTelefono() {
+async function registraDalTelefono() {
     const dati = _datiDelModulo();
     const entita = (document.getElementById('luogo-entita')?.value || '').trim();
     if (!dati.nome) return _messaggio('Dai un nome al luogo.', true);
@@ -108,7 +115,7 @@ export async function registraDalTelefono() {
     await _invia(true, { ...dati, entita });
 }
 
-export async function cancellaLuogo(id) {
+async function cancellaLuogo(id) {
     if (!id || !confirm('Cancellare il luogo e le sue coordinate?')) return;
     const res = await fetch(`/api/luoghi/${encodeURIComponent(id)}`, {
         method: 'DELETE',
@@ -119,4 +126,8 @@ export async function cancellaLuogo(id) {
     await caricaLuoghi();
 }
 
-Gesti.registra({ registraQuestoLuogo, registraDalTelefono, cancellaLuogo });
+Gesti.registra({
+    registraQuestoLuogo,
+    registraDalTelefono,
+    cancellaLuogo,
+});
