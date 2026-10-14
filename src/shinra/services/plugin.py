@@ -36,6 +36,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, FrozenSet, List, Mapping, Optional, Tuple
 from urllib.parse import urlparse
 
+from shinra.domain import ricordi as ricordi_dominio
 from shinra.domain import sensibilita
 
 logger = logging.getLogger("Shinra.Plugin")
@@ -207,7 +208,12 @@ class Contesto:
             )
         from shinra.infra.data_store import data_store
 
-        return [str(f["text"]) for f in data_store.get_knowledge() if f.get("enabled", True)]
+        # Un plugin non ha un profilo: legge i ricordi della casa, mai quelli privati di qualcuno (ADR 0009).
+        return [
+            str(f["text"])
+            for f in data_store.get_knowledge()
+            if ricordi_dominio.e_della_casa(f) and ricordi_dominio.entra_nel_prompt(f)
+        ]
 
 
 @dataclass

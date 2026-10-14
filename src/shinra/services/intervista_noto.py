@@ -14,6 +14,7 @@ Le frasi che dice sono nella lingua di chi risponde (#207).
 import unicodedata
 from typing import Any, Dict, Iterable, List, Optional
 
+from shinra.domain import ricordi as ricordi_dominio
 from shinra.services.intervista_comune import dice
 
 # Una casa con un solo profilo non ha ancora detto «chi vive qui»: serve
@@ -53,7 +54,12 @@ def dati_della_casa(data_store: Any) -> Dict[str, Any]:
 
     profili = [u.name for u in user_manager.get_users() if getattr(u, "name", "")]
     stanze = sorted({str(a.get("room") or "").strip() for a in data_store.get_aliases()} - {""})
-    fatti = [f for f in data_store.get_knowledge() if f.get("enabled", True)]
+    # L'intervista riempie la conoscenza della casa: sa solo cio' che e' della casa (e attivo), mai il privato di qualcuno.
+    fatti = [
+        f
+        for f in data_store.get_knowledge()
+        if ricordi_dominio.e_della_casa(f) and ricordi_dominio.entra_nel_prompt(f)
+    ]
     return {"profili": profili, "stanze": stanze, "fatti": fatti}
 
 

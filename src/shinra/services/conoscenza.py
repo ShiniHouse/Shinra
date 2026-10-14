@@ -32,6 +32,7 @@ from datetime import timezone
 from typing import Any, Mapping, Optional, Sequence
 
 from shinra.domain import recupero as dominio
+from shinra.domain import ricordi as regole_dei_ricordi
 from shinra.infra.db.vettori_in_cache import vettori_in_cache
 
 logger = logging.getLogger("Shinra.Conoscenza")
@@ -85,7 +86,8 @@ class Recuperati:
 
 class ServizioConoscenza:
     def __init__(self) -> None:
-        self.ultimo_recupero: list[Mapping[str, Any]] = []
+        # Per profilo: chi guarda cosa ha usato la *sua* ultima risposta non deve poter leggere quella di un altro.
+        self.ultimo_recupero: dict[str, list[Mapping[str, Any]]] = {}
         self.semantico_disponibile: Optional[bool] = None
 
     # --------------------------------------------------------- l'indice
@@ -158,11 +160,17 @@ class ServizioConoscenza:
 
     # ------------------------------------------------------ il recupero
 
-    def _con_vettori(self) -> list[dominio.Fatto]:
+    def _con_vettori(self, profilo_id: str = "") -> list[dominio.Fatto]:
+        """I ricordi che **questo profilo** puo' vedere e che possono entrare nel prompt: della casa e propri, attivi."""
 
         vettori = vettori_in_cache.tutti()
         fuori = []
         for fatto in self._fatti_attivi():
+            if not (
+                regole_dei_ricordi.e_visibile_a(fatto, profilo_id)
+                and regole_dei_ricordi.entra_nel_prompt(fatto)
+            ):
+                continue
             identificativo = str(fatto["id"])
             salvato = vettori.get(identificativo) or {}
             fuori.append(
@@ -185,7 +193,7 @@ class ServizioConoscenza:
             )
         return fuori
 
-    async def recupera(self, domanda: str) -> Recuperati:
+    async def recupera(self, domanda: str, profilo_id: str = "") -> Recuperati:
         """La conoscenza da mettere nel prompt per questa domanda, e i fatti che ci sono entrati.
 
         E' il sostituto di `get_enabled_knowledge_summary()`, e produce la
@@ -194,7 +202,7 @@ class ServizioConoscenza:
         """
         from shinra.infra.llm import embedding
 
-        fatti = self._con_vettori()
+        fatti = self._con_vettori(profilo_id)
 
         if not fatti:
             return Recuperati("Nessuna informazione personalizzata registrata.")
@@ -221,22 +229,47 @@ class ServizioConoscenza:
 
         return Recuperati(dominio.come_prompt(trovati), spiegati, [_entrato(t.fatto) for t in trovati])
 
-    async def per_la_domanda(self, domanda: str) -> str:
+    async def per_la_domanda(self, domanda: str, profilo_id: str = "") -> str:
         """Come `recupera`, ma solo il testo; ricorda i fatti per `fatti_usati()` (la vista di debug)."""
-        recuperati = await self.recupera(domanda)
-        self.ultimo_recupero = list(recuperati.fatti)
+        recuperati = await self.recupera(domanda, profilo_id)
+        self.ultimo_recupero[profilo_id] = list(recuperati.fatti)
         return recuperati.testo
 
-    def fatti_usati(self) -> list[Mapping[str, Any]]:
-        """Quali fatti hanno contribuito all'**ultima** risposta di chiunque: solo per la vista di debug.
+    def fatti_usati(self, profilo_id: str = "") -> list[Mapping[str, Any]]:
+        """Quali fatti hanno contribuito all'**ultima** risposta **di questo profilo**: per la vista di debug.
 
-        Con richieste concorrenti e' un'istantanea, non un'attribuzione: chi deve sapere quali fatti sono entrati
-        nella *sua* richiesta usa `recupera()` e legge `Recuperati.fatti` (#247).
+        Per profilo perche' il testo di un ricordo privato non deve arrivare a chi guarda la risposta di un altro (ADR 0009).
+        Chi deve sapere quali fatti sono entrati nella *sua* richiesta usa `recupera()` e legge `Recuperati.fatti` (#247).
 
         Quando l'assistente risponde una cosa strana, la prima domanda e'
         «da dove l'ha presa».
         """
-        return list(self.ultimo_recupero)
+        return list(self.ultimo_recupero.get(profilo_id, []))
+
+    def segna_usati(self, identificativi: Sequence[str]) -> int:
+        """Dopo una risposta, conta che questi ricordi sono serviti: `usi` +1 e `ultimo_uso` adesso (#247).
+
+        In blocco, una scrittura sola, e solo per i ricordi **entrati davvero** nel prompt. Non solleva mai: un guasto nel
+        conteggio non deve impedire di rispondere.
+        """
+        ids = sorted({str(i) for i in identificativi if i})
+        if not ids:
+            return 0
+        try:
+            from sqlalchemy import update
+
+            from shinra.infra.db.base import adesso
+            from shinra.infra.db.modelli_ricordi import Fatto
+            from shinra.infra.db.motore import sessione
+
+            with sessione() as s:
+                s.execute(
+                    update(Fatto).where(Fatto.id.in_(ids)).values(usi=Fatto.usi + 1, ultimo_uso=adesso())
+                )
+            return len(ids)
+        except Exception:
+            logger.warning("Conteggio degli usi dei ricordi non riuscito", exc_info=True)
+            return 0
 
     # ------------------------------------------------------------ stato
 

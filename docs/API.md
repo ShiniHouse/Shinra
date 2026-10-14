@@ -90,7 +90,7 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 
 | Metodo | Percorso | Chi | Cosa fa |
 | :--- | :--- | :--- | :--- |
-| GET | `/api/conoscenza/fatti-usati` | sessione aperta | I fatti che hanno contribuito all'ultima risposta, con i punteggi. |
+| GET | `/api/conoscenza/fatti-usati` | sessione aperta | I fatti che hanno contribuito all'ultima risposta **di chi chiede**, con i punteggi. |
 | POST | `/api/conoscenza/reindicizza` | permesso `conoscenza.scrivi` | Ricalcola gli embedding mancanti, o tutti con `forza=true`. |
 | GET | `/api/conoscenza/stato` | sessione aperta | Quanti fatti, quanti indicizzati, e se il recupero e' semantico. |
 
@@ -118,9 +118,9 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 
 | Metodo | Percorso | Chi | Cosa fa |
 | :--- | :--- | :--- | :--- |
-| GET | `/api/knowledge` | sessione aperta | Elenca i fatti della conoscenza di casa. |
-| POST | `/api/knowledge` | permesso `conoscenza.scrivi` | Aggiunge o aggiorna un fatto della conoscenza di casa. |
-| DELETE | `/api/knowledge/{item_id}` | permesso `conoscenza.scrivi` | Cancella un fatto della conoscenza di casa, con il suo vettore. Il registro scrive che e' successo, non cosa. |
+| GET | `/api/knowledge` | sessione aperta | Elenca i fatti che chi chiede puo' vedere: quelli della casa e i **propri** privati (ADR 0009). |
+| POST | `/api/knowledge` | permesso `conoscenza.scrivi` | Aggiunge o aggiorna un fatto. Uno privato si scrive solo a nome proprio; il proprietario non si cambia. |
+| DELETE | `/api/knowledge/{item_id}` | permesso `conoscenza.scrivi` | Cancella un fatto della casa o un proprio ricordo privato, con il suo vettore. Il registro scrive che e' successo, non cosa. |
 
 ### `learning`
 

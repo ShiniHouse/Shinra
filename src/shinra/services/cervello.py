@@ -31,6 +31,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from shinra.config.settings import settings
 from shinra.domain import cervello as dominio
+from shinra.domain import ricordi as ricordi_dominio
 from shinra.infra.db import depositi
 from shinra.infra.llm.ollama import OllamaClient
 from shinra.services import eventi_casa, permessi
@@ -190,7 +191,8 @@ async def genera(profilo: Any = None) -> Dict[str, Any]:
         alias=depositi.alias.elenco(),
         routine=depositi.modalita.elenco(),
         regole=regole,
-        fatti=depositi.fatti.elenco(),
+        # Nel grafo, dove sono visibili a tutti, solo i ricordi della casa: un ricordo privato non compare nemmeno come nodo.
+        fatti=[f for f in depositi.fatti.elenco() if ricordi_dominio.e_della_casa(f)],
         strumenti=strumenti,
         agenti=[modello_come_agente(modello, strumenti), *agenti_noti()],
         sistemi=[
