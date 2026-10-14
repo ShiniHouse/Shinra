@@ -87,3 +87,44 @@ def test_il_recupero_solo_testuale_non_scende_sotto_il_livello_misurato(banco, c
 def test_il_rapporto_si_scrive(banco, corpus) -> None:
     testo = banco.rapporto(banco.misura(corpus), "prova")
     assert "recall@3" in testo and "MRR" in testo and "solo testo" in testo
+
+
+# ----------------------------------------------- l'ablazione della storia dei ricordi (#246)
+
+
+def test_con_i_pesi_a_zero_la_misura_e_quella_di_prima(banco, corpus):
+    from shinra.domain import recupero
+
+    assert banco.misura(corpus, pesi=recupero.Pesi()) == banco.misura(corpus)
+
+
+def test_l_ablazione_misura_un_fattore_alla_volta(banco, corpus):
+    a = banco.ablazione(corpus)
+    assert list(a) == ["nessuno (oggi)", "solo importanza", "solo recenza", "solo uso", "tutti e tre"]
+    assert all({"recall_3", "mrr", "silenzio"} <= set(v) for v in a.values())
+
+
+def test_la_storia_non_peggiora_il_recupero_e_non_fa_rumore(banco, corpus):
+    """Il criterio della scheda: recall e MRR non peggiorano, e il silenzio sulle domande senza risposta resta intero."""
+    a = banco.ablazione(corpus)
+    base = a["nessuno (oggi)"]
+    for nome, v in a.items():
+        assert v["recall_3"] >= base["recall_3"], nome
+        assert v["mrr"] >= base["mrr"], nome
+        assert (
+            v["silenzio"] == 1.0
+        ), f"{nome}: la storia ha fatto uscire rumore dove non c'era niente da trovare"
+
+
+def test_la_recenza_risolve_il_conflitto_fra_il_ricordo_vecchio_e_quello_nuovo(banco, corpus):
+    """Due ricordi dicono la stessa cosa (la password del wifi): oggi vince chi viene prima nel file, con la storia chi vale oggi."""
+    from shinra.domain import recupero
+
+    senza = banco.misura(corpus)["per_tipo"]["conflitto"]["mrr"]
+    con = banco.misura(corpus, pesi=recupero.Pesi(recenza=0.1))["per_tipo"]["conflitto"]["mrr"]
+    assert senza == 0.5 and con == 1.0, (senza, con)
+
+
+def test_il_rapporto_dell_ablazione_si_scrive(banco, corpus):
+    testo = banco.rapporto_ablazione(banco.ablazione(corpus), 0.1)
+    assert "Ablazione" in testo and "solo recenza" in testo and "(+0." in testo

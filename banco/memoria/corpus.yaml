@@ -4,11 +4,14 @@
 # Una domanda con `attesi: []` non ha risposta fra i ricordi: il recupero giusto e' non trovare niente.
 # `tipo` serve solo a leggere i risultati per categoria.
 
+# Alcuni ricordi dichiarano la loro storia (#246): `importanza` 1-5 (3 se manca), `usi`, `giorni_fa` (da quanti giorni sono nati
+# o serviti l'ultima volta). Senza, un ricordo e' «medio, mai usato, senza data»: il recupero di oggi non li guarda.
 ricordi:
-  - {id: r01, testo: "La password del wifi di casa e' Girasole2024"}
+  - {id: r00, testo: "La vecchia password del wifi di casa era Primavera2022", importanza: 1, giorni_fa: 600}
+  - {id: r01, testo: "La password del wifi di casa e' Girasole2024", importanza: 4, usi: 9, giorni_fa: 12}
   - {id: r02, testo: "Il router si trova nello studio, sopra la libreria"}
   - {id: r03, testo: "La caldaia e' una Vaillant, l'ultima revisione e' stata a marzo"}
-  - {id: r04, testo: "Il codice del cancello e' 4471"}
+  - {id: r04, testo: "Il codice del cancello e' 4471", importanza: 4, usi: 15, giorni_fa: 3}
   - {id: r05, testo: "Marco, il figlio maggiore, va a dormire alle 22"}
   - {id: r06, testo: "Sofia e' allergica alle arachidi"}
   - {id: r07, testo: "La cena in famiglia e' alle 20 e 30 di solito"}
@@ -58,6 +61,9 @@ domande:
   # --- due ricordi insieme
   - {id: d16, tipo: doppia, domanda: "Cosa devo portare fuori il giovedi?", attesi: [r09, r27]}
   - {id: d17, tipo: doppia, domanda: "Quando viene qualcuno a occuparsi del giardino o delle pulizie?", attesi: [r23, r19]}
+  # --- due ricordi in conflitto: il vecchio e il nuovo dicono la stessa cosa, serve quello che vale oggi
+  - {id: d25, tipo: conflitto, domanda: "Qual e' la password del wifi di casa?", attesi: [r01]}
+  - {id: d26, tipo: conflitto, domanda: "Dammi la password del wifi di casa", attesi: [r01]}
   # --- senza risposta: non c'e' nulla da ricordare, e non deve uscire rumore
   - {id: d18, tipo: senza_risposta, domanda: "Che tempo fa domani?", attesi: []}
   - {id: d19, tipo: senza_risposta, domanda: "Raccontami una barzelletta", attesi: []}

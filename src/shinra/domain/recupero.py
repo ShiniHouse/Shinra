@@ -36,7 +36,7 @@ from __future__ import annotations
 import math
 import re
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping, Optional, Sequence
 
 # Sotto questa soglia si mandano tutti i fatti, come prima. Venticinque fatti
@@ -137,12 +137,37 @@ VUOTE = frozenset(
 
 @dataclass(frozen=True)
 class Fatto:
-    """Un fatto con il suo vettore, se ce l'ha."""
+    """Un fatto con il suo vettore, se ce l'ha, e la sua storia."""
 
     identificativo: str
     testo: str
     categoria: str = "generale"
     vettore: Optional[Sequence[float]] = None
+    # La storia (#246): quanto conta (1-5, 3 se nessuno l'ha detto), quante volte e' servito, e l'ultimo momento in cui e'
+    # servito o, se mai, e' nato (secondi dall'epoca). Senza data non c'e' recenza: pesa zero, non «e' vecchio».
+    importanza: int = 3
+    usi: int = 0
+    ultimo: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class Pesi:
+    """Quanto pesano, **oltre alla somiglianza**, l'importanza, la recenza e l'uso. Tutti a zero: il recupero di oggi.
+
+    Non sono a zero per dimenticanza: un peso diverso da zero deve essere giustificato dal banco della memoria
+    (`scripts/banco_memoria.py`, con l'ablazione per fattore), e finche' non c'e' una misura su una casa vera non si accende.
+    """
+
+    importanza: float = 0.0
+    recenza: float = 0.0
+    uso: float = 0.0
+    # Dopo quanti giorni la recenza si dimezza.
+    emivita_giorni: float = 30.0
+
+
+# Un ricordo di importanza massima e' «fissato»: entra sempre, dentro il massimo, anche se la domanda non lo nomina.
+IMPORTANZA_FISSATA = 5
+USI_DI_RIFERIMENTO = 20
 
 
 @dataclass(frozen=True)
@@ -151,6 +176,9 @@ class Trovato:
     punteggio: float
     per_vettore: float
     per_testo: float
+    # Quanto ha aggiunto ciascun fattore della storia (importanza, recenza, uso); vuoto se non pesano.
+    fattori: Mapping[str, float] = field(default_factory=dict)
+    fissato: bool = False
 
     @property
     def solo_testuale(self) -> bool:
@@ -244,19 +272,45 @@ def serve_recuperare(quanti_fatti: int, soglia: int = SOGLIA_RECUPERO) -> bool:
     return quanti_fatti > soglia
 
 
+def fattori_della_storia(fatto: Fatto, pesi: Pesi, adesso: Optional[float]) -> dict[str, float]:
+    """Quanto aggiungono al punteggio l'importanza, la recenza e l'uso di un fatto. Puro, deterministico.
+
+    - **importanza** da 1 a 5, normalizzata attorno al 3 (che e' il valore di chi non ha detto niente): da -1 a +1;
+    - **recenza**: decadimento esponenziale con emivita in giorni, su `ultimo`; senza data, zero;
+    - **uso**: logaritmico (il decimo uso conta meno del primo) e con un tetto, cosi' un ricordo non vince solo perche' e' vecchio.
+    """
+    fuori: dict[str, float] = {}
+    if pesi.importanza:
+        normalizzata = (max(1, min(5, int(fatto.importanza))) - 3) / 2
+        fuori["importanza"] = pesi.importanza * normalizzata
+    if pesi.recenza and fatto.ultimo is not None and adesso is not None and pesi.emivita_giorni > 0:
+        giorni = max(0.0, (adesso - fatto.ultimo) / 86400.0)
+        fuori["recenza"] = pesi.recenza * (0.5 ** (giorni / pesi.emivita_giorni))
+    if pesi.uso and fatto.usi > 0:
+        fuori["uso"] = pesi.uso * min(1.0, math.log1p(fatto.usi) / math.log1p(USI_DI_RIFERIMENTO))
+    return fuori
+
+
 def cerca(
     domanda: str,
     fatti: Iterable[Fatto],
     vettore_domanda: Optional[Sequence[float]] = None,
     massimo: int = MASSIMO_FATTI,
     soglia: float = SOGLIA_PUNTEGGIO,
+    pesi: Pesi = Pesi(),
+    adesso: Optional[float] = None,
 ) -> list[Trovato]:
     """I fatti pertinenti, dal piu' al meno.
 
     Senza `vettore_domanda` — Ollama spento, modello mancante — si cerca solo
     per testo: la casa risponde peggio, non smette di sapere.
+
+    La **soglia** guarda la sola somiglianza: la storia (importanza, recenza, uso) riordina cio' che gia' passa, non fa
+    entrare cio' che non c'entra con la domanda. Fanno eccezione i ricordi **fissati** (importanza 5): entrano sempre, in testa,
+    dentro il `massimo`.
     """
     trovati: list[Trovato] = []
+    fissati: list[Trovato] = []
 
     for fatto in fatti:
         per_vettore = (
@@ -265,9 +319,8 @@ def cerca(
         per_testo = somiglianza_testuale(domanda, fatto.testo)
 
         if per_vettore <= 0 and per_testo <= 0:
-            continue
-
-        if vettore_domanda is None:
+            punteggio = 0.0
+        elif vettore_domanda is None:
             # Senza vettori il punteggio e' tutto testuale, e la soglia si
             # applica a quello: dividerlo per il peso lo terrebbe sempre
             # sotto e non troverebbe mai niente.
@@ -275,13 +328,25 @@ def cerca(
         else:
             punteggio = PESO_VETTORE * max(0.0, per_vettore) + PESO_TESTO * per_testo
 
-        if punteggio < soglia:
+        storia = fattori_della_storia(fatto, pesi, adesso)
+        if fatto.importanza >= IMPORTANZA_FISSATA:
+            fissati.append(
+                Trovato(
+                    fatto, punteggio + sum(storia.values()), max(0.0, per_vettore), per_testo, storia, True
+                )
+            )
             continue
 
-        trovati.append(Trovato(fatto, punteggio, max(0.0, per_vettore), per_testo))
+        if punteggio <= 0 or punteggio < soglia:
+            continue
+
+        trovati.append(
+            Trovato(fatto, punteggio + sum(storia.values()), max(0.0, per_vettore), per_testo, storia)
+        )
 
     trovati.sort(key=lambda t: t.punteggio, reverse=True)
-    return trovati[:massimo]
+    fissati.sort(key=lambda t: t.punteggio, reverse=True)
+    return (fissati + trovati)[:massimo]
 
 
 def come_prompt(trovati: Sequence[Trovato]) -> str:
@@ -326,6 +391,8 @@ def spiega(trovati: Sequence[Trovato]) -> list[Mapping[str, Any]]:
             "punteggio": round(t.punteggio, 3),
             "semantico": round(t.per_vettore, 3),
             "testuale": round(t.per_testo, 3),
+            "storia": {k: round(v, 3) for k, v in t.fattori.items()},
+            "fissato": t.fissato,
         }
         for t in trovati
     ]

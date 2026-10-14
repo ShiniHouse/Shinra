@@ -1,0 +1,402 @@
+{
+  "con_vettori": false,
+  "ricordi": 31,
+  "domande_con_risposta": 21,
+  "domande_senza_risposta": 5,
+  "recall_1": 0.476,
+  "recall_3": 0.667,
+  "recall_k": 0.667,
+  "mrr": 0.571,
+  "silenzio": 1.0,
+  "per_tipo": {
+    "conflitto": {
+      "domande": 2,
+      "recall_3": 1.0,
+      "mrr": 0.5
+    },
+    "delicata": {
+      "domande": 2,
+      "recall_3": 1.0,
+      "mrr": 0.75
+    },
+    "diretta": {
+      "domande": 6,
+      "recall_3": 1.0,
+      "mrr": 0.917
+    },
+    "doppia": {
+      "domande": 2,
+      "recall_3": 0.0,
+      "mrr": 0.0
+    },
+    "numero": {
+      "domande": 3,
+      "recall_3": 1.0,
+      "mrr": 1.0
+    },
+    "parafrasi": {
+      "domande": 6,
+      "recall_3": 0.167,
+      "mrr": 0.167
+    }
+  },
+  "dettagli": [
+    {
+      "id": "d01",
+      "tipo": "diretta",
+      "domanda": "Qual e' la password del wifi?",
+      "attesi": [
+        "r01"
+      ],
+      "trovati": [
+        "r00",
+        "r01"
+      ],
+      "recall_1": 0.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "d02",
+      "tipo": "diretta",
+      "domanda": "Dov'e' il router?",
+      "attesi": [
+        "r02"
+      ],
+      "trovati": [
+        "r02"
+      ],
+      "recall_1": 1.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "d03",
+      "tipo": "diretta",
+      "domanda": "Qual e' il codice del cancello?",
+      "attesi": [
+        "r04"
+      ],
+      "trovati": [
+        "r04",
+        "r20"
+      ],
+      "recall_1": 1.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "d04",
+      "tipo": "diretta",
+      "domanda": "Chi e' allergico alle arachidi?",
+      "attesi": [
+        "r06"
+      ],
+      "trovati": [
+        "r06"
+      ],
+      "recall_1": 1.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "d05",
+      "tipo": "diretta",
+      "domanda": "Quando escono i rifiuti dell'organico?",
+      "attesi": [
+        "r09"
+      ],
+      "trovati": [
+        "r09"
+      ],
+      "recall_1": 1.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "d06",
+      "tipo": "diretta",
+      "domanda": "Come si chiama il cane?",
+      "attesi": [
+        "r08"
+      ],
+      "trovati": [
+        "r08"
+      ],
+      "recall_1": 1.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "d07",
+      "tipo": "parafrasi",
+      "domanda": "Come mi collego a internet?",
+      "attesi": [
+        "r01"
+      ],
+      "trovati": [],
+      "recall_1": 0.0,
+      "recall_3": 0.0,
+      "recall_k": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "d08",
+      "tipo": "parafrasi",
+      "domanda": "A che ora va a letto il ragazzo?",
+      "attesi": [
+        "r05"
+      ],
+      "trovati": [
+        "r13",
+        "r26"
+      ],
+      "recall_1": 0.0,
+      "recall_3": 0.0,
+      "recall_k": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "d09",
+      "tipo": "parafrasi",
+      "domanda": "Quando passa il camion della carta?",
+      "attesi": [
+        "r10"
+      ],
+      "trovati": [
+        "r10",
+        "r19"
+      ],
+      "recall_1": 1.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "d10",
+      "tipo": "parafrasi",
+      "domanda": "Chi chiamo se perde un tubo?",
+      "attesi": [
+        "r14"
+      ],
+      "trovati": [],
+      "recall_1": 0.0,
+      "recall_3": 0.0,
+      "recall_k": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "d11",
+      "tipo": "parafrasi",
+      "domanda": "Quanto e' calda la casa la notte?",
+      "attesi": [
+        "r12"
+      ],
+      "trovati": [],
+      "recall_1": 0.0,
+      "recall_3": 0.0,
+      "recall_k": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "d12",
+      "tipo": "parafrasi",
+      "domanda": "Quando si ricarica l'auto?",
+      "attesi": [
+        "r15"
+      ],
+      "trovati": [],
+      "recall_1": 0.0,
+      "recall_3": 0.0,
+      "recall_k": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "d13",
+      "tipo": "numero",
+      "domanda": "Il codice 4471 a cosa serve?",
+      "attesi": [
+        "r04"
+      ],
+      "trovati": [
+        "r04"
+      ],
+      "recall_1": 1.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "d14",
+      "tipo": "numero",
+      "domanda": "Chi e' Rossi?",
+      "attesi": [
+        "r14"
+      ],
+      "trovati": [
+        "r14"
+      ],
+      "recall_1": 1.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "d15",
+      "tipo": "numero",
+      "domanda": "Cosa c'e' alle 22?",
+      "attesi": [
+        "r05"
+      ],
+      "trovati": [
+        "r05",
+        "r22"
+      ],
+      "recall_1": 1.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "d16",
+      "tipo": "doppia",
+      "domanda": "Cosa devo portare fuori il giovedi?",
+      "attesi": [
+        "r09",
+        "r27"
+      ],
+      "trovati": [],
+      "recall_1": 0.0,
+      "recall_3": 0.0,
+      "recall_k": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "d17",
+      "tipo": "doppia",
+      "domanda": "Quando viene qualcuno a occuparsi del giardino o delle pulizie?",
+      "attesi": [
+        "r23",
+        "r19"
+      ],
+      "trovati": [],
+      "recall_1": 0.0,
+      "recall_3": 0.0,
+      "recall_k": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "d25",
+      "tipo": "conflitto",
+      "domanda": "Qual e' la password del wifi di casa?",
+      "attesi": [
+        "r01"
+      ],
+      "trovati": [
+        "r00",
+        "r01",
+        "r16",
+        "r20"
+      ],
+      "recall_1": 0.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "d26",
+      "tipo": "conflitto",
+      "domanda": "Dammi la password del wifi di casa",
+      "attesi": [
+        "r01"
+      ],
+      "trovati": [
+        "r00",
+        "r01"
+      ],
+      "recall_1": 0.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "d18",
+      "tipo": "senza_risposta",
+      "domanda": "Che tempo fa domani?",
+      "attesi": [],
+      "trovati": [],
+      "silenzio": true
+    },
+    {
+      "id": "d19",
+      "tipo": "senza_risposta",
+      "domanda": "Raccontami una barzelletta",
+      "attesi": [],
+      "trovati": [],
+      "silenzio": true
+    },
+    {
+      "id": "d20",
+      "tipo": "senza_risposta",
+      "domanda": "Quanto fa 12 per 12?",
+      "attesi": [],
+      "trovati": [],
+      "silenzio": true
+    },
+    {
+      "id": "d21",
+      "tipo": "ambigua",
+      "domanda": "A che ora e' la cosa?",
+      "attesi": [],
+      "trovati": [],
+      "silenzio": true
+    },
+    {
+      "id": "d22",
+      "tipo": "ambigua",
+      "domanda": "Dov'e' quello?",
+      "attesi": [],
+      "trovati": [],
+      "silenzio": true
+    },
+    {
+      "id": "d23",
+      "tipo": "delicata",
+      "domanda": "Qual e' il codice dell'allarme?",
+      "attesi": [
+        "r20"
+      ],
+      "trovati": [
+        "r20",
+        "r04"
+      ],
+      "recall_1": 1.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "d24",
+      "tipo": "delicata",
+      "domanda": "Dimmi la password del wifi degli ospiti",
+      "attesi": [
+        "r01"
+      ],
+      "trovati": [
+        "r00",
+        "r01",
+        "r26"
+      ],
+      "recall_1": 0.0,
+      "recall_3": 1.0,
+      "recall_k": 1.0,
+      "rr": 0.5
+    }
+  ]
+}

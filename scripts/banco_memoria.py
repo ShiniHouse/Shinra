@@ -36,6 +36,9 @@ BANCO = percorsi.RADICE / "banco" / "memoria"
 
 Vettore = Sequence[float]
 
+# Un «adesso» fisso: la misura deve dare lo stesso numero oggi e fra un mese.
+ADESSO = 1_800_000_000.0
+
 
 def carica(percorso: Path = BANCO / "corpus.yaml") -> dict[str, Any]:
     return yaml.safe_load(percorso.read_text(encoding="utf-8"))
@@ -72,14 +75,32 @@ def misura(
     corpus: dict[str, Any],
     vettori: Optional[tuple[dict[str, Vettore], dict[str, Vettore]]] = None,
     massimo: int = recupero.MASSIMO_FATTI,
+    pesi: recupero.Pesi = recupero.Pesi(),
 ) -> dict[str, Any]:
-    """Esegue ogni domanda del corpus e riassume i numeri. Non chiama niente: i vettori, se ci sono, arrivano gia' fatti."""
+    """Esegue ogni domanda del corpus e riassume i numeri. Non chiama niente: i vettori, se ci sono, arrivano gia' fatti.
+
+    Un ricordo del corpus puo' dichiarare la sua storia: `importanza` (1-5), `usi` e `giorni_fa` (da quanti giorni e' nato o
+    e' servito l'ultima volta). Con i pesi a zero la storia non conta: e' il recupero di oggi.
+    """
     v_ricordi, v_domande = vettori if vettori else ({}, {})
-    fatti = [recupero.Fatto(r["id"], r["testo"], vettore=v_ricordi.get(r["id"])) for r in corpus["ricordi"]]
+    adesso = ADESSO
+    fatti = [
+        recupero.Fatto(
+            r["id"],
+            r["testo"],
+            vettore=v_ricordi.get(r["id"]),
+            importanza=int(r.get("importanza", 3)),
+            usi=int(r.get("usi", 0)),
+            ultimo=None if r.get("giorni_fa") is None else adesso - float(r["giorni_fa"]) * 86400.0,
+        )
+        for r in corpus["ricordi"]
+    ]
 
     dettagli = []
     for d in corpus["domande"]:
-        trovati = recupero.cerca(d["domanda"], fatti, v_domande.get(d["id"]), massimo=massimo)
+        trovati = recupero.cerca(
+            d["domanda"], fatti, v_domande.get(d["id"]), massimo=massimo, pesi=pesi, adesso=adesso
+        )
         ids = [t.fatto.identificativo for t in trovati]
         attesi = d["attesi"]
         if attesi:
@@ -140,6 +161,43 @@ def misura(
     }
 
 
+PESI_DI_PROVA = {"importanza": 0.1, "recenza": 0.1, "uso": 0.1}
+
+
+def ablazione(
+    corpus: dict[str, Any],
+    vettori: Optional[tuple[dict[str, Vettore], dict[str, Vettore]]] = None,
+    peso: float = 0.1,
+) -> dict[str, dict[str, float]]:
+    """Cosa porta ciascun fattore della storia: i numeri senza storia, con un fattore alla volta, con tutti."""
+    prove = {
+        "nessuno (oggi)": recupero.Pesi(),
+        "solo importanza": recupero.Pesi(importanza=peso),
+        "solo recenza": recupero.Pesi(recenza=peso),
+        "solo uso": recupero.Pesi(uso=peso),
+        "tutti e tre": recupero.Pesi(importanza=peso, recenza=peso, uso=peso),
+    }
+    fuori = {}
+    for nome, pesi in prove.items():
+        m = misura(corpus, vettori, pesi=pesi)
+        fuori[nome] = {"recall_3": m["recall_3"], "mrr": m["mrr"], "silenzio": m["silenzio"]}
+    return fuori
+
+
+def rapporto_ablazione(a: dict[str, dict[str, float]], peso: float) -> str:
+    righe = [
+        f"## Ablazione della storia (peso {peso:g} per fattore)",
+        "",
+        "| Pesi | recall@3 | MRR | Silenzio |",
+        "| :--- | ---: | ---: | ---: |",
+    ]
+    base = a["nessuno (oggi)"]
+    for nome, v in a.items():
+        delta = "" if nome.startswith("nessuno") else f" ({v['mrr'] - base['mrr']:+.2f})"
+        righe.append(f"| {nome} | {v['recall_3']:.0%} | {v['mrr']:.2f}{delta} | {v['silenzio']:.0%} |")
+    return "\n".join(righe) + "\n"
+
+
 def rapporto(r: dict[str, Any], etichetta: str) -> str:
     righe = [
         f"# Banco della memoria — {etichetta}",
@@ -182,6 +240,10 @@ def main() -> int:
     )
     p.add_argument("--etichetta", default="solo-testo", help="nome del giro, usato nel file dei risultati")
     p.add_argument("--salva", action="store_true", help="scrive il rapporto in banco/memoria/risultati/")
+    p.add_argument(
+        "--ablazione", action="store_true", help="misura cosa porta ogni fattore della storia (#246)"
+    )
+    p.add_argument("--peso", type=float, default=0.1, help="il peso di ogni fattore nell'ablazione")
     args = p.parse_args()
 
     corpus = carica()
@@ -199,6 +261,8 @@ def main() -> int:
 
     r = misura(corpus, vettori)
     testo = rapporto(r, args.etichetta)
+    if args.ablazione:
+        testo += "\n" + rapporto_ablazione(ablazione(corpus, vettori, args.peso), args.peso)
     print(testo)
     if args.salva:
         cartella = BANCO / "risultati"
