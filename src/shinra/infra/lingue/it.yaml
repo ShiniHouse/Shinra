@@ -484,6 +484,11 @@ intervista:
 
 # Cio' che somiglia a un'istruzione rivolta a Shinra, in un testo che sta per diventare un ricordo (#264). Espressioni
 # regolari, senza distinzione di maiuscole. Un testo che ne contiene una non diventa un ricordo attivo.
+# «Dove sono?» e solo quella: la frase intera, perche' «dove sono le chiavi?» non e' una domanda sulla posizione (#343).
+posizione:
+  inneschi:
+    - '^\s*(ma\s+|senti\s+|dimmi\s+)?(dove\s+(sono|mi\s+trovo)|in\s+che\s+luogo\s+(sono|mi\s+trovo))(\s+adesso|\s+ora)?\s*[?!.]*\s*$'
+
 sospetto:
   - '\b(ignora|dimentica|scorda|annulla)\b.{0,40}\b(istruzion|regol|precedent|limit|restrizion)'
   - '\b(da ora|da adesso|d''ora in poi|d''ora in avanti|da questo momento)\b'
@@ -543,6 +548,10 @@ messaggi:
   meteo_domani: "Domani a {localita} {condizione}, max {massima} gradi e min {minima}."
   meteo_adesso: "A {localita} attualmente {temperatura}, {condizione}."
   meteo_massima: " Massima prevista di {massima} gradi."
+  posizione_spenta: "Non so dove sei: la tua posizione non è collegata. Puoi collegarla dalle Impostazioni, in Luoghi."
+  posizione_ignota: "Non so dove sei adesso: Home Assistant non mi manda la tua posizione."
+  posizione_in_giro: "Sei in giro: non in uno dei luoghi che conosco."
+  posizione_in_luogo: "Sei a {luogo}."
   condizione_variabile: "variabile"
   notizie_ultime: "Ultime notizie: {titoli}"
   apprendimento_interrotto: "Modalità Apprendimento interrotta. Possiamo riprendere quando vuoi."

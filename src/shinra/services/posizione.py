@@ -73,11 +73,18 @@ def dove_sei(entita_posizione: str, adesso: Optional[float] = None) -> DoveSei:
     except (TypeError, ValueError):
         return DoveSei(IGNOTA)
 
-    registrati = luoghi.elenco()
-    luogo = dominio.piu_vicino(punto[0], punto[1], registrati)
+    luogo = dominio.piu_vicino(punto[0], punto[1], luoghi.elenco())
     if luogo is None:
         return DoveSei(IN_GIRO)
     return DoveSei(IN_UN_LUOGO, str(luogo["nome"]), str(luogo["tipo"]), bool(luogo["principale"]))
+
+
+def luogo_attuale(entita_posizione: str) -> Optional[dict[str, Any]]:
+    """Il luogo registrato in cui si trova la persona, **con le coordinate**: per uso interno (il meteo), mai da mostrare."""
+    risposta = dove_sei(entita_posizione)
+    if risposta.stato != IN_UN_LUOGO:
+        return None
+    return next((x for x in luoghi.elenco() if x["nome"] == risposta.luogo), None)
 
 
 PREFISSI_AMMESSI = ("person.", "device_tracker.")

@@ -9,6 +9,7 @@ si tocca.
 from shinra.services.intenti import (  # noqa: F401  (registrano gli intenti)
     casa,
     conferma,
+    dove_sono,
     informazioni,
     promemoria,
 )

@@ -67,13 +67,20 @@ class Meteo(Intento):
         """Il luogo di cui si chiede il meteo: quello nominato nella frase, altrimenti la casa principale — ma solo se la
         frase non nomina una citta' (`citta` la riconosce da «a Milano»): chi chiede di Milano non vuole la sua casa.
         """
-        from shinra.services import luoghi
+        from shinra.services import luoghi, posizione
 
         nominato = luoghi.nominato_nella_frase(richiesta.testo)
         if nominato is not None:
             return nominato
         if richiesta.schemi.citta.search(richiesta.testo):
             return None
+        # Chi chiede «che tempo fa?» intende dove si trova: se la sua posizione e' collegata ed e' in un luogo registrato,
+        # quello; altrimenti la casa principale.
+        entita = getattr(richiesta.profilo, "entita_posizione", "") or ""
+        if entita:
+            attuale = posizione.luogo_attuale(entita)
+            if attuale is not None:
+                return attuale
         return luoghi.principale()
 
     @staticmethod
