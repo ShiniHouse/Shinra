@@ -22,6 +22,7 @@ async function _detail(res) {
 }
 
 export async function caricaLuoghi() {
+    caricaPosizione();
     const contenitore = document.getElementById('luoghi-elenco');
     if (!contenitore) return;
     try {
@@ -126,7 +127,58 @@ async function cancellaLuogo(id) {
     await caricaLuoghi();
 }
 
+const FRASI_POSIZIONE = {
+    spenta: 'La tua posizione è spenta: Shinra non sa dove sei.',
+    ignota: 'Non so dove sei adesso (Home Assistant non manda la tua posizione, o è ferma da troppo).',
+    in_giro: 'Sei in giro: non in uno dei luoghi registrati.',
+};
+
+async function caricaPosizione() {
+    const riga = document.getElementById('posizione-stato');
+    if (!riga) return;
+    try {
+        const res = await fetch('/api/posizione/io', { headers: getAuthHeaders() });
+        if (!res.ok) {
+            riga.textContent = await _detail(res);
+            return;
+        }
+        const p = await res.json();
+        riga.textContent =
+            p.stato === 'in_un_luogo' ? `Adesso sei: ${p.luogo}.` : FRASI_POSIZIONE[p.stato] || '';
+    } catch (err) {
+        riga.textContent = `Non riesco a leggere la posizione: ${err.message}`;
+    }
+}
+
+async function collegaLaMiaPosizione() {
+    const entita = (document.getElementById('posizione-entita')?.value || '').trim();
+    if (!entita) return _messaggio("Scrivi l'entità (es. person.alessio), oppure premi «Spegni».", true);
+    const res = await fetch('/api/posizione/io', {
+        method: 'PUT',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ entita }),
+    });
+    if (!res.ok) return _messaggio(await _detail(res), true);
+    _messaggio('Posizione collegata.');
+    await caricaPosizione();
+}
+
+async function spegniLaMiaPosizione() {
+    const res = await fetch('/api/posizione/io', {
+        method: 'PUT',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ entita: '' }),
+    });
+    if (!res.ok) return _messaggio(await _detail(res), true);
+    const campo = document.getElementById('posizione-entita');
+    if (campo) campo.value = '';
+    _messaggio('Posizione spenta.');
+    await caricaPosizione();
+}
+
 Gesti.registra({
+    collegaLaMiaPosizione,
+    spegniLaMiaPosizione,
     registraQuestoLuogo,
     registraDalTelefono,
     cancellaLuogo,
