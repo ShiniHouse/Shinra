@@ -4,7 +4,9 @@
 - **Data:** 2026-10-13
 - **Attuazione:** milestone `v0.8.0`, issue #243 (schema: #245, API: #249, cancellazione: #253)
 
-> Bozza scritta per essere discussa: **nessuna di queste scelte è decisa** finché il proprietario non porta lo stato a `Accettato`.
+> **Stato: proposto, con due scelte già prese dal proprietario (2026-10-14).** L'amministratore **non** vede i ricordi privati
+> degli altri profili, e un adulto **non** vede cosa è ricordato di un minore: *ognuno vede solo i propri*. Il resto è ancora
+> una proposta da leggere; lo stato passa a `Accettato` quando il proprietario lo dice.
 
 ## Contesto
 
@@ -17,11 +19,12 @@ nel prompt di un bambino né nella lista di un ospite, e un profilo deve poter c
 
 1. **Due ambiti, più il luogo.** *Casa* (condivisa, default per ciò che arriva dall'intervista sulla casa) e *profilo* (privata, default
    per ciò che una persona dice di sé in conversazione). Un ricordo può avere anche un luogo.
-2. **Chi legge e chi scrive.** Il profilo legge e scrive i propri ricordi privati. La casa la legge chi ha `conoscenza.leggi`, la
-   scrive chi ha `conoscenza.scrivi`. **L'amministratore non vede il privato di un altro profilo**, salvo una scelta esplicita
-   e registrata del proprietario.
+2. **Chi legge e chi scrive.** Il profilo legge e scrive i propri ricordi privati, **e solo quelli**. La casa la legge chi ha
+   `conoscenza.leggi`, la scrive chi ha `conoscenza.scrivi`. **L'amministratore non vede il privato di un altro profilo**
+   (scelta del proprietario, 2026-10-14): non c'è un'eccezione «per emergenza».
 3. **Minori** (`teen`, `child`, `restricted_topics`): ricordano ciò che serve alla casa; i temi limitati non diventano ricordi;
-   un adulto con il permesso può vedere cosa è ricordato di un minore (decisione da confermare).
+   **un adulto non vede cosa è ricordato di un minore** (scelta del proprietario, 2026-10-14): il minore vede i propri, come
+   tutti. Quello che interessa alla casa (orari, allergie, regole) è un ricordo **della casa**, e quello lo vedono tutti.
 4. **Ospiti: nessuna memoria persistente.**
 5. **Cosa non si ricorda mai:** PIN, token, codici dell'allarme, numeri di carte. Si riusa `registro.oscura` come filtro in scrittura.
 6. **Backup e «dimentica».** Il backup contiene i ricordi (schema nuovo con migrazione). Un «dimentica» cancella dal database e
@@ -43,6 +46,9 @@ nel prompt di un bambino né nella lista di un ospite, e un profilo deve poter c
 
 ## Da decidere prima dell'accettazione
 
-- L'amministratore deve poter vedere il privato in caso di emergenza? (proposta: no)
-- Cosa vede un adulto dei ricordi di un minore.
+- ~~L'amministratore vede il privato degli altri?~~ **Deciso: no** (2026-10-14).
+- ~~Cosa vede un adulto dei ricordi di un minore?~~ **Deciso: niente**, ognuno vede i propri (2026-10-14).
 - Per quanto si tengono i backup che contengono un ricordo cancellato.
+- Conseguenza da guardare insieme: se nessuno può leggere il privato di un altro, «dimentica tutto di me» è l'unico modo per
+  un amministratore di aiutare chi ha perso l'accesso? (no: lo fa solo il proprietario del ricordo; chi perde l'accesso
+  riparte da un profilo nuovo).
