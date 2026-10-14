@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any, Optional
 
 from sqlalchemy import Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import JSON
 
 from shinra.infra.db.base import Base, DataOra, adesso
 
@@ -29,3 +31,5 @@ class RiassuntoConversazione(Base):
     # «codice» (scritto dai fatti verificati) o «modello» (reso piu' leggibile da Ollama, #256).
     origine: Mapped[str] = mapped_column(String(16), nullable=False, default="codice")
     modello: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+    # Cio' da cui nasce il testo: le richieste e le azioni verificate. Serve a controllare una riscrittura (#256).
+    struttura: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON(none_as_null=True), nullable=True)

@@ -74,6 +74,11 @@ def salva(
             riassunto.turni,
             creato_il=ora,
             scade_il=ora + timedelta(days=GIORNI_DI_VALIDITA),
+            struttura={
+                "richieste": [] if solo_argomento else list(riassunto.richieste),
+                "azioni": [{"nome": a.nome, "riuscita": a.riuscita} for a in riassunto.azioni],
+                "lingua": lingua,
+            },
         )
     except Exception:
         logger.warning("Riassunto non conservato", exc_info=True)
@@ -124,6 +129,8 @@ def avvia() -> bool:
     from shinra.services.memory import gestore_memorie
 
     gestore_memorie.su_uscita = alla_uscita
+    # Di notte, quando la casa dorme: la riscrittura costa secondi su una CPU senza scheda grafica.
+    scheduler.programma_giornaliero("riassunti:rifinitura", _rifinitura_notturna, ora=3, minuto=40)
     return scheduler.programma_periodico("riassunti:purga", _purga, ore=24)
 
 
@@ -133,3 +140,59 @@ def ferma() -> None:
 
     gestore_memorie.su_uscita = None
     scheduler.annulla("riassunti:purga")
+    scheduler.annulla("riassunti:rifinitura")
+
+
+# ------------------------------------------------- la riscrittura notturna (#256)
+
+GIORNI_DA_RIFINIRE = 3
+TETTO_RIFINITURA_SECONDI = 15 * 60
+
+
+async def rifinisci_recenti(
+    chat: Any = None, adesso: Optional[datetime] = None, massimo: int = 20
+) -> dict[str, int]:
+    """Chiede al modello locale di rendere piu' leggibili i riassunti recenti, **fuori dal percorso di ogni risposta**.
+
+    Il modello riceve solo il testo scritto dal codice e deve restituirlo piu' leggibile senza aggiungere nulla: una
+    riscrittura sostituisce l'originale solo se `controlla_riscrittura` la accetta, altrimenti resta il testo del codice.
+    Se il modello non risponde si smette subito (si riprova la notte dopo): mai un errore a nessuno.
+    """
+    from shinra.infra.llm.ollama import OllamaClient
+
+    cliente = chat or OllamaClient()
+    modello = str(getattr(cliente, "model", "") or "")
+    conta = {"visti": 0, "riscritti": 0, "rifiutati": 0, "saltati": 0}
+    dopo = _ora(adesso) - timedelta(days=GIORNI_DA_RIFINIRE)
+    for r in deposito.da_rifinire(dopo, massimo):
+        conta["visti"] += 1
+        struttura = r.get("struttura") or {}
+        lingua = str(struttura.get("lingua") or "")
+        s = schemi(lingua)
+        try:
+            esito = await cliente.chat(
+                messages=[{"role": "user", "content": s.prompt_di("riassunto_riscrivi", testo=r["testo"])}],
+                temperature=0.1,
+            )
+        except Exception:
+            logger.warning("Riscrittura di un riassunto non riuscita", exc_info=True)
+            conta["saltati"] += 1
+            break
+        if not esito.get("success"):
+            conta["saltati"] += 1
+            break  # il modello e' spento o lento: si riprova la notte dopo
+        riscritto = str(esito.get("content") or "")
+        verdetto = dominio.controlla_riscrittura(struttura, r["testo"], riscritto, s.sospetto)
+        if verdetto.accettata and deposito.riscrivi(r["id"], " ".join(riscritto.split()), modello):
+            conta["riscritti"] += 1
+        else:
+            conta["rifiutati"] += 1
+    if conta["visti"]:
+        logger.info("Riassunti rifiniti: %s", conta)
+    return conta
+
+
+async def _rifinitura_notturna() -> None:
+    from shinra.services.compito_notturno import compito_notturno
+
+    await compito_notturno.esegui("riassunti_rifiniti", rifinisci_recenti, TETTO_RIFINITURA_SECONDI)

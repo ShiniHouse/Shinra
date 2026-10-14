@@ -193,6 +193,7 @@ CHIAVI_MESSAGGI: Tuple[str, ...] = (
 CHIAVI_PROMPT: Tuple[str, ...] = (
     "intro",
     "riprova_strumenti",
+    "riassunto_riscrivi",
     "adesso",
     "utente_anonimo",
     "persona_bambino",

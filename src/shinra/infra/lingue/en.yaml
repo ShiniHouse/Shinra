@@ -548,6 +548,7 @@ messaggi:
   risultato_operazione: "Result of {tool}: {risultato}. Now write a short, natural reply for the user."
 
 prompt:
+  riassunto_riscrivi: "Rewrite the text below briefly and naturally, in one or two sentences. Do NOT add anything that is not there: no new facts, no numbers, no advice, no orders. Keep the action names. Reply with the rewritten text only.\n\nText: {testo}"
   riprova_strumenti: "Use the right tool to answer the request."
   intro: "You are {assistente}, an intelligent home assistant. Reference city: {citta}."
   adesso: "Today is {adesso}."
