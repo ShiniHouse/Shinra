@@ -181,38 +181,43 @@
                             </div>
                             <i data-lucide="chevron-down" class="freccia-sezione w-4 h-4 text-slate-500 shrink-0"></i>
                         </summary>
-                        <div class="corpo-sezione space-y-3">
+                        <div class="corpo-sezione space-y-4">
                         <p class="text-[11px] text-slate-500">Le coordinate restano su questo server: non finiscono nei log, nel registro né nei salvataggi. Qui vedi solo una posizione approssimata a circa un chilometro.</p>
-                        <div id="luoghi-elenco" class="space-y-2"></div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <input type="text" id="luogo-nome" placeholder="Nome (es. Casa al mare)" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
-                            <select id="luogo-tipo" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+
+                        <!-- 1. La mia posizione: dove sei tu, rispetto ai luoghi -->
+                        <div class="space-y-2 p-3 rounded-xl bg-slate-900/50 border border-slate-700/60">
+                            <p class="text-slate-200 font-semibold">1. La mia posizione</p>
+                            <p id="posizione-stato" class="text-sm text-slate-300">…</p>
+                            <p class="text-[11px] text-slate-500">Scegli il tuo telefono (o la tua persona) di Home Assistant: Shinra saprà in quale dei luoghi registrati ti trovi. Non conserva dove sei stato e non dice mai le coordinate.</p>
+                            <select id="posizione-entita" data-al-cambio="collegaLaMiaPosizione" class="w-full min-w-0 bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200"><option value="">Scegli il tuo telefono o la tua persona…</option></select>
+                            <button type="button" data-gesto="spegniLaMiaPosizione" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold">Spegni la mia posizione</button>
+                            <p id="posizione-esito" class="text-xs"></p>
+                        </div>
+
+                        <!-- 2. I luoghi già registrati -->
+                        <div class="space-y-2">
+                            <p class="text-slate-200 font-semibold">2. I luoghi registrati</p>
+                            <div id="luoghi-elenco" class="space-y-2"></div>
+                        </div>
+
+                        <!-- 3. Registrare un luogo nuovo -->
+                        <div class="space-y-2 p-3 rounded-xl bg-slate-900/50 border border-slate-700/60">
+                            <p class="text-slate-200 font-semibold">3. Registra un luogo nuovo</p>
+                            <input type="text" id="luogo-nome" placeholder="Nome (es. Casa al mare)" class="w-full min-w-0 bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <select id="luogo-tipo" class="w-full min-w-0 bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                                 <option value="abitazione">Abitazione</option>
                                 <option value="lavoro">Lavoro</option>
                                 <option value="altro">Altro</option>
                             </select>
-                            <input type="text" id="luogo-citta" placeholder="Città (facoltativa)" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <input type="text" id="luogo-citta" placeholder="Città (facoltativa)" class="w-full min-w-0 bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                             <label class="flex items-center gap-2 text-slate-300"><input type="checkbox" id="luogo-principale"> È la casa principale</label>
+                            <p class="text-slate-300 text-xs pt-1">Dai un nome, poi scegli come prendere la posizione:</p>
+                            <button type="button" data-gesto="registraQuestoLuogo" class="w-full px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Registra qui (posizione di questo dispositivo)</button>
+                            <p class="text-[11px] text-slate-500">Da un PC la posizione è approssimativa (rete, non GPS): il raggio del luogo si allarga di conseguenza. Per più precisione registrala dal telefono.</p>
+                            <select id="luogo-entita" class="w-full min-w-0 bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200"><option value="">Oppure scegli un telefono o una persona…</option></select>
+                            <button type="button" data-gesto="registraDalTelefono" class="w-full px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Registra dalla posizione del telefono scelto</button>
+                            <p id="luoghi-esito" class="text-xs"></p>
                         </div>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" data-gesto="registraQuestoLuogo" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Registra questo luogo (posizione di questo dispositivo)</button>
-                        </div>
-                        <p class="text-[11px] text-slate-500">Da un PC la posizione è approssimativa (rete, non GPS): il raggio del luogo si allarga di conseguenza. Per più precisione registrala dal telefono.</p>
-                        <div class="flex flex-wrap gap-2 items-center">
-                            <select id="luogo-entita" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200"><option value="">Scegli un telefono o una persona…</option></select>
-                            <button type="button" data-gesto="registraDalTelefono" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Dalla posizione di un telefono (Home Assistant)</button>
-                        </div>
-                        <div class="pt-3 mt-1 border-t border-slate-700/60 space-y-2">
-                            <p class="text-slate-300 font-semibold">La mia posizione</p>
-                            <p id="posizione-stato" class="text-xs text-slate-400">…</p>
-                            <p class="text-[11px] text-slate-500">Se colleghi la tua persona di Home Assistant, Shinra sa in quale dei luoghi registrati ti trovi. Non conserva dove sei stato e non dice mai le coordinate. Premendo «Spegni» non sei più localizzato.</p>
-                            <div class="flex flex-wrap gap-2 items-center">
-                                <select id="posizione-entita" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200"><option value="">Scegli il tuo telefono o la tua persona…</option></select>
-                                <button type="button" data-gesto="collegaLaMiaPosizione" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Collega</button>
-                                <button type="button" data-gesto="spegniLaMiaPosizione" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold">Spegni</button>
-                            </div>
-                        </div>
-                        <p id="luoghi-esito" class="text-xs"></p>
                         </div>
                     </details>
 
