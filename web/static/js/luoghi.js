@@ -22,6 +22,7 @@ async function _detail(res) {
 }
 
 export async function caricaLuoghi() {
+    caricaCandidati();
     caricaPosizione();
     const contenitore = document.getElementById('luoghi-elenco');
     if (!contenitore) return;
@@ -112,7 +113,7 @@ async function registraDalTelefono() {
     const dati = _datiDelModulo();
     const entita = (document.getElementById('luogo-entita')?.value || '').trim();
     if (!dati.nome) return _messaggio('Dai un nome al luogo.', true);
-    if (!entita) return _messaggio("Scrivi l'entita' del telefono (es. person.alessio).", true);
+    if (!entita) return _messaggio('Scegli il telefono o la persona da cui leggere la posizione.', true);
     await _invia(true, { ...dati, entita });
 }
 
@@ -133,6 +134,33 @@ const FRASI_POSIZIONE = {
     in_giro: 'Sei in giro: non in uno dei luoghi registrati.',
 };
 
+/** Riempie i due menu con le persone e i telefoni di Home Assistant, col nome che si legge. */
+async function caricaCandidati() {
+    const menu = ['luogo-entita', 'posizione-entita']
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+    if (!menu.length) return;
+    try {
+        const res = await fetch('/api/posizione/candidati', { headers: getAuthHeaders() });
+        if (!res.ok) return;
+        const { candidati } = await res.json();
+        for (const m of menu) {
+            const scelto = m.value;
+            while (m.options.length > 1) m.remove(1);
+            for (const c of candidati) {
+                const voce = document.createElement('option');
+                voce.value = c.entita;
+                voce.textContent = c.ha_posizione ? c.nome : `${c.nome} (senza posizione)`;
+                m.appendChild(voce);
+            }
+            if (!candidati.length) m.options[0].textContent = 'Home Assistant non ha persone o telefoni';
+            m.value = scelto;
+        }
+    } catch {
+        // il menu resta com'e': si puo' sempre riprovare riaprendo la scheda
+    }
+}
+
 async function caricaPosizione() {
     const riga = document.getElementById('posizione-stato');
     if (!riga) return;
@@ -152,7 +180,7 @@ async function caricaPosizione() {
 
 async function collegaLaMiaPosizione() {
     const entita = (document.getElementById('posizione-entita')?.value || '').trim();
-    if (!entita) return _messaggio("Scrivi l'entità (es. person.alessio), oppure premi «Spegni».", true);
+    if (!entita) return _messaggio('Scegli il tuo telefono o la tua persona, oppure premi «Spegni».', true);
     const res = await fetch('/api/posizione/io', {
         method: 'PUT',
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }),

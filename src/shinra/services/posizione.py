@@ -102,3 +102,27 @@ def collega(profilo_id: str, entita: str) -> DoveSei:
         "posizione.collegata" if entita else "posizione.spenta", dettagli={"profilo": profilo_id}
     )
     return dove_sei(entita)
+
+
+def candidati() -> list[dict[str, Any]]:
+    """Le persone e i telefoni di Home Assistant fra cui scegliere, col nome che si legge.
+
+    Chi collega la propria posizione non conosce `device_tracker.iphone_di_mario`: conosce «iPhone di Mario». Si elencano
+    solo quelli che hanno gia' una posizione (latitudine e longitudine), prima le persone. Le coordinate non escono.
+    """
+    trovati = []
+    for stato in cache_stati.tutti():
+        identificativo = str(stato.get("entity_id", ""))
+        if not identificativo.startswith(PREFISSI_AMMESSI):
+            continue
+        attributi = stato.get("attributes") or {}
+        trovati.append(
+            {
+                "entita": identificativo,
+                "nome": str(attributi.get("friendly_name") or identificativo),
+                "persona": identificativo.startswith("person."),
+                "ha_posizione": attributi.get("latitude") is not None
+                and attributi.get("longitude") is not None,
+            }
+        )
+    return sorted(trovati, key=lambda c: (not c["ha_posizione"], not c["persona"], c["nome"].lower()))

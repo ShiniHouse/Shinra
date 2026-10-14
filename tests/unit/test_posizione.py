@@ -172,3 +172,51 @@ async def test_il_registro_dice_chi_ha_acceso_o_spento_non_dove_e(io):
     assert "posizione.collegata" in voci and "posizione.spenta" in voci
     assert "Casa" not in json.dumps([v["dettagli"] for v in registro.voci(azione="posizione.collegata")])
     assert "41.9" not in voci
+
+
+# ------------------------------------------------------ scegliere il telefono (#343)
+
+
+def test_i_candidati_hanno_il_nome_che_si_legge_e_non_le_coordinate():
+    cache_stati.aggiorna(
+        {
+            "entity_id": "device_tracker.iphone_di_shinigami",
+            "state": "home",
+            "attributes": {"friendly_name": "iPhone di Shinigami", "latitude": 41.9, "longitude": 12.5},
+        }
+    )
+    cache_stati.aggiorna(
+        {
+            "entity_id": "person.alessio",
+            "state": "home",
+            "attributes": {"friendly_name": "Alessio", "latitude": 1.0, "longitude": 2.0},
+        }
+    )
+    cache_stati.aggiorna(
+        {"entity_id": "person.senza_gps", "state": "unknown", "attributes": {"friendly_name": "Ospite"}}
+    )
+    cache_stati.aggiorna(
+        {"entity_id": "light.cucina", "state": "on", "attributes": {"friendly_name": "Cucina"}}
+    )
+
+    elenco = posizione.candidati()
+
+    assert [c["entita"] for c in elenco] == [
+        "person.alessio",
+        "device_tracker.iphone_di_shinigami",
+        "person.senza_gps",
+    ]
+    assert elenco[1]["nome"] == "iPhone di Shinigami" and elenco[1]["ha_posizione"] is True
+    assert elenco[2]["ha_posizione"] is False
+    assert "light.cucina" not in json.dumps(elenco)
+    assert "41.9" not in json.dumps(elenco) and "12.5" not in json.dumps(
+        elenco
+    ), "i candidati riportano le coordinate"
+
+
+async def test_la_rotta_dei_candidati_risponde_con_l_elenco():
+    cache_stati.aggiorna(
+        {"entity_id": "person.alessio", "state": "home", "attributes": {"friendly_name": "Alessio"}}
+    )
+    esito = await routes_posizione.candidati()
+    assert [c["entita"] for c in esito["candidati"]] == ["person.alessio"]

@@ -41,7 +41,7 @@ I dettagli del flusso con le passkey e dei dispositivi fidati stanno nell'ADR
 l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 `/openapi.json`.
 
-## Le rotte (98)
+## Le rotte (99)
 
 ### `alexa`
 
@@ -193,6 +193,7 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 
 | Metodo | Percorso | Chi | Cosa fa |
 | :--- | :--- | :--- | :--- |
+| GET | `/api/posizione/candidati` | sessione aperta | Le persone e i telefoni di Home Assistant fra cui scegliere, col nome leggibile e se mandano una posizione. |
 | GET | `/api/posizione/io` | sessione aperta | In quale luogo si trova chi chiede: il nome del luogo, «in giro», «ignota» o «spenta». Mai le coordinate. |
 | PUT | `/api/posizione/io` | sessione aperta | Collega la propria persona o il proprio telefono di Home Assistant (vuoto: spegne la posizione). Vale solo per se'. |
 
