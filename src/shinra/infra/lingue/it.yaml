@@ -556,6 +556,7 @@ messaggi:
   posizione_ignota_vecchia: "Non so dove sei: l'ultima posizione di {entita} è di {ore} ore fa."
   posizione_ignota_illeggibile: "Non so dove sei: la posizione che mi manda Home Assistant per {entita} non è leggibile."
   posizione_in_giro_vicino: "Sei in giro: il luogo più vicino che conosco è {luogo}, a circa {distanza}. Se non è vero, il luogo potrebbe essere stato registrato nel punto sbagliato."
+  posizione_ignota_app: "Non so dove sei: l'app Shinra non mi ha ancora mandato la tua posizione. Apri l'app sul telefono e consenti la posizione quando te lo chiede."
   posizione_in_luogo: "Sei a {luogo}."
   condizione_variabile: "variabile"
   notizie_ultime: "Ultime notizie: {titoli}"

@@ -521,6 +521,7 @@ messaggi:
   posizione_ignota_vecchia: "I don't know where you are: the last position of {entita} is {ore} hours old."
   posizione_ignota_illeggibile: "I don't know where you are: the position Home Assistant sends for {entita} is not readable."
   posizione_in_giro_vicino: "You are out and about: the nearest place I know is {luogo}, about {distanza} away. If that is wrong, the place may have been registered in the wrong spot."
+  posizione_ignota_app: "I don't know where you are: the Shinra app has not sent me your location yet. Open the app on your phone and allow location when it asks."
   posizione_in_luogo: "You are at {luogo}."
   meteo_massima: " Expected high of {massima} degrees."
   condizione_variabile: "variable"

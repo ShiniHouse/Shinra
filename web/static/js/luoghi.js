@@ -129,6 +129,8 @@ async function cancellaLuogo(id) {
 }
 
 const MOTIVI_POSIZIONE = {
+    app_senza_segnalazione:
+        "L'app non ha ancora mandato la tua posizione: tieni aperta l'app e consenti la posizione quando il telefono lo chiede.",
     non_in_home_assistant:
         'Home Assistant non conosce questo telefono: controlla di aver scelto quello giusto.',
     senza_coordinate:
@@ -181,6 +183,56 @@ async function caricaCandidati() {
     }
 }
 
+// Vero se la posizione di chi e' collegato arriva da questa app (il GPS del telefono) e non da Home Assistant.
+let fonteApp = false;
+const OGNI_QUANTO_SEGNALARE_MS = 3 * 60 * 1000;
+let ultimaSegnalazione = 0;
+
+/** Legge il GPS del telefono e lo manda a Shinra. Su iPhone funziona solo con l'app aperta: per questo si ripete. */
+function segnalaOra(daUnGesto = false) {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+            ultimaSegnalazione = Date.now();
+            const res = await fetch('/api/posizione/segnala', {
+                method: 'POST',
+                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({
+                    latitudine: pos.coords.latitude,
+                    longitudine: pos.coords.longitude,
+                    precisione_m: Math.round(pos.coords.accuracy || 0) || null,
+                }),
+            }).catch(() => null);
+            if (res && res.ok) await caricaPosizione();
+            else if (res && daUnGesto) _messaggio(await _detail(res), true, 'posizione-esito');
+        },
+        (err) => {
+            if (daUnGesto) {
+                _messaggio(
+                    `Posizione non letta: ${err.message || 'permesso negato'}. Su iPhone: Impostazioni → Privacy e sicurezza → Localizzazione → Siti web di Safari (o Shinra) → «Mentre usi l'app».`,
+                    true,
+                    'posizione-esito',
+                );
+            }
+        },
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 },
+    );
+}
+
+async function segnalaSeServe() {
+    if (document.visibilityState !== 'visible') return;
+    if (Date.now() - ultimaSegnalazione < OGNI_QUANTO_SEGNALARE_MS * 0.8) return;
+    // La fonte si legge dal server: dopo l'accesso, o dopo un cambio fatto da un altro dispositivo.
+    try {
+        const res = await fetch('/api/posizione/io', { headers: getAuthHeaders() });
+        if (!res.ok) return;
+        fonteApp = (await res.json()).fonte === 'dispositivo';
+    } catch {
+        return;
+    }
+    if (fonteApp) segnalaOra();
+}
+
 async function caricaPosizione() {
     const riga = document.getElementById('posizione-stato');
     if (!riga) return;
@@ -191,6 +243,7 @@ async function caricaPosizione() {
             return;
         }
         const p = await res.json();
+        fonteApp = p.fonte === 'dispositivo';
         riga.textContent = _fraseDellaPosizione(p);
     } catch (err) {
         riga.textContent = `Non riesco a leggere la posizione: ${err.message}`;
@@ -209,6 +262,7 @@ async function collegaLaMiaPosizione() {
     if (!res.ok) return _messaggio(await _detail(res), true, 'posizione-esito');
     _messaggio('Posizione collegata.', false, 'posizione-esito');
     await caricaPosizione();
+    if (entita === 'dispositivo') segnalaOra(true);
 }
 
 async function spegniLaMiaPosizione() {
@@ -231,3 +285,8 @@ Gesti.registra({
     registraDalTelefono,
     cancellaLuogo,
 });
+
+// L'app segnala la posizione quando e' aperta e visibile: all'avvio, quando torna in primo piano, e ogni tre minuti.
+setTimeout(segnalaSeServe, 4000);
+document.addEventListener('visibilitychange', segnalaSeServe);
+setInterval(segnalaSeServe, OGNI_QUANTO_SEGNALARE_MS);

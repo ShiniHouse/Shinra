@@ -213,12 +213,14 @@ def test_i_candidati_hanno_il_nome_che_si_legge_e_non_le_coordinate():
     elenco = posizione.candidati()
 
     assert [c["entita"] for c in elenco] == [
+        "dispositivo",
         "person.alessio",
         "device_tracker.iphone_di_shinigami",
         "person.senza_gps",
     ]
-    assert elenco[1]["nome"] == "iPhone di Shinigami" and elenco[1]["ha_posizione"] is True
-    assert elenco[2]["ha_posizione"] is False
+    assert "app Shinra" in elenco[0]["nome"], "questo telefono deve essere la prima scelta"
+    assert elenco[2]["nome"] == "iPhone di Shinigami" and elenco[2]["ha_posizione"] is True
+    assert elenco[3]["ha_posizione"] is False
     assert "light.cucina" not in json.dumps(elenco)
     assert "41.9" not in json.dumps(elenco) and "12.5" not in json.dumps(
         elenco
@@ -230,7 +232,7 @@ async def test_la_rotta_dei_candidati_risponde_con_l_elenco():
         {"entity_id": "person.alessio", "state": "home", "attributes": {"friendly_name": "Alessio"}}
     )
     esito = await routes_posizione.candidati()
-    assert [c["entita"] for c in esito["candidati"]] == ["person.alessio"]
+    assert [c["entita"] for c in esito["candidati"]] == ["dispositivo", "person.alessio"]
 
 
 # ------------------------------------------------------ dire perche' non si sa (#343)
