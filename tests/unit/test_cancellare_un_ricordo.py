@@ -72,7 +72,10 @@ async def test_la_rotta_scrive_nel_registro_che_e_avvenuto_non_cosa():
 
     assert esito == {"success": True}
     voci = registro.voci(azione="ricordo.cancellato")
-    assert voci and voci[0]["dettagli"] == {"id": identificativo}
+    sue = [v for v in voci if v["dettagli"].get("id") == identificativo]
+    assert len(sue) == 1 and sue[0]["dettagli"] == {
+        "id": identificativo
+    }, "la voce di questo ricordo manca o ha altro dentro"
     assert "7391" not in json.dumps(
         voci, default=str
     ), "il registro riporta il contenuto del ricordo cancellato"
