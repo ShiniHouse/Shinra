@@ -83,6 +83,19 @@ class DepositoProposte:
             riga.deciso_il = quando
             return True
 
+    def dimentica_ricordo(self, identificativo: str) -> int:
+        """Toglie le proposte che citano questo ricordo (#253): cancellato il ricordo, non resta una proposta che lo indica."""
+        with sessione() as s:
+            citano = [
+                r.id
+                for r in s.scalars(select(PropostaDelSogno)).all()
+                if identificativo in ((r.dati or {}).get("ids") or [])
+            ]
+            if not citano:
+                return 0
+            esito = s.execute(delete(PropostaDelSogno).where(PropostaDelSogno.id.in_(citano)))
+            return int(getattr(esito, "rowcount", 0) or 0)
+
     def dimentica_profilo(self, profilo: str) -> int:
         with sessione() as s:
             esito = s.execute(delete(PropostaDelSogno).where(PropostaDelSogno.profilo == profilo))

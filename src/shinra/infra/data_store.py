@@ -22,6 +22,7 @@ from pydantic import BaseModel
 
 from shinra.domain import stanze
 from shinra.infra.db import depositi
+from shinra.infra.db.proposte import proposte
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,8 @@ class DataStore:
         cancellato = depositi.fatti.cancella(identificativo)
         if cancellato:
             depositi.embedding.cancella(identificativo)
+            # Le proposte del sogno che indicavano questo ricordo (due ricordi simili) non hanno piu' senso.
+            proposte.dimentica_ricordo(identificativo)
         return cancellato
 
     def add_knowledge_item(
