@@ -24,7 +24,9 @@ async function _detail(res) {
 
 function _giorno(iso) {
     const d = new Date(`${iso}T12:00:00`);
-    return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+    return Number.isNaN(d.getTime())
+        ? iso
+        : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
 }
 
 function _frase(p) {
@@ -94,7 +96,7 @@ async function accettaProposta(id) {
     if (!esito) return;
     _messaggio(
         esito.regola
-            ? 'Ho preparato la regola, ma e\' SPENTA: la trovi in Routine, dove la accendi quando vuoi.'
+            ? "Ho preparato la regola, ma e' SPENTA: la trovi in Routine, dove la accendi quando vuoi."
             : "L'ho segnata. Questa non so scriverla come regola: la tengo solo come nota.",
     );
     await caricaSogno();
