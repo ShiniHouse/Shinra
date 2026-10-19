@@ -6,9 +6,10 @@ esistesse. Accettare un'abitudine crea una regola **spenta**: non cambia niente 
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
 
 from shinra.api.sicurezza import richiedi_autenticazione, utente_corrente
 from shinra.services import proposte_del_sogno as sogno
@@ -18,6 +19,11 @@ router = APIRouter(
     tags=["Sogno"],
     dependencies=[Depends(richiedi_autenticazione)],
 )
+
+
+class Accettazione(BaseModel):
+    # Per due ricordi simili: l'identificativo di quello che si tiene (l'altro si archivia).
+    tieni: Optional[str] = None
 
 
 def _non_trovata(e: Exception) -> HTTPException:
@@ -44,9 +50,16 @@ async def scarta(identificativo: str, request: Request) -> Dict[str, Any]:
 
 
 @router.post("/proposte/{identificativo}/accetta")
-async def accetta(identificativo: str, request: Request) -> Dict[str, Any]:
+async def accetta(
+    identificativo: str, request: Request, corpo: Optional[Accettazione] = None
+) -> Dict[str, Any]:
     """Accetta. Se l'abitudine si sa scrivere come regola, nasce una regola spenta e ne torna l'identificativo."""
     try:
-        return {"success": True, **sogno.accetta(utente_corrente(request), identificativo)}
+        return {
+            "success": True,
+            **sogno.accetta(utente_corrente(request), identificativo, tieni=corpo.tieni if corpo else None),
+        }
     except sogno.PropostaNonTrovata as e:
         raise _non_trovata(e) from e
+    except sogno.ScegliQualeTenere as e:
+        raise HTTPException(status_code=422, detail="Scegli quale dei due ricordi tenere.") from e
