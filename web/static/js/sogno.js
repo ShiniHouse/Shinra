@@ -3,8 +3,9 @@
 // cambia qualcosa in casa da sola: «Si'» crea al piu' una regola SPENTA, che si accende da Routine. Le vedi solo tu.
 // Ogni testo passa da `_html`: un nome di dispositivo con dentro del markup resta testo.
 import { Gesti } from './gesti.js';
-import { _html } from './sicurezza.js';
+import { _args, _html } from './sicurezza.js';
 import { getAuthHeaders } from './accesso.js';
+import { caricaRicordi } from './ricordi.js';
 
 let proposteViste = [];
 
@@ -35,7 +36,31 @@ function _frase(p) {
     return `Alle ${d.orario} ${verbo} spesso ${d.bersaglio}: lo hai fatto ${(d.giorni || []).length} giorni negli ultimi quattordici.`;
 }
 
+function _coppia(p) {
+    const doppio = p.tipo === 'ricordo_doppio';
+    const intro = doppio
+        ? 'Questi due ricordi dicono quasi la stessa cosa. Quale tengo?'
+        : "Questi due ricordi sembrano in contraddizione (cambia un numero). Quale e' giusto?";
+    const scelte = (p.dati?.ricordi || []).map(
+        (r) => _html`
+            <div class="p-2 rounded-lg bg-slate-950/40 border border-slate-800 space-y-1.5">
+                <p class="text-sm text-slate-200 break-words">${r.testo}</p>
+                <button data-gesto="tieniRicordoDellaProposta" data-args="${_args(p.id, r.id)}" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Tieni questo</button>
+            </div>`,
+    );
+    return _html`
+        <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 md:col-span-2" data-proposta="${p.id}">
+            <p class="text-sm text-slate-300">${intro}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">${scelte}</div>
+            <p class="text-[11px] text-slate-500">L'altro non lo cancello: lo archivio, e lo puoi riattivare dai ricordi.</p>
+            <div class="flex justify-end">
+                <button data-gesto="scartaProposta" data-testo="${p.id}" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold">Lasciali cosi'</button>
+            </div>
+        </div>`;
+}
+
 function _carta(p) {
+    if (p.tipo === 'ricordo_doppio' || p.tipo === 'ricordo_contraddittorio') return _coppia(p);
     const prove = (p.dati?.giorni || []).map(_giorno).join(', ');
     return _html`
         <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2" data-proposta="${p.id}">
@@ -102,7 +127,20 @@ async function accettaProposta(id) {
     await caricaSogno();
 }
 
+async function tieniRicordoDellaProposta(idProposta, idRicordo) {
+    const res = await fetch(`/api/sogno/proposte/${encodeURIComponent(idProposta)}/accetta`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ tieni: idRicordo }),
+    });
+    if (!res.ok) return _messaggio(await _detail(res), true);
+    _messaggio("Fatto: ne tengo uno e l'altro e' archiviato.");
+    await caricaSogno();
+    caricaRicordi();
+}
+
 Gesti.registra({
     scartaProposta,
     accettaProposta,
+    tieniRicordoDellaProposta,
 });

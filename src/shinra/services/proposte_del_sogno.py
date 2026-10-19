@@ -13,7 +13,8 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-from shinra.domain import abitudini
+from shinra.domain import abitudini, fusione
+from shinra.infra.db import depositi
 from shinra.infra.db.proposte import proposte
 from shinra.services import registro
 
@@ -75,6 +76,19 @@ def proponi_abitudini(adesso: Optional[datetime] = None) -> dict[str, int]:
     return {"viste": len(trovate), "scritte": scritte}
 
 
+def proponi_ricordi(adesso: Optional[datetime] = None) -> dict[str, int]:
+    """Cerca ricordi privati doppi o in contraddizione sospetta e li propone. Non ne tocca nessuno."""
+    fine = _utc(adesso)
+    scade = fine + timedelta(days=GIORNI_DI_VALIDITA)
+    coppie = fusione.trova_coppie(depositi.fatti.elenco())
+    scritte = 0
+    for c in coppie:
+        if proposte.proponi(c.proprietario, c.tipo, c.chiave, {"ids": [c.a, c.b]}, fine, scade) is not None:
+            scritte += 1
+    logger.info("Sogno: %d coppie di ricordi simili, %d proposte nuove", len(coppie), scritte)
+    return {"viste": len(coppie), "scritte": scritte}
+
+
 async def _notte() -> None:
     from shinra.services.compito_notturno import compito_notturno
 
@@ -82,7 +96,7 @@ async def _notte() -> None:
         quante = proposte.purga_scadute(_utc(None))
         if quante:
             logger.info("Proposte del sogno scadute tolte: %d", quante)
-        return proponi_abitudini()
+        return {**proponi_abitudini(), **{f"ricordi_{k}": v for k, v in proponi_ricordi().items()}}
 
     await compito_notturno.esegui("sogno_abitudini", lavoro, TETTO_SECONDI, serve_il_modello=False)
 
@@ -113,7 +127,28 @@ def _id_profilo(profilo: Any) -> str:
 def elenco(profilo: Any) -> list[dict[str, Any]]:
     """Le proposte in attesa di chi chiede. Mai quelle di un altro; senza un profilo, nessuna."""
     chi = _id_profilo(profilo)
-    return proposte.del_profilo(chi) if chi else []
+    if not chi:
+        return []
+    viste = []
+    for p in proposte.del_profilo(chi):
+        if p["tipo"] in (fusione.DOPPIO, fusione.CONTRADDITTORIO):
+            ricordi = _ricordi_della_coppia(chi, p)
+            if ricordi is None:
+                continue  # uno dei due non c'e' piu' (o non e' piu' suo): la proposta non ha piu' senso
+            p = {**p, "dati": {**(p["dati"] or {}), "ricordi": ricordi}}
+        viste.append(p)
+    return viste
+
+
+def _ricordi_della_coppia(chi: str, proposta: dict[str, Any]) -> Optional[list[dict[str, str]]]:
+    """I due ricordi, con il testo, **solo se sono ancora entrambi di chi chiede e attivi**."""
+    trovati = []
+    for identificativo in (proposta["dati"] or {}).get("ids") or []:
+        r = depositi.fatti.per_id(str(identificativo))
+        if r is None or str(r.get("proprietario") or "") != chi or r.get("stato", "attivo") != "attivo":
+            return None
+        trovati.append({"id": str(r["id"]), "testo": str(r.get("text") or "")})
+    return trovati if len(trovati) == 2 else None
 
 
 def _sua(profilo: Any, identificativo: str) -> dict[str, Any]:
@@ -133,7 +168,9 @@ def scarta(profilo: Any, identificativo: str, adesso: Optional[datetime] = None)
     return fatto
 
 
-def accetta(profilo: Any, identificativo: str, adesso: Optional[datetime] = None) -> dict[str, Any]:
+def accetta(
+    profilo: Any, identificativo: str, adesso: Optional[datetime] = None, tieni: Optional[str] = None
+) -> dict[str, Any]:
     """«Si'»: se l'abitudine si sa scrivere come regola, nasce una regola **spenta**; la accende una persona.
 
     Ritorna `{"regola": id | None}`. Serve il permesso di creare routine: accettare e' creare.
@@ -145,6 +182,8 @@ def accetta(profilo: Any, identificativo: str, adesso: Optional[datetime] = None
     trovata = _sua(profilo, identificativo)
     if trovata["stato"] != "nuova":
         return {"regola": None}
+    if trovata["tipo"] in (fusione.DOPPIO, fusione.CONTRADDITTORIO):
+        return _risolvi_la_coppia(profilo, trovata, tieni, _utc(adesso))
     bozza = abitudini.bozza_di_regola(trovata["dati"] or {}) if trovata["tipo"] == TIPO_ABITUDINE else None
     regola_id = None
     if bozza is not None:
@@ -159,3 +198,23 @@ def accetta(profilo: Any, identificativo: str, adesso: Optional[datetime] = None
         "sogno.proposta_accettata", dettagli={"tipo": trovata["tipo"], "regola_creata": regola_id is not None}
     )
     return {"regola": regola_id}
+
+
+class ScegliQualeTenere(ValueError):
+    """Serve dire quale dei due ricordi si tiene, e deve essere uno dei due."""
+
+
+def _risolvi_la_coppia(
+    profilo: Any, proposta: dict[str, Any], tieni: Optional[str], quando: datetime
+) -> dict[str, Any]:
+    """Si tiene un ricordo e l'altro si **archivia** (non si cancella: si puo' riattivare dalla scheda dei ricordi)."""
+    from shinra.services import ricordi
+
+    ids = [str(i) for i in (proposta["dati"] or {}).get("ids") or []]
+    if tieni not in ids:
+        raise ScegliQualeTenere(tieni or "")
+    altro = next(i for i in ids if i != tieni)
+    ricordi.modifica(profilo, altro, {"stato": "archiviato"})
+    proposte.decidi(proposta["id"], "accettata", quando)
+    registro.registra("sogno.proposta_accettata", dettagli={"tipo": proposta["tipo"], "archiviato": altro})
+    return {"regola": None, "archiviato": altro}
