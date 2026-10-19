@@ -25,7 +25,7 @@ INDICE = CARTELLA / "README.md"
 # `| [0003](0003-scheduler-persistente.md) | Titolo | Accettato |`
 RIGA = re.compile(r"^\|\s*\[(\d{4})\]\(([^)]+)\)\s*\|([^|]*)\|\s*([^|]*?)\s*\|", re.M)
 
-STATI = ("Accettato", "Proposto")
+STATI = ("Accettato", "Proposto", "Rifiutato")
 
 
 def _schede() -> list[Path]:

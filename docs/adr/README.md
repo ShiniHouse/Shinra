@@ -24,5 +24,5 @@ state scartate alternative ragionevoli. Non serve per le decisioni ovvie.
 | [0008](0008-agenti-per-dominio.md) | Agenti per dominio, non un modello con tutti gli strumenti | Proposto |
 | [0009](0009-privacy-della-memoria.md) | Chi vede e chi può cambiare ciò che Shinra ricorda | Proposto |
 | [0010](0010-la-conversazione-si-conserva.md) | Si conserva la conversazione, e in che forma | Accettato |
-| [0011](0011-canali-esterni.md) | Canali esterni: cosa può passare da un servizio di terzi | Proposto |
+| [0011](0011-canali-esterni.md) | Canali esterni: cosa può passare da un servizio di terzi | Rifiutato |
 | [0012](0012-ricerca-vettoriale-a-scala.md) | La ricerca per vettori regge la casa? Si misura prima di cambiare | Proposto |
