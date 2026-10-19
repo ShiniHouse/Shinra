@@ -70,9 +70,17 @@ function falsifica() {
 
 async function apri(
     page,
-    { disponibile = true, dispositivi = [], opzioni = {}, rifiutaPreferenza = null } = {},
+    {
+        disponibile = true,
+        dispositivi = [],
+        opzioni = {},
+        rifiutaPreferenza = null,
+        ntfyConfigurato = false,
+    } = {},
 ) {
     const visti = { sottoscrivi: [], dimentica: [], preferenze: [], prova: 0 };
+    // Il server ricorda se ntfy e' acceso per questa persona.
+    let ntfyAcceso = false;
     // Il server ricorda cio' che gli si consegna: un elenco fisso farebbe credere alla pagina di non essere iscritta.
     const elenco = [...dispositivi];
     await page.addInitScript(falsifica(), {
@@ -93,6 +101,14 @@ async function apri(
         if (percorso === 'chiave')
             return ok({ chiave: disponibile ? 'BAAA-chiave_pubblica' : null, disponibile });
         if (percorso === 'dispositivi') return ok({ dispositivi: elenco });
+        if (percorso === 'ntfy')
+            return ok({
+                configurato: ntfyConfigurato,
+                indirizzo_non_locale: false,
+                acceso: ntfyAcceso,
+                argomento: ntfyConfigurato && ntfyAcceso ? 'shinra-prova123' : '',
+                indirizzo: ntfyConfigurato ? 'http://192.168.1.20:8090' : '',
+            });
         if (percorso === 'preferenze' && richiesta.method() === 'GET') {
             return ok({
                 silenzioso: false,
@@ -110,6 +126,7 @@ async function apri(
         }
         if (percorso === 'preferenze') {
             visti.preferenze.push(corpo);
+            if (corpo.chiave === 'canale.ntfy') ntfyAcceso = corpo.valore;
             if (rifiutaPreferenza && corpo.chiave === rifiutaPreferenza) {
                 return route.fulfill({
                     status: 400,
@@ -268,5 +285,26 @@ test.describe('le notifiche su iPhone', () => {
 
         await expect(stato(page)).toHaveAttribute('data-stato', 'ios_senza_app');
         await expect(page.locator('#notifiche-contenuto')).toContainText('Aggiungi a schermata Home');
+    });
+});
+
+test.describe('ntfy in casa', () => {
+    test('senza un server di casa configurato, la scelta non compare', async ({ page }) => {
+        await apri(page);
+        await expect(stato(page)).toHaveAttribute('data-stato', 'da_attivare');
+        await expect(page.getByText('Su ntfy, in casa')).toHaveCount(0);
+    });
+
+    test('con il server di casa: si accende, e la pagina mostra server e argomento privato', async ({
+        page,
+    }) => {
+        const visti = await apri(page, { ntfyConfigurato: true });
+        await expect(page.getByText('Su ntfy, in casa')).toBeVisible();
+        await expect(page.locator('[data-stato="ntfy"]')).toHaveCount(0);
+
+        await page.getByLabel('Su ntfy, in casa').check();
+        await expect(page.locator('[data-stato="ntfy"]')).toContainText('shinra-prova123');
+        await expect(page.locator('[data-stato="ntfy"]')).toContainText('192.168.1.20');
+        expect(visti.preferenze).toContainEqual({ chiave: 'canale.ntfy', valore: true });
     });
 });

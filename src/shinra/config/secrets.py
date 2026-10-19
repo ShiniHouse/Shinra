@@ -41,6 +41,7 @@ CAMPI_DA_AMBIENTE: dict[tuple[str, str], tuple[str, bool]] = {
     ("home_assistant", "url"): ("SHINRA_HA_URL", False),
     ("llm", "ollama_url"): ("SHINRA_OLLAMA_URL", False),
     ("alexa", "skill_id"): ("SHINRA_ALEXA_SKILL_ID", False),
+    ("notifiche", "ntfy_url"): ("SHINRA_NTFY_URL", False),
 }
 
 # I campi che non devono mai essere scritti in config.yaml.

@@ -31,6 +31,8 @@ services:
       SHINRA_HA_TOKEN: "${SHINRA_HA_TOKEN:-}"
       SHINRA_ALEXA_SKILL_ID: "${SHINRA_ALEXA_SKILL_ID:-}"
       SHINRA_SESSION_SECRET: "${SHINRA_SESSION_SECRET:-}"
+      # Vuoto: nessun canale ntfy. Per usarlo: `SHINRA_NTFY_URL=http://ntfy:80` in `.env` e `docker compose --profile ntfy up -d`.
+      SHINRA_NTFY_URL: "${SHINRA_NTFY_URL:-}"
     volumes:
       # Il database, i log e i salvataggi automatici.
       - shinra-dati:/app/data
@@ -51,7 +53,26 @@ services:
     volumes:
       - ollama-modelli:/root/.ollama
 
+  # Notifiche sul telefono SENZA terzi (#389): un server ntfy in casa. Spento finche' non lo chiedi (`--profile ntfy`).
+  # Il telefono lo raggiunge dalla rete di casa all'indirizzo di questa macchina, porta 8090: non va esposto su internet
+  # (chi conosce un argomento legge gli avvisi di quell'argomento). Vedi docs/ntfy.md.
+  ntfy:
+    image: binwiederhall/ntfy:latest
+    container_name: shinra-ntfy
+    restart: unless-stopped
+    profiles: ["ntfy"]
+    command: ["serve"]
+    environment:
+      # Dove il telefono trova il server: l'indirizzo della macchina in casa, non un nome pubblico.
+      NTFY_BASE_URL: "${NTFY_BASE_URL:-http://localhost:8090}"
+      NTFY_CACHE_FILE: "/var/cache/ntfy/cache.db"
+    ports:
+      - "8090:80"
+    volumes:
+      - ntfy-cache:/var/cache/ntfy
+
 volumes:
   shinra-dati:
   shinra-configurazione:
   ollama-modelli:
+  ntfy-cache:

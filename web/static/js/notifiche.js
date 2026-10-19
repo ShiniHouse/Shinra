@@ -27,6 +27,8 @@ const CATEGORIE = {
     manutenzione: 'Manutenzione e scadenze',
 };
 const CANALI = { web: 'Nella dashboard', push: 'Sul telefono', voce: 'A voce' };
+// ntfy compare solo se il server di casa e' configurato (#389): spento finche' non lo accendi tu.
+const CANALE_NTFY = 'ntfy';
 
 const $ = (id) => document.getElementById(id);
 
@@ -160,7 +162,16 @@ function _dispositivi(elenco) {
     )}</ul>`;
 }
 
-function _preferenze(p) {
+function _ntfy(n) {
+    if (!n.acceso || !n.argomento) return '';
+    return _html`<div class="mt-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800 space-y-1" data-stato="ntfy">
+        <p class="text-slate-300">Nell'app <strong>ntfy</strong> iscriviti a questo server e a questo argomento (e' privato: non condividerlo).</p>
+        <p class="text-slate-400">Server: <code class="text-slate-200 break-all">${n.indirizzo}</code></p>
+        <p class="text-slate-400">Argomento: <code class="text-slate-200 break-all">${n.argomento}</code></p>
+    </div>`;
+}
+
+function _preferenze(p, n) {
     const casella = (chiave, etichetta, acceso, bloccata = false) =>
         _html`<label class="flex items-center gap-2 text-slate-300"><input type="checkbox" data-al-cambio="notificheScegli" data-args="${_args(chiave)}" data-argomento="spunta" ${acceso ? 'checked' : ''} ${bloccata ? 'disabled' : ''}><span>${etichetta}${bloccata ? ' — non si può silenziare' : ''}</span></label>`;
     const fissa = new Set(p.non_silenziabili || []);
@@ -168,6 +179,8 @@ function _preferenze(p) {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <fieldset class="space-y-1"><legend class="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Dove</legend>
                 ${Object.entries(CANALI).map(([c, e]) => casella(`canale.${c}`, e, p.canali?.[c]))}
+                ${n.configurato ? casella(`canale.${CANALE_NTFY}`, 'Su ntfy, in casa', p.canali?.[CANALE_NTFY]) : ''}
+                ${_ntfy(n)}
             </fieldset>
             <fieldset class="space-y-1"><legend class="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Cosa</legend>
                 ${Object.entries(CATEGORIE).map(([c, e]) => casella(`categoria.${c}`, e, p.categorie?.[c], fissa.has(c)))}
@@ -207,10 +220,12 @@ export async function caricaNotifiche() {
 
     let elenco = [];
     let preferenze = {};
+    let ntfy = {};
     try {
-        [{ dispositivi: elenco }, preferenze] = await Promise.all([
+        [{ dispositivi: elenco }, preferenze, ntfy] = await Promise.all([
             _chiama('/api/notifiche/dispositivi'),
             _chiama('/api/notifiche/preferenze'),
+            _chiama('/api/notifiche/ntfy'),
         ]);
     } catch (errore) {
         return _scrivi(
@@ -234,7 +249,7 @@ export async function caricaNotifiche() {
         <h4 class="text-[11px] uppercase tracking-wider text-slate-500 pt-1">Dispositivi iscritti (${elenco.length})</h4>
         ${_dispositivi(elenco)}
         <h4 class="text-[11px] uppercase tracking-wider text-slate-500 pt-2">Cosa vuoi sentire</h4>
-        ${_preferenze(preferenze)}`);
+        ${_preferenze(preferenze, ntfy)}`);
 
     // Un'iscrizione che il browser ha e il server no (il database rifatto, il telefono tolto altrove) si rimette a
     // posto da sola: lo stesso indirizzo e' lo stesso telefono, non un secondo.
@@ -317,6 +332,8 @@ async function notificheProva() {
 async function notificheScegli(chiave, valore) {
     try {
         await _chiama('/api/notifiche/preferenze', 'POST', { chiave, valore: Boolean(valore) });
+        // Accendere o spegnere ntfy cambia cosa mostrare (server e argomento): si ridisegna.
+        if (chiave === `canale.${CANALE_NTFY}`) await caricaNotifiche();
         _esito('Salvato.');
     } catch (errore) {
         // Una categoria non silenziabile il server la rifiuta e dice perche': si rimette a posto la casella.
