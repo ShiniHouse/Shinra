@@ -11,18 +11,35 @@ import json
 from datetime import datetime, timedelta
 
 import pytest
+from sqlalchemy import text
 
 from shinra.infra.data_store import data_store
 from shinra.infra.db import depositi
+from shinra.infra.db.motore import sessione
 from shinra.infra.db.proposte import proposte
 from shinra.infra.db.riassunti import riassunti
 from shinra.services import ricordi, salvataggio
 from shinra.services.user_manager import UserProfile
-from tests.unit.test_cancellare_un_ricordo import _in_tutto_il_database
 
 ALESSIO = UserProfile(id="alessio", name="Alessio", role="admin")
 SEGRETO = "ZEBRA-4417-cassaforte"
 ORA = datetime(2026, 10, 20, 3, 0)
+
+
+def _in_tutto_il_database(cercato: str) -> list[str]:
+    """Le tabelle e le colonne in cui compare `cercato`, scandendole tutte."""
+    trovate = []
+    with sessione() as s:
+        tabelle = [r[0] for r in s.execute(text("SELECT name FROM sqlite_master WHERE type='table'")).all()]
+        for tabella in tabelle:
+            for colonna in [r[1] for r in s.execute(text(f'PRAGMA table_info("{tabella}")')).all()]:
+                # nomi di tabella e di colonna letti dal database stesso, non da un utente
+                interrogazione = (
+                    f'SELECT COUNT(*) FROM "{tabella}" WHERE CAST("{colonna}" AS TEXT) LIKE :q'  # noqa: S608
+                )
+                if s.execute(text(interrogazione), {"q": f"%{cercato}%"}).scalar():
+                    trovate.append(f"{tabella}.{colonna}")
+    return trovate
 
 
 @pytest.fixture(autouse=True)
