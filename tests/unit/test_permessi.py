@@ -318,6 +318,9 @@ def test_ogni_rotta_che_cambia_qualcosa_dichiara_un_permesso():
         ("PATCH", "/api/ricordi/{identificativo}"),
         ("DELETE", "/api/ricordi/{identificativo}"),
         ("POST", "/api/ricordi/dimentica-tutto-di-me"),
+        # Importare un file di ricordi passa dagli stessi controlli di `crea` e `modifica` (proprieta' e permesso), nel servizio.
+        ("POST", "/api/ricordi/importa"),
+        ("POST", "/api/ricordi/importa/anteprima"),
         # Le proposte del sogno sono di chi le riceve (il servizio rifiuta le altrui con 404); accettarne una che diventa una
         # regola chiede il permesso di creare routine, dentro il servizio.
         ("POST", "/api/sogno/proposte/{identificativo}/scarta"),

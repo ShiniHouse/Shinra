@@ -41,7 +41,7 @@ I dettagli del flusso con le passkey e dei dispositivi fidati stanno nell'ADR
 l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 `/openapi.json`.
 
-## Le rotte (110)
+## Le rotte (113)
 
 ### `alexa`
 
@@ -237,6 +237,9 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 | GET | `/api/ricordi` | sessione aperta | I ricordi che chi chiede vede: della casa e propri, con i filtri per ambito, origine, stato e importanza. |
 | POST | `/api/ricordi` | sessione aperta | Scrive un ricordo, della casa o proprio. Serve il permesso di insegnare cose nuove all'assistente. |
 | POST | `/api/ricordi/dimentica-tutto-di-me` | sessione aperta | Cancella tutti i ricordi privati di chi chiede (non quelli della casa). Serve la conferma esplicita. |
+| GET | `/api/ricordi/esporta` | sessione aperta | I ricordi di un ambito (`mio` o `casa`) come file Markdown. Contiene dati personali: va tenuto al sicuro. |
+| POST | `/api/ricordi/importa` | sessione aperta | Applica un file di ricordi, dopo l'anteprima e solo con la conferma. Chi manca dal file si archivia solo se lo chiedi. |
+| POST | `/api/ricordi/importa/anteprima` | sessione aperta | Cosa cambierebbe rileggendo un file di ricordi (nuovi, modificati, tolti). Non scrive niente. |
 | GET | `/api/ricordi/miei` | sessione aperta | Solo i ricordi privati di chi chiede. |
 | PATCH | `/api/ricordi/{identificativo}` | sessione aperta | Corregge un ricordo (testo, categoria, importanza, stato, acceso/spento). Il privato di un altro non esiste. |
 | DELETE | `/api/ricordi/{identificativo}` | sessione aperta | Cancella un ricordo e il suo vettore. Il proprio privato sempre; quelli della casa solo chi puo' scriverla. |

@@ -13,7 +13,6 @@ Due difese contro la dimenticanza:
 
 from __future__ import annotations
 
-import json
 import re
 from datetime import datetime, timedelta
 
@@ -48,6 +47,7 @@ PREFISSI = (
 LETTURE = [
     "/api/ricordi",
     "/api/ricordi/miei",
+    "/api/ricordi/esporta",
     "/api/knowledge",
     "/api/conoscenza/fatti-usati",
     "/api/conoscenza/stato",
@@ -66,6 +66,14 @@ PER_ID = [
     ("POST", "/api/sogno/proposte/{proposta}/accetta", {"tieni": "k_altrui"}),
 ]
 ALTRE = {
+    (
+        "POST",
+        "/api/ricordi/importa",
+    ): "applica solo nel perimetro di chi importa (provata in test_ricordi_in_markdown)",
+    (
+        "POST",
+        "/api/ricordi/importa/anteprima",
+    ): "legge solo il perimetro di chi importa (provata in test_ricordi_in_markdown)",
     ("POST", "/api/ricordi"): "scrive un ricordo di chi chiede, non legge quelli altrui",
     (
         "POST",
@@ -202,9 +210,7 @@ def test_chi_non_e_il_proprietario_non_vede_il_segno(due_persone, percorso):
     alessio, _, _ = due_persone
     r = alessio.get(percorso)
     assert r.status_code == 200, f"{percorso}: {r.status_code} {r.text[:200]}"
-    assert SEGNO not in json.dumps(
-        r.json(), ensure_ascii=False
-    ), f"{percorso} fa vedere a Alessio una cosa di Sonia"
+    assert SEGNO not in r.text, f"{percorso} fa vedere a Alessio una cosa di Sonia"
 
 
 def test_prova_della_prova_il_proprietario_vede_il_segno(due_persone):
@@ -269,5 +275,5 @@ def test_il_registro_dice_che_e_successo_non_il_testo_di_un_ricordo(due_persone)
 
 def test_l_amministratore_non_e_un_caso_speciale(due_persone):
     alessio, _, _ = due_persone
-    tutto = json.dumps([alessio.get(p).json() for p in LETTURE], ensure_ascii=False)
+    tutto = "".join(alessio.get(p).text for p in LETTURE)
     assert SEGNO not in tutto
