@@ -252,3 +252,13 @@ async def test_un_indirizzo_pubblico_si_segnala_senza_mostrarlo(monkeypatch):
     monkeypatch.setattr(settings.notifiche, "ntfy_url", "https://ntfy.sh")
     visto = await routes_notifiche.ntfy(ADMIN)
     assert not visto["configurato"] and visto["indirizzo_non_locale"] and visto["indirizzo"] == ""
+
+
+def test_l_indirizzo_di_ntfy_si_puo_dare_dall_ambiente_come_fa_docker(monkeypatch):
+    """Il `docker-compose.yml` passa `SHINRA_NTFY_URL`: deve arrivare nella configurazione (e non finire in `config.yaml`)."""
+    from shinra.config import secrets as segreti
+    from shinra.config.settings import _applica_ambiente
+
+    monkeypatch.setenv("SHINRA_NTFY_URL", "http://ntfy:80")
+    assert _applica_ambiente({})["notifiche"]["ntfy_url"] == "http://ntfy:80"
+    assert ("notifiche", "ntfy_url") not in segreti.CAMPI_SEGRETI, "e' un indirizzo, non un segreto"
