@@ -1,6 +1,6 @@
 # 0011 — Canali esterni: cosa può passare da un servizio di terzi
 
-- **Stato:** Rifiutato (per ora)
+- **Stato:** Rifiutato
 - **Data:** 2026-10-13
 - **Decisione:** 2026-10-19, del proprietario: **non si fa, per ora**. Le schede #265–#268 sono chiuse.
 - **Attuazione:** nessuna (era: issue #265; canale #266, connettore #267, interfaccia #268)
