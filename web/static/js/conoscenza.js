@@ -5,6 +5,7 @@ import { safeCreateIcons } from './avvio.js';
 import { getAuthHeaders } from './accesso.js';
 import { closeModal, showModal } from './impostazioni.js';
 import { caricaRicordi } from './ricordi.js';
+import { caricaSogno } from './sogno.js';
 
 const KNOWLEDGE_TEMPLATES = [
     {
@@ -181,6 +182,7 @@ export async function loadKnowledge() {
         _allKnowledgeItems = items;
         // La lista dei ricordi la disegna `ricordi.js` (casa e miei, con le loro azioni).
         caricaRicordi();
+        caricaSogno();
         safeCreateIcons();
         renderKnowledgeTemplates(items);
     } catch (e) {

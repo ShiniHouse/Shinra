@@ -41,7 +41,7 @@ I dettagli del flusso con le passkey e dei dispositivi fidati stanno nell'ADR
 l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 `/openapi.json`.
 
-## Le rotte (106)
+## Le rotte (109)
 
 ### `alexa`
 
@@ -261,6 +261,14 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 | :--- | :--- | :--- | :--- |
 | GET | `/api/settings` | permesso `impostazioni.gestisci` | Le impostazioni lette dal disco, con token e PIN mascherati. |
 | POST | `/api/settings` | permesso `impostazioni.gestisci` | Salva le impostazioni. Un token o un PIN rimasti mascherati non sovrascrivono quelli veri. |
+
+### `sogno`
+
+| Metodo | Percorso | Chi | Cosa fa |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/sogno/proposte` | sessione aperta | Le proposte di stanotte (e dei giorni scorsi) che aspettano una risposta, solo di chi chiede. |
+| POST | `/api/sogno/proposte/{identificativo}/accetta` | sessione aperta | Accetta. Se l'abitudine si sa scrivere come regola, nasce una regola spenta e ne torna l'identificativo. |
+| POST | `/api/sogno/proposte/{identificativo}/scarta` | sessione aperta | Scarta una proposta: non viene riproposta. |
 
 ### `sources`
 
