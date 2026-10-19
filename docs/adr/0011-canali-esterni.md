@@ -1,11 +1,17 @@
 # 0011 — Canali esterni: cosa può passare da un servizio di terzi
 
-- **Stato:** Proposto
+- **Stato:** Rifiutato (per ora)
 - **Data:** 2026-10-13
-- **Attuazione:** milestone `v0.8.0`, issue #265 (canale: #266, connettore: #267, interfaccia: #268)
+- **Decisione:** 2026-10-19, del proprietario: **non si fa, per ora**. Le schede #265–#268 sono chiuse.
+- **Attuazione:** nessuna (era: issue #265; canale #266, connettore #267, interfaccia #268)
 
-> Bozza scritta per essere discussa: **nessuna di queste scelte è decisa** finché il proprietario non porta lo stato a `Accettato`.
-> È ammesso che la decisione sia «non si fa»: in quel caso le schede #266–#268 si chiudono.
+> Decisione: **non si fa, per ora.** Le notifiche push e la PWA bastano, e un canale di terzi non è cifrato end-to-end e
+> metterebbe un telecomando della casa su un'app esterna. Il testo sotto resta come traccia del ragionamento, per chi
+> riaprisse la questione.
+>
+> **Se un giorno si riapre:** si parte dalle alternative senza terzi (un server `ntfy` o `Matrix` in casa, punto 6), si
+> riapre la #265 e questo ADR torna `Proposto`. La promessa della `0.6.0` — con l'opzione esterna spenta non esce nessuna
+> richiesta — resta vera: nel codice non c'è nessun canale esterno.
 
 ## Contesto
 
