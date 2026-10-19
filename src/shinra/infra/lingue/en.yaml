@@ -526,6 +526,7 @@ messaggi:
   riassunto_richieste: "You asked: {voci}."
   riassunto_azioni: "Actions done: {voci}."
   riassunto_non_riuscita: "failed"
+  sogno_regola_nome: "Habit noticed: {bersaglio} at {orario}"
   posizione_in_luogo: "You are at {luogo}."
   meteo_massima: " Expected high of {massima} degrees."
   condizione_variabile: "variable"

@@ -318,6 +318,10 @@ def test_ogni_rotta_che_cambia_qualcosa_dichiara_un_permesso():
         ("PATCH", "/api/ricordi/{identificativo}"),
         ("DELETE", "/api/ricordi/{identificativo}"),
         ("POST", "/api/ricordi/dimentica-tutto-di-me"),
+        # Le proposte del sogno sono di chi le riceve (il servizio rifiuta le altrui con 404); accettarne una che diventa una
+        # regola chiede il permesso di creare routine, dentro il servizio.
+        ("POST", "/api/sogno/proposte/{identificativo}/scarta"),
+        ("POST", "/api/sogno/proposte/{identificativo}/accetta"),
         ("POST", "/api/posizione/segnala"),  # l'app dice dove e': vale solo per chi l'ha scelta come fonte
         ("POST", "/api/notifiche/sottoscrivi"),
         ("POST", "/api/notifiche/dimentica"),

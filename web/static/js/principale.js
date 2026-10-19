@@ -15,6 +15,7 @@ import './voce.js';
 import './conversazione.js';
 import './conoscenza.js';
 import './ricordi.js';
+import './sogno.js';
 import './istruisci.js';
 import './fonti.js';
 import './dispositivi.js';

@@ -171,3 +171,31 @@ def _finestra_piu_piena(momenti: list[datetime]) -> dict[date, datetime]:
         if len(dentro) > len(migliore):
             migliore = dentro
     return migliore
+
+
+# Servizi di Home Assistant che una regola sa chiamare da sola, e che un'abitudine di accendere o spegnere puo' diventare.
+_SERVIZI_DELLE_REGOLE = {"turn_on": "turn_on", "turn_off": "turn_off", "toggle": "toggle"}
+
+
+def bozza_di_regola(dati: Mapping[str, Any]) -> Optional[dict[str, Any]]:
+    """La regola **spenta** che renderebbe automatica un'abitudine, o `None` se non si sa scriverla.
+
+    Solo accendere, spegnere e commutare un dispositivo con un `entity_id` vero: per le altre (un media, un clima, una scena)
+    non si indovina che cosa vada chiamato, e inventarlo sarebbe peggio che non proporre la regola. La regola nasce
+    **disattivata** (`attiva: False`): la accende una persona, dopo averla guardata.
+    """
+    if dati.get("strumento") != "control_device":
+        return None
+    servizio = _SERVIZI_DELLE_REGOLE.get(str(dati.get("verbo") or ""))
+    bersaglio = str(dati.get("bersaglio") or "")
+    orario = str(dati.get("orario") or "")
+    if servizio is None or "." not in bersaglio or len(orario) != 5:
+        return None
+    if sensibilita.entita_sensibile(bersaglio, servizio):
+        return None
+    return {
+        "attiva": False,
+        "trigger": {"tipo": "orario", "ora": orario},
+        "condizioni": [],
+        "azioni": [{"tipo": "dispositivo", "entity_id": bersaglio, "servizio": servizio}],
+    }

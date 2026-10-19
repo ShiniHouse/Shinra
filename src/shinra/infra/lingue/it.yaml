@@ -561,6 +561,7 @@ messaggi:
   riassunto_richieste: "Hai chiesto: {voci}."
   riassunto_azioni: "Azioni eseguite: {voci}."
   riassunto_non_riuscita: "non riuscita"
+  sogno_regola_nome: "Abitudine notata: {bersaglio} alle {orario}"
   posizione_in_luogo: "Sei a {luogo}."
   condizione_variabile: "variabile"
   notizie_ultime: "Ultime notizie: {titoli}"

@@ -97,3 +97,65 @@ def ferma() -> None:
     from shinra.infra.scheduler.motore import scheduler
 
     scheduler.annulla("sogno:abitudini")
+
+
+# ------------------------------------------------------------------ le proposte, per chi le riceve
+
+
+class PropostaNonTrovata(LookupError):
+    """Non esiste, oppure e' di un altro: per chi chiede e' la stessa cosa."""
+
+
+def _id_profilo(profilo: Any) -> str:
+    return str(getattr(profilo, "id", "") or "")
+
+
+def elenco(profilo: Any) -> list[dict[str, Any]]:
+    """Le proposte in attesa di chi chiede. Mai quelle di un altro; senza un profilo, nessuna."""
+    chi = _id_profilo(profilo)
+    return proposte.del_profilo(chi) if chi else []
+
+
+def _sua(profilo: Any, identificativo: str) -> dict[str, Any]:
+    chi = _id_profilo(profilo)
+    trovata = proposte.trova(identificativo) if chi else None
+    if trovata is None or trovata["profilo"] != chi:
+        raise PropostaNonTrovata(identificativo)
+    return trovata
+
+
+def scarta(profilo: Any, identificativo: str, adesso: Optional[datetime] = None) -> bool:
+    """«No, grazie»: non torna piu' (finche' non scade e il registro non la mostra di nuovo)."""
+    trovata = _sua(profilo, identificativo)
+    fatto = proposte.decidi(trovata["id"], "scartata", _utc(adesso))
+    if fatto:
+        registro.registra("sogno.proposta_scartata", dettagli={"tipo": trovata["tipo"]})
+    return fatto
+
+
+def accetta(profilo: Any, identificativo: str, adesso: Optional[datetime] = None) -> dict[str, Any]:
+    """«Si'»: se l'abitudine si sa scrivere come regola, nasce una regola **spenta**; la accende una persona.
+
+    Ritorna `{"regola": id | None}`. Serve il permesso di creare routine: accettare e' creare.
+    """
+    from shinra.infra.lingue import schemi
+    from shinra.services import permessi
+    from shinra.services.regole import motore_regole
+
+    trovata = _sua(profilo, identificativo)
+    if trovata["stato"] != "nuova":
+        return {"regola": None}
+    bozza = abitudini.bozza_di_regola(trovata["dati"] or {}) if trovata["tipo"] == TIPO_ABITUDINE else None
+    regola_id = None
+    if bozza is not None:
+        permessi.esigi(profilo, permessi.MODIFICA_MODALITA)
+        dati = trovata["dati"]
+        nome = schemi(getattr(profilo, "lingua", "") or "").dice(
+            "sogno_regola_nome", bersaglio=dati["bersaglio"], orario=dati["orario"]
+        )
+        regola_id = motore_regole.crea({**bozza, "nome": nome}, autore=_id_profilo(profilo))["id"]
+    proposte.decidi(trovata["id"], "accettata", _utc(adesso))
+    registro.registra(
+        "sogno.proposta_accettata", dettagli={"tipo": trovata["tipo"], "regola_creata": regola_id is not None}
+    )
+    return {"regola": regola_id}
