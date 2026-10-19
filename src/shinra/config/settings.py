@@ -223,6 +223,14 @@ class SalvataggioConfig(BaseModel):
     da_conservare: int = 14
 
 
+class NotificheConfig(BaseModel):
+    """Le notifiche oltre a quelle del browser (#389)."""
+
+    # L'indirizzo di un server `ntfy` **in casa** (`http://ntfy:80`, `http://192.168.1.20:8090`). Vuoto: nessun canale ntfy.
+    # Un indirizzo pubblico viene rifiutato: il punto e' non passare da terzi.
+    ntfy_url: str = ""
+
+
 class PluginConfig(BaseModel):
     """I plugin abilitati (#193): i nomi delle cartelle in `plugins/`. Nessuno per difetto."""
 
@@ -241,6 +249,7 @@ class AppConfig(BaseModel):
     energia: EnergiaConfig = Field(default_factory=EnergiaConfig)
     voce: VoceConfig = Field(default_factory=VoceConfig)
     salvataggio: SalvataggioConfig = Field(default_factory=SalvataggioConfig)
+    notifiche: NotificheConfig = Field(default_factory=NotificheConfig)
     plugin: PluginConfig = Field(default_factory=PluginConfig)
 
 

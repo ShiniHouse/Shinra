@@ -41,7 +41,7 @@ I dettagli del flusso con le passkey e dei dispositivi fidati stanno nell'ADR
 l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 `/openapi.json`.
 
-## Le rotte (109)
+## Le rotte (110)
 
 ### `alexa`
 
@@ -166,6 +166,7 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 | GET | `/api/notifiche/chiave` | sessione aperta | La chiave con cui il browser si registra. |
 | POST | `/api/notifiche/dimentica` | sessione aperta | Toglie un telefono, **solo se e' di chi lo chiede**. |
 | GET | `/api/notifiche/dispositivi` | sessione aperta | I telefoni registrati di chi chiede. |
+| GET | `/api/notifiche/ntfy` | sessione aperta | Il canale ntfy di chi chiede: se il server di casa e' configurato, se e' acceso per lui e su quale argomento ascoltare. |
 | GET | `/api/notifiche/preferenze` | sessione aperta | Le preferenze di notifica di chi chiede: canali, categorie e cosa non si puo' silenziare. |
 | POST | `/api/notifiche/preferenze` | sessione aperta | Cambia una preferenza. |
 | POST | `/api/notifiche/prova` | sessione aperta | Manda una notifica di prova a chi la chiede. |

@@ -121,6 +121,25 @@ async def leggi_preferenze(
     }
 
 
+@router.get("/ntfy")
+async def ntfy(profilo: Optional[UserProfile] = Depends(richiedi_autenticazione)) -> Dict[str, Any]:
+    """Il canale ntfy di chi chiede: se il server di casa e' configurato, se e' acceso per lui e su quale argomento ascoltare."""
+    from shinra.config.settings import settings
+
+    url = settings.notifiche.ntfy_url
+    chi = _chi(profilo)
+    configurato = bool(url) and dominio.indirizzo_locale(url)
+    acceso = servizio_notifiche.preferenze_di(chi).vuole_canale(dominio.NTFY)
+    return {
+        "configurato": configurato,
+        "indirizzo_non_locale": bool(url) and not configurato,
+        "acceso": acceso,
+        # L'argomento e' la chiave di ascolto: lo vede solo la persona a cui appartiene, e solo se serve.
+        "argomento": servizio_notifiche.argomento_ntfy(chi) if configurato and acceso else "",
+        "indirizzo": url if configurato else "",
+    }
+
+
 @router.post("/preferenze")
 async def imposta_preferenza(
     dati: Preferenza, profilo: Optional[UserProfile] = Depends(richiedi_autenticazione)
@@ -139,6 +158,18 @@ async def imposta_preferenza(
                 detail=(
                     f"Gli avvisi di {categoria} non si possono silenziare: un allarme "
                     "che si puo' zittire per sbaglio non e' un allarme."
+                ),
+            )
+
+    if dati.chiave == f"canale.{dominio.NTFY}" and dati.valore:
+        from shinra.config.settings import settings
+
+        if not dominio.indirizzo_locale(settings.notifiche.ntfy_url):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Il server ntfy di casa non e' configurato (o l'indirizzo non e' locale): "
+                    "imposta `notifiche.ntfy_url` con un indirizzo della tua rete."
                 ),
             )
 

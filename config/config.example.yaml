@@ -127,3 +127,12 @@ salvataggio:
   abilitato: true
   ogni_ore: 24.0
   da_conservare: 14
+
+# --- Notifiche su un server ntfy IN CASA (opzionale, spento di default) ---
+# ntfy e' un piccolo server di notifiche che metti tu in casa (un container accanto a Shinra, per esempio).
+# Vuoto: nessun canale ntfy. Se lo imposti, ogni persona lo accende per se' dalle Impostazioni > Notifiche, e ascolta
+# con l'app ntfy su un argomento privato che Shinra le mostra.
+# L'indirizzo DEVE essere di casa (rete privata, `localhost`, un nome come `ntfy` o `casa.local`): un indirizzo pubblico
+# come ntfy.sh viene rifiutato, perche' il punto e' non passare da terzi.
+notifiche:
+  ntfy_url: ""

@@ -179,7 +179,37 @@ class ServizioNotifiche:
             return await self._voce(avviso)
         if canale == dominio.WEB:
             return self._web(avviso, utente)
+        if canale == dominio.NTFY:
+            return await self._ntfy(avviso, utente)
         return 0
+
+    async def _ntfy(self, avviso: dominio.Avviso, utente: str) -> int:
+        """Il server ntfy di casa, se c'e'. Senza indirizzo (o con uno non locale) non parte niente."""
+        from shinra.config.settings import settings
+        from shinra.infra import ntfy
+
+        argomento = self.argomento_ntfy(utente)
+        url = settings.notifiche.ntfy_url
+        if not argomento or not url:
+            return 0
+        esito = await ntfy.pubblica(
+            url,
+            argomento,
+            {
+                "titolo": avviso.titolo,
+                "testo": avviso.testo,
+                "categoria": avviso.categoria,
+                "priorita": avviso.priorita,
+            },
+        )
+        return 1 if esito.riuscito else 0
+
+    def argomento_ntfy(self, utente: str) -> str:
+        """L'argomento privato di questa persona, o vuoto se il server non ha un segreto con cui farlo."""
+        from shinra.config.settings import settings
+
+        segreto = settings.security.session_secret or ""
+        return dominio.argomento_ntfy(segreto, utente) if segreto else ""
 
     def _web(self, avviso: dominio.Avviso, utente: str) -> int:
         """La dashboard aperta. Passa dal bus, come tutto il resto."""
