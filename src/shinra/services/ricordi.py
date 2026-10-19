@@ -17,6 +17,7 @@ from shinra.domain import ricordi as regole
 from shinra.domain.recupero import IMPORTANZA_FISSATA
 from shinra.infra.data_store import data_store
 from shinra.infra.db import depositi
+from shinra.infra.db.proposte import proposte
 from shinra.services import permessi, registro
 
 TESTO_MASSIMO = 500
@@ -207,7 +208,15 @@ def dimentica_tutto_di_me(profilo: Any) -> int:
 
     quanti_riassunti = riassunti.dimentica(mio)
     gestore_memorie.dimentica(mio)
+    # E cio' che il sogno ha notato di lui: abitudini e ricordi simili sono suoi, e vanno via con il resto.
+    quante_proposte = proposte.dimentica_profilo(mio)
     registro.registra(
-        "ricordi.dimenticati", dettagli={"profilo": mio, "quanti": quanti, "riassunti": quanti_riassunti}
+        "ricordi.dimenticati",
+        dettagli={
+            "profilo": mio,
+            "quanti": quanti,
+            "riassunti": quanti_riassunti,
+            "proposte": quante_proposte,
+        },
     )
     return quanti
