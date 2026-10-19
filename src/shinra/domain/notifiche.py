@@ -26,16 +26,24 @@ Riferimento: issue #29.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import ipaddress
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping, Optional
+from urllib.parse import urlparse
 
 # I canali. `web` e' la dashboard aperta, `push` il telefono anche a
 # applicazione chiusa, `voce` l'annuncio su un Echo in casa.
 WEB = "web"
 PUSH = "push"
 VOCE = "voce"
+# Un server `ntfy` **in casa** (#389): solo in uscita, e solo per chi lo chiede.
+NTFY = "ntfy"
 
-CANALI = (WEB, PUSH, VOCE)
+CANALI = (WEB, PUSH, VOCE, NTFY)
+# I canali spenti finche' la persona non li accende: tutti gli altri nascono accesi.
+CANALI_SU_RICHIESTA = frozenset({NTFY})
 
 # Le priorita', dalla piu' bassa. Non sono un'etichetta: decidono chi puo'
 # essere zittito.
@@ -101,7 +109,7 @@ class Preferenze:
     silenzioso: bool = False
 
     def vuole_canale(self, canale: str) -> bool:
-        return bool(self.canali.get(canale, True))
+        return bool(self.canali.get(canale, canale not in CANALI_SU_RICHIESTA))
 
     def vuole_categoria(self, categoria: str) -> bool:
         return categoria not in self.categorie_silenziate
@@ -126,7 +134,7 @@ def canali_per(avviso: Avviso, preferenze: Optional[Preferenze] = None) -> list[
         # schermo non viene disturbato da cio' che c'e' gia' scritto sopra.
         return [WEB] if preferenze.vuole_canale(WEB) else []
 
-    scelti = [c for c in (WEB, PUSH) if preferenze.vuole_canale(c)]
+    scelti = [c for c in (WEB, PUSH, NTFY) if preferenze.vuole_canale(c)]
 
     # La voce solo per le cose urgenti, e mai per la sicurezza: un allarme
     # annunciato ad alta voce avvisa chi e' in casa — cioe' eventualmente il
@@ -160,3 +168,39 @@ def preferenze_da_righe(utente: str, righe: Iterable[Mapping[str, Any]]) -> Pref
             silenziate.add(chiave.split(".", 1)[1])
 
     return Preferenze(utente, canali, frozenset(silenziate), silenzioso)
+
+
+# ------------------------------------------------------------------ ntfy in casa (#389)
+
+_SUFFISSI_LOCALI = (".local", ".lan", ".home", ".internal", ".localdomain", ".home.arpa")
+
+
+def indirizzo_locale(url: str) -> bool:
+    """Se l'indirizzo di un server ntfy sta **in casa**: loopback, rete privata, un nome della rete locale.
+
+    Il punto di ntfy e' non passare da terzi: un indirizzo pubblico (`ntfy.sh`, un VPS) lo tradirebbe, e per questo non si
+    usa. Un nome senza punti (`ntfy`, il servizio di un container accanto) e' locale; un nome che finisce in `.local`,
+    `.lan`, `.home` o simili anche. Il resto no. Vale per `http` e `https`.
+    """
+    try:
+        analizzato = urlparse((url or "").strip())
+        host = (analizzato.hostname or "").lower()
+    except ValueError:
+        return False
+    if analizzato.scheme not in ("http", "https") or not host:
+        return False
+    try:
+        indirizzo = ipaddress.ip_address(host)
+    except ValueError:
+        return "." not in host or host.endswith(_SUFFISSI_LOCALI)
+    return indirizzo.is_loopback or indirizzo.is_private or indirizzo.is_link_local
+
+
+def argomento_ntfy(segreto: str, utente: str) -> str:
+    """L'argomento su cui questa persona ascolta: stabile, e impossibile da indovinare senza il segreto del server.
+
+    Su un ntfy senza account l'argomento *e'* la chiave: chi lo conosce legge gli avvisi. Per questo non e' il nome della
+    persona ma un'impronta con il segreto di Shinra, e non si conserva da nessuna parte: si ricalcola.
+    """
+    impronta = hmac.new(segreto.encode(), f"ntfy:{utente}".encode(), hashlib.sha256).hexdigest()
+    return f"shinra-{impronta[:20]}"
