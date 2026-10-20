@@ -38,9 +38,15 @@ def test_mai_un_ricordo_di_uno_con_quello_di_un_altro():
     assert fusione.trova_coppie([r("a", uguali, chi="alessio"), r("b", uguali, chi="sonia")]) == []
 
 
-def test_i_ricordi_della_casa_non_hanno_a_chi_proporli():
+def test_i_ricordi_della_casa_si_confrontano_fra_loro_e_la_proposta_e_della_casa():
     uguali = "La caldaia della casa sta in cantina"
-    assert fusione.trova_coppie([r("a", uguali, chi=""), r("b", uguali, chi="")]) == []
+    (c,) = fusione.trova_coppie([r("a", uguali, chi=""), r("b", uguali, chi="")])
+    assert (c.proprietario, c.tipo) == ("", fusione.DOPPIO)
+
+
+def test_un_ricordo_della_casa_non_si_accosta_a_uno_privato():
+    uguali = "La caldaia della casa sta in cantina"
+    assert fusione.trova_coppie([r("a", uguali, chi=""), r("b", uguali, chi="alessio")]) == []
 
 
 def test_archiviati_o_spenti_non_si_confrontano():
