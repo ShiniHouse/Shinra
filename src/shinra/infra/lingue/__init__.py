@@ -317,6 +317,7 @@ def _verifica(dati: Dict[str, Any], dove: Path) -> None:
                 "salta",
                 "togli",
                 "comandi",
+                "abitudine",
                 "etichette",
                 "passi",
                 "prompt_estrazione",

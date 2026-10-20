@@ -407,6 +407,33 @@ intervista:
     r_temperatura: " a {valore} gradi"
     r_pausa_voce: "aspetta {secondi} secondi"
     r_dice: "dice: «{messaggio}»"
+  # Come si legge un'abitudine detta a parole (#210): i verbi (forma -> comando), cosa separa due azioni, le parole che non dicono
+  # quale dispositivo e quelle che dicono «piu' di uno». Le legge `domain/abitudine.py`; nessuna parola e' nel codice.
+  abitudine:
+    verbi:
+      accendo: turn_on
+      accendi: turn_on
+      accendiamo: turn_on
+      accendere: turn_on
+      spengo: turn_off
+      spegni: turn_off
+      spegniamo: turn_off
+      spegnere: turn_off
+      chiudo: close_cover
+      chiudi: close_cover
+      chiudiamo: close_cover
+      chiudere: close_cover
+      abbasso: close_cover
+      abbassa: close_cover
+      apro: open_cover
+      apri: open_cover
+      apriamo: open_cover
+      aprire: open_cover
+      alzo: open_cover
+      alza: open_cover
+    separatori: '\s+e\s+|\s*,\s*|\s+poi\s+|\s+e\s+poi\s+|\s*;\s*'
+    vuote: ["il", "lo", "la", "le", "gli", "un", "una", "di", "del", "dello", "della", "dei", "delle", "degli", "al", "allo", "alla", "alle", "ai", "nel", "nella", "nelle", "nei", "in", "su", "sul", "sulla", "per", "con", "tutte", "tutti", "tutto", "tutta", "poi", "ogni", "quando", "mi", "ti", "si", "che", "non", "sera", "mattina", "notte", "pomeriggio", "dopo", "prima", "anche", "sempre", "solitamente", "di", "solito", "io", "noi"]
+    plurali: ["le", "gli", "i", "tutte", "tutti", "delle", "dei", "degli"]
   comandi:
     turn_on: "accende"
     turn_off: "spegne"

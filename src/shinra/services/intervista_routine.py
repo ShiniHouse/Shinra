@@ -213,6 +213,26 @@ async def controlla_proposta(
     return routine
 
 
+async def routine_dalla_risposta(
+    risposta: str, archivio: Any, nome: str = "", lingua: str = ""
+) -> Optional[Dict[str, Any]]:
+    """La routine che una risposta descrive, letta **dal codice** e controllata come ogni altra proposta (#210).
+
+    Serve quando il modello non ne propone nessuna (o non c'e'): un modello piccolo legge male «la sera chiudo le tapparelle e
+    accendo la luce del corridoio». Passa dagli stessi filtri e dalla stessa prova a secco di quella del modello: dispositivi
+    veri, niente di sensibile, grafo che regge.
+    """
+    from shinra.domain.abitudine import routine_dalla_frase
+
+    try:
+        entita, alias = await leggi_la_casa(archivio)
+    except Exception as e:
+        logger.warning("Abitudine non leggibile contro la casa (%s): non propongo niente.", e)
+        return None
+    grezza = routine_dalla_frase(risposta, entita, alias, sezione(lingua)["abitudine"], nome)
+    return await controlla_proposta(grezza, archivio, lingua)
+
+
 async def routine_da_salvare(
     proposta: Dict[str, Any], archivio: Any, lingua: str = ""
 ) -> Optional[Dict[str, Any]]:
