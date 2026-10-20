@@ -121,11 +121,24 @@ async def get_latest_news(
         return await search_web(f"ultime notizie {volute[0]}", max_results=max_items)
 
 
+# Quanto si aspetta una fonte. `feedparser.parse(indirizzo)` non ha un tempo massimo: una fonte che non risponde teneva ferma
+# tutta la richiesta fino al limite del proxy (errore 524 su «ultime notizie?», visto sul server il 2026-10-20).
+TEMPO_MASSIMO_FONTE = 8.0
+
+
 async def _leggi_feed(indirizzo: str) -> list[dict[str, Any]]:
+    """Le voci di una fonte, o nessuna se non risponde in tempo: una fonte lenta non deve fermare le altre."""
+
     def _analizza():
         return feedparser.parse(indirizzo)
 
-    parsed = await asyncio.get_event_loop().run_in_executor(None, _analizza)
+    try:
+        parsed = await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(None, _analizza), timeout=TEMPO_MASSIMO_FONTE
+        )
+    except asyncio.TimeoutError:
+        logger.warning("Fonte di notizie senza risposta entro %.0f s: %s", TEMPO_MASSIMO_FONTE, indirizzo)
+        return []
     return [
         {
             "titolo": voce.get("title", ""),
