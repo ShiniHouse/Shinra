@@ -352,9 +352,39 @@ Cose che nessun test vede: layout e posizione.
 
 ---
 
+## I. L'intervista che crea capacità (#210, l'ultima della 0.7.0)
+
+La #210 è fatta (PR #321 e #322) ma **mai provata in casa**: finché non lo è, resta aperta e tiene aperta la milestone `v0.7.0`.
+Serve Home Assistant collegato e il modello acceso.
+
+1. Conoscenza › **Avvia Intervista Vocale**. Le prime domande saltano ciò che la casa sa già.
+2. Arrivato ai nomi dei dispositivi: per ogni dispositivo ti chiede come lo chiami («la luce del corridoio»). Rispondi a **due**,
+   e a un terzo di' «lascia stare». Prima di salvare ti mostra cosa ha capito: conferma.
+3. Quando ti chiede delle abitudini, di' per esempio: **«la sera chiudo le tapparelle e accendo la luce del corridoio»**. Deve
+   proporti una **routine completa** (innesco, condizioni, azioni), e la **prova a secco** (il simulatore: la casa non cambia)
+   prima di chiederti se salvarla. Rifiuta una routine: non deve entrare.
+
+**Come si prova che è andata** (la dashboard non basta):
+
+```bash
+# gli alias e le routine nel database (conta prima e dopo)
+sqlite3 /opt/Shinra/data/shinra.db "select count(*) from device_aliases; select count(*) from modes;"
+sqlite3 /opt/Shinra/data/shinra.db "select alias, entity_id from device_aliases order by rowid desc limit 5;"
+# e cosa e' successo nel servizio
+sudo journalctl -u shinra --since "30 minutes ago" --no-pager | grep -iE "routine|intervista|alias"
+```
+
+- **Atteso:** due alias nuovi che puntano a entità **che esistono davvero** in Home Assistant (nessuna inventata); il terzo
+  lasciato stare **non** c'è; la routine confermata c'è in `modes` e la rifiutata no; la mappa dei dispositivi mostra gli alias.
+- Se nel log non c'è traccia (come era alla #210 del 13 ottobre), **scrivi cosa hai visto**: diventa la `0.7.1`.
+
+**Esito / Cosa ho visto / Prova:** ______
+
+---
+
 ## Cosa fare con i risultati
 
 - Incolla i numeri di C2, C3 e C4 nelle issue #269, #248 e #259 e **dimmi i valori**: da lì decido se accendere i pesi del
   recupero e se l'ADR 0012 resta «Proposto».
 - Ogni ❌ o ⚠️ diventa una issue con un test che l'avrebbe trovata.
-- Quando D–F sono ✅, si può chiudere la `0.8.0`.
+- Quando D–F sono ✅, si può chiudere la `0.8.0`; quando I è ✅, si chiude la `0.7.0`.
