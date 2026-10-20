@@ -25,7 +25,7 @@ from shinra.services.intervista_gruppo import TurniGruppo, a_gruppi
 from shinra.services.intervista_luogo import registra_il_luogo, ricorda_la_citta
 from shinra.services.intervista_noto import cosa_si_sa, dati_della_casa
 from shinra.services.intervista_passi import INTERVIEW_STEPS, passi_per
-from shinra.services.intervista_routine import controlla_proposta, routine_da_salvare
+from shinra.services.intervista_routine import controlla_proposta, routine_da_salvare, routine_dalla_risposta
 
 logger = logging.getLogger("Shinra.Interview")
 
@@ -498,17 +498,28 @@ class LearningInterviewEngine(TurniAlias, TurniGruppo):
             )
             return {
                 "facts": [{"text": user_answer.strip(), "category": step["category"]}],
-                "proposed_routine": None,
+                # Senza modello un'abitudine si legge lo stesso: la legge il codice (#210).
+                "proposed_routine": await self._routine_dal_codice(step, user_answer, lingua),
                 "interpretato": False,
             }
 
+        proposta = await controlla_proposta(
+            self._routine_valida(dati.get("proposed_routine")), data_store, lingua
+        )
         return {
             "facts": self._fatti_validi(dati.get("facts"), step),
-            "proposed_routine": await controlla_proposta(
-                self._routine_valida(dati.get("proposed_routine")), data_store, lingua
-            ),
+            # Se il modello non ne ha proposta una valida, prova il codice: legge l'abitudine dalla frase (#210).
+            "proposed_routine": proposta or await self._routine_dal_codice(step, user_answer, lingua),
             "interpretato": True,
         }
+
+    @staticmethod
+    async def _routine_dal_codice(
+        step: Dict[str, Any], risposta: str, lingua: str
+    ) -> Optional[Dict[str, Any]]:
+        if step.get("category") != "abitudini":
+            return None
+        return await routine_dalla_risposta(risposta, data_store, step["title"], lingua)
 
     @staticmethod
     def _fatti_validi(grezzi: Any, step: Dict[str, Any]) -> List[Dict[str, str]]:

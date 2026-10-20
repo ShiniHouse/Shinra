@@ -361,6 +361,21 @@ Is that right? Answer «yes» and I'll save everything, «no» to drop everythin
     r_temperatura: " at {valore} degrees"
     r_pausa_voce: "waits {secondi} seconds"
     r_dice: "says: «{messaggio}»"
+  # How a habit said in words is read (#210): verbs (form -> command), what separates two actions, the words that do not say which
+  # device, and the words that mean "more than one". Read by `domain/abitudine.py`; no word is in the code. "on" and "off" are the
+  # verbs of "turn the light on": quoted, because bare they are booleans in YAML.
+  abitudine:
+    verbi:
+      "on": turn_on
+      "off": turn_off
+      close: close_cover
+      shut: close_cover
+      lower: close_cover
+      open: open_cover
+      raise: open_cover
+    separatori: '\s+and\s+|\s*,\s*|\s+then\s+|\s+and\s+then\s+|\s*;\s*'
+    vuote: ["the", "a", "an", "of", "in", "at", "to", "my", "our", "all", "every", "each", "then", "when", "i", "we", "usually", "always", "evening", "morning", "night", "afternoon", "before", "after", "also", "turn", "switch", "put", "up", "down"]
+    plurali: ["all", "every", "each", "both"]
   comandi:
     turn_on: "turns on"
     turn_off: "turns off"
