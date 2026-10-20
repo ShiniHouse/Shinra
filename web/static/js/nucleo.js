@@ -281,7 +281,9 @@ function disegna(dt) {
 
     // Il nucleo.
     const rn =
-        Math.min(w, h * 2.1) * 0.06 * (1 + nuLivello * 0.35 + (config.battito ? 0.08 * Math.sin(t * 7) : 0));
+        Math.min(w, h * 1.4, 420) *
+        0.06 *
+        (1 + nuLivello * 0.35 + (config.battito ? 0.08 * Math.sin(t * 7) : 0));
     const nucleo = nuCtx.createRadialGradient(cx, cy, 0, cx, cy, rn * 2.6);
     nucleo.addColorStop(0, 'rgba(255,255,255,0.95)');
     nucleo.addColorStop(0.25, _rgba(0.95));
