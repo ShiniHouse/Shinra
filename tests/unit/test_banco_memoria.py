@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from itertools import pairwise
 from pathlib import Path
 
 import pytest
@@ -138,7 +139,7 @@ def test_la_scansione_delle_soglie_non_peggiora_il_silenzio_alzandola(banco, cor
     vettori = banco.vettori_perfetti(corpus)
     s = banco.scansione_soglie(corpus, vettori)
     soglie = sorted(s)
-    for prima, dopo in zip(soglie, soglie[1:]):
+    for prima, dopo in pairwise(soglie):
         assert s[dopo]["silenzio"] >= s[prima]["silenzio"] - 1e-9
         assert s[dopo]["recall_k"] <= s[prima]["recall_k"] + 1e-9
         assert s[dopo]["mrr"] <= s[prima]["mrr"] + 1e-9
