@@ -33,7 +33,10 @@ Le migrazioni `0017`–`0020` toccano i ricordi (proprietario, origine, importan
 Provale **su una copia**: il servizio resta in piedi e il database vero non si tocca.
 
 ```bash
-cp /opt/Shinra/data/shinra.db /tmp/prova-migrazione.db
+# NON con un semplice cp: il database e' in modalita' WAL e le ultime scritture stanno nel file -wal, che un cp non porta.
+# Con .backup la copia e' coerente (e' quello che fa anche deploy.sh).
+rm -f /tmp/prova-migrazione.db*
+sudo sqlite3 /opt/Shinra/data/shinra.db ".backup /tmp/prova-migrazione.db"
 cat > /tmp/migra-copia.py <<'E'
 import sys
 from pathlib import Path
@@ -51,6 +54,9 @@ print("OK: la copia e' arrivata a head")
 E
 cd /opt/Shinra && sudo .venv/bin/python /tmp/migra-copia.py /tmp/prova-migrazione.db
 ```
+
+> **Trovato provandolo (2026-10-20):** con un `cp` della sola `shinra.db` la copia risultava ancora alla versione vecchia
+> (`a52e7d9c1f40`) anche dopo l'aggiornamento: le scritture recenti erano nel file `-wal`. Per questo qui c'è `.backup`.
 
 Va fatto **dopo** aver scaricato il codice nuovo (`git fetch` e `git checkout <tag>` in una copia a parte, oppure con
 `deploy.sh --dry-run <tag>`), perché le migrazioni nuove stanno nel codice nuovo.
@@ -75,15 +81,23 @@ done
 
 ### A2. Un backup vero prima di aggiornare
 
-`deploy.sh` ne fa uno, ma guarda dove finisce: `ls -l /var/backups/shinra/`. **Esito:** ______
+`deploy.sh` ne fa uno, ma guarda dove finisce:
+
+```bash
+ls -l /var/backups/shinra/
+```
+
+**Esito:** ______
 
 ---
 
 ## B. Aggiornare
 
 ```bash
-sudo /opt/Shinra/scripts/deploy.sh --dry-run v0.8.0     # cosa farebbe
-sudo /opt/Shinra/scripts/deploy.sh v0.8.0
+# Finche' il tag v0.8.0 non esiste ('Riferimento sconosciuto: v0.8.0') si installa l'ultimo commit di main:
+sudo /opt/Shinra/scripts/deploy.sh --dry-run main     # cosa farebbe
+sudo /opt/Shinra/scripts/deploy.sh main
+# Con il tag: sudo /opt/Shinra/scripts/deploy.sh v0.8.0
 ```
 
 ### B1. Il servizio risponde e le migrazioni sono andate
