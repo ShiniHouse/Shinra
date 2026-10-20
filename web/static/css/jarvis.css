@@ -112,9 +112,6 @@ html[data-palette="jarvis"] ::-webkit-scrollbar-thumb {
   background: rgba(34, 211, 238, 0.28);
   border-radius: 3px;
 }
-html[data-palette="jarvis"] ::-webkit-scrollbar-track {
-  background: transparent;
-}
 
 /* ------------------------------------------------------------------ i pannelli: vetro scuro, filo ciano, angoli di mira */
 
