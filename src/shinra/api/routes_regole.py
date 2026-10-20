@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field
 
 from shinra.api.sicurezza import richiedi_autenticazione, richiedi_permesso
 from shinra.domain import regole as dominio
-from shinra.services import permessi
+from shinra.services import permessi, regole_luoghi
 from shinra.services.regole import EVENTI_ASCOLTATI, motore_regole
 from shinra.services.user_manager import UserProfile
 from shinra.skills.entita import EntitaSconosciuta
@@ -73,6 +73,40 @@ async def _verifica_bersagli(azioni: List[Dict[str, Any]]) -> None:
             raise HTTPException(status_code=400, detail=str(errore)) from errore
 
 
+def _valida_luogo(trigger: Dict[str, Any], azioni: Optional[List[Dict[str, Any]]] = None) -> None:
+    """Un trigger su un luogo: un luogo registrato, arrivo o partenza, e una persona di Home Assistant.
+
+    E **nessuna azione sensibile** (#192): una regola che apre una serratura, disarma l'allarme o alza il garage «arrivando»
+    parte da sola, senza nessuno che la confermi, sulla parola di una posizione che puo' sbagliare di centinaia di metri.
+    Quelle azioni non si legano a un luogo; chi le vuole le comanda quando e' arrivato.
+    """
+    from shinra.domain import sensibilita
+    from shinra.services import luoghi
+
+    if str(trigger.get("evento") or "") not in dominio.EVENTI_LUOGO:
+        raise HTTPException(status_code=400, detail=f"Dimmi se è «{dominio.ARRIVO}» o «{dominio.PARTENZA}».")
+    if not any(x["id"] == trigger.get("luogo_id") for x in luoghi.elenco()):
+        raise HTTPException(status_code=400, detail="Il luogo non è fra quelli registrati.")
+    if not str(trigger.get("entity_id") or "").startswith(("person.", "device_tracker.")):
+        raise HTTPException(
+            status_code=400,
+            detail="Serve la persona (o il telefono) di Home Assistant che si sposta: `person.…` o `device_tracker.…`.",
+        )
+    for azione in azioni or []:
+        if str(azione.get("tipo") or "") != dominio.AZIONE_DISPOSITIVO:
+            continue
+        if sensibilita.entita_sensibile(
+            str(azione.get("entity_id") or ""), str(azione.get("servizio") or "turn_on")
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Una serratura, l'allarme, il garage o uno script non si comandano in automatico arrivando o partendo: "
+                    "una posizione sbagliata di poche centinaia di metri aprirebbe la porta a nessuno. Toglila dalla regola."
+                ),
+            )
+
+
 def _valida(regola: RegolaIn) -> None:
     """Rifiuta cio' che non potrebbe mai scattare.
 
@@ -107,6 +141,9 @@ def _valida(regola: RegolaIn) -> None:
             )
         if not regola.trigger.get("entity_id"):
             raise HTTPException(status_code=400, detail="Un trigger su stato ha bisogno di un'entita'.")
+
+    if tipo == dominio.LUOGO:
+        _valida_luogo(regola.trigger, regola.azioni)
 
     for condizione in regola.condizioni:
         if str(condizione.get("tipo") or "") not in dominio.CONDIZIONI:
@@ -171,15 +208,29 @@ async def elenco() -> Dict[str, Any]:
             if regola.attiva
             else None
         )
+        avviso = regole_luoghi.perche_non_scattera(regola.trigger or {}, regola.attiva)
+        if str(regola.trigger.get("tipo") or "") == dominio.LUOGO:
+            regola = dominio.Regola(
+                regola.identificativo,
+                regola.nome,
+                {
+                    **regola.trigger,
+                    "luogo_nome": regole_luoghi.nome_del_luogo(regola.trigger.get("luogo_id")),
+                },
+                regola.condizioni,
+                regola.azioni,
+                regola.attiva,
+            )
         return {
             **voce,
+            "avviso": avviso,
             "descrizione": dominio.descrivi(regola),
             "prossimo": prossimo.isoformat() if prossimo else None,
             # Una regola su evento non ha un «prossimo» e sta benissimo:
             # aspetta che qualcosa succeda. Distinguerla da una che non
             # scattera' mai e' tutto il punto di questa schermata.
             "aspetta_un_evento": str((regola.trigger or {}).get("tipo") or "")
-            in (dominio.EVENTO, dominio.STATO),
+            in (dominio.EVENTO, dominio.STATO, dominio.LUOGO),
         }
 
     return {"regole": [_descritta(v) for v in motore_regole.elenco()]}
@@ -204,6 +255,14 @@ async def modifica(identificativo: str, dati: Modifica) -> Dict[str, Any]:
     cambiamenti = {k: v for k, v in dati.model_dump().items() if v is not None}
     if not cambiamenti:
         raise HTTPException(status_code=400, detail="Non c'e' niente da cambiare.")
+
+    # La regola com'e' dopo la modifica: un trigger su un luogo (anche gia' presente) con un'azione sensibile non si accetta,
+    # qualunque dei due pezzi si cambi.
+    attuale = motore_regole.per_id(identificativo)
+    if attuale is not None:
+        trigger = cambiamenti.get("trigger", attuale.get("trigger") or {})
+        if str(trigger.get("tipo") or "") == dominio.LUOGO:
+            _valida_luogo(trigger, cambiamenti.get("azioni", attuale.get("azioni") or []))
 
     voce = motore_regole.modifica(identificativo, cambiamenti)
     if voce is None:

@@ -182,6 +182,39 @@ def luogo_attuale(entita_posizione: str, profilo_id: str = "") -> Optional[dict[
     return next((x for x in luoghi.elenco() if x["nome"] == risposta.luogo), None)
 
 
+def luogo_dallo_stato(stato: str) -> str:
+    """L'identificativo del luogo registrato che corrisponde allo stato di una persona di Home Assistant, o vuoto.
+
+    Home Assistant dice dove e' una persona con il **nome della zona** in cui si trova (`home` per la zona di casa, altrimenti
+    il nome della zona) oppure `not_home`. Si riusano le zone che Home Assistant gia' conosce: nessuna coordinata, nessuna
+    traccia di spostamenti. `home` vale per il luogo principale; gli altri si riconoscono dal nome, senza badare alle maiuscole.
+    """
+    pulito = " ".join(str(stato or "").split()).casefold()
+    if not pulito or pulito in ("not_home", "unknown", "unavailable"):
+        return ""
+    if pulito == "home":
+        principale = luoghi.principale()
+        return str(principale["id"]) if principale else ""
+    for x in luoghi.elenco():
+        if " ".join(str(x["nome"]).split()).casefold() == pulito:
+            return str(x["id"])
+    return ""
+
+
+def zona_di_home_assistant(nome_luogo: str, principale: bool) -> bool:
+    """Se Home Assistant ha una zona che corrisponde a questo luogo: `home` per il principale, altrimenti una `zone.*` con quel nome."""
+    if principale and cache_stati.stato("zone.home") is not None:
+        return True
+    voluto = " ".join(str(nome_luogo).split()).casefold()
+    for stato in cache_stati.tutti():
+        if not str(stato.get("entity_id", "")).startswith("zone."):
+            continue
+        nome = (stato.get("attributes") or {}).get("friendly_name") or ""
+        if " ".join(str(nome).split()).casefold() == voluto:
+            return True
+    return False
+
+
 PREFISSI_AMMESSI = ("person.", "device_tracker.")
 
 

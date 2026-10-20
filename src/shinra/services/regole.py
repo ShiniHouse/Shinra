@@ -44,6 +44,7 @@ from shinra.domain.eventi import (
     Evento,
     bus,
 )
+from shinra.services import regole_luoghi
 
 logger = logging.getLogger("Shinra.Regole")
 
@@ -135,9 +136,10 @@ class MotoreRegole:
         if str((evento.dati or {}).get("entity_id") or "") == sole_dominio.ENTITA:
             self.riprogramma_tutte()
 
+        dati = regole_luoghi.con_i_luoghi(evento)
         for regola in self.regole_attive():
-            if dominio.scatta_su_evento(regola, evento.tipo, evento.dati or {}):
-                await self.esegui(regola, motivo=f"evento {evento.tipo}")
+            if dominio.scatta_su_evento(regola, evento.tipo, dati):
+                await self.esegui(regola, motivo=regole_luoghi.motivo(regola, evento))
 
     def regole_attive(self) -> list[dominio.Regola]:
         from shinra.infra.db import depositi

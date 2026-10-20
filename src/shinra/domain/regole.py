@@ -41,8 +41,14 @@ STATO = "stato"
 ORARIO = "orario"
 ALBA = "alba"
 TRAMONTO = "tramonto"
+# «Quando arrivo / lascio un luogo registrato» (#346): scatta quando la persona collegata cambia luogo.
+LUOGO = "luogo"
 
-TRIGGER = (EVENTO, STATO, ORARIO, ALBA, TRAMONTO)
+TRIGGER = (EVENTO, STATO, ORARIO, ALBA, TRAMONTO, LUOGO)
+
+ARRIVO = "arrivo"
+PARTENZA = "partenza"
+EVENTI_LUOGO = (ARRIVO, PARTENZA)
 
 # I confronti di un trigger su stato. `attraversa_sotto` e `attraversa_sopra`
 # sono i due che contano davvero: gli altri due scattano a ogni lettura che
@@ -199,6 +205,19 @@ def scatta_su_evento(regola: Regola, evento_tipo: str, dati: Mapping[str, Any]) 
             confronto, dati.get("stato_precedente"), dati.get("stato"), trigger.get("valore")
         )
 
+    if tipo == LUOGO:
+        # L'evento porta gia' i luoghi (identificativi, mai coordinate): `luogo_precedente` e `luogo_nuovo`, vuoti se la persona
+        # non era (o non e') in nessun luogo registrato. Qui si decide solo se il passaggio e' quello atteso.
+        if str(dati.get("entity_id") or "") != str(trigger.get("entity_id") or ""):
+            return False
+        luogo = str(trigger.get("luogo_id") or "")
+        prima, dopo = str(dati.get("luogo_precedente") or ""), str(dati.get("luogo_nuovo") or "")
+        if not luogo:
+            return False
+        if str(trigger.get("evento") or ARRIVO) == PARTENZA:
+            return prima == luogo and dopo != luogo
+        return dopo == luogo and prima != luogo
+
     return False
 
 
@@ -351,6 +370,9 @@ def descrivi_trigger(trigger: Mapping[str, Any]) -> str:
         if confronto == DIVENTA:
             verso = "diventa"
         return f"quando {trigger.get('entity_id')} {verso} {trigger.get('valore')}"
+    if tipo == LUOGO:
+        verbo = "lascia" if str(trigger.get("evento")) == PARTENZA else "arriva a"
+        return f"quando {trigger.get('entity_id')} {verbo} {trigger.get('luogo_nome') or 'un luogo'}"
     return f"su {trigger.get('evento') or 'un evento'}"
 
 
