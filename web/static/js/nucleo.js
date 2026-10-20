@@ -26,6 +26,7 @@ const DA_STATO_DEL_NUCLEO = { idle: 'standby', listening: 'ascolto', thinking: '
 const PUNTI_DESKTOP = 340;
 const PUNTI_TELEFONO = 170;
 const BRACCI = 3;
+const TACCHE = 72;
 
 let nuTela = null;
 let nuCtx = null;
@@ -218,25 +219,49 @@ function disegna(dt) {
     }
     nuCtx.globalCompositeOperation = 'source-over';
 
-    // Gli anelli del reattore: ellissi tratteggiate che girano in versi opposti, nella stessa prospettiva della galassia.
+    // L'anello di misura, circolare: 72 tacche la cui altezza segue la voce, due cerchi e due archi che girano in versi opposti.
+    const rc = Math.min(h * 0.46, w * 0.46);
     nuCtx.lineCap = 'round';
-    const anelli = [
-        { r: 0.16, spessore: 1.6, tratto: [3, 7], verso: 1, luce: 0.8 },
-        { r: 0.27, spessore: 1.1, tratto: [10, 8], verso: -1, luce: 0.55 },
-        { r: 0.4, spessore: 0.9, tratto: [2, 5], verso: 1, luce: 0.38 },
-        { r: 0.56, spessore: 0.8, tratto: [22, 14], verso: -1, luce: 0.26 },
-    ];
-    for (const anello of anelli) {
-        const rr = raggio * anello.r * (1 + nuLivello * 0.05);
-        nuCtx.strokeStyle = _rgba(Math.min(1, anello.luce * (0.65 + nuLivello * 0.6)));
-        nuCtx.lineWidth = anello.spessore;
-        nuCtx.setLineDash(anello.tratto);
-        nuCtx.lineDashOffset = -t * 22 * anello.verso;
+    for (let i = 0; i < TACCHE; i++) {
+        const a = (i / TACCHE) * Math.PI * 2 - Math.PI / 2;
+        const vivo =
+            nuStato === 'standby'
+                ? 0.12 + 0.08 * Math.sin(i * 0.5 + t)
+                : Math.min(
+                      1,
+                      0.18 +
+                          Math.abs(Math.sin(i * 0.7 + t * 9) * Math.cos(i * 0.21 - t * 3)) * nuLivello * 1.8,
+                  );
+        const r1 = rc * 0.8;
+        const r2 = r1 + rc * (0.05 + vivo * 0.2);
+        nuCtx.strokeStyle = _rgba(0.3 + vivo * 0.65);
+        nuCtx.lineWidth = 1.6;
         nuCtx.beginPath();
-        nuCtx.ellipse(cx, cy, rr, rr * schiacciamento, 0, 0, Math.PI * 2);
+        nuCtx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+        nuCtx.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2);
         nuCtx.stroke();
     }
+    nuCtx.lineWidth = 1;
+    nuCtx.strokeStyle = _rgba(0.45);
+    nuCtx.beginPath();
+    nuCtx.arc(cx, cy, rc * 0.72, 0, Math.PI * 2);
+    nuCtx.stroke();
+    nuCtx.strokeStyle = _rgba(0.25);
+    nuCtx.setLineDash([3, 6]);
+    nuCtx.beginPath();
+    nuCtx.arc(cx, cy, rc * 0.62, 0, Math.PI * 2);
+    nuCtx.stroke();
     nuCtx.setLineDash([]);
+    nuCtx.strokeStyle = _rgba(0.9);
+    nuCtx.lineWidth = 2.6;
+    nuCtx.beginPath();
+    nuCtx.arc(cx, cy, rc * 0.72, t * 1.2, t * 1.2 + 1.1);
+    nuCtx.stroke();
+    nuCtx.strokeStyle = _rgba(0.6);
+    nuCtx.lineWidth = 1.8;
+    nuCtx.beginPath();
+    nuCtx.arc(cx, cy, rc * 0.62, -t * 1.8, -t * 1.8 + 0.6);
+    nuCtx.stroke();
 
     // Le onde: un impulso e' un'ellisse che si allarga e svanisce, con un alone piu' largo e tenue sotto il filo.
     for (const onda of nuOnde) {
