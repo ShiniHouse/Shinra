@@ -581,7 +581,7 @@ async def test_la_risposta_della_chat_porta_i_ricordi_usati(monkeypatch):
     from shinra.services.agent import ShinraAgent
     from shinra.services.conoscenza import Recuperati, servizio_conoscenza
 
-    async def recupera(domanda, profilo_id=""):
+    async def recupera(domanda, profilo_id="", luogo_id=""):
         return Recuperati(
             "- La caldaia e' in cantina", [], [{"id": "k_1", "categoria": "casa", "estratto": "La caldaia"}]
         )

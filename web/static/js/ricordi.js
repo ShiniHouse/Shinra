@@ -10,6 +10,8 @@ import { getAuthHeaders } from './accesso.js';
 let ambitoRicordi = 'casa';
 let inModifica = null;
 let ricordiVisti = [];
+// I luoghi registrati (solo nome e id): un ricordo puo' valere per uno di essi (#345).
+let luoghiNoti = [];
 
 const ORIGINI = {
     manuale: 'scritto a mano',
@@ -53,6 +55,15 @@ function _stato(r) {
     return '';
 }
 
+function _opzioniLuoghi(scelto) {
+    return [
+        _html`<option value="" ${scelto ? '' : 'selected'}>ovunque</option>`,
+        ...luoghiNoti.map(
+            (l) => _html`<option value="${l.id}" ${l.id === scelto ? 'selected' : ''}>${l.nome}</option>`,
+        ),
+    ];
+}
+
 function _carta(r) {
     const modifica = inModifica === r.id;
     const azioni = modifica
@@ -65,7 +76,8 @@ function _carta(r) {
             <button data-gesto="archiviaRicordo" data-testo="${r.id}" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-100" title="${r.stato === 'archiviato' ? 'Riattiva' : "Archivia: non lo uso piu'"}"><i data-lucide="archive" class="w-4 h-4"></i></button>
             <button data-gesto="eliminaRicordo" data-testo="${r.id}" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400" title="Elimina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
     const corpo = modifica
-        ? _html`<input type="text" id="ricordo-testo-${r.id}" maxlength="500" class="w-full min-w-0 bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">`
+        ? _html`<input type="text" id="ricordo-testo-${r.id}" maxlength="500" class="w-full min-w-0 bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+            <label class="flex items-center gap-2 text-xs text-slate-400">Vale per <select id="ricordo-luogo-${r.id}" class="bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-slate-200">${_opzioniLuoghi(r.luogo_id)}</select></label>`
         : _html`<p class="text-sm text-slate-200 leading-relaxed break-words">${r.testo}</p>`;
     return _html`
         <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2" data-ricordo="${r.id}">
@@ -73,6 +85,7 @@ function _carta(r) {
                 <span class="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-mono uppercase">${r.categoria}</span>
                 ${_stato(r)}
                 ${r.fissato ? _html`<span class="text-[10px] text-amber-400 font-semibold">fissato</span>` : ''}
+                ${r.luogo ? _html`<span class="text-[10px] text-sky-300">📍 ${r.luogo}</span>` : ''}
             </div>
             ${corpo}
             <p class="text-[11px] text-slate-500">${ORIGINI[r.origine] || r.origine} · ${_usi(r)}</p>
@@ -113,6 +126,20 @@ function _disegna() {
     safeCreateIcons();
 }
 
+async function _caricaLuoghi() {
+    try {
+        const res = await fetch('/api/luoghi', { headers: getAuthHeaders() });
+        luoghiNoti = res.ok ? (await res.json()).luoghi.map((l) => ({ id: l.id, nome: l.nome })) : [];
+    } catch {
+        luoghiNoti = [];
+    }
+    const scelta = document.getElementById('ricordi-luogo');
+    if (scelta) {
+        const prima = scelta.value;
+        scelta.innerHTML = _opzioniLuoghi(prima);
+    }
+}
+
 export async function caricaRicordi() {
     try {
         const res = await fetch(`/api/ricordi?ambito=${ambitoRicordi}`, { headers: getAuthHeaders() });
@@ -121,6 +148,7 @@ export async function caricaRicordi() {
             return;
         }
         ricordiVisti = (await res.json()).ricordi;
+        await _caricaLuoghi();
         _disegna();
     } catch (err) {
         _messaggio(`Non riesco a leggere i ricordi: ${err.message}`, true);
@@ -261,7 +289,8 @@ async function _cambia(id, campi, conferma) {
 async function salvaRicordo(id) {
     const testo = (document.getElementById(`ricordo-testo-${id}`)?.value || '').trim();
     if (!testo) return _messaggio("Il ricordo non puo' essere vuoto.", true);
-    await _cambia(id, { text: testo }, 'Ricordo corretto.');
+    const luogo = document.getElementById(`ricordo-luogo-${id}`)?.value ?? '';
+    await _cambia(id, { text: testo, luogo_id: luogo }, 'Ricordo corretto.');
 }
 
 async function fissaRicordo(id) {
@@ -303,7 +332,11 @@ async function aggiungiRicordo() {
     const res = await fetch('/api/ricordi', {
         method: 'POST',
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ testo, ambito: 'mio' }),
+        body: JSON.stringify({
+            testo,
+            ambito: 'mio',
+            luogo_id: document.getElementById('ricordi-luogo')?.value || '',
+        }),
     });
     if (!res.ok) return _messaggio(await _detail(res), true);
     if (campo) campo.value = '';

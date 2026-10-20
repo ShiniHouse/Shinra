@@ -71,6 +71,18 @@ class ShinraAgent:
         return str(attuale["nome"]) if attuale else ""
 
     @staticmethod
+    def _luogo_del_discorso(testo: str, profile: Any) -> str:
+        """L'identificativo del luogo di cui si parla (nominato, dove sei, casa principale), per scegliere i ricordi."""
+        from shinra.services import posizione
+
+        try:
+            luogo = posizione.luogo_del_discorso(testo, profile)
+        except Exception:
+            logger.warning("Luogo del discorso non letto", exc_info=True)
+            return ""
+        return str(luogo["id"]) if luogo else ""
+
+    @staticmethod
     async def _esegui(nome: str, argomenti: Dict[str, Any], agenti_scelti: List[str]) -> Dict[str, Any]:
         """Esegue lo strumento che il modello ha chiesto, se gli agenti al lavoro lo dichiarano.
 
@@ -231,7 +243,9 @@ class ShinraAgent:
             ha_summary = await self.ha.get_relevant_entities_summary()
 
         cronaca.richiesta_al_modello()
-        recuperati = await servizio_conoscenza.recupera(richiesta.testo, profile.id if profile else "")
+        recuperati = await servizio_conoscenza.recupera(
+            richiesta.testo, profile.id if profile else "", self._luogo_del_discorso(richiesta.testo, profile)
+        )
         conoscenza = recuperati.testo
         ricordi_usati = list(recuperati.entrati)
         cronaca.conoscenza_consultata(recuperati.fatti)

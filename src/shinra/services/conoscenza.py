@@ -160,8 +160,11 @@ class ServizioConoscenza:
 
     # ------------------------------------------------------ il recupero
 
-    def _con_vettori(self, profilo_id: str = "") -> list[dominio.Fatto]:
-        """I ricordi che **questo profilo** puo' vedere e che possono entrare nel prompt: della casa e propri, attivi."""
+    def _con_vettori(self, profilo_id: str = "", luogo_id: str = "") -> list[dominio.Fatto]:
+        """I ricordi che **questo profilo** puo' vedere e che possono entrare nel prompt: della casa e propri, attivi.
+
+        Un ricordo legato a un luogo entra solo se si sta parlando di quel luogo (`luogo_id`, #345).
+        """
 
         vettori = vettori_in_cache.tutti()
         fuori = []
@@ -169,6 +172,7 @@ class ServizioConoscenza:
             if not (
                 regole_dei_ricordi.e_visibile_a(fatto, profilo_id)
                 and regole_dei_ricordi.entra_nel_prompt(fatto)
+                and regole_dei_ricordi.vale_per_il_luogo(fatto, luogo_id)
             ):
                 continue
             identificativo = str(fatto["id"])
@@ -193,7 +197,7 @@ class ServizioConoscenza:
             )
         return fuori
 
-    async def recupera(self, domanda: str, profilo_id: str = "") -> Recuperati:
+    async def recupera(self, domanda: str, profilo_id: str = "", luogo_id: str = "") -> Recuperati:
         """La conoscenza da mettere nel prompt per questa domanda, e i fatti che ci sono entrati.
 
         E' il sostituto di `get_enabled_knowledge_summary()`, e produce la
@@ -202,7 +206,7 @@ class ServizioConoscenza:
         """
         from shinra.infra.llm import embedding
 
-        fatti = self._con_vettori(profilo_id)
+        fatti = self._con_vettori(profilo_id, luogo_id)
 
         if not fatti:
             return Recuperati("Nessuna informazione personalizzata registrata.")

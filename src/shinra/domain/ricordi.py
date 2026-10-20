@@ -35,6 +35,16 @@ def e_visibile_a(ricordo: Mapping[str, Any], profilo_id: Optional[str]) -> bool:
     return proprietario == CASA or (bool(profilo_id) and proprietario == profilo_id)
 
 
+def vale_per_il_luogo(ricordo: Mapping[str, Any], luogo_del_discorso: str) -> bool:
+    """Un ricordo senza luogo vale ovunque; uno legato a un luogo vale solo quando si parla di quel luogo (#345).
+
+    Un fatto detto per la casa al mare non deve finire fra quelli della casa principale. Se non si sa di quale luogo si sta
+    parlando (`luogo_del_discorso` vuoto), un ricordo legato a un luogo **non entra**: nel dubbio non lo si mescola.
+    """
+    luogo = str(ricordo.get("luogo_id") or "")
+    return not luogo or luogo == luogo_del_discorso
+
+
 def entra_nel_prompt(ricordo: Mapping[str, Any]) -> bool:
     """Solo un ricordo attivo e non disattivato a mano. Un ricordo solo *proposto* (da una persona o dal sogno) aspetta di
     essere accettato: finche' non lo e', non cambia le risposte di nessuno."""
