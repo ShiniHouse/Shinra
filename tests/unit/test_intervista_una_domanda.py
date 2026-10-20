@@ -131,10 +131,9 @@ async def test_dopo_una_risposta_si_salta_il_passo_che_la_casa_sa(monkeypatch) -
     await motore.process_answer("prova", "Al terzo")
     esito = await motore.process_answer("prova", "sì")
 
-    # casa_stanze e famiglia_chi sono noti: si arriva a famiglia_stanze.
-    assert esito["step"]["id"] == "famiglia_stanze"
+    # casa_stanze e' noto: si arriva ai luoghi, che la casa non sa ancora.
+    assert esito["step"]["id"] == "casa_altri_luoghi"
     assert "Conosco gia' queste stanze" in esito["message"]
-    assert "In casa ci sono gia' Alessio e Sonia" in esito["message"]
 
 
 def test_se_la_casa_sa_quasi_tutto_restano_solo_le_domande_aperte(monkeypatch) -> None:

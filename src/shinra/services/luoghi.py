@@ -87,6 +87,36 @@ def dalla_posizione_di_una_persona(
     )
 
 
+PRECISIONE_CITTA_M = 5_000
+
+
+async def registra_dalla_citta(nome_citta: str, nome_del_luogo: str = "Casa") -> Optional[dict[str, Any]]:
+    """Il luogo principale, dalla citta' che una persona ha detto in un'intervista (#345).
+
+    **Non sovrascrive niente**: se esiste gia' un luogo principale, o uno con lo stesso nome, non fa nulla. Le coordinate sono
+    quelle del centro della citta' (precisione dichiarata: 5 km), non quelle della casa; per una posizione vera si rifa' il
+    luogo dal telefono quando si e' in casa. Ritorna il luogo, o `None` se non ha registrato niente.
+    """
+    from shinra.skills.weather import cerca_citta
+
+    if deposito.principale() is not None or any(x["nome"] == nome_del_luogo for x in deposito.elenco()):
+        return None
+    trovata = await cerca_citta(nome_citta)
+    if trovata is None:
+        return None
+    return registra(
+        {
+            "nome": nome_del_luogo,
+            "latitudine": trovata["latitudine"],
+            "longitudine": trovata["longitudine"],
+            "citta": trovata["nome"],
+            "origine": "intervista",
+            "precisione_m": PRECISIONE_CITTA_M,
+            "principale": True,
+        }
+    )
+
+
 def aggiorna(identificativo: str, dati: Mapping[str, Any]) -> dict[str, Any]:
     """Cambia nome, tipo, raggio o citta' di un luogo. Le coordinate non si ritoccano: si registra di nuovo."""
     attuale = deposito.per_id(identificativo)

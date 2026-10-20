@@ -22,6 +22,8 @@ from shinra.services.intervista_comune import dice
 # sta rispondendo.
 MINIMO_PROFILI = 2
 MINIMO_STANZE = 2
+# Con un solo luogo registrato (la casa) non si sa ancora se ce ne sono altri.
+MINIMO_LUOGHI = 2
 
 # Un fatto citato per dire «lo so gia'» si accorcia: a voce lo si ascolta per intero.
 MAX_CITAZIONE = 90
@@ -60,7 +62,18 @@ def dati_della_casa(data_store: Any) -> Dict[str, Any]:
         for f in data_store.get_knowledge()
         if ricordi_dominio.e_della_casa(f) and ricordi_dominio.entra_nel_prompt(f)
     ]
-    return {"profili": profili, "stanze": stanze, "fatti": fatti}
+    from shinra.services import luoghi
+
+    registrati = luoghi.elenco()
+    principale = next((x for x in registrati if x.get("principale")), None)
+    return {
+        "profili": profili,
+        "stanze": stanze,
+        "fatti": fatti,
+        # Solo i nomi: le coordinate dei luoghi non servono all'intervista.
+        "luoghi": [str(x["nome"]) for x in registrati],
+        "luogo_principale": str(principale["nome"]) if principale else "",
+    }
 
 
 def cosa_si_sa(passo: Dict[str, Any], dati: Dict[str, Any], lingua: str = "") -> Optional[str]:
@@ -74,6 +87,14 @@ def cosa_si_sa(passo: Dict[str, Any], dati: Dict[str, Any], lingua: str = "") ->
         stanze: List[str] = list(dati.get("stanze") or [])
         if len(stanze) >= MINIMO_STANZE:
             return dice(lingua, "noto_stanze", nomi=_elenco(stanze, lingua))
+
+    elif fonte == "luoghi":
+        luoghi: List[str] = list(dati.get("luoghi") or [])
+        if len(luoghi) >= MINIMO_LUOGHI:
+            return dice(lingua, "noto_luoghi", nomi=_elenco(luoghi, lingua))
+    elif fonte == "luogo_principale":
+        if dati.get("luogo_principale"):
+            return dice(lingua, "noto_luogo", nome=dati["luogo_principale"])
 
     parole = [_senza_accenti(p) for p in passo.get("parole") or ()]
     if parole:

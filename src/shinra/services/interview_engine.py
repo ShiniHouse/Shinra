@@ -22,6 +22,7 @@ from shinra.services.intervista_comune import (
     e_negativa as _e_negativa,
 )
 from shinra.services.intervista_gruppo import TurniGruppo, a_gruppi
+from shinra.services.intervista_luogo import registra_il_luogo, ricorda_la_citta
 from shinra.services.intervista_noto import cosa_si_sa, dati_della_casa
 from shinra.services.intervista_passi import INTERVIEW_STEPS, passi_per
 from shinra.services.intervista_routine import controlla_proposta, routine_da_salvare
@@ -215,6 +216,13 @@ class LearningInterviewEngine(TurniAlias, TurniGruppo):
         }
 
     async def process_answer(self, user_id: str, answer_text: str) -> Dict[str, Any]:
+        esito = await self._turno(user_id, answer_text)
+        session = self._active_sessions.get(user_id)
+        if session and session.get("luogo_da_registrare"):
+            esito = await registra_il_luogo(session, esito)
+        return esito
+
+    async def _turno(self, user_id: str, answer_text: str) -> Dict[str, Any]:
         session = self._active_sessions.get(user_id)
         if not session or not session.get("is_active", False):
             return self.start_session(user_id)
@@ -350,6 +358,8 @@ class LearningInterviewEngine(TurniAlias, TurniGruppo):
                 continue
             salvati.append(riga)
             session["learned_facts"].append(riga)
+        if salvati:
+            ricorda_la_citta(session, step["id"])
         return salvati
 
     @staticmethod
