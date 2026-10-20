@@ -182,7 +182,13 @@ async def test_il_registro_dice_chi_ha_acceso_o_spento_non_dove_e(io):
     voci = json.dumps(registro.voci(), default=str)
     assert "posizione.collegata" in voci and "posizione.spenta" in voci
     assert "Casa" not in json.dumps([v["dettagli"] for v in registro.voci(azione="posizione.collegata")])
-    assert "41.9" not in voci
+    # Si guardano i dettagli delle due voci, non tutto il registro: un orario come «07:23:41.9…» conterrebbe «41.9» per caso
+    # (e il test falliva una volta su dieci, a seconda del secondo in cui girava).
+    dettagli = json.dumps(
+        [v["dettagli"] for a in ("posizione.collegata", "posizione.spenta") for v in registro.voci(azione=a)],
+        default=str,
+    )
+    assert "41.9" not in dettagli
 
 
 # ------------------------------------------------------ scegliere il telefono (#343)

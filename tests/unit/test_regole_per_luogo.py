@@ -202,7 +202,9 @@ async def test_il_registro_della_regola_eseguita_dice_il_luogo_senza_coordinate(
     await motore._su_evento(evento("not_home", "Casa al mare"))
     voce = next(v for v in registro.voci(limite=10) if v["azione"] == "regola.eseguita")
     assert voce["dettagli"]["motivo"] == "arrivo Casa al mare"
-    testo = json.dumps(voce, default=str)
+    testo = json.dumps(
+        voce["dettagli"], default=str
+    )  # i dettagli, non l'ora della riga: «…:41.9…» conterrebbe «41.9» per caso
     for cifra in ("44.12", "12.23", "41.9", "12.49"):
         assert cifra not in testo, f"il registro riporta le coordinate ({cifra})"
 

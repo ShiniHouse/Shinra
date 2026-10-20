@@ -126,7 +126,7 @@ async def test_il_registro_dice_che_e_stato_registrato_non_dove(monkeypatch):
     await _rispondi_alla_citta(_motore(monkeypatch))
     voci = [v for v in registro.voci(limite=10) if v["azione"] == "luogo.registrato"]
     assert voci and voci[0]["dettagli"]["origine"] == "intervista"
-    assert "43.46" not in str(voci[0]) and "Arezzo" not in str(voci[0])
+    assert "43.46" not in str(voci[0]["dettagli"]) and "Arezzo" not in str(voci[0]["dettagli"])
 
 
 # ------------------------------------------------------------------ le domande
