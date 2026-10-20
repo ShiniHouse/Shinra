@@ -77,7 +77,7 @@ def misura(
     vettori: Optional[tuple[dict[str, Vettore], dict[str, Vettore]]] = None,
     massimo: int = recupero.MASSIMO_FATTI,
     pesi: recupero.Pesi = recupero.Pesi(),
-    soglia: float = recupero.SOGLIA_PUNTEGGIO,
+    soglia: Optional[float] = None,
 ) -> dict[str, Any]:
     """Esegue ogni domanda del corpus e riassume i numeri. Non chiama niente: i vettori, se ci sono, arrivano gia' fatti.
 
@@ -226,7 +226,7 @@ def rapporto_soglie(s: dict[float, dict[str, float]]) -> str:
         "| ---: | ---: | ---: | ---: | ---: |",
     ]
     for soglia, v in s.items():
-        oggi = " (oggi)" if abs(soglia - recupero.SOGLIA_PUNTEGGIO) < 1e-9 else ""
+        oggi = " (oggi)" if abs(soglia - recupero.SOGLIA_CON_VETTORI) < 1e-9 else ""
         righe.append(
             f"| {soglia:.2f}{oggi} | {v['recall_3']:.0%} | {v['recall_k']:.0%} | {v['mrr']:.2f} | {v['silenzio']:.0%} |"
         )
