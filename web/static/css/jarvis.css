@@ -65,7 +65,8 @@ html[data-palette="jarvis"] body::before {
   mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, #000 20%, transparent 85%);
 }
 
-html[data-palette="jarvis"] header,
+/* Il contenuto sta sopra la griglia di sfondo. L'intestazione NON si tocca: e' appiccicata in cima con la sua pila (`z-50`), e il menu
+   Configurazione che si apre da li' deve restare sopra le schede. */
 html[data-palette="jarvis"] main {
   position: relative;
   z-index: 1;
