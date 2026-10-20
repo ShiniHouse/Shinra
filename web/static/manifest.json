@@ -4,8 +4,8 @@
     "description": "Assistente Domotico Intelligente con IA Neurale Locale e Home Assistant",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#030712",
-    "theme_color": "#4f46e5",
+    "background_color": "#02060b",
+    "theme_color": "#02060b",
     "orientation": "portrait-primary",
     "icons": [
         {

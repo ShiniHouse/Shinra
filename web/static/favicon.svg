@@ -1,20 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="shinraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f59e0b"/>
-      <stop offset="40%" stop-color="#ec4899"/>
-      <stop offset="75%" stop-color="#8b5cf6"/>
-      <stop offset="100%" stop-color="#4f46e5"/>
-    </linearGradient>
-    <radialGradient id="sparkleGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
-      <stop offset="60%" stop-color="#ffffff" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    <radialGradient id="nucleo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#67e8f9"/>
+      <stop offset="70%" stop-color="#0e7490" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0891b2" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="fondo" cx="50%" cy="42%" r="75%">
+      <stop offset="0%" stop-color="#06283a"/>
+      <stop offset="100%" stop-color="#010a12"/>
     </radialGradient>
   </defs>
-  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#shinraGrad)" />
-  <rect x="4" y="4" width="56" height="56" rx="18" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="1.5" />
-  <circle cx="32" cy="32" r="16" fill="url(#sparkleGlow)" />
-  <path d="M 32 14 C 32 24, 24 32, 14 32 C 24 32, 32 40, 32 50 C 32 40, 40 32, 50 32 C 40 32, 32 24, 32 14 Z" fill="#ffffff" />
-  <circle cx="44" cy="20" r="2.5" fill="#ffffff" opacity="0.9" />
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#fondo)"/>
+  <rect x="2.75" y="2.75" width="58.5" height="58.5" rx="15.25" fill="none" stroke="#22d3ee" stroke-opacity="0.5" stroke-width="1.5"/>
+  <g stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" fill="none">
+    <line x1="32.00" y1="10.50" x2="32.00" y2="5.90" opacity="0.95"/>
+    <line x1="37.56" y1="11.23" x2="38.34" y2="8.33" opacity="0.55"/>
+    <line x1="42.75" y1="13.38" x2="44.25" y2="10.78" opacity="0.55"/>
+    <line x1="47.20" y1="16.80" x2="49.32" y2="14.68" opacity="0.55"/>
+    <line x1="50.62" y1="21.25" x2="53.22" y2="19.75" opacity="0.55"/>
+    <line x1="52.77" y1="26.44" x2="55.67" y2="25.66" opacity="0.55"/>
+    <line x1="53.50" y1="32.00" x2="58.10" y2="32.00" opacity="0.95"/>
+    <line x1="52.77" y1="37.56" x2="55.67" y2="38.34" opacity="0.55"/>
+    <line x1="50.62" y1="42.75" x2="53.22" y2="44.25" opacity="0.55"/>
+    <line x1="47.20" y1="47.20" x2="49.32" y2="49.32" opacity="0.55"/>
+    <line x1="42.75" y1="50.62" x2="44.25" y2="53.22" opacity="0.55"/>
+    <line x1="37.56" y1="52.77" x2="38.34" y2="55.67" opacity="0.55"/>
+    <line x1="32.00" y1="53.50" x2="32.00" y2="58.10" opacity="0.95"/>
+    <line x1="26.44" y1="52.77" x2="25.66" y2="55.67" opacity="0.55"/>
+    <line x1="21.25" y1="50.62" x2="19.75" y2="53.22" opacity="0.55"/>
+    <line x1="16.80" y1="47.20" x2="14.68" y2="49.32" opacity="0.55"/>
+    <line x1="13.38" y1="42.75" x2="10.78" y2="44.25" opacity="0.55"/>
+    <line x1="11.23" y1="37.56" x2="8.33" y2="38.34" opacity="0.55"/>
+    <line x1="10.50" y1="32.00" x2="5.90" y2="32.00" opacity="0.95"/>
+    <line x1="11.23" y1="26.44" x2="8.33" y2="25.66" opacity="0.55"/>
+    <line x1="13.38" y1="21.25" x2="10.78" y2="19.75" opacity="0.55"/>
+    <line x1="16.80" y1="16.80" x2="14.68" y2="14.68" opacity="0.55"/>
+    <line x1="21.25" y1="13.38" x2="19.75" y2="10.78" opacity="0.55"/>
+    <line x1="26.44" y1="11.23" x2="25.66" y2="8.33" opacity="0.55"/>
+    <circle cx="32" cy="32" r="18" stroke-opacity="0.55" stroke-width="1"/>
+    <path d="M 32 14 A 18 18 0 0 1 50 32" stroke="#67e8f9" stroke-width="2.4"/>
+  </g>
+  <circle cx="32" cy="32" r="13" fill="url(#nucleo)"/>
+  <circle cx="32" cy="32" r="3.2" fill="#ffffff"/>
 </svg>
