@@ -284,7 +284,7 @@ function esigi(condizione, messaggio) {
 // A tutte le ore, in modalita' automatica, le due regole devono dire lo stesso.
 for (let ora = 0; ora < 24; ora++) {
     for (const minuti of [0, 29, 30, 31, 59]) {
-        memoria = {};
+        memoria = { shinra_palette: 'aurora' };
         fingiOra(ora, minuti);
         document.documentElement.classi = new Set(['dark']);
         inLinea();
@@ -297,7 +297,7 @@ for (let ora = 0; ora < 24; ora++) {
 
 // E una scelta esplicita vince sull'orologio, in tutte e due i sensi.
 for (const scelta of ['light', 'dark']) {
-    memoria = { shinra_theme_mode: scelta };
+    memoria = { shinra_theme_mode: scelta, shinra_palette: 'aurora' };
     fingiOra(scelta === 'light' ? 3 : 12, 0);   // l'ora dice il contrario
     document.documentElement.classi = new Set([scelta === 'light' ? 'dark' : 'light']);
     inLinea();
@@ -305,6 +305,18 @@ for (const scelta of ['light', 'dark']) {
           `la scelta esplicita «${scelta}» viene ignorata dal tema in linea`);
     esigi(!document.documentElement.classi.has(scelta === 'light' ? 'dark' : 'light'),
           `restano tutte e due le classi: «${scelta}» e il suo contrario`);
+}
+
+// «Jarvis» (la tavolozza di serie, anche senza nessuna scelta salvata) e' sempre scura: ne' l'ora ne' «giorno» la cambiano.
+for (const memoriaJarvis of [{}, { shinra_palette: 'jarvis', shinra_theme_mode: 'light' }]) {
+    for (const ora of [3, 12, 18]) {
+        memoria = { ...memoriaJarvis };
+        fingiOra(ora, 0);
+        document.documentElement.classi = new Set(['light']);
+        inLinea();
+        esigi(document.documentElement.classi.has('dark') && !document.documentElement.classi.has('light'),
+              `alle ${ora}:00 la tavolozza Jarvis non e' scura nel tema in linea`);
+    }
 }
 
 // Senza localStorage non si esplode: resta il `dark` scritto sul tag.

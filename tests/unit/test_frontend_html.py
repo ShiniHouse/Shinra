@@ -421,6 +421,7 @@ const document = {
 };
 function safeCreateIcons() {}
 function speakText() {}
+function impulso() {}
 """
         + _funzione_javascript(_testo(CARTELLA_JS / "conversazione.js"), "appendAssistantMessage")
         + f"""

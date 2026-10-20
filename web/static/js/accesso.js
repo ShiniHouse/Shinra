@@ -1,4 +1,5 @@
 // ==================== SECURITY & AUTH ENGINE ====================
+import { impostaStato } from './nucleo.js';
 import { Stato } from './stato.js';
 import { Gesti } from './gesti.js';
 import { _args, _html } from './sicurezza.js';
@@ -342,6 +343,8 @@ function setVoiceMuteState(isMuted) {
 
 // ==================== SHINRA LIVING CORE & EMPATHIC GREETING ====================
 export function updateLivingCoreState(state) {
+    // Il nucleo grande (tavolozza Jarvis) segue lo stesso stato del piccolo nell'intestazione.
+    impostaStato(state);
     const core = document.getElementById('header-living-core');
     if (!core) return;
     core.classList.remove('listening', 'thinking', 'speaking');

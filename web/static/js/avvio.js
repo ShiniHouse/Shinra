@@ -12,21 +12,26 @@ export function safeCreateIcons() {
 }
 
 // ==================== PALETTE MANAGER (3 DESIGN ATMOSPHERES) ====================
-let currentPalette = localStorage.getItem('shinra_palette') || 'aurora';
+// Le tavolozze. «Jarvis» e' quella di serie ed e' sempre scura (vedi `css/jarvis.css`).
+const PALETTE = ['jarvis', 'aurora', 'sandstone', 'stealth'];
+const PALETTE_DI_SERIE = 'jarvis';
+let currentPalette = localStorage.getItem('shinra_palette') || PALETTE_DI_SERIE;
 
 export function initPalette() {
-    currentPalette = localStorage.getItem('shinra_palette') || 'aurora';
+    currentPalette = localStorage.getItem('shinra_palette') || PALETTE_DI_SERIE;
     setPalette(currentPalette);
 }
 
 function setPalette(name) {
-    if (!['aurora', 'sandstone', 'stealth'].includes(name)) name = 'aurora';
+    if (!PALETTE.includes(name)) name = PALETTE_DI_SERIE;
     currentPalette = name;
     localStorage.setItem('shinra_palette', name);
     document.documentElement.setAttribute('data-palette', name);
+    // Cambiare tavolozza puo' cambiare anche il tema: «Jarvis» e' solo scura.
+    applyTheme();
 
     // Update UI Selection Badges & Border Highlights
-    ['aurora', 'sandstone', 'stealth'].forEach((p) => {
+    PALETTE.forEach((p) => {
         const card = document.getElementById(`palette-card-${p}`);
         const badge = document.getElementById(`badge-palette-${p}`);
         if (card) {
@@ -77,6 +82,8 @@ export function applyTheme() {
     if (currentThemeSetting === 'auto') {
         effectiveTheme = getSolarTheme();
     }
+    // «Jarvis» e' sempre scura, qualunque cosa dica l'orologio o la scelta.
+    if (currentPalette === PALETTE_DI_SERIE) effectiveTheme = 'dark';
 
     if (effectiveTheme === 'light') {
         document.documentElement.classList.remove('dark');

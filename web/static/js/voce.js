@@ -1,4 +1,5 @@
 // ==================== SPEECH RECOGNITION (COMPATIBILE IOS SAFARI / PWA) ====================
+import { collegaAudio, impulso } from './nucleo.js';
 import { Stato } from './stato.js';
 import { Gesti } from './gesti.js';
 import { _html } from './sicurezza.js';
@@ -394,6 +395,8 @@ export async function speakText(text) {
                 const blob = await res.blob();
                 const audioUrl = URL.createObjectURL(blob);
                 Stato.audioInCorso = new Audio(audioUrl);
+                // Il nucleo batte con la voce vera, se il browser lascia misurarla.
+                collegaAudio(Stato.audioInCorso);
                 Stato.audioInCorso.onended = () => updateLivingCoreState('idle');
                 Stato.audioInCorso.onerror = () => updateLivingCoreState('idle');
                 Stato.audioInCorso.play().catch((e) => {
@@ -420,6 +423,8 @@ export async function speakText(text) {
         }
         utterance.pitch = voicePitch;
         utterance.rate = voiceRate;
+        // La voce del browser non si puo' misurare: a ogni parola il nucleo da' un impulso.
+        utterance.onboundary = () => impulso(0.7);
         utterance.onend = () => updateLivingCoreState('idle');
         utterance.onerror = () => updateLivingCoreState('idle');
         window.speechSynthesis.speak(utterance);
