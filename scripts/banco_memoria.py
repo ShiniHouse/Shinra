@@ -15,6 +15,7 @@ ricordi: serve a provare il banco, non la memoria.
     python scripts/banco_memoria.py
     python scripts/banco_memoria.py --embedding --etichetta server
     python scripts/banco_memoria.py --perfetto
+    python scripts/banco_memoria.py --embedding --soglie --etichetta server-soglie --salva
 """
 
 from __future__ import annotations
@@ -76,6 +77,7 @@ def misura(
     vettori: Optional[tuple[dict[str, Vettore], dict[str, Vettore]]] = None,
     massimo: int = recupero.MASSIMO_FATTI,
     pesi: recupero.Pesi = recupero.Pesi(),
+    soglia: float = recupero.SOGLIA_PUNTEGGIO,
 ) -> dict[str, Any]:
     """Esegue ogni domanda del corpus e riassume i numeri. Non chiama niente: i vettori, se ci sono, arrivano gia' fatti.
 
@@ -99,7 +101,13 @@ def misura(
     dettagli = []
     for d in corpus["domande"]:
         trovati = recupero.cerca(
-            d["domanda"], fatti, v_domande.get(d["id"]), massimo=massimo, pesi=pesi, adesso=adesso
+            d["domanda"],
+            fatti,
+            v_domande.get(d["id"]),
+            massimo=massimo,
+            soglia=soglia,
+            pesi=pesi,
+            adesso=adesso,
         )
         ids = [t.fatto.identificativo for t in trovati]
         attesi = d["attesi"]
@@ -184,6 +192,47 @@ def ablazione(
     return fuori
 
 
+SOGLIE_DI_PROVA = (0.28, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65)
+
+
+def scansione_soglie(
+    corpus: dict[str, Any],
+    vettori: Optional[tuple[dict[str, Vettore], dict[str, Vettore]]] = None,
+    soglie: Sequence[float] = SOGLIE_DI_PROVA,
+) -> dict[float, dict[str, float]]:
+    """Come cambiano recupero e silenzio al variare della soglia di punteggio.
+
+    Con i vettori di un modello vero il coseno fra due frasi qualunque e' raramente vicino a zero: una soglia scelta sul solo
+    testo (0.28) lascia passare ricordi che non c'entrano, e le domande senza risposta non restano mai in silenzio. Questa
+    tabella dice dove sta il punto in cui il rumore scende senza perdere i ricordi giusti.
+    """
+    fuori = {}
+    for soglia in soglie:
+        m = misura(corpus, vettori, soglia=soglia)
+        fuori[soglia] = {
+            "recall_3": m["recall_3"],
+            "recall_k": m["recall_k"],
+            "mrr": m["mrr"],
+            "silenzio": m["silenzio"],
+        }
+    return fuori
+
+
+def rapporto_soglie(s: dict[float, dict[str, float]]) -> str:
+    righe = [
+        "## Soglia di punteggio",
+        "",
+        "| Soglia | recall@3 | recall@8 | MRR | Silenzio |",
+        "| ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for soglia, v in s.items():
+        oggi = " (oggi)" if abs(soglia - recupero.SOGLIA_PUNTEGGIO) < 1e-9 else ""
+        righe.append(
+            f"| {soglia:.2f}{oggi} | {v['recall_3']:.0%} | {v['recall_k']:.0%} | {v['mrr']:.2f} | {v['silenzio']:.0%} |"
+        )
+    return "\n".join(righe) + "\n"
+
+
 def rapporto_ablazione(a: dict[str, dict[str, float]], peso: float) -> str:
     righe = [
         f"## Ablazione della storia (peso {peso:g} per fattore)",
@@ -244,6 +293,11 @@ def main() -> int:
         "--ablazione", action="store_true", help="misura cosa porta ogni fattore della storia (#246)"
     )
     p.add_argument("--peso", type=float, default=0.1, help="il peso di ogni fattore nell'ablazione")
+    p.add_argument(
+        "--soglie",
+        action="store_true",
+        help="misura come cambiano recupero e silenzio al variare della soglia",
+    )
     args = p.parse_args()
 
     corpus = carica()
@@ -263,6 +317,8 @@ def main() -> int:
     testo = rapporto(r, args.etichetta)
     if args.ablazione:
         testo += "\n" + rapporto_ablazione(ablazione(corpus, vettori, args.peso), args.peso)
+    if args.soglie:
+        testo += "\n" + rapporto_soglie(scansione_soglie(corpus, vettori))
     print(testo)
     if args.salva:
         cartella = BANCO / "risultati"
