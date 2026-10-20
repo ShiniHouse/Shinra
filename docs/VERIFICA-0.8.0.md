@@ -220,7 +220,7 @@ della conversazione).
   perché inventavano qualcosa.
 - Guarda anche **a occhio** un riassunto riscritto: dice solo ciò che è successo? (`sqlite3 … "select origine, testo from
   riassunti_conversazione"`.)
-- La notte dopo: `sudo journalctl -u shinra --since "yesterday 03:30" --no-pager | grep -iE "Compito notturno|Riassunti rifiniti"`
+- La notte dopo: `sudo journalctl -u shinra --since today --no-pager | grep -iE "Compito notturno|Riassunti rifiniti"`
   deve avere una riga `fatto` (o `saltato` con un motivo ragionevole: modello spento, macchina carica).
 
 **Esito / Tempo / Prova:** ______
