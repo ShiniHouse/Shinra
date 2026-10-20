@@ -164,8 +164,11 @@ def test_il_registro_dice_che_e_avvenuto_non_dove_ne_come_si_chiama():
     luogo = luoghi.registra(casa(nome="Casa di mia madre"))
     luoghi.cancella(luogo["id"])
 
-    voci = json.dumps(registro.voci(), default=str)
-    assert "luogo.registrato" in voci and "luogo.cancellato" in voci
+    tutte = registro.voci()
+    assert {"luogo.registrato", "luogo.cancellato"} <= {v["azione"] for v in tutte}
+    # Si guardano i dettagli delle voci dei luoghi, non l'intera riga: un orario come «07:23:41.9…» contiene «41.9» per caso
+    # (il test falliva una volta ogni tanto, a seconda del secondo in cui girava).
+    voci = json.dumps([v["dettagli"] for v in tutte if v["azione"].startswith("luogo.")], default=str)
     for segreto in ("41.9027", "12.4963", "41.9", "madre"):
         assert segreto not in voci, f"il registro riporta «{segreto}»"
 
