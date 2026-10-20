@@ -1,5 +1,6 @@
 // Messages Handling
 
+import { impulso } from './nucleo.js';
 import { Stato } from './stato.js';
 import { Gesti } from './gesti.js';
 import { _args, _grezzo, _html } from './sicurezza.js';
@@ -19,6 +20,8 @@ function appendUserMessage(text) {
 }
 
 function appendAssistantMessage(text, actions = [], ricordi = []) {
+    // Una risposta e' un impulso del nucleo anche a voce spenta.
+    impulso(0.8);
     const container = document.getElementById('messages-container');
     const div = document.createElement('div');
     div.className = 'flex gap-3 max-w-2xl';

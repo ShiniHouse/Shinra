@@ -22,13 +22,30 @@
                         </summary>
                         <div class="corpo-sezione space-y-3">
 
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 pt-1">
+                            <!-- Palette 0: Jarvis (quella di serie: console di bordo, sempre scura) -->
+                            <div data-gesto="setPalette" data-testo="jarvis" id="palette-card-jarvis" class="palette-card p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between hover:scale-[1.02] border-slate-800 bg-slate-900/50 shadow-sm">
+                                <div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="font-bold text-xs text-slate-100 flex items-center gap-1">🛰️ Jarvis</span>
+                                        <span id="badge-palette-jarvis" class="hidden px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Attiva</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-400 leading-tight">Console di bordo: nero profondo, linee di ghiaccio e ciano, e il nucleo, una galassia che batte quando Shinra parla. Sempre scura.</p>
+                                </div>
+                                <div class="flex gap-1.5 mt-3 pt-2 border-t border-slate-800">
+                                    <span class="w-4 h-4 rounded-full bg-[#22d3ee] shadow-sm"></span>
+                                    <span class="w-4 h-4 rounded-full bg-[#7dd3fc] shadow-sm"></span>
+                                    <span class="w-4 h-4 rounded-full bg-[#3b82f6] shadow-sm"></span>
+                                    <span class="w-4 h-4 rounded-full bg-[#02060b] shadow-sm"></span>
+                                </div>
+                            </div>
+
                             <!-- Palette 1: Aurora (Apple Intelligence / Linear) -->
-                            <div data-gesto="setPalette" data-testo="aurora" id="palette-card-aurora" class="palette-card p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between hover:scale-[1.02] border-indigo-500 ring-2 ring-indigo-500/40 bg-slate-900/90 shadow-sm">
+                            <div data-gesto="setPalette" data-testo="aurora" id="palette-card-aurora" class="palette-card p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between hover:scale-[1.02] border-slate-800 bg-slate-900/50 shadow-sm">
                                 <div>
                                     <div class="flex items-center justify-between mb-2">
                                         <span class="font-bold text-xs text-slate-100 flex items-center gap-1">🌌 Obsidian Aurora</span>
-                                        <span id="badge-palette-aurora" class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">Attiva</span>
+                                        <span id="badge-palette-aurora" class="hidden px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">Attiva</span>
                                     </div>
                                     <p class="text-[10px] text-slate-400 leading-tight">Ispirata ad Apple Intelligence & Linear. Riflessi viola iridescente, ambra calda e vetro satinato.</p>
                                 </div>

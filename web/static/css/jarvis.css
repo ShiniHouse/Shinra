@@ -1,0 +1,492 @@
+/* ==================== TAVOLOZZA «JARVIS» ====================
+ *
+ * Una casa vista da una console di bordo: nero profondo, linee sottili di ghiaccio e ciano, etichette a spaziatura larga, e
+ * al centro il nucleo — una galassia che gira e batte quando Shinra pensa, ascolta e parla (`nucleo.js`).
+ *
+ * Come le altre tavolozze si attiva con `data-palette="jarvis"` sul tag `<html>`, e tutto cio' che segue vale solo li'. A
+ * differenza delle altre e' **sempre scura**: una console luminosa a mezzogiorno non e' una console. `avvio.js` e il copione in
+ * linea nel `<head>` tengono la classe `dark` quando la tavolozza e' questa.
+ *
+ * Non cambia nessun identificativo, nessun gesto e nessuna struttura: ricolora e snellisce. Lo fa sovrascrivendo le classi di
+ * Tailwind che le pagine gia' usano (come fa «Sandstone»), cosi' ogni scheda — console, dispositivi, automazioni, impostazioni —
+ * cambia insieme senza riscriverne una.
+ */
+
+html[data-palette="jarvis"] {
+  color-scheme: dark;
+  --j-fondo: #02060b;
+  --j-pannello: rgba(3, 14, 24, 0.62);
+  --j-pannello-forte: rgba(4, 20, 33, 0.82);
+  --j-linea: rgba(34, 211, 238, 0.2);
+  --j-linea-forte: rgba(103, 232, 249, 0.55);
+  --j-ciano: #22d3ee;
+  --j-ghiaccio: #bdeefa;
+  --j-testo: #cdeaf4;
+  --j-testo-2: #7ea7b9;
+  --j-testo-3: #53798a;
+  --j-bagliore: rgba(34, 211, 238, 0.35);
+  --j-ambra: #fbbf24;
+  --j-rosso: #fb7185;
+  --j-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --bg-base: var(--j-fondo);
+  --text-main: var(--j-testo);
+  --text-secondary: var(--j-testo-2);
+  --mesh-1: rgba(34, 211, 238, 0.1);
+  --mesh-2: rgba(56, 130, 246, 0.08);
+  --accent-gradient: linear-gradient(135deg, #22d3ee 0%, #38bdf8 50%, #3b82f6 100%);
+  --accent-halo: linear-gradient(135deg, #22d3ee, #38bdf8, #3b82f6);
+  --accent-glow: var(--j-bagliore);
+}
+
+/* ------------------------------------------------------------------ lo sfondo: una griglia che si perde nel buio */
+
+html[data-palette="jarvis"] body {
+  background-color: var(--j-fondo);
+  color: var(--j-testo);
+  background-image:
+    radial-gradient(ellipse 70% 45% at 50% 0%, rgba(34, 211, 238, 0.14), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 100% 100%, rgba(56, 130, 246, 0.1), transparent 70%),
+    radial-gradient(ellipse 40% 30% at 0% 100%, rgba(34, 211, 238, 0.07), transparent 70%);
+  background-attachment: fixed;
+}
+
+html[data-palette="jarvis"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, #000 20%, transparent 85%);
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, #000 20%, transparent 85%);
+}
+
+/* Il contenuto sta sopra la griglia di sfondo. L'intestazione NON si tocca: e' appiccicata in cima con la sua pila (`z-50`), e il menu
+   Configurazione che si apre da li' deve restare sopra le schede. */
+html[data-palette="jarvis"] main {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-palette="jarvis"] ::selection {
+  background: rgba(34, 211, 238, 0.35);
+  color: #fff;
+}
+
+html[data-palette="jarvis"] ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+html[data-palette="jarvis"] ::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.28);
+  border-radius: 3px;
+}
+html[data-palette="jarvis"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ------------------------------------------------------------------ i pannelli: vetro scuro, filo ciano, angoli di mira */
+
+html[data-palette="jarvis"] .bg-slate-900\/40,
+html[data-palette="jarvis"] .bg-slate-900\/50,
+html[data-palette="jarvis"] .bg-slate-900\/60,
+html[data-palette="jarvis"] .bg-slate-900\/70,
+html[data-palette="jarvis"] .bg-slate-900\/80,
+html[data-palette="jarvis"] .bg-slate-900\/90,
+html[data-palette="jarvis"] .bg-slate-900 {
+  background-color: var(--j-pannello) !important;
+  border-color: var(--j-linea) !important;
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.03) inset,
+    0 10px 40px rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* Gli angoli di mira: quattro lati brevi in ciano sui pannelli grandi. */
+html[data-palette="jarvis"] .bg-slate-900\/60.rounded-2xl {
+  background-image:
+    linear-gradient(var(--j-ciano), var(--j-ciano)), linear-gradient(var(--j-ciano), var(--j-ciano)),
+    linear-gradient(var(--j-ciano), var(--j-ciano)), linear-gradient(var(--j-ciano), var(--j-ciano)),
+    linear-gradient(var(--j-ciano), var(--j-ciano)), linear-gradient(var(--j-ciano), var(--j-ciano)),
+    linear-gradient(var(--j-ciano), var(--j-ciano)), linear-gradient(var(--j-ciano), var(--j-ciano)) !important;
+  background-size:
+    16px 1px,
+    1px 16px,
+    16px 1px,
+    1px 16px,
+    16px 1px,
+    1px 16px,
+    16px 1px,
+    1px 16px !important;
+  background-position:
+    top left,
+    top left,
+    top right,
+    top right,
+    bottom left,
+    bottom left,
+    bottom right,
+    bottom right !important;
+  background-repeat: no-repeat !important;
+}
+
+html[data-palette="jarvis"] .rounded-3xl,
+html[data-palette="jarvis"] .rounded-2xl {
+  border-radius: 6px !important;
+}
+html[data-palette="jarvis"] .rounded-xl {
+  border-radius: 4px !important;
+}
+
+html[data-palette="jarvis"] .bg-slate-950,
+html[data-palette="jarvis"] .bg-slate-950\/60,
+html[data-palette="jarvis"] .bg-slate-950\/80 {
+  background-color: rgba(1, 8, 14, 0.78) !important;
+  border-color: var(--j-linea) !important;
+}
+
+html[data-palette="jarvis"] .bg-slate-800,
+html[data-palette="jarvis"] .bg-slate-800\/50,
+html[data-palette="jarvis"] .bg-slate-800\/60,
+html[data-palette="jarvis"] .bg-slate-800\/70,
+html[data-palette="jarvis"] .bg-slate-800\/80 {
+  background-color: rgba(8, 36, 52, 0.55) !important;
+  border-color: var(--j-linea) !important;
+}
+html[data-palette="jarvis"] .hover\:bg-slate-700:hover,
+html[data-palette="jarvis"] .hover\:bg-slate-800\/60:hover {
+  background-color: rgba(14, 62, 86, 0.7) !important;
+}
+
+html[data-palette="jarvis"] .border-slate-800,
+html[data-palette="jarvis"] .border-slate-800\/60,
+html[data-palette="jarvis"] .border-slate-800\/80,
+html[data-palette="jarvis"] .border-slate-700,
+html[data-palette="jarvis"] .border-slate-700\/60,
+html[data-palette="jarvis"] .border-slate-700\/80,
+html[data-palette="jarvis"] .divide-slate-800 > * + * {
+  border-color: var(--j-linea) !important;
+}
+
+/* ------------------------------------------------------------------ il testo: ghiaccio, e un'etichetta mono per i titoletti */
+
+html[data-palette="jarvis"] .text-slate-100,
+html[data-palette="jarvis"] .text-slate-200 {
+  color: var(--j-testo) !important;
+}
+html[data-palette="jarvis"] .text-slate-300 {
+  color: #a8d4e4 !important;
+}
+html[data-palette="jarvis"] .text-slate-400 {
+  color: var(--j-testo-2) !important;
+}
+html[data-palette="jarvis"] .text-slate-500 {
+  color: var(--j-testo-3) !important;
+}
+
+html[data-palette="jarvis"] .text-indigo-200,
+html[data-palette="jarvis"] .text-indigo-300,
+html[data-palette="jarvis"] .text-indigo-400,
+html[data-palette="jarvis"] .text-violet-300,
+html[data-palette="jarvis"] .text-violet-400,
+html[data-palette="jarvis"] .text-sky-300,
+html[data-palette="jarvis"] .text-cyan-300 {
+  color: #7be4f8 !important;
+}
+
+html[data-palette="jarvis"] h2.uppercase,
+html[data-palette="jarvis"] h3.uppercase,
+html[data-palette="jarvis"] .uppercase {
+  font-family: var(--j-mono);
+  letter-spacing: 0.16em;
+}
+
+/* ------------------------------------------------------------------ i pulsanti: contorno luminoso, niente riempimenti pieni */
+
+html[data-palette="jarvis"] .bg-indigo-600,
+html[data-palette="jarvis"] .bg-indigo-600\/20,
+html[data-palette="jarvis"] .bg-indigo-600\/30,
+html[data-palette="jarvis"] .bg-violet-600 {
+  background-color: rgba(8, 120, 150, 0.28) !important;
+  border: 1px solid var(--j-linea-forte) !important;
+  color: var(--j-ghiaccio) !important;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.18) !important;
+}
+html[data-palette="jarvis"] .hover\:bg-indigo-500:hover,
+html[data-palette="jarvis"] .hover\:bg-indigo-600:hover {
+  background-color: rgba(14, 150, 185, 0.42) !important;
+  box-shadow: 0 0 22px rgba(34, 211, 238, 0.38) !important;
+}
+html[data-palette="jarvis"] .shadow-indigo-600\/30,
+html[data-palette="jarvis"] .shadow-lg {
+  --tw-shadow-color: rgba(34, 211, 238, 0.2);
+}
+html[data-palette="jarvis"] .border-indigo-500,
+html[data-palette="jarvis"] .border-indigo-500\/30,
+html[data-palette="jarvis"] .border-indigo-500\/40,
+html[data-palette="jarvis"] .ring-indigo-500\/40 {
+  border-color: var(--j-linea-forte) !important;
+  --tw-ring-color: rgba(34, 211, 238, 0.35);
+}
+html[data-palette="jarvis"] .bg-indigo-950\/40 {
+  background-color: rgba(4, 40, 58, 0.5) !important;
+}
+
+html[data-palette="jarvis"] input[type="text"],
+html[data-palette="jarvis"] input[type="search"],
+html[data-palette="jarvis"] input[type="password"],
+html[data-palette="jarvis"] input[type="number"],
+html[data-palette="jarvis"] input[type="email"],
+html[data-palette="jarvis"] input[type="time"],
+html[data-palette="jarvis"] select,
+html[data-palette="jarvis"] textarea {
+  background-color: rgba(1, 10, 18, 0.7) !important;
+  border-color: var(--j-linea) !important;
+  color: var(--j-testo) !important;
+}
+html[data-palette="jarvis"] input:focus,
+html[data-palette="jarvis"] select:focus,
+html[data-palette="jarvis"] textarea:focus {
+  border-color: var(--j-ciano) !important;
+  box-shadow:
+    0 0 0 1px var(--j-ciano),
+    0 0 18px rgba(34, 211, 238, 0.25) !important;
+  outline: none;
+}
+html[data-palette="jarvis"] input::placeholder,
+html[data-palette="jarvis"] textarea::placeholder {
+  color: var(--j-testo-3) !important;
+  font-family: var(--j-mono);
+  font-size: 0.82em;
+  letter-spacing: 0.04em;
+}
+
+/* ------------------------------------------------------------------ l'intestazione: sottile, con il nome a spaziatura larga */
+
+html[data-palette="jarvis"] header {
+  background-color: rgba(1, 8, 14, 0.78) !important;
+  border-bottom: 1px solid var(--j-linea) !important;
+  box-shadow:
+    0 1px 0 rgba(34, 211, 238, 0.06),
+    0 14px 40px rgba(0, 0, 0, 0.5);
+}
+
+html[data-palette="jarvis"] header h1 {
+  font-family: var(--j-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  background: none !important;
+  -webkit-text-fill-color: var(--j-ghiaccio);
+  color: var(--j-ghiaccio) !important;
+  text-shadow: 0 0 14px rgba(34, 211, 238, 0.55);
+}
+
+/* Via il superfluo: il distintivo «AI Hub», il saluto, la versione accanto al titolo. */
+html[data-palette="jarvis"] header h1 + span,
+html[data-palette="jarvis"] #empathetic-greeting,
+html[data-palette="jarvis"] #badge-versione {
+  display: none !important;
+}
+
+html[data-palette="jarvis"] .living-core {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #fff 0%, #67e8f9 28%, #0e7490 70%, #042f3d 100%);
+  box-shadow:
+    0 0 16px rgba(34, 211, 238, 0.7),
+    0 0 4px #fff inset;
+  animation: j-respiro 4s ease-in-out infinite;
+}
+html[data-palette="jarvis"] .living-core-halo {
+  border-radius: 50%;
+  inset: -4px;
+  background: conic-gradient(from 0deg, transparent, #22d3ee, transparent 55%, #38bdf8, transparent);
+  filter: blur(3px);
+  opacity: 0.7;
+}
+html[data-palette="jarvis"] .living-core i {
+  display: none;
+}
+html[data-palette="jarvis"] .living-core.listening {
+  background: radial-gradient(circle, #fff 0%, #fbbf24 35%, #b45309 100%);
+  box-shadow: 0 0 22px rgba(251, 191, 36, 0.7);
+}
+html[data-palette="jarvis"] .living-core.thinking {
+  background: radial-gradient(circle, #fff 0%, #7dd3fc 30%, #0369a1 100%);
+}
+@keyframes j-respiro {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.07);
+    filter: brightness(1.2);
+  }
+}
+
+/* Il tema si sceglie nelle Impostazioni: qui e' sempre scuro, e il pulsante giorno/notte non serve. */
+html[data-palette="jarvis"] #theme-toggle-btn,
+html[data-palette="jarvis"] [data-gesto="cycleTheme"] {
+  display: none !important;
+}
+
+/* Le pillole di stato diventano chip mono, piccoli. */
+html[data-palette="jarvis"] #ollama-status,
+html[data-palette="jarvis"] #ha-status,
+html[data-palette="jarvis"] #presenza-pill,
+html[data-palette="jarvis"] #theme-toggle-btn,
+html[data-palette="jarvis"] header .bg-slate-800\/70 {
+  font-family: var(--j-mono);
+  font-size: 10px !important;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 3px !important;
+  background-color: transparent !important;
+  border: 1px solid var(--j-linea) !important;
+}
+
+/* Le schede: testo mono, e la scheda attiva e' una linea accesa sotto, non un riempimento. */
+html[data-palette="jarvis"] .tab-btn {
+  font-family: var(--j-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  box-shadow: none !important;
+  color: var(--j-testo-2) !important;
+}
+html[data-palette="jarvis"] .tab-btn:hover {
+  color: var(--j-ghiaccio) !important;
+  background: rgba(34, 211, 238, 0.06) !important;
+}
+html[data-palette="jarvis"] .tab-btn.bg-indigo-600\/30 {
+  color: var(--j-ghiaccio) !important;
+  border-bottom-color: var(--j-ciano) !important;
+  text-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+  background: linear-gradient(0deg, rgba(34, 211, 238, 0.14), transparent) !important;
+}
+
+/* ------------------------------------------------------------------ la home: il nucleo in alto, la conversazione sotto */
+
+.nucleo-riquadro {
+  display: none;
+}
+
+html[data-palette="jarvis"] .nucleo-riquadro {
+  display: block;
+  position: relative;
+  flex: none;
+  height: clamp(170px, 30vh, 300px);
+  border-bottom: 1px solid var(--j-linea);
+  background:
+    radial-gradient(ellipse 60% 100% at 50% 50%, rgba(34, 211, 238, 0.1), transparent 70%),
+    linear-gradient(180deg, rgba(1, 8, 14, 0.6), rgba(1, 8, 14, 0.2));
+  overflow: hidden;
+}
+html[data-palette="jarvis"] .nucleo-riquadro canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+html[data-palette="jarvis"] .nucleo-stato {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  font-family: var(--j-mono);
+  font-size: 10px;
+  letter-spacing: 0.5em;
+  padding-left: 0.5em;
+  color: var(--j-ciano);
+  text-shadow: 0 0 10px rgba(34, 211, 238, 0.7);
+  pointer-events: none;
+}
+
+/* Meno cose in vista: il banner della sessione ripete cio' che dice il menu «Parli come». */
+html[data-palette="jarvis"] #active-user-banner {
+  display: none !important;
+}
+
+/* I suggerimenti rapidi: righe sottili, non pulsanti pieni. */
+html[data-palette="jarvis"] #tab-console button[data-gesto="sendQuickPrompt"] {
+  background: transparent !important;
+  border: 1px solid var(--j-linea) !important;
+  border-radius: 3px !important;
+  font-family: var(--j-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--j-testo-2) !important;
+}
+html[data-palette="jarvis"] #tab-console button[data-gesto="sendQuickPrompt"]:hover {
+  border-color: var(--j-linea-forte) !important;
+  color: var(--j-ghiaccio) !important;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.2);
+}
+
+/* La conversazione: i messaggi di Shinra sono righe con un filo luminoso a sinistra. */
+html[data-palette="jarvis"] #messages-container .bg-slate-800\/80 {
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.07), transparent) !important;
+  border: 0 !important;
+  border-left: 2px solid var(--j-ciano) !important;
+  border-radius: 0 !important;
+}
+html[data-palette="jarvis"] #messages-container .bg-indigo-600 {
+  border-radius: 4px !important;
+}
+html[data-palette="jarvis"] #messages-container .assistant-name-label {
+  font-family: var(--j-mono);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--j-ciano) !important;
+}
+
+/* La barra di comando. */
+html[data-palette="jarvis"] #chat-form #user-input {
+  font-family: var(--j-mono);
+  letter-spacing: 0.02em;
+}
+
+/* ------------------------------------------------------------------ cose che brillano: stati, punti, badge */
+
+html[data-palette="jarvis"] .bg-emerald-400,
+html[data-palette="jarvis"] .bg-emerald-500 {
+  box-shadow: 0 0 8px currentColor;
+}
+html[data-palette="jarvis"] #stato-eventi {
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+}
+
+/* ------------------------------------------------------------------ chi preferisce meno movimento */
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-palette="jarvis"] .living-core {
+    animation: none;
+  }
+}
+
+/* Su un telefono il nucleo e' piu' basso: la conversazione ha piu' posto. */
+@media (max-width: 640px) {
+  html[data-palette="jarvis"] .nucleo-riquadro {
+    height: clamp(120px, 19vh, 170px);
+  }
+  html[data-palette="jarvis"] header h1 {
+    letter-spacing: 0.3em;
+    font-size: 0.9rem;
+  }
+}

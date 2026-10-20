@@ -13,6 +13,7 @@ import './accesso.js';
 import './navigazione.js';
 import './voce.js';
 import './conversazione.js';
+import './nucleo.js';
 import './conoscenza.js';
 import './ricordi.js';
 import './sogno.js';

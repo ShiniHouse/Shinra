@@ -32,8 +32,20 @@ async function conICopioniLenti(page) {
     });
 }
 
+/**
+ * Il tema chiaro e' delle tavolozze chiare: «Jarvis» (quella di serie) e' sempre scura. Questi test guardano che il giorno nasca
+ * chiaro, quindi scelgono una tavolozza che lo e'.
+ */
+async function conUnaTavolozzaChiara(page) {
+    await page.addInitScript(() => {
+        localStorage.setItem('shinra_palette', 'aurora');
+        localStorage.setItem('shinra_palette_scelta', '1');
+    });
+}
+
 test.describe('il tema al primo pixel', () => {
     test('di giorno la pagina nasce chiara, prima che i copioni arrivino', async ({ page }) => {
+        await conUnaTavolozzaChiara(page);
         await conICopioniLenti(page);
         await page.goto('/index.html?tema=light', { waitUntil: 'domcontentloaded' });
 
@@ -61,6 +73,7 @@ test.describe('il tema al primo pixel', () => {
     });
 
     test('a copioni arrivati il tema non cambia piu', async ({ page }) => {
+        await conUnaTavolozzaChiara(page);
         await page.goto('/index.html?tema=light');
         await page.waitForFunction(() => getComputedStyle(document.body).display === 'flex', null, {
             timeout: 15_000,

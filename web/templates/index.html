@@ -28,12 +28,16 @@
                 var scelta = localStorage.getItem('shinra_theme_mode') || 'auto';
                 var adesso = new Date();
                 var ora = adesso.getHours() + adesso.getMinutes() / 60;
-                var effettivo = scelta === 'auto' ? (ora >= 7.0 && ora < 19.5 ? 'light' : 'dark') : scelta;
+                // La tavolozza «Jarvis» (quella di serie) e' sempre scura: una console luminosa a mezzogiorno non e' una console.
+                var tavolozza = localStorage.getItem('shinra_palette');
+                // Un «aurora» salvato senza il segno di una scelta e' il vecchio valore di serie, non una preferenza.
+                if (tavolozza === 'aurora' && !localStorage.getItem('shinra_palette_scelta')) tavolozza = null;
+                tavolozza = tavolozza || 'jarvis';
+                var effettivo = tavolozza === 'jarvis' ? 'dark' : scelta === 'auto' ? (ora >= 7.0 && ora < 19.5 ? 'light' : 'dark') : scelta;
                 var radice = document.documentElement;
                 radice.classList.remove('light', 'dark');
                 radice.classList.add(effettivo === 'light' ? 'light' : 'dark');
-                var tavolozza = localStorage.getItem('shinra_palette');
-                if (tavolozza) radice.setAttribute('data-palette', tavolozza);
+                radice.setAttribute('data-palette', tavolozza);
             } catch (e) {
                 /* Niente localStorage: resta il `dark` scritto sul tag. */
             }
@@ -68,6 +72,7 @@
     <link rel="stylesheet" href="/static/css/tema-chiaro.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
     <link rel="stylesheet" href="/static/css/tinte-chiare.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
     <link rel="stylesheet" href="/static/css/avatar.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
+    <link rel="stylesheet" href="/static/css/jarvis.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
     <link rel="stylesheet" href="/static/css/telefono.css?v={{ (versione.descrizione if versione else 'dev') | urlencode }}">
     <!-- Tailwind, precompilato: `npm run css` genera questo file da tailwind.config.js. Prima era
          uno script da CDN che lo costruiva nel browser a ogni apertura e metteva i suoi stili

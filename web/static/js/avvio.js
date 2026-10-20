@@ -12,21 +12,42 @@ export function safeCreateIcons() {
 }
 
 // ==================== PALETTE MANAGER (3 DESIGN ATMOSPHERES) ====================
-let currentPalette = localStorage.getItem('shinra_palette') || 'aurora';
+// Le tavolozze. «Jarvis» e' quella di serie ed e' sempre scura (vedi `css/jarvis.css`).
+const PALETTE = ['jarvis', 'aurora', 'sandstone', 'stealth'];
+const PALETTE_DI_SERIE = 'jarvis';
 
-export function initPalette() {
-    currentPalette = localStorage.getItem('shinra_palette') || 'aurora';
-    setPalette(currentPalette);
+// La tavolozza salvata, o `null` se nessuno l'ha scelta. Fino alla tavolozza «Jarvis» il programma salvava «aurora» da solo alla
+// prima apertura: un'«aurora» senza il segno di una scelta (`shinra_palette_scelta`, scritto solo dal clic su una scheda) non e'
+// una preferenza, e il browser passa alla tavolozza di serie. Chi aveva scelto davvero la sua la riscegliera' una volta sola.
+function paletteSalvata() {
+    const salvata = localStorage.getItem('shinra_palette');
+    if (salvata === 'aurora' && !localStorage.getItem('shinra_palette_scelta')) return null;
+    return salvata;
 }
 
+let currentPalette = paletteSalvata() || PALETTE_DI_SERIE;
+
+export function initPalette() {
+    currentPalette = paletteSalvata() || PALETTE_DI_SERIE;
+    applicaPalette(currentPalette);
+}
+
+// Il clic su una scheda delle tavolozze: e' una scelta, e si ricorda come tale.
 function setPalette(name) {
-    if (!['aurora', 'sandstone', 'stealth'].includes(name)) name = 'aurora';
+    localStorage.setItem('shinra_palette_scelta', '1');
+    applicaPalette(name);
+}
+
+function applicaPalette(name) {
+    if (!PALETTE.includes(name)) name = PALETTE_DI_SERIE;
     currentPalette = name;
     localStorage.setItem('shinra_palette', name);
     document.documentElement.setAttribute('data-palette', name);
+    // Cambiare tavolozza puo' cambiare anche il tema: «Jarvis» e' solo scura.
+    applyTheme();
 
     // Update UI Selection Badges & Border Highlights
-    ['aurora', 'sandstone', 'stealth'].forEach((p) => {
+    PALETTE.forEach((p) => {
         const card = document.getElementById(`palette-card-${p}`);
         const badge = document.getElementById(`badge-palette-${p}`);
         if (card) {
@@ -77,6 +98,8 @@ export function applyTheme() {
     if (currentThemeSetting === 'auto') {
         effectiveTheme = getSolarTheme();
     }
+    // «Jarvis» e' sempre scura, qualunque cosa dica l'orologio o la scelta.
+    if (currentPalette === PALETTE_DI_SERIE) effectiveTheme = 'dark';
 
     if (effectiveTheme === 'light') {
         document.documentElement.classList.remove('dark');
