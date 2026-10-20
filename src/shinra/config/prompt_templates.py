@@ -63,6 +63,7 @@ def get_contesto_della_richiesta(
     home_context_summary: str = "",
     custom_knowledge: str = "",
     adesso: Optional[datetime.datetime] = None,
+    luogo: str = "",
 ) -> str:
     """Quello che cambia a ogni richiesta: che ora e', cosa sa la casa, cosa serve per questa domanda.
 
@@ -70,6 +71,9 @@ def get_contesto_della_richiesta(
     `get_system_prompt`.
     """
     parts = [lingua.prompt_di("adesso", adesso=lingua.data_e_ora(adesso or datetime.datetime.now()))]
+    if luogo:
+        # Solo il nome del luogo: le coordinate non entrano mai nel prompt.
+        parts.append(lingua.prompt_di("luogo_di_chi_parla", luogo=luogo))
     if custom_knowledge:
         parts.append(f"{lingua.prompt_di('titolo_conoscenza')}:\n{custom_knowledge}")
     if home_context_summary:

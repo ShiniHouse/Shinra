@@ -69,6 +69,19 @@ meteo:
     - temperatura
     - gradi fuori
 
+  # Le domande su alba e tramonto: frasi intere, non «alba» da sola (Albano, «accendi all'alba» che e' una regola).
+  parole_sole:
+    - a che ora sorge
+    - quando sorge
+    - a che ora tramonta
+    - quando tramonta
+    - a che ora e' l'alba
+    - a che ora è l'alba
+    - ora dell'alba
+    - ora del tramonto
+    - orario del tramonto
+    - orario dell'alba
+
   # La parola con cui si chiede il giorno dopo invece di adesso.
   domani: domani
 
@@ -548,6 +561,7 @@ messaggi:
   meteo_domani: "Domani a {localita} {condizione}, max {massima} gradi e min {minima}."
   meteo_adesso: "A {localita} attualmente {temperatura}, {condizione}."
   meteo_massima: " Massima prevista di {massima} gradi."
+  sole_alba_tramonto: "A {localita} oggi il sole sorge alle {alba} e tramonta alle {tramonto} (ora del posto)."
   posizione_spenta: "Non so dove sei: la tua posizione non è collegata. Puoi collegarla dalle Impostazioni, in Luoghi."
   posizione_ignota: "Non so dove sei adesso: Home Assistant non mi manda la tua posizione."
   posizione_in_giro: "Sei in giro: non in uno dei luoghi che conosco."
@@ -589,6 +603,7 @@ prompt:
   riprova_strumenti: "Usa lo strumento adatto per rispondere alla richiesta."
   intro: "Sei {assistente}, assistente domestico intelligente. Città di riferimento: {citta}."
   adesso: "Oggi è {adesso}."
+  luogo_di_chi_parla: "Chi parla si trova a: {luogo}."
   utente_anonimo: "Utente"
   persona_bambino: "Parli con il bambino {nome}. Usa linguaggio semplice, allegro e rassicurante. Niente contenuti violenti o complessi."
   persona_ragazzo: "Parli con il ragazzo {nome}. Sii pratico, diretto e chiaro."

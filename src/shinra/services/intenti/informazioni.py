@@ -118,6 +118,32 @@ class Meteo(Intento):
         return frase
 
 
+class Sole(Meteo):
+    """A che ora sorge e tramonta il sole, **nel luogo giusto**: quello nominato, dove si trova chi parla, la casa principale."""
+
+    nome = "sole"
+    priorita = 49  # prima del meteo: «a che ora tramonta?» non e' «che tempo fa?»
+
+    def applicabile(self, richiesta: Richiesta) -> bool:
+        return any(p in richiesta.minuscolo for p in richiesta.schemi.parole_sole)
+
+    @staticmethod
+    def _frase(esito: dict, testo: str, lingua) -> str:
+        sole = esito.get("sole") or {}
+        if not sole.get("alba") or not sole.get("tramonto"):
+            return ""
+        return lingua.dice(
+            "sole_alba_tramonto",
+            localita=esito.get("localita", ""),
+            alba=sole["alba"],
+            tramonto=sole["tramonto"],
+        )
+
+    async def esegui(self, richiesta: Richiesta) -> Optional[Risposta]:
+        risposta = await super().esegui(richiesta)
+        return risposta if risposta is not None and risposta.testo else None
+
+
 class Notizie(Intento):
     nome = "notizie"
     priorita = 60
@@ -181,6 +207,7 @@ class Enciclopedia(Intento):
         return None
 
 
+registra(Sole())
 registra(Meteo())
 registra(Notizie())
 registra(Enciclopedia())

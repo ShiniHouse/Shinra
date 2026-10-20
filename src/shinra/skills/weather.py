@@ -92,9 +92,17 @@ async def _meteo(
             }
         )
 
+    # Alba e tramonto di oggi nel posto, all'ora del posto (`timezone=auto`): «2026-10-20T06:41» -> «06:41».
+    def _ora_del_giorno(valori: list) -> str:
+        return str(valori[0]).split("T")[-1] if valori else ""
+
     return {
         "success": True,
         "localita": localita,
+        "sole": {
+            "alba": _ora_del_giorno(daily.get("sunrise", [])),
+            "tramonto": _ora_del_giorno(daily.get("sunset", [])),
+        },
         "adesso": {
             "temperatura": f"{current_temp}°C",
             "percepita": f"{current_feels}°C",

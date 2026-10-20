@@ -57,6 +57,11 @@ casa:
   preposizioni_stanza: "\\b(?:in|inside)\\s+(?:the\\s+)?([a-z]+(?:\\s+room)?)"
 
 meteo:
+  parole_sole:
+    - sunrise
+    - sunset
+    - when does the sun
+    - what time does the sun
   parole:
     - weather
     - forecast
@@ -513,6 +518,7 @@ messaggi:
   modalita_attivata: "{nome} mode activated."
   meteo_domani: "Tomorrow in {localita}: {condizione}, high of {massima} and low of {minima} degrees."
   meteo_adesso: "In {localita} it is currently {temperatura}, {condizione}."
+  sole_alba_tramonto: "In {localita} the sun rises at {alba} and sets at {tramonto} today (local time)."
   posizione_spenta: "I don't know where you are: your location is not linked. You can link it in Settings, under Places."
   posizione_ignota: "I don't know where you are right now: Home Assistant is not sending me your location."
   posizione_in_giro: "You are out and about: not at one of the places I know."
@@ -553,6 +559,7 @@ prompt:
   riprova_strumenti: "Use the right tool to answer the request."
   intro: "You are {assistente}, an intelligent home assistant. Reference city: {citta}."
   adesso: "Today is {adesso}."
+  luogo_di_chi_parla: "The speaker is at: {luogo}."
   utente_anonimo: "User"
   persona_bambino: "You are talking to the child {nome}. Use simple, cheerful, reassuring language. No violent or complex content."
   persona_ragazzo: "You are talking to the teenager {nome}. Be practical, direct and clear."

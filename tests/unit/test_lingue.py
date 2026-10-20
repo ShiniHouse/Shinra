@@ -62,7 +62,12 @@ def lingua_inventata(tmp_path, monkeypatch) -> str:
             "verbi_che_accendono": ["zap"],
             "parole_temperatura": ["blorpgradi"],
         },
-        "meteo": {"parole": ["blorp"], "citta": r"\bverso\s+([A-Z]\w*)", "domani": "dopo"},
+        "meteo": {
+            "parole": ["blorp"],
+            "parole_sole": ["blorpsole"],
+            "citta": r"\bverso\s+([A-Z]\w*)",
+            "domani": "dopo",
+        },
         "enciclopedia": {"inneschi": ["spiegoni su"], "pulizia": r"^(spiegoni su)\s+"},
         "apprendimento": {"avvii": ["impara tutto"], "interruzioni": ["basta cosi"]},
         "notizie": {"inneschi": ["novita zz"]},

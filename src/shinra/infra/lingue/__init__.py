@@ -45,6 +45,7 @@ RICHIESTE: Tuple[Tuple[str, ...], ...] = (
     ("casa", "controllo_dispositivo"),
     ("casa", "verbi_che_accendono"),
     ("meteo", "parole"),
+    ("meteo", "parole_sole"),
     ("meteo", "citta"),
     ("meteo", "domani"),
     ("enciclopedia", "inneschi"),
@@ -151,6 +152,7 @@ CHIAVI_MESSAGGI: Tuple[str, ...] = (
     "modalita_attivata",
     "meteo_domani",
     "meteo_adesso",
+    "sole_alba_tramonto",
     "posizione_spenta",
     "posizione_ignota",
     "posizione_in_giro",
@@ -195,6 +197,7 @@ CHIAVI_PROMPT: Tuple[str, ...] = (
     "riprova_strumenti",
     "riassunto_riscrivi",
     "adesso",
+    "luogo_di_chi_parla",
     "utente_anonimo",
     "persona_bambino",
     "persona_ragazzo",
@@ -225,6 +228,7 @@ class Schemi:
     controllo_dispositivo: re.Pattern
     verbi_che_accendono: Tuple[str, ...]
     parole_meteo: Tuple[str, ...]
+    parole_sole: Tuple[str, ...]
     domani: str
     citta: re.Pattern
     inneschi_enciclopedia: Tuple[str, ...]
@@ -350,6 +354,7 @@ def _compila(lingua: str) -> Schemi:
         controllo_dispositivo=re.compile(dati["casa"]["controllo_dispositivo"], re.IGNORECASE),
         verbi_che_accendono=tuple(v.lower() for v in dati["casa"]["verbi_che_accendono"]),
         parole_meteo=tuple(dati["meteo"]["parole"]),
+        parole_sole=tuple(dati["meteo"]["parole_sole"]),
         domani=str(dati["meteo"]["domani"]),
         citta=re.compile(dati["meteo"]["citta"]),
         inneschi_enciclopedia=tuple(dati["enciclopedia"]["inneschi"]),
