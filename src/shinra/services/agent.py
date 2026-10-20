@@ -56,6 +56,21 @@ class ShinraAgent:
         self.ha = client_home_assistant()
 
     @staticmethod
+    def _luogo_di(profile: Any) -> str:
+        """Il nome del luogo in cui si trova chi parla, se la sua posizione e' collegata ed e' in un luogo registrato. Mai coordinate."""
+        entita = getattr(profile, "entita_posizione", "") or ""
+        if not entita:
+            return ""
+        from shinra.services import posizione
+
+        try:
+            attuale = posizione.luogo_attuale(entita, getattr(profile, "id", "") or "")
+        except Exception:
+            logger.warning("Luogo di chi parla non letto", exc_info=True)
+            return ""
+        return str(attuale["nome"]) if attuale else ""
+
+    @staticmethod
     async def _esegui(nome: str, argomenti: Dict[str, Any], agenti_scelti: List[str]) -> Dict[str, Any]:
         """Esegue lo strumento che il modello ha chiesto, se gli agenti al lavoro lo dichiarano.
 
@@ -233,6 +248,7 @@ class ShinraAgent:
         )
         contesto_richiesta = get_contesto_della_richiesta(
             lingua=lingua,
+            luogo=self._luogo_di(profile),
             home_context_summary=ha_summary,
             # Il recupero al posto dell'iniezione totale (issue #32). Sotto
             # i venticinque fatti manda tutto come prima: il problema esiste
