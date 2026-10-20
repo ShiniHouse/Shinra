@@ -1,12 +1,13 @@
 # 0009 — Chi vede e chi può cambiare ciò che Shinra ricorda
 
-- **Stato:** Proposto
+- **Stato:** Accettato
 - **Data:** 2026-10-13
 - **Attuazione:** milestone `v0.8.0`, issue #243 (schema: #245, API: #249, cancellazione: #253)
 
-> **Stato: proposto, con due scelte già prese dal proprietario (2026-10-14).** L'amministratore **non** vede i ricordi privati
-> degli altri profili, e un adulto **non** vede cosa è ricordato di un minore: *ognuno vede solo i propri*. Il resto è ancora
-> una proposta da leggere; lo stato passa a `Accettato` quando il proprietario lo dice.
+> **Accettato il 2026-10-20** dal proprietario, dopo averlo visto funzionare: tutto ciò che sta sotto è in `main` e provato sul
+> server di casa (schema, API, vista, riassunti, sogno, cancellazione). Due scelte erano già state prese il 2026-10-14:
+> l'amministratore **non** vede i ricordi privati degli altri profili, e un adulto **non** vede cosa è ricordato di un minore:
+> *ognuno vede solo i propri*. Il punto 6 (backup) è accettato **com'è oggi**, con i due limiti scritti lì sotto.
 
 ## Contesto
 
@@ -28,8 +29,14 @@ nel prompt di un bambino né nella lista di un ospite, e un profilo deve poter c
 4. **Ospiti: nessuna memoria persistente.**
 5. **Cosa non si ricorda mai:** PIN, token, codici dell'allarme, numeri di carte. Si riusa `registro.oscura` come filtro in scrittura.
 6. **Backup e «dimentica».** Il backup contiene i ricordi (schema nuovo con migrazione). Un «dimentica» cancella dal database e
-   **non dai backup vecchi**: lo si dice in chiaro, con la durata di conservazione dei backup. Un ripristino non deve riportare un
-   ricordo cancellato: si tiene l'elenco degli id cancellati finché esistono backup che li contengono.
+   **non dai backup vecchi**: lo si dice in chiaro (`docs/MEMORIA.md`). **Com'è oggi, accettato:**
+   - il salvataggio contiene **anche i ricordi privati di tutti**: chi apre il file sul server li legge, anche se
+     dall'interfaccia non può. Il proprietario ha scelto di lasciarli (2026-10-20: «non togliere nulla»), perché toglierli
+     vorrebbe dire perderli in un ripristino;
+   - i backup di `deploy.sh` si tengono gli ultimi 10; un salvataggio con un ricordo cancellato lo contiene finché non esce
+     da quelli;
+   - **non c'è ancora** l'elenco degli id cancellati da non rimettere in un ripristino: restaurare un backup vecchio può
+     riportare un ricordo cancellato. È un limite noto, scritto nella guida, da chiudere con una scheda a parte.
 7. **Il grafo del Cervello** non mostra mai il testo di un ricordo.
 
 ## Alternative scartate
@@ -44,11 +51,14 @@ nel prompt di un bambino né nella lista di un ospite, e un profilo deve poter c
 - L'API e la vista (#249, #250) filtrano per profilo **sul server**, non nell'interfaccia.
 - Serve un test per ogni coppia ruolo/ambito, e uno che cerchi un ricordo privato nel prompt di un altro profilo.
 
-## Da decidere prima dell'accettazione
+## Decisioni prese
 
 - ~~L'amministratore vede il privato degli altri?~~ **Deciso: no** (2026-10-14).
 - ~~Cosa vede un adulto dei ricordi di un minore?~~ **Deciso: niente**, ognuno vede i propri (2026-10-14).
-- Per quanto si tengono i backup che contengono un ricordo cancellato.
-- Conseguenza da guardare insieme: se nessuno può leggere il privato di un altro, «dimentica tutto di me» è l'unico modo per
-  un amministratore di aiutare chi ha perso l'accesso? (no: lo fa solo il proprietario del ricordo; chi perde l'accesso
-  riparte da un profilo nuovo).
+- ~~Per quanto si tengono i backup che contengono un ricordo cancellato?~~ **Gli ultimi 10 di `deploy.sh`**; i ricordi privati
+  restano nel salvataggio (2026-10-20).
+- «Dimentica tutto di me» lo fa solo il proprietario del ricordo; chi perde l'accesso riparte da un profilo nuovo.
+
+## Ancora aperto
+
+- L'elenco degli id cancellati da non rimettere in un ripristino (punto 6, terzo limite).
