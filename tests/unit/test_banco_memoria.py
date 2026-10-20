@@ -128,3 +128,41 @@ def test_la_recenza_risolve_il_conflitto_fra_il_ricordo_vecchio_e_quello_nuovo(b
 def test_il_rapporto_dell_ablazione_si_scrive(banco, corpus):
     testo = banco.rapporto_ablazione(banco.ablazione(corpus), 0.1)
     assert "Ablazione" in testo and "solo recenza" in testo and "(+0." in testo
+
+
+# ------------------------------------------------------------------ la soglia di punteggio (misurata sul server, 2026-10-20)
+
+
+def test_la_scansione_delle_soglie_non_peggiora_il_silenzio_alzandola(banco, corpus):
+    """Alzare la soglia lascia passare meno cose: il silenzio non scende e i ricordi trovati non aumentano."""
+    vettori = banco.vettori_perfetti(corpus)
+    s = banco.scansione_soglie(corpus, vettori)
+    soglie = sorted(s)
+    for prima, dopo in zip(soglie, soglie[1:]):
+        assert s[dopo]["silenzio"] >= s[prima]["silenzio"] - 1e-9
+        assert s[dopo]["recall_k"] <= s[prima]["recall_k"] + 1e-9
+        assert s[dopo]["mrr"] <= s[prima]["mrr"] + 1e-9
+
+
+def test_con_un_modello_che_somiglia_a_tutto_la_soglia_di_oggi_fa_rumore(banco, corpus):
+    """Quello che e' successo con nomic-embed-text sul server: ogni frase somiglia un po' a ogni altra, e le domande senza
+    risposta non restano in silenzio. La scansione lo deve mostrare, altrimenti non serve a scegliere la soglia.
+    """
+    ricordi, domande = banco.vettori_perfetti(corpus)
+
+    def con_fondo(v):
+        return [
+            x * 0.3 + 0.8 for x in v
+        ]  # un fondo comune a tutti i vettori: il coseno non scende mai vicino a zero
+
+    vettori = ({k: con_fondo(v) for k, v in ricordi.items()}, {k: con_fondo(v) for k, v in domande.items()})
+    s = banco.scansione_soglie(corpus, vettori, soglie=(0.28, 0.9))
+    assert (
+        s[0.28]["silenzio"] < 1.0
+    ), "con un fondo comune la soglia di oggi dovrebbe lasciar passare del rumore"
+    assert s[0.9]["silenzio"] >= s[0.28]["silenzio"]
+
+
+def test_il_rapporto_delle_soglie_segna_quella_in_uso(banco, corpus):
+    testo = banco.rapporto_soglie(banco.scansione_soglie(corpus, banco.vettori_perfetti(corpus)))
+    assert "(oggi)" in testo and "| Soglia |" in testo
