@@ -1,0 +1,107 @@
+/* ==================== TAVOLOZZA «JARVIS»: LA HOME COME UNA SCENA ====================
+ *
+ * La tavolozza (`jarvis.css`) ricolora tutto; qui cambia solo l'impaginazione della console, su schermo largo: il nucleo non e' piu'
+ * una striscia dentro un riquadro ma il centro della scena, la conversazione un pannello di vetro sotto, la barra di comando una
+ * riga luminosa, e a destra il «cosa succede in casa» in prospettiva, come nei prototipi (docs/prototipi/grafica.html, scena D).
+ *
+ * Non cambia nessun identificativo ne' nessun gesto: e' impaginazione, e sotto i 1024 px resta quella di prima (una colonna).
+ */
+
+@media (min-width: 1024px) {
+  html[data-palette="jarvis"] #tab-console {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+    gap: 2.5rem;
+    align-items: center;
+  }
+
+  /* La scena: niente cornice, il nucleo respira sullo sfondo. */
+  html[data-palette="jarvis"] #tab-console > div:first-child {
+    grid-column: 1;
+    height: calc(100dvh - 9.5rem) !important;
+    background: none !important;
+    background-image: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    clip-path: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    overflow: visible;
+  }
+
+  html[data-palette="jarvis"] .nucleo-riquadro {
+    order: 1;
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 220px;
+    border: 0;
+    background: none;
+    overflow: visible;
+  }
+  html[data-palette="jarvis"] .nucleo-stato {
+    bottom: 0;
+    font-size: 11px;
+  }
+
+  /* La conversazione: un pannello di vetro piccolo, con gli ultimi scambi. */
+  html[data-palette="jarvis"] #messages-container {
+    order: 2;
+    flex: 0 0 auto;
+    width: min(760px, 100%);
+    max-height: 24vh;
+    margin: 0.5rem auto 0;
+    padding: 0.75rem 1rem !important;
+    background: linear-gradient(160deg, rgba(6, 40, 60, 0.45), rgba(2, 14, 26, 0.25));
+    border: 1px solid var(--j-linea);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+
+  /* I suggerimenti: pillole sottili, al centro, senza barra. */
+  html[data-palette="jarvis"] #tab-console > div:first-child > div:nth-of-type(3) {
+    order: 3;
+    justify-content: center;
+    flex-wrap: wrap;
+    background: none !important;
+    border: 0 !important;
+    padding: 0.75rem 0 0.25rem;
+  }
+
+  /* La barra di comando: una riga luminosa a angoli tagliati. */
+  html[data-palette="jarvis"] #tab-console > div:first-child > div:last-child {
+    order: 4;
+    width: min(760px, 100%);
+    margin: 0 auto;
+    background: none !important;
+    border: 0 !important;
+    padding: 0.5rem 0 0;
+  }
+  html[data-palette="jarvis"] #chat-form {
+    padding: 0.4rem 0.5rem;
+    border: 1px solid rgba(34, 211, 238, 0.45);
+    background: rgba(2, 14, 26, 0.6);
+    box-shadow: 0 0 30px rgba(34, 211, 238, 0.14);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+  html[data-palette="jarvis"] #chat-form #user-input {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* A destra: i pannelli di «Adesso, in casa» in prospettiva. Passandoci sopra si raddrizzano, per leggerli e premerli bene. */
+  html[data-palette="jarvis"] #tab-console > div:last-child {
+    grid-column: 2;
+    transform: perspective(1400px) rotateY(-14deg);
+    transform-origin: 0 50%;
+    transition: transform 0.35s ease;
+  }
+  html[data-palette="jarvis"] #tab-console > div:last-child:hover,
+  html[data-palette="jarvis"] #tab-console > div:last-child:focus-within {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-palette="jarvis"] #tab-console > div:last-child {
+    transition: none;
+  }
+}
