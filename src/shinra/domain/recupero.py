@@ -55,6 +55,14 @@ MASSIMO_FATTI = 8
 # «che tempo fa» non deve tirarsi dietro i cinque fatti meno lontani.
 SOGLIA_PUNTEGGIO = 0.28
 
+# Con i **vettori** la soglia e' un'altra. Misurata sul server il 2026-10-20 (i5-8500T, `nomic-embed-text`, 26 domande):
+# con ogni frase che somiglia un po' a ogni altra, a 0.28 le domande senza risposta non restano mai in silenzio (0%) e
+# otto ricordi qualunque finiscono nel prompt. A 0.40 si perde nulla (recall@3 83%, MRR 0.74) e il silenzio sale al 20%;
+# da 0.45 si comincia a perdere ricordi giusti (79%), a 0.50 il silenzio e' pieno ma il recall@3 scende al 74%.
+# Si sceglie 0.40: l'ultimo punto in cui non si perde niente. Un ricordo mancato costa piu' di un ricordo di troppo.
+# Va rimisurata se cambia il modello degli embedding (`scripts/banco_memoria.py --embedding --soglie`).
+SOGLIA_CON_VETTORI = 0.40
+
 # Quanto pesa la similarita' dei vettori rispetto alla corrispondenza
 # testuale. Il testo pesa meno ma non poco: e' l'unico che riconosce «4471».
 PESO_VETTORE = 0.7
@@ -296,7 +304,7 @@ def cerca(
     fatti: Iterable[Fatto],
     vettore_domanda: Optional[Sequence[float]] = None,
     massimo: int = MASSIMO_FATTI,
-    soglia: float = SOGLIA_PUNTEGGIO,
+    soglia: Optional[float] = None,
     pesi: Pesi = Pesi(),
     adesso: Optional[float] = None,
 ) -> list[Trovato]:
@@ -311,6 +319,8 @@ def cerca(
     """
     trovati: list[Trovato] = []
     fissati: list[Trovato] = []
+    if soglia is None:
+        soglia = SOGLIA_PUNTEGGIO if vettore_domanda is None else SOGLIA_CON_VETTORI
 
     for fatto in fatti:
         per_vettore = (

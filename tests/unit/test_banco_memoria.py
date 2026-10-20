@@ -167,3 +167,35 @@ def test_con_un_modello_che_somiglia_a_tutto_la_soglia_di_oggi_fa_rumore(banco, 
 def test_il_rapporto_delle_soglie_segna_quella_in_uso(banco, corpus):
     testo = banco.rapporto_soglie(banco.scansione_soglie(corpus, banco.vettori_perfetti(corpus)))
     assert "(oggi)" in testo and "| Soglia |" in testo
+
+
+def test_con_i_vettori_la_soglia_di_default_e_quella_misurata_sul_server():
+    """0.40: l'ultimo punto in cui, sul server, non si perde nessun ricordo giusto (recall@3 83%) e il silenzio non e' piu' 0%."""
+    from shinra.domain import recupero
+
+    assert recupero.SOGLIA_CON_VETTORI == 0.40 and recupero.SOGLIA_PUNTEGGIO == 0.28
+    vicino = recupero.Fatto("k_1", "La caldaia e in cantina", vettore=[1.0, 0.0])
+    lontano_ma_non_troppo = recupero.Fatto(
+        "k_2", "Qualcosa di diverso", vettore=[0.5, 0.8660254]
+    )  # coseno 0.5
+    domanda = [1.0, 0.0]
+    # Punteggio di k_2 = 0.7 * 0.5 = 0.35: passa a 0.28, non passa a 0.40.
+    per_default = recupero.cerca("zzzz", [vicino, lontano_ma_non_troppo], domanda)
+    assert [t.fatto.identificativo for t in per_default] == ["k_1"]
+    con_la_vecchia = recupero.cerca("zzzz", [vicino, lontano_ma_non_troppo], domanda, soglia=0.28)
+    assert [t.fatto.identificativo for t in con_la_vecchia] == ["k_1", "k_2"]
+
+
+def test_senza_vettori_la_soglia_resta_quella_del_testo():
+    from shinra.domain import recupero
+
+    f = recupero.Fatto("k_1", "la caldaia e in cantina")
+    domanda = "caldaia sistemata ieri"  # somiglianza testuale 0.33: fra 0.28 e 0.40
+    assert (
+        recupero.SOGLIA_PUNTEGGIO
+        <= recupero.somiglianza_testuale(domanda, f.testo)
+        < recupero.SOGLIA_CON_VETTORI
+    )
+    assert [t.fatto.identificativo for t in recupero.cerca(domanda, [f])] == [
+        "k_1"
+    ], "senza vettori deve passare"
