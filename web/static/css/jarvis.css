@@ -45,6 +45,7 @@ html[data-palette="jarvis"] body {
   background-color: var(--j-fondo);
   color: var(--j-testo);
   background-image:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 3px),
     radial-gradient(ellipse 70% 45% at 50% 0%, rgba(34, 211, 238, 0.14), transparent 70%),
     radial-gradient(ellipse 50% 40% at 100% 100%, rgba(56, 130, 246, 0.1), transparent 70%),
     radial-gradient(ellipse 40% 30% at 0% 100%, rgba(34, 211, 238, 0.07), transparent 70%);
@@ -63,6 +64,32 @@ html[data-palette="jarvis"] body::before {
   background-size: 56px 56px;
   -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, #000 20%, transparent 85%);
   mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, #000 20%, transparent 85%);
+}
+
+/* Il pavimento: una griglia in prospettiva che scorre piano verso chi guarda, e si perde nel buio. Sta dietro a tutto. */
+html[data-palette="jarvis"] body::after {
+  content: "";
+  position: fixed;
+  left: -30%;
+  right: -30%;
+  bottom: -8%;
+  height: 46%;
+  z-index: 0;
+  pointer-events: none;
+  transform: perspective(520px) rotateX(64deg);
+  transform-origin: 50% 100%;
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.3) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: linear-gradient(to top, #000 5%, transparent 78%);
+  mask-image: linear-gradient(to top, #000 5%, transparent 78%);
+  animation: j-pavimento 6s linear infinite;
+}
+@keyframes j-pavimento {
+  to {
+    background-position: 0 64px;
+  }
 }
 
 /* Il contenuto sta sopra la griglia di sfondo. L'intestazione NON si tocca: e' appiccicata in cima con la sua pila (`z-50`), e il menu
@@ -107,32 +134,13 @@ html[data-palette="jarvis"] .bg-slate-900 {
   -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
 
-/* Gli angoli di mira: quattro lati brevi in ciano sui pannelli grandi. */
+/* I pannelli grandi hanno due angoli tagliati in diagonale, come un vetro olografico, e un velo di ciano che scende dall'alto. */
 html[data-palette="jarvis"] .bg-slate-900\/60.rounded-2xl {
-  background-image:
-    linear-gradient(var(--j-ciano), var(--j-ciano)), linear-gradient(var(--j-ciano), var(--j-ciano)),
-    linear-gradient(var(--j-ciano), var(--j-ciano)), linear-gradient(var(--j-ciano), var(--j-ciano)),
-    linear-gradient(var(--j-ciano), var(--j-ciano)), linear-gradient(var(--j-ciano), var(--j-ciano)),
-    linear-gradient(var(--j-ciano), var(--j-ciano)), linear-gradient(var(--j-ciano), var(--j-ciano)) !important;
-  background-size:
-    16px 1px,
-    1px 16px,
-    16px 1px,
-    1px 16px,
-    16px 1px,
-    1px 16px,
-    16px 1px,
-    1px 16px !important;
-  background-position:
-    top left,
-    top left,
-    top right,
-    top right,
-    bottom left,
-    bottom left,
-    bottom right,
-    bottom right !important;
-  background-repeat: no-repeat !important;
+  background-image: linear-gradient(160deg, rgba(6, 40, 60, 0.55), rgba(2, 14, 26, 0.35)) !important;
+  box-shadow:
+    0 0 40px rgba(34, 211, 238, 0.1),
+    inset 0 0 30px rgba(34, 211, 238, 0.05) !important;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
 }
 
 html[data-palette="jarvis"] .rounded-3xl,
@@ -475,7 +483,8 @@ html[data-palette="jarvis"] #stato-eventi {
 /* ------------------------------------------------------------------ chi preferisce meno movimento */
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-palette="jarvis"] .living-core {
+  html[data-palette="jarvis"] .living-core,
+  html[data-palette="jarvis"] body::after {
     animation: none;
   }
 }
