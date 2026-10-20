@@ -288,3 +288,65 @@ def test_l_intento_dispositivi_riconosce_solo_i_comandi():
     assert intento.applicabile(_richiesta("accendi la luce"))
     assert not intento.applicabile(_richiesta("com'è il tempo"))
     assert not intento.applicabile(_richiesta("mi accendi una sigaretta è un modo di dire"))
+
+
+# ------------------------------------------- piu' dispositivi in un comando (visto sul server, 2026-10-20)
+
+
+@pytest.fixture
+def acquario(casa):
+    depositi.alias.sostituisci_tutto(
+        [
+            {"id": "a1", "alias": "luce acquario", "entity_id": "switch.luce_acquario", "room": "Salotto"},
+            {"id": "a2", "alias": "areatore acquario", "entity_id": "switch.areatore", "room": "Salotto"},
+            {"id": "a3", "alias": "luce cucina", "entity_id": "light.cucina", "room": "Cucina"},
+        ]
+    )
+    return casa
+
+
+async def test_due_dispositivi_in_un_comando_si_comandano_tutti_e_due(acquario):
+    """Prima si spegneva solo il primo alias trovato e si rispondeva «spenta», con l'altro ancora acceso."""
+    risposta = await instrada(_richiesta("spegni la luce acquario e l'areatore acquario"))
+    comandati = [a["entity_id"] for nome, a in acquario["chiamate"] if nome == "control_device"]
+    assert comandati == ["switch.luce_acquario", "switch.areatore"]
+    assert "Luce acquario spento" in risposta.testo and "Areatore acquario spento" in risposta.testo
+
+
+async def test_con_una_virgola_o_un_poi_vale_lo_stesso(acquario):
+    for frase in (
+        "accendi la luce acquario, l'areatore acquario",
+        "accendi la luce acquario poi la luce cucina",
+    ):
+        acquario["chiamate"].clear()
+        await instrada(_richiesta(frase))
+        assert len([1 for nome, _ in acquario["chiamate"] if nome == "control_device"]) == 2, frase
+
+
+async def test_se_una_parte_non_e_un_dispositivo_noto_non_si_fa_niente_a_meta(acquario):
+    """«…e il forno»: il forno non c'e'. Meglio passare la frase al modello che spegnere una cosa sola e dire che e' fatto."""
+    risposta = await instrada(_richiesta("spegni la luce acquario e il forno"))
+    assert [c for c in acquario["chiamate"] if c[0] == "control_device"] == []
+    assert risposta is None or "spenta" not in risposta.testo
+
+
+async def test_lo_stesso_dispositivo_nominato_due_volte_si_comanda_una_volta(acquario):
+    await instrada(_richiesta("accendi la luce acquario e la luce acquario"))
+    assert len([1 for nome, _ in acquario["chiamate"] if nome == "control_device"]) == 1
+
+
+async def test_un_nome_con_una_e_dentro_resta_un_solo_dispositivo(casa):
+    depositi.alias.sostituisci_tutto(
+        [
+            {"id": "a0", "alias": "aeratore cucina", "entity_id": "switch.aer_cucina", "room": "Cucina"},
+            {"id": "a1", "alias": "luce e aeratore", "entity_id": "switch.coppia", "room": "Salotto"},
+        ]
+    )
+    await instrada(_richiesta("spegni la luce e aeratore"))
+    assert [a["entity_id"] for nome, a in casa["chiamate"] if nome == "control_device"] == ["switch.coppia"]
+
+
+async def test_un_dispositivo_solo_si_comporta_come_prima(acquario):
+    risposta = await instrada(_richiesta("accendi la luce cucina"))
+    assert "Luce cucina acceso" in risposta.testo or "Luce cucina accesa" in risposta.testo
+    assert len([1 for nome, _ in acquario["chiamate"] if nome == "control_device"]) == 1
