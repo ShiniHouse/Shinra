@@ -24,6 +24,8 @@ async function chiedi(page, ricordi) {
         }),
     );
     await page.goto('/index.html');
+    // I moduli della pagina devono aver collegato il modulo di invio: scrivere prima fa partire l'invio nativo del form.
+    await page.waitForLoadState('networkidle');
     await page.locator('#user-input').fill('dov e la caldaia');
     await page.locator('#send-btn').click();
 }

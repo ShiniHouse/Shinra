@@ -215,6 +215,23 @@ def zona_di_home_assistant(nome_luogo: str, principale: bool) -> bool:
     return False
 
 
+def luogo_del_discorso(testo: str, profilo: Any = None) -> Optional[dict[str, Any]]:
+    """Il luogo di cui si sta parlando: quello nominato nella frase, poi dove si trova chi parla, poi la casa principale.
+
+    Serve a scegliere quali ricordi mettere nel prompt (#345). Le coordinate restano qui dentro: chi chiama usa il nome o
+    l'identificativo.
+    """
+    nominato = luoghi.nominato_nella_frase(testo)
+    if nominato is not None:
+        return nominato
+    entita = getattr(profilo, "entita_posizione", "") or ""
+    if entita:
+        attuale = luogo_attuale(entita, getattr(profilo, "id", "") or "")
+        if attuale is not None:
+            return attuale
+    return luoghi.principale()
+
+
 PREFISSI_AMMESSI = ("person.", "device_tracker.")
 
 

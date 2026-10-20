@@ -15,6 +15,7 @@ import logging
 from typing import Any, Mapping, Optional
 
 from shinra.domain import luoghi as dominio
+from shinra.infra.db import depositi
 from shinra.infra.db.luoghi import luoghi as deposito
 from shinra.services import registro
 
@@ -140,7 +141,16 @@ def cancella(identificativo: str) -> bool:
     """Cancella un luogo, e con lui le sue coordinate."""
     fatto = deposito.cancella_e_riassegna(identificativo)
     if fatto:
-        registro.registra("luogo.cancellato", dettagli={"id": identificativo})
+        # I ricordi legati a questo luogo non diventano ricordi «di ovunque» (finirebbero nel prompt di tutti): si archiviano.
+        # Non si cancellano, e si riattivano dalla scheda dei ricordi.
+        archiviati = 0
+        for r in depositi.fatti.elenco():
+            if str(r.get("luogo_id") or "") == identificativo and r.get("stato", "attivo") != "archiviato":
+                depositi.fatti.aggiorna(str(r["id"]), {"stato": "archiviato", "luogo_id": ""})
+                archiviati += 1
+        registro.registra(
+            "luogo.cancellato", dettagli={"id": identificativo, "ricordi_archiviati": archiviati}
+        )
     return fatto
 
 

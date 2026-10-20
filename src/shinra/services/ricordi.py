@@ -18,13 +18,14 @@ from shinra.domain.recupero import IMPORTANZA_FISSATA
 from shinra.infra.data_store import data_store
 from shinra.infra.db import depositi
 from shinra.infra.db.proposte import proposte
+from shinra.services import luoghi as luoghi_registrati
 from shinra.services import permessi, registro
 
 TESTO_MASSIMO = 500
 CATEGORIA_MASSIMA = 64
 STATI = (regole.STATO_ATTIVO, regole.STATO_PROPOSTO, regole.STATO_ARCHIVIATO)
 AMBITI = ("tutti", "casa", "mio")
-CAMPI_MODIFICABILI = ("text", "category", "importanza", "stato", "enabled")
+CAMPI_MODIFICABILI = ("text", "category", "importanza", "stato", "enabled", "luogo_id")
 
 
 class RicordoNonTrovato(LookupError):
@@ -43,6 +44,22 @@ def _id(profilo: Any) -> str:
     return str(getattr(profilo, "id", "") or "")
 
 
+def _nome_del_luogo(luogo_id: str) -> str:
+    """Il nome di un luogo (mai le coordinate), o vuoto se il ricordo non ne ha o il luogo non c'e' piu'."""
+    if not luogo_id:
+        return ""
+    trovato = next((x for x in luoghi_registrati.elenco() if x["id"] == luogo_id), None)
+    return str(trovato["nome"]) if trovato else ""
+
+
+def _luogo_valido(luogo_id: Any) -> str:
+    """Vuoto (ovunque) oppure l'identificativo di un luogo registrato: un luogo inventato e' un errore, non un orfano."""
+    valore = str(luogo_id or "").strip()
+    if valore and not _nome_del_luogo(valore):
+        raise DatoNonValido("luogo: non e' fra i luoghi registrati")
+    return valore
+
+
 def come_si_mostra(ricordo: Mapping[str, Any]) -> dict[str, Any]:
     """Un ricordo per l'interfaccia, con l'ambito detto a parole."""
     importanza = int(ricordo.get("importanza") or 3)
@@ -58,6 +75,8 @@ def come_si_mostra(ricordo: Mapping[str, Any]) -> dict[str, Any]:
         "ultimo_uso": ricordo.get("ultimo_uso"),
         "stato": ricordo.get("stato", regole.STATO_ATTIVO),
         "attivo": bool(ricordo.get("enabled", True)),
+        "luogo_id": str(ricordo.get("luogo_id") or ""),
+        "luogo": _nome_del_luogo(str(ricordo.get("luogo_id") or "")),
     }
 
 
@@ -121,11 +140,18 @@ def _pulisci(campi: Mapping[str, Any]) -> dict[str, Any]:
         pulito["stato"] = campi["stato"]
     if "enabled" in campi:
         pulito["enabled"] = bool(campi["enabled"])
+    if "luogo_id" in campi:
+        pulito["luogo_id"] = _luogo_valido(campi["luogo_id"])
     return pulito
 
 
 def crea(
-    profilo: Any, testo: str, categoria: str = "generale", ambito: str = "mio", importanza: int = 3
+    profilo: Any,
+    testo: str,
+    categoria: str = "generale",
+    ambito: str = "mio",
+    importanza: int = 3,
+    luogo_id: str = "",
 ) -> dict[str, Any]:
     """Scrive un ricordo, della casa o proprio. Serve il permesso di scrivere la conoscenza, per l'uno e per l'altro."""
     if ambito not in ("casa", "mio"):
@@ -134,7 +160,7 @@ def crea(
         raise NonConsentito("Non hai il permesso di insegnare cose nuove all'assistente.")
     if ambito == "mio" and not _id(profilo):
         raise NonConsentito("Serve un profilo per scrivere un ricordo proprio.")
-    dati = _pulisci({"text": testo, "category": categoria, "importanza": importanza})
+    dati = _pulisci({"text": testo, "category": categoria, "importanza": importanza, "luogo_id": luogo_id})
     proprietario = regole.CASA if ambito == "casa" else _id(profilo)
     # Un doppione si cerca **fra i ricordi dello stesso ambito**: confrontarsi col privato di un altro direbbe che esiste.
     for r in depositi.fatti.elenco():
@@ -151,6 +177,7 @@ def crea(
             "origine": "manuale",
             "importanza": dati["importanza"],
             "stato": regole.STATO_ATTIVO,
+            "luogo_id": dati["luogo_id"],
         }
     )
     registro.registra("ricordo.scritto", dettagli={"id": ricordo["id"], "ambito": ambito})

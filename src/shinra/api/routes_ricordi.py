@@ -28,6 +28,7 @@ class RicordoIn(BaseModel):
     categoria: str = "generale"
     ambito: str = "mio"
     importanza: int = 3
+    luogo_id: str = ""
 
 
 class RicordoModifica(BaseModel):
@@ -36,6 +37,7 @@ class RicordoModifica(BaseModel):
     importanza: Optional[int] = None
     stato: Optional[str] = None
     enabled: Optional[bool] = None
+    luogo_id: Optional[str] = None
 
 
 class Conferma(BaseModel):
@@ -129,7 +131,12 @@ async def scrivi(corpo: RicordoIn, request: Request) -> Dict[str, Any]:
         return {
             "success": True,
             "ricordo": ricordi.crea(
-                utente_corrente(request), corpo.testo, corpo.categoria, corpo.ambito, corpo.importanza
+                utente_corrente(request),
+                corpo.testo,
+                corpo.categoria,
+                corpo.ambito,
+                corpo.importanza,
+                corpo.luogo_id,
             ),
         }
     except (ricordi.NonConsentito, ricordi.DatoNonValido) as e:
