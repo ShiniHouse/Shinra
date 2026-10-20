@@ -10,10 +10,11 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 from shinra.api.sicurezza import richiedi_autenticazione, utente_corrente
-from shinra.services import ricordi
+from shinra.services import ricordi, ricordi_file
 
 router = APIRouter(
     prefix="/api/ricordi",
@@ -41,6 +42,17 @@ class Conferma(BaseModel):
     conferma: bool = False
 
 
+class FileDiRicordi(BaseModel):
+    ambito: str = "mio"
+    contenuto: str
+
+
+class ImportaFile(FileDiRicordi):
+    conferma: bool = False
+    # Cio' che manca dal file: se vero, i ricordi mancanti vengono archiviati (mai cancellati).
+    togli: bool = False
+
+
 def _errore(e: Exception) -> HTTPException:
     if isinstance(e, ricordi.RicordoNonTrovato):
         return HTTPException(status_code=404, detail="Ricordo non trovato.")
@@ -61,6 +73,46 @@ async def elenco(
     try:
         return {"ricordi": ricordi.elenco(utente_corrente(request), ambito, origine, stato, importanza_min)}
     except ricordi.DatoNonValido as e:
+        raise _errore(e) from e
+
+
+@router.get("/esporta", response_class=PlainTextResponse)
+async def esporta(request: Request, ambito: str = "mio") -> PlainTextResponse:
+    """I ricordi di un ambito (`mio` o `casa`) come file Markdown. Contiene dati personali: va tenuto al sicuro."""
+    try:
+        testo = ricordi_file.esporta(utente_corrente(request), ambito)
+    except (ricordi.DatoNonValido, ricordi.NonConsentito) as e:
+        raise _errore(e) from e
+    return PlainTextResponse(
+        testo,
+        media_type="text/markdown; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="memorie-{ambito}.md"',
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@router.post("/importa/anteprima")
+async def anteprima_importazione(corpo: FileDiRicordi, request: Request) -> Dict[str, Any]:
+    """Cosa cambierebbe rileggendo un file di ricordi (nuovi, modificati, tolti). Non scrive niente."""
+    try:
+        return ricordi_file.anteprima(utente_corrente(request), corpo.ambito, corpo.contenuto)
+    except (ricordi.DatoNonValido, ricordi.NonConsentito) as e:
+        raise _errore(e) from e
+
+
+@router.post("/importa")
+async def importa(corpo: ImportaFile, request: Request) -> Dict[str, Any]:
+    """Applica un file di ricordi, dopo l'anteprima e solo con la conferma. Chi manca dal file si archivia solo se lo chiedi."""
+    try:
+        return {
+            "success": True,
+            **ricordi_file.applica(
+                utente_corrente(request), corpo.ambito, corpo.contenuto, corpo.conferma, corpo.togli
+            ),
+        }
+    except (ricordi.DatoNonValido, ricordi.NonConsentito) as e:
         raise _errore(e) from e
 
 

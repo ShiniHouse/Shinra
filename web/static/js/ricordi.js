@@ -139,6 +139,108 @@ function modificaRicordo(id) {
     _disegna();
 }
 
+async function esportaRicordi() {
+    const res = await fetch(`/api/ricordi/esporta?ambito=${ambitoRicordi}`, { headers: getAuthHeaders() });
+    if (!res.ok) return _messaggio(await _detail(res), true);
+    const file = new Blob([await res.text()], { type: 'text/markdown;charset=utf-8' });
+    const indirizzo = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = indirizzo;
+    a.download = `memorie-${ambitoRicordi}.md`;
+    a.click();
+    URL.revokeObjectURL(indirizzo);
+    _messaggio('Esportati. Il file contiene dati personali: tienilo al sicuro.');
+}
+
+// Il file letto resta qui finche' la persona non conferma o annulla: l'anteprima non scrive niente.
+let fileDaImportare = null;
+
+function _riga(testo, etichetta) {
+    return _html`<li class="break-words"><span class="text-[10px] uppercase text-slate-500">${etichetta}</span> ${testo}</li>`;
+}
+
+function _anteprima(a) {
+    const nuovi = a.nuovi.map((n) =>
+        _riga(n.sospetto ? `${n.testo} (da confermare: sembra un ordine)` : n.testo, 'nuovo'),
+    );
+    const cambiati = a.modificati.map((m) =>
+        _riga(
+            `${m.prima.testo} → ${m.dopo.testo}${m.sospetto ? ' (da confermare: sembra un ordine)' : ''}`,
+            'cambia',
+        ),
+    );
+    const tolti = a.tolti.map((t) => _riga(t.testo, 'manca'));
+    const vuota = !nuovi.length && !cambiati.length && !tolti.length;
+    return _html`
+        <p class="text-slate-200 text-sm font-semibold">Cosa cambierebbe</p>
+        ${vuota ? _html`<p class="text-xs text-slate-400">Niente: il file e' uguale ai ricordi che hai.</p>` : ''}
+        <ul class="space-y-1 text-xs text-slate-300">${nuovi}${cambiati}${tolti}</ul>
+        ${
+            tolti.length
+                ? _html`<label class="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" id="ricordi-togli"> Archivia anche quelli che non sono nel file (non li cancello: li riattivi dopo)</label>`
+                : ''
+        }
+        <div class="flex gap-2">
+            ${vuota ? '' : _html`<button type="button" data-gesto="applicaImportazioneRicordi" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Applica</button>`}
+            <button type="button" data-gesto="annullaImportazioneRicordi" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold">Annulla</button>
+        </div>`;
+}
+
+function _chiudiAnteprima() {
+    fileDaImportare = null;
+    const riquadro = document.getElementById('ricordi-anteprima');
+    if (riquadro) {
+        riquadro.classList.add('hidden');
+        riquadro.innerHTML = '';
+    }
+    const campo = document.getElementById('ricordi-file');
+    if (campo) campo.value = '';
+}
+
+async function leggiFileRicordi(evento) {
+    const file = evento.target.files?.[0];
+    if (!file) return;
+    fileDaImportare = await file.text();
+    const res = await fetch('/api/ricordi/importa/anteprima', {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ ambito: ambitoRicordi, contenuto: fileDaImportare }),
+    });
+    if (!res.ok) {
+        _chiudiAnteprima();
+        return _messaggio(await _detail(res), true);
+    }
+    const riquadro = document.getElementById('ricordi-anteprima');
+    riquadro.innerHTML = _anteprima(await res.json());
+    riquadro.classList.remove('hidden');
+    _messaggio('');
+}
+
+async function applicaImportazioneRicordi() {
+    if (fileDaImportare === null) return;
+    const res = await fetch('/api/ricordi/importa', {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+            ambito: ambitoRicordi,
+            contenuto: fileDaImportare,
+            conferma: true,
+            togli: Boolean(document.getElementById('ricordi-togli')?.checked),
+        }),
+    });
+    if (!res.ok) return _messaggio(await _detail(res), true);
+    const f = await res.json();
+    _chiudiAnteprima();
+    const attesa = f.da_confermare ? ` ${f.da_confermare} aspettano la tua conferma (sembrano ordini).` : '';
+    _messaggio(`Fatto: ${f.nuovi} nuovi, ${f.modificati} corretti, ${f.archiviati} archiviati.${attesa}`);
+    await caricaRicordi();
+}
+
+function annullaImportazioneRicordi() {
+    _chiudiAnteprima();
+    _messaggio('Annullato: non ho scritto niente.');
+}
+
 function annullaModificaRicordo() {
     inModifica = null;
     _disegna();
@@ -239,4 +341,8 @@ Gesti.registra({
     eliminaRicordo,
     aggiungiRicordo,
     dimenticaTuttoDiMe,
+    esportaRicordi,
+    leggiFileRicordi,
+    applicaImportazioneRicordi,
+    annullaImportazioneRicordi,
 });
