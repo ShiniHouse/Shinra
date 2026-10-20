@@ -85,10 +85,37 @@ class ControlloDispositivo(Intento):
         accende = verbo in lingua.verbi_che_accendono
         azione = "turn_on" if accende else "turn_off"
 
-        entita, nome = self._risolvi(cercato)
-        if not entita:
-            return None  # non e' un dispositivo noto: ci pensi il modello
+        # «Spegni la luce acquario e l'areatore»: due dispositivi, due comandi. Prima si risolveva la frase intera sul primo
+        # alias che ci stava dentro, si spegneva quello solo e si rispondeva «spenta» come se fosse tutto: l'altro restava acceso.
+        # Se anche una sola parte non e' un dispositivo noto non si fa niente a meta': ci pensi il modello.
+        risolti = [self._risolvi(parte) for parte in self._parti(cercato, lingua)]
+        if any(entita is None for entita, _ in risolti):
+            return None
 
+        testi = []
+        visti: set[str] = set()
+        for entita, nome in risolti:
+            if entita in visti:
+                continue
+            visti.add(str(entita))
+            testi.append(await self._comanda(richiesta, str(entita), nome, azione, accende))
+        return Risposta(" ".join(testi))
+
+    @staticmethod
+    def _parti(cercato: str, lingua) -> list[str]:
+        """Le cose nominate: una sola se la frase intera e' il nome esatto di un dispositivo, altrimenti quelle separate da «e»."""
+        import re
+
+        for alias in data_store.get_aliases():
+            if (alias.get("alias") or "").lower() == cercato:
+                return [cercato]
+        parti = [
+            p.strip() for p in re.split(lingua.intervista["abitudine"]["separatori"], cercato) if p.strip()
+        ]
+        return parti or [cercato]
+
+    async def _comanda(self, richiesta: Richiesta, entita: str, nome: str, azione: str, accende: bool) -> str:
+        lingua = richiesta.schemi
         argomenti = {"entity_id": entita, "action": azione}
         esito = await execute_tool("control_device", argomenti)
         richiesta.annota("control_device", argomenti, esito)
@@ -99,18 +126,16 @@ class ControlloDispositivo(Intento):
 
         if esito.get("conferma_richiesta") or esito.get("rifiutata"):
             # Una serratura, l'allarme: prima serve il si' di chi ha chiesto (#192).
-            return Risposta(esito["message"])
+            return str(esito["message"])
         if esito.get("permesso_negato"):
-            return Risposta(esito.get("spiegazione", lingua.dice("dispositivo_negato")))
+            return str(esito.get("spiegazione", lingua.dice("dispositivo_negato")))
         if esito.get("error") or esito.get("success") is False:
             # Prima si rispondeva «acceso» comunque, anche quando il comando
             # non era arrivato: peggio che tacere, perche' chi ascolta se ne
             # va convinto che la luce sia accesa.
-            return Risposta(lingua.dice("dispositivo_non_comandato", nome=nome))
+            return lingua.dice("dispositivo_non_comandato", nome=nome)
 
-        return Risposta(
-            lingua.dice("dispositivo_acceso" if accende else "dispositivo_spento", nome=nome.capitalize())
-        )
+        return lingua.dice("dispositivo_acceso" if accende else "dispositivo_spento", nome=nome.capitalize())
 
     @staticmethod
     def _risolvi(cercato: str) -> tuple[Optional[str], str]:
