@@ -75,6 +75,10 @@ meteo:
     - quando sorge
     - a che ora tramonta
     - quando tramonta
+    - a che ore tramonta
+    - a che ore sorge
+    - tramonta il sole
+    - sorge il sole
     - a che ora e' l'alba
     - a che ora è l'alba
     - ora dell'alba
@@ -508,7 +512,7 @@ intervista:
 # «Dove sono?» e solo quella: la frase intera, perche' «dove sono le chiavi?» non e' una domanda sulla posizione (#343).
 posizione:
   inneschi:
-    - '^\s*(ma\s+|senti\s+|dimmi\s+)?(dove\s+(sono|mi\s+trovo)|in\s+che\s+luogo\s+(sono|mi\s+trovo))(\s+adesso|\s+ora)?\s*[?!.]*\s*$'
+    - '^\s*(ma\s+|senti\s+|dimmi\s+|(non\s+)?sai\s+)?(dove\s+(sono|mi\s+trovo)|in\s+che\s+luogo\s+(sono|mi\s+trovo))(\s+adesso|\s+ora)?\s*[?!.]*\s*$'
 
 sospetto:
   - '\b(ignora|dimentica|scorda|annulla)\b.{0,40}\b(istruzion|regol|precedent|limit|restrizion)'

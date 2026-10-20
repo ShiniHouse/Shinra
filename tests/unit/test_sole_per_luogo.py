@@ -113,6 +113,20 @@ async def test_non_ruba_le_frasi_che_non_sono_sue(sole, frase):
     assert not modulo.Sole().applicabile(richiesta)
 
 
+@pytest.mark.parametrize(
+    "frase",
+    [
+        "a che ore tramonta il sole?",
+        "A che ore sorge il sole",
+        "tramonta il sole oggi?",
+        "a che ora tramonta",
+    ],
+)
+async def test_si_riconoscono_anche_i_modi_di_dire_che_si_sentono_davvero(sole, frase):
+    """«A che ore tramonta il sole?» (con «ore») e' la frase scritta davvero sul server il 2026-10-20, e non scattava."""
+    assert modulo.Sole().applicabile(_richiesta(frase))
+
+
 async def test_il_meteo_non_ruba_le_frasi_del_sole(sole):
     risposta = await instrada(_richiesta("a che ora tramonta oggi"))
     assert "attualmente" not in risposta.testo, "ha risposto con il meteo invece che con alba e tramonto"

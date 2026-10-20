@@ -194,3 +194,24 @@ async def test_il_numero_massimo_si_rispetta(rete, fonti_configurate):
     esito = await news_search.get_latest_news("mondo", max_items=3)
 
     assert len(esito["notizie"]) == 3
+
+
+async def test_una_fonte_che_non_risponde_non_ferma_le_altre(monkeypatch, fonti_configurate):
+    """Visto sul server (2026-10-20): `feedparser.parse` non ha un tempo massimo, e una fonte lenta tenne ferma «ultime notizie?»
+    fino all'errore 524 del proxy. Ora ogni fonte ha un tempo massimo e quelle che rispondono arrivano comunque.
+    """
+    import time
+
+    monkeypatch.setattr(news_search, "TEMPO_MASSIMO_FONTE", 0.2)
+    lente = {FONTI[0]["url"]}
+
+    def parse(indirizzo):
+        if indirizzo in lente:
+            time.sleep(1.0)
+        return FintoFeed([f"Notizia da {indirizzo}"])
+
+    monkeypatch.setattr(news_search.feedparser, "parse", parse)
+    inizio = time.monotonic()
+    esito = await news_search.get_latest_news(category="mondo")
+    assert time.monotonic() - inizio < 0.9, "ha aspettato la fonte lenta"
+    assert esito["success"] and all(FONTI[0]["url"] not in n["titolo"] for n in esito["notizie"])

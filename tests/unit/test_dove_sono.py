@@ -63,6 +63,8 @@ def chiedi(testo: str, collegata: bool = True, lingua: str = ""):
         "dimmi dove sono",
         "in che luogo sono?",
         "ma dove sono ora",
+        "non sai dove mi trovo?",
+        "sai dove sono?",
     ],
 )
 async def test_le_frasi_che_chiedono_dove_si_e_scattano(frase):
@@ -73,7 +75,13 @@ async def test_le_frasi_che_chiedono_dove_si_e_scattano(frase):
 
 @pytest.mark.parametrize(
     "frase",
-    ["dove sono le chiavi?", "dove sono i bambini", "dove sono le mie cose", "dove sono finiti i soldi"],
+    [
+        "dove sono le chiavi?",
+        "dove sono i bambini",
+        "dove sono le mie cose",
+        "dove sono finiti i soldi",
+        "non sai dove sono le chiavi?",
+    ],
 )
 async def test_un_altra_domanda_con_le_stesse_parole_non_scatta(frase):
     persona(*UFFICIO)
