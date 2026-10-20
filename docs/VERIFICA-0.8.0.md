@@ -7,6 +7,27 @@ il modello vero, Home Assistant vero, un iPhone vero.
 **Regola della lista (la stessa di [VERIFICA-IN-CASA](VERIFICA-IN-CASA.md)):** una voce è «verificata» solo se esiste una
 riga di registro, un numero o un log che la prova. Se «sembra» a posto ma non c'è la prova, la voce è **da capire**.
 
+**Se sul server manca `sqlite3`** (`comando non trovato`, è successo il 2026-10-20): o lo installi (`sudo apt install sqlite3`) oppure
+usi lo stesso con Python, che c'è già. Per una domanda al database:
+
+```bash
+sudo /opt/Shinra/.venv/bin/python -c "
+import sqlite3, sys
+c = sqlite3.connect('file:/opt/Shinra/data/shinra.db?mode=ro', uri=True)
+for riga in c.execute(sys.argv[1]): print(riga)
+" "select version_num from alembic_version"
+```
+
+(cambia solo la frase tra virgolette in fondo). Per la copia coerente dell'A1, al posto di `sqlite3 … .backup`:
+
+```bash
+sudo /opt/Shinra/.venv/bin/python -c "
+import sqlite3
+o = sqlite3.connect('/opt/Shinra/data/shinra.db'); d = sqlite3.connect('/tmp/prova-migrazione.db')
+o.backup(d); d.close(); o.close(); print('copia fatta')
+"
+```
+
 **Come si compila.** Per ogni voce: **Esito** (✅ verificata, ⚠️ in parte, ❌ non funziona, ➖ non applicabile), **Cosa ho visto**,
 **Prova** (la riga di registro, il numero o il log, incollati). Ogni difetto diventa una issue.
 
