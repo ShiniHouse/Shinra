@@ -77,8 +77,10 @@ async def test_la_rotta_scrive_nel_registro_che_e_avvenuto_non_cosa(monkeypatch)
     assert len(sue) == 1 and sue[0]["dettagli"] == {
         "id": identificativo
     }, "la voce di questo ricordo manca o ha altro dentro"
+    # Si guardano i dettagli, non l'intera riga: l'identificativo di correlazione e' esadecimale casuale e puo' contenere «7391»
+    # per caso (e' successo in CI, una volta).
     assert "7391" not in json.dumps(
-        voci, default=str
+        [v["dettagli"] for v in voci], default=str
     ), "il registro riporta il contenuto del ricordo cancellato"
     assert _in_tutto_il_database("7391-ZEBRA") == [], "il registro ha riportato il testo nel database"
 
