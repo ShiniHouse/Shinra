@@ -284,7 +284,7 @@ function esigi(condizione, messaggio) {
 // A tutte le ore, in modalita' automatica, le due regole devono dire lo stesso.
 for (let ora = 0; ora < 24; ora++) {
     for (const minuti of [0, 29, 30, 31, 59]) {
-        memoria = { shinra_palette: 'aurora' };
+        memoria = { shinra_palette: 'aurora', shinra_palette_scelta: '1' };
         fingiOra(ora, minuti);
         document.documentElement.classi = new Set(['dark']);
         inLinea();
@@ -297,7 +297,7 @@ for (let ora = 0; ora < 24; ora++) {
 
 // E una scelta esplicita vince sull'orologio, in tutte e due i sensi.
 for (const scelta of ['light', 'dark']) {
-    memoria = { shinra_theme_mode: scelta, shinra_palette: 'aurora' };
+    memoria = { shinra_theme_mode: scelta, shinra_palette: 'aurora', shinra_palette_scelta: '1' };
     fingiOra(scelta === 'light' ? 3 : 12, 0);   // l'ora dice il contrario
     document.documentElement.classi = new Set([scelta === 'light' ? 'dark' : 'light']);
     inLinea();
@@ -318,6 +318,14 @@ for (const memoriaJarvis of [{}, { shinra_palette: 'jarvis', shinra_theme_mode: 
               `alle ${ora}:00 la tavolozza Jarvis non e' scura nel tema in linea`);
     }
 }
+
+// Un «aurora» salvato dal vecchio programma, senza il segno di una scelta, non e' una preferenza: si passa a Jarvis (sempre scura).
+memoria = { shinra_palette: 'aurora' };
+fingiOra(12, 0);
+document.documentElement.classi = new Set(['light']);
+inLinea();
+esigi(document.documentElement.classi.has('dark') && !document.documentElement.classi.has('light'),
+      'un aurora salvato senza scelta non passa alla tavolozza di serie, scura');
 
 // Senza localStorage non si esplode: resta il `dark` scritto sul tag.
 memoria = {};

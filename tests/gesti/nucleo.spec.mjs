@@ -80,7 +80,7 @@ test.describe('la tavolozza Jarvis e il nucleo', () => {
     });
 
     test("con un'altra tavolozza il nucleo non si vede e la pagina e quella di sempre", async ({ page }) => {
-        await apri(page, { shinra_palette: 'aurora' });
+        await apri(page, { shinra_palette: 'aurora', shinra_palette_scelta: '1' });
         await expect(page.locator('html')).toHaveAttribute('data-palette', 'aurora');
         await expect(page.locator('#nucleo')).toBeHidden();
     });

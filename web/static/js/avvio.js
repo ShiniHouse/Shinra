@@ -15,14 +15,30 @@ export function safeCreateIcons() {
 // Le tavolozze. «Jarvis» e' quella di serie ed e' sempre scura (vedi `css/jarvis.css`).
 const PALETTE = ['jarvis', 'aurora', 'sandstone', 'stealth'];
 const PALETTE_DI_SERIE = 'jarvis';
-let currentPalette = localStorage.getItem('shinra_palette') || PALETTE_DI_SERIE;
 
-export function initPalette() {
-    currentPalette = localStorage.getItem('shinra_palette') || PALETTE_DI_SERIE;
-    setPalette(currentPalette);
+// La tavolozza salvata, o `null` se nessuno l'ha scelta. Fino alla tavolozza «Jarvis» il programma salvava «aurora» da solo alla
+// prima apertura: un'«aurora» senza il segno di una scelta (`shinra_palette_scelta`, scritto solo dal clic su una scheda) non e'
+// una preferenza, e il browser passa alla tavolozza di serie. Chi aveva scelto davvero la sua la riscegliera' una volta sola.
+function paletteSalvata() {
+    const salvata = localStorage.getItem('shinra_palette');
+    if (salvata === 'aurora' && !localStorage.getItem('shinra_palette_scelta')) return null;
+    return salvata;
 }
 
+let currentPalette = paletteSalvata() || PALETTE_DI_SERIE;
+
+export function initPalette() {
+    currentPalette = paletteSalvata() || PALETTE_DI_SERIE;
+    applicaPalette(currentPalette);
+}
+
+// Il clic su una scheda delle tavolozze: e' una scelta, e si ricorda come tale.
 function setPalette(name) {
+    localStorage.setItem('shinra_palette_scelta', '1');
+    applicaPalette(name);
+}
+
+function applicaPalette(name) {
     if (!PALETTE.includes(name)) name = PALETTE_DI_SERIE;
     currentPalette = name;
     localStorage.setItem('shinra_palette', name);
