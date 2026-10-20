@@ -274,8 +274,30 @@ let voicePitch = parseFloat(localStorage.getItem('shinra_voice_pitch')) || 1.0;
 let selectedVoiceURI = localStorage.getItem('shinra_voice_uri') || 'auto';
 let availableVoices = [];
 
+// Le voci che il server ha davvero: oltre a quelle di rete, le locali (Piper) che qualcuno ha messo in casa.
+async function caricaVociDelServer() {
+    const select = document.getElementById('cfg-neural-voice');
+    if (!select) return;
+    try {
+        const res = await fetch('/api/tts/voices', { headers: getAuthHeaders() });
+        if (!res.ok) return;
+        for (const v of await res.json()) {
+            if (!String(v.id).startsWith('piper:') || [...select.options].some((o) => o.value === v.id))
+                continue;
+            const opt = document.createElement('option');
+            opt.value = v.id;
+            opt.textContent = v.name;
+            select.insertBefore(opt, select.querySelector('option[value="browser"]'));
+        }
+        select.value = neuralVoice;
+    } catch (e) {
+        console.warn('Elenco delle voci del server non disponibile:', e);
+    }
+}
+
 export function initVoiceEngine() {
     syncVoiceUI();
+    caricaVociDelServer();
     if ('speechSynthesis' in window) {
         function loadBrowserVoices() {
             availableVoices = window.speechSynthesis.getVoices();
@@ -389,6 +411,9 @@ export async function speakText(text) {
                 body: JSON.stringify({
                     text: clean,
                     voice: neuralVoice,
+                    // I cursori valgono anche per le voci del server (prima non ci arrivavano): 1.0 e' invariato.
+                    rate: `${voiceRate >= 1 ? '+' : ''}${Math.round((voiceRate - 1) * 100)}%`,
+                    pitch: `${voicePitch >= 1 ? '+' : ''}${Math.round((voicePitch - 1) * 100)}Hz`,
                 }),
             });
             if (res.ok) {

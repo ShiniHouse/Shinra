@@ -88,6 +88,8 @@ voce:
   # propri, che in una casa sono quasi tutto («accendi la luce di Sonia»).
   modello: "base"
   lingua: "it"
+  # Dove stanno le voci locali di Piper (docs/VOCE.md): una voce e' un `.onnx` col suo `.onnx.json`. Vuota, e' come non averle.
+  cartella_voci: "data/voci"
 
 security:
   # Ogni familiare ha il proprio PIN, impostato dal suo profilo.
