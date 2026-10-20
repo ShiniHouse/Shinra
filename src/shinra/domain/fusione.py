@@ -71,13 +71,13 @@ def somiglianza(a: str, b: str) -> float:
 def trova_coppie(ricordi: Iterable[Mapping[str, Any]]) -> list[Coppia]:
     """Le coppie di ricordi privati attivi che sembrano doppie o in contraddizione, per proprietario, le piu' evidenti prime.
 
-    Solo i ricordi **privati** (`proprietario` non vuoto): quelli della casa li vede chi la amministra, e non c'e' una persona
-    a cui proporre. Ogni proprietario ha al massimo `COPPIE_MASSIME` proposte per notte.
+    Anche i ricordi **della casa** (`proprietario` vuoto) si confrontano fra loro, mai con i privati di qualcuno: la proposta
+    e' della casa e la vede chi puo' scriverla. Ogni proprietario ha al massimo `COPPIE_MASSIME` proposte per notte.
     """
     per_proprietario: dict[str, list[Mapping[str, Any]]] = {}
     for r in ricordi:
-        chi = str(r.get("proprietario") or "")
-        if not chi or str(r.get("stato") or "attivo") != "attivo" or r.get("enabled") is False:
+        chi = str(r.get("proprietario") or "")  # vuoto: della casa
+        if str(r.get("stato") or "attivo") != "attivo" or r.get("enabled") is False:
             continue
         per_proprietario.setdefault(chi, []).append(r)
 

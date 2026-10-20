@@ -16,6 +16,8 @@ from shinra.services.user_manager import UserProfile
 
 ADMIN = UserProfile(id="alessio", name="Alessio", role="admin")
 ADULTA = UserProfile(id="sonia", name="Sonia", role="adult")
+BAMBINO = UserProfile(id="marco", name="Marco", role="child", age_group="child")
+OSPITE = UserProfile(id="guest", name="Ospite", role="guest")
 ADESSO = datetime(2026, 10, 20, 3, 0, tzinfo=timezone.utc)
 
 UNO = "La sveglia di Alessio suona alle 7 nei giorni feriali"
@@ -27,11 +29,11 @@ def pulito():
     for ruolo in permessi.RUOLI_PREDEFINITI:
         depositi.ruoli.salva(dict(ruolo))
     depositi.fatti.sostituisci_tutto([])
-    for chi in ("alessio", "sonia"):
+    for chi in ("alessio", "sonia", ""):
         proposte.dimentica_profilo(chi)
     yield
     depositi.fatti.sostituisci_tutto([])
-    for chi in ("alessio", "sonia"):
+    for chi in ("alessio", "sonia", ""):
         proposte.dimentica_profilo(chi)
 
 
@@ -72,10 +74,50 @@ async def test_la_stessa_coppia_non_si_riproporne_la_notte_dopo(come):
     assert sogno.proponi_ricordi(ADESSO)["scritte"] == 0
 
 
-async def test_i_ricordi_della_casa_non_producono_proposte(come):
+async def test_i_ricordi_doppi_della_casa_diventano_una_proposta_della_casa(come):
     ricordo("c1", UNO, chi="")
     ricordo("c2", DUE, chi="")
-    assert sogno.proponi_ricordi(ADESSO)["viste"] == 0
+    assert sogno.proponi_ricordi(ADESSO) == {"viste": 1, "scritte": 1}
+    assert proposte.del_profilo("") and proposte.del_profilo("alessio") == []
+
+
+async def test_la_proposta_della_casa_la_vede_solo_chi_puo_scrivere_la_casa(come):
+    ricordo("c1", UNO, chi="")
+    ricordo("c2", DUE, chi="")
+    sogno.proponi_ricordi(ADESSO)
+    visto = await routes_sogno.proposte_in_attesa(None)
+    assert len(visto["proposte"]) == 1 and visto["proposte"][0]["dati"]["ricordi"]
+    come["u"] = BAMBINO
+    assert (await routes_sogno.proposte_in_attesa(None))["proposte"] == [], "un bambino non scrive la casa"
+    come["u"] = OSPITE
+    assert (await routes_sogno.proposte_in_attesa(None))["proposte"] == []
+
+
+async def test_chi_non_puo_scrivere_la_casa_non_puo_decidere_la_proposta_della_casa(come):
+    ricordo("c1", UNO, chi="")
+    ricordo("c2", DUE, chi="")
+    sogno.proponi_ricordi(ADESSO)
+    (p,) = proposte.del_profilo("")
+    come["u"] = BAMBINO
+    for rotta in ("scarta", "accetta"):
+        with pytest.raises(HTTPException) as e:
+            await getattr(routes_sogno, rotta)(p["id"], None)
+        assert e.value.status_code == 404
+    assert {r["stato"] for r in depositi.fatti.elenco()} == {"attivo"}
+
+
+async def test_un_adulto_tiene_un_ricordo_della_casa_e_l_altro_si_archivia(come):
+    ricordo("c1", UNO, chi="")
+    ricordo("c2", DUE, chi="")
+    sogno.proponi_ricordi(ADESSO)
+    (p,) = proposte.del_profilo("")
+    come["u"] = ADULTA
+    esito = await routes_sogno.accetta(p["id"], None, routes_sogno.Accettazione(tieni="c1"))
+    assert esito["archiviato"] == "c2"
+    assert (
+        depositi.fatti.per_id("c1")["stato"] == "attivo"
+        and depositi.fatti.per_id("c2")["stato"] == "archiviato"
+    )
 
 
 async def test_la_proposta_mostra_i_due_testi_solo_a_chi_li_possiede(come):

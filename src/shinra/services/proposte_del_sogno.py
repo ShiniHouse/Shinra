@@ -124,15 +124,23 @@ def _id_profilo(profilo: Any) -> str:
     return str(getattr(profilo, "id", "") or "")
 
 
+def _puo_vedere_la_casa(profilo: Any) -> bool:
+    """Le proposte sui ricordi della casa le vede chi puo' scrivere la conoscenza della casa, nessun altro."""
+    from shinra.services import permessi
+
+    return bool(_id_profilo(profilo)) and permessi.ha_permesso(profilo, permessi.SCRIVI_CONOSCENZA)
+
+
 def elenco(profilo: Any) -> list[dict[str, Any]]:
-    """Le proposte in attesa di chi chiede. Mai quelle di un altro; senza un profilo, nessuna."""
+    """Le proposte in attesa di chi chiede, piu' quelle della casa se puo' scriverla. Mai quelle di un altro."""
     chi = _id_profilo(profilo)
     if not chi:
         return []
     viste = []
-    for p in proposte.del_profilo(chi):
+    candidate = proposte.del_profilo(chi) + (proposte.del_profilo("") if _puo_vedere_la_casa(profilo) else [])
+    for p in candidate:
         if p["tipo"] in (fusione.DOPPIO, fusione.CONTRADDITTORIO):
-            ricordi = _ricordi_della_coppia(chi, p)
+            ricordi = _ricordi_della_coppia(p["profilo"], p)
             if ricordi is None:
                 continue  # uno dei due non c'e' piu' (o non e' piu' suo): la proposta non ha piu' senso
             p = {**p, "dati": {**(p["dati"] or {}), "ricordi": ricordi}}
@@ -154,7 +162,10 @@ def _ricordi_della_coppia(chi: str, proposta: dict[str, Any]) -> Optional[list[d
 def _sua(profilo: Any, identificativo: str) -> dict[str, Any]:
     chi = _id_profilo(profilo)
     trovata = proposte.trova(identificativo) if chi else None
-    if trovata is None or trovata["profilo"] != chi:
+    if trovata is None:
+        raise PropostaNonTrovata(identificativo)
+    suo = trovata["profilo"] == chi or (trovata["profilo"] == "" and _puo_vedere_la_casa(profilo))
+    if not suo:
         raise PropostaNonTrovata(identificativo)
     return trovata
 

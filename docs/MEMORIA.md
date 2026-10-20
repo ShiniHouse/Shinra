@@ -25,7 +25,8 @@ aver inventato. Per un minore si tiene solo l'argomento (le azioni), non cosa ha
 - I ricordi **della casa** li vede chi abita qui.
 - I ricordi **tuoi** li vedi **solo tu**. Nemmeno chi amministra la casa può leggere i ricordi privati di un altro, e un adulto non
   vede quelli di un minore. Se provi a raggiungere un ricordo altrui per identificativo, il server risponde «non trovato».
-- Le cose notate di notte (abitudini, ricordi simili) sono tue e le vedi solo tu.
+- Le cose notate di notte (abitudini, ricordi simili) sono tue e le vedi solo tu. Fanno eccezione i **ricordi simili della casa**:
+  la proposta è della casa e la vede chi può scrivere la conoscenza della casa (non un bambino, non un ospite).
 - Il registro delle azioni dice **che** è successo qualcosa («ricordo cancellato», «proposta accettata»), mai **cosa**.
 
 ## Cosa fa Shinra di notte
