@@ -12,7 +12,9 @@ from dataclasses import dataclass
 from typing import Any, Mapping, Optional, Sequence
 
 TIPI = ("abitazione", "lavoro", "altro")
-ORIGINI = ("telefono", "browser")
+# «intervista»: il centro della citta' che una persona ha detto rispondendo a una domanda, non la sua casa. Ha una precisione
+# dichiarata di 5 km e va rifatto dal telefono quando si e' in casa.
+ORIGINI = ("telefono", "browser", "intervista")
 
 RAGGIO_PREDEFINITO_M = 150
 RAGGIO_MINIMO_M = 25

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import httpx
 
@@ -111,6 +111,31 @@ async def _meteo(
             "vento": f"{current_wind} km/h",
         },
         "previsioni": forecast_days,
+    }
+
+
+async def cerca_citta(nome: str) -> Optional[Dict[str, Any]]:
+    """Il centro di una citta' dal suo nome (geocodifica di Open-Meteo), o `None` se non la conosce o il servizio non risponde.
+
+    Al servizio esterno va solo il nome della citta', non coordinate: e' lo stesso che succede chiedendo il meteo di una citta'.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            risposta = await client.get(
+                "https://geocoding-api.open-meteo.com/v1/search",
+                params={"name": nome, "count": 1, "language": "it", "format": "json"},
+            )
+        trovati = risposta.json().get("results") or []
+    except Exception as e:
+        logger.warning("Geocodifica non riuscita: %s", type(e).__name__)
+        return None
+    if not trovati:
+        return None
+    primo = trovati[0]
+    return {
+        "nome": str(primo.get("name") or nome),
+        "latitudine": primo["latitude"],
+        "longitudine": primo["longitude"],
     }
 
 

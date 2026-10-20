@@ -165,7 +165,12 @@ async def _vuoto(prompt, system="", temperature=0.1):
 
 
 def test_i_salti_si_dicono_in_inglese(archivio, monkeypatch) -> None:
-    dati = {"profili": ["Alessio", "Sonia"], "stanze": ["kitchen", "lounge"], "fatti": []}
+    dati = {
+        "profili": ["Alessio", "Sonia"],
+        "stanze": ["kitchen", "lounge"],
+        "luoghi": ["Home", "Cottage"],
+        "fatti": [],
+    }
     monkeypatch.setattr(modulo, "data_store", archivio)
     monkeypatch.setattr(modulo, "dati_della_casa", lambda _store: dati)
     motore = LearningInterviewEngine()
@@ -178,8 +183,8 @@ def test_i_salti_si_dicono_in_inglese(archivio, monkeypatch) -> None:
     assert avvio["step"]["id"] == "casa_citta"
     # Una frase sola, con un solo «salto»: a voce l'intervista non deve sembrare un disco rotto.
     assert (
-        "I already know these rooms: kitchen and lounge. The house already has Alessio and Sonia. "
-        "I'll skip these questions." in avanti["message"]
+        "I already know these rooms: kitchen and lounge. I already know these places: Home and Cottage. "
+        "The house already has Alessio and Sonia. I'll skip these questions." in avanti["message"]
     )
     assert avanti["message"].count("skip") == 1
 

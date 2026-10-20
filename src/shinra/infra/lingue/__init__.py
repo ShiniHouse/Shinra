@@ -96,7 +96,7 @@ CHIAVI_INTERVISTA: Tuple[str, ...] = (
     "per_esempio", "non_salvo", "salvo_cosi", "routine_proposta", "routine_scartate", "routine_prova_non_fatta",
     "routine_non_supera", "alias_titolo", "alias_domanda", "alias_hint", "alias_lascio", "alias_non_capito",
     "alias_breve", "alias_gia_preso", "alias_conferma", "alias_suggerimento", "alias_fatto", "alias_rinuncia",
-    "noto_profili", "noto_stanze", "noto_fatto", "elenco_e", "r_ignoto", "r_comando", "r_delicato", "r_pausa",
+    "noto_profili", "noto_stanze", "noto_fatto", "noto_luoghi", "noto_luogo", "luogo_registrato", "elenco_e", "r_ignoto", "r_comando", "r_delicato", "r_pausa",
     "r_annuncio", "r_tipo", "r_prova_ok", "r_prova_ferma", "r_luminosita", "r_temperatura", "r_pausa_voce",
     "r_dice",
 )  # fmt: skip

@@ -387,6 +387,9 @@ intervista:
     noto_profili: "In casa ci sono gia' {nomi}"
     noto_stanze: "Conosco gia' queste stanze: {nomi}"
     noto_fatto: "Ho gia' annotato: «{fatto}»"
+    noto_luoghi: "Conosco gia' questi luoghi: {nomi}"
+    noto_luogo: "So gia' dove si trova la casa: {nome}"
+    luogo_registrato: " Ho registrato «{nome}» come luogo principale ({citta}): e' il centro della citta', non la tua casa. Quando sei a casa, rifallo dalle Impostazioni per una posizione precisa."
     elenco_e: " e "
     r_ignoto: "«{rif}»: non e' un dispositivo che conosco"
     r_comando: "«{nome}»: non so fare «{comando}»"
@@ -429,6 +432,11 @@ intervista:
       title: "Le stanze"
       question: "Quali sono le stanze principali della casa?"
       hint: "es. Salotto, cucina, due camere e studio."
+    casa_altri_luoghi:
+      title: "Altri luoghi"
+      question: "Hai altre abitazioni o luoghi che frequenti, come una casa al mare o l'ufficio?"
+      hint: "es. Una casa al mare e l'ufficio. Per registrarli con la posizione, apri Impostazioni e Luoghi quando ci sei."
+      parole: ["casa al mare", "seconda casa", "ufficio", "casa in montagna", "altra casa"]
     famiglia_chi:
       title: "Chi vive in casa"
       question: "Chi vive con te in casa?"

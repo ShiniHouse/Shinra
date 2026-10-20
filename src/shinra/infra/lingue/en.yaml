@@ -345,6 +345,9 @@ Is that right? Answer «yes» and I'll save everything, «no» to drop everythin
     noto_profili: "The house already has {nomi}"
     noto_stanze: "I already know these rooms: {nomi}"
     noto_fatto: "I've already noted: «{fatto}»"
+    noto_luoghi: "I already know these places: {nomi}"
+    noto_luogo: "I already know where the house is: {nome}"
+    luogo_registrato: " I registered \"{nome}\" as the main place ({citta}): it is the city centre, not your home. When you are at home, redo it from Settings for a precise location."
     elenco_e: " and "
     r_ignoto: "«{rif}»: not a device I know"
     r_comando: "«{nome}»: I can't do «{comando}»"
@@ -387,6 +390,11 @@ Is that right? Answer «yes» and I'll save everything, «no» to drop everythin
       title: "The rooms"
       question: "What are the main rooms of the house?"
       hint: "e.g. Living room, kitchen, two bedrooms and a study."
+    casa_altri_luoghi:
+      title: "Other places"
+      question: "Do you have other homes or places you go to, like a holiday home or the office?"
+      hint: "e.g. A holiday home and the office. To register them with their location, open Settings and Places while you are there."
+      parole: ["holiday home", "second home", "office", "cabin", "other home"]
     famiglia_chi:
       title: "Who lives here"
       question: "Who lives in the house with you?"

@@ -94,7 +94,7 @@ async def test_un_si_salva_tutto_il_gruppo_e_si_passa_al_successivo(archivio, mo
     esito = await motore.process_answer("prova", "sì")
 
     assert _voci(archivio) == ["Fatto numero 1", "Fatto numero 2", "Fatto numero 3"]
-    assert esito["step"]["id"] == "famiglia_chi"
+    assert esito["step"]["id"] == "casa_altri_luoghi"
     assert esito["fase"] == "domanda"
 
 
@@ -107,7 +107,7 @@ async def test_un_no_scarta_tutto_il_gruppo(archivio, monkeypatch) -> None:
 
     assert _voci(archivio) == []
     assert esito["message"].startswith("Va bene, non salvo niente di questa parte.")
-    assert esito["step"]["id"] == "famiglia_chi"
+    assert esito["step"]["id"] == "casa_altri_luoghi"
 
 
 @pytest.mark.asyncio
@@ -135,7 +135,7 @@ async def test_togliere_l_ultima_voce_rimasta_scarta_il_gruppo(archivio, monkeyp
     esito = await motore.process_answer("prova", "togli 1")
 
     assert _voci(archivio) == []
-    assert esito["step"]["id"] == "famiglia_chi", "e' rimasto fermo sul riepilogo vuoto"
+    assert esito["step"]["id"] == "casa_altri_luoghi", "e' rimasto fermo sul riepilogo vuoto"
 
 
 @pytest.mark.asyncio
@@ -170,7 +170,7 @@ async def test_una_sola_riscrittura_poi_si_salva_com_e(archivio, monkeypatch) ->
     esito = await motore.process_answer("prova", "Una seconda riscrittura")  # oltre il limite
 
     assert len(_voci(archivio)) == 3, "non ha salvato, e chi risponde resta fermo all'infinito"
-    assert esito["step"]["id"] == "famiglia_chi"
+    assert esito["step"]["id"] == "casa_altri_luoghi"
 
 
 # ------------------------------------------------------- l'intervista intera
@@ -190,8 +190,10 @@ async def test_l_intervista_intera_ha_una_conferma_per_gruppo_non_una_per_rispos
         turni += 1
         conferme += esito.get("fase") == "conferma"
 
-    assert conferme == 4, f"i gruppi sono quattro (casa, famiglia, abitudini, dati tecnici): {conferme}"
-    assert turni == len(INTERVIEW_STEPS) + 4, f"{turni} turni invece di {2 * len(INTERVIEW_STEPS)}"
+    assert (
+        conferme == 5
+    ), f"i gruppi sono cinque (casa, luoghi, famiglia, abitudini, dati tecnici): {conferme}"
+    assert turni == len(INTERVIEW_STEPS) + 5, f"{turni} turni invece di {2 * len(INTERVIEW_STEPS)}"
     assert len(_voci(archivio)) == len(INTERVIEW_STEPS)
 
 

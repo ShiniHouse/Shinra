@@ -22,9 +22,10 @@ from shinra.services.intervista_comune import sezione
 
 # (identificativo, categoria, fonte che il database conosce)
 STRUTTURA: Tuple[Tuple[str, str, Optional[str]], ...] = (
-    ("casa_citta", "casa", None),
+    ("casa_citta", "casa", "luogo_principale"),
     ("casa_piano", "casa", None),
     ("casa_stanze", "casa", "stanze"),
+    ("casa_altri_luoghi", "luoghi", "luoghi"),
     ("famiglia_chi", "famiglia", "profili"),
     ("famiglia_stanze", "famiglia", None),
     ("mattina_ora", "abitudini", None),
