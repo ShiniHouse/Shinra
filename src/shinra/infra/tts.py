@@ -3,6 +3,8 @@ import re
 
 import edge_tts
 
+from shinra.infra import tts_locale
+
 logger = logging.getLogger(__name__)
 
 # Voci neurali italiane ad alta fedelta
@@ -72,3 +74,26 @@ async def generate_speech_mp3(
             audio_bytes.extend(chunk["data"])
 
     return bytes(audio_bytes)
+
+
+async def generate_speech(
+    text: str, voice: str = "it-IT-DiegoNeural", rate: str = "+0%", pitch: str = "+0Hz"
+) -> tuple[bytes, str]:
+    """L'audio e il suo tipo (`audio/wav` per una voce locale, `audio/mpeg` per quelle di rete).
+
+    Una voce locale che non si puo' usare (libreria o file spariti, errore del modello) non lascia Shinra muta: si ripiega
+    su Diego e il motivo va nel log.
+    """
+    if tts_locale.e_locale(voice):
+        cleaned = clean_text_for_tts(text) or "Pronto."
+        try:
+            return await tts_locale.genera_wav(cleaned, voice, rate), "audio/wav"
+        except Exception as errore:
+            logger.warning("Voce locale %s non disponibile (%s): ripiego su Diego.", voice, errore)
+            voice = "it-IT-DiegoNeural"
+    return await generate_speech_mp3(text, voice, rate, pitch), "audio/mpeg"
+
+
+def voci_disponibili() -> list[dict]:
+    """Le voci di rete piu' quelle locali che sono davvero in casa."""
+    return [*NEURAL_VOICES, *tts_locale.voci_disponibili()]

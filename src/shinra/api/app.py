@@ -188,7 +188,7 @@ class ChatRequest(BaseModel):
 
 from fastapi.responses import Response
 
-from shinra.infra.tts import NEURAL_VOICES, generate_speech_mp3
+from shinra.infra.tts import generate_speech, voci_disponibili
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -280,13 +280,13 @@ async def tts_endpoint(payload: TTSRequest):
     if not payload.text.strip():
         raise HTTPException(status_code=400, detail="Il testo per il TTS non può essere vuoto.")
     try:
-        audio_bytes = await generate_speech_mp3(
+        audio_bytes, tipo = await generate_speech(
             text=payload.text,
             voice=payload.voice or "it-IT-DiegoNeural",
             rate=payload.rate or "+0%",
             pitch=payload.pitch or "+0Hz",
         )
-        return Response(content=audio_bytes, media_type="audio/mpeg")
+        return Response(content=audio_bytes, media_type=tipo)
     except Exception as e:
         logger.error(f"Errore generazione TTS neurale: {e}")
         raise HTTPException(status_code=500, detail=f"Errore generazione audio: {e}") from e
@@ -294,8 +294,8 @@ async def tts_endpoint(payload: TTSRequest):
 
 @app.get("/api/tts/voices", dependencies=[Depends(sicurezza.richiedi_autenticazione)])
 async def tts_voices_endpoint():
-    """Restituisce le voci neurali disponibili nel server."""
-    return NEURAL_VOICES
+    """Restituisce le voci disponibili nel server: quelle di rete e le locali che ci sono davvero."""
+    return voci_disponibili()
 
 
 @app.post("/api/alexa")

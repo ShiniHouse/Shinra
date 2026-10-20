@@ -303,7 +303,7 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 | Metodo | Percorso | Chi | Cosa fa |
 | :--- | :--- | :--- | :--- |
 | POST | `/api/tts` | sessione aperta | Genera audio vocale neurale MP3 in alta definizione. |
-| GET | `/api/tts/voices` | sessione aperta | Restituisce le voci neurali disponibili nel server. |
+| GET | `/api/tts/voices` | sessione aperta | Restituisce le voci disponibili nel server: quelle di rete e le locali che ci sono davvero. |
 
 ### `users`
 

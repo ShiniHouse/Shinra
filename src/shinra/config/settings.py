@@ -205,6 +205,9 @@ class VoceConfig(BaseModel):
     # propri, che in una casa sono quasi tutto.
     modello: str = "base"
     lingua: str = "it"
+    # Dove stanno le voci locali di Piper (`.onnx` col suo `.onnx.json`). Vuota o assente: nessuna voce locale, e resta quella di
+    # rete. Come aggiungerne una: docs/VOCE.md.
+    cartella_voci: str = "data/voci"
 
 
 class SalvataggioConfig(BaseModel):
