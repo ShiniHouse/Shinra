@@ -114,11 +114,15 @@ sqlite3 /opt/Shinra/data/shinra.db "select version_num from alembic_version"
 
 ### B2. Le attività notturne sono programmate
 
+Programmare un lavoro **non scrive niente nel log** (provato il 2026-10-20: un `grep` sul journal non trova nulla, ed è normale).
+Si guarda l'archivio dei lavori, che è persistente:
+
 ```bash
-sudo journalctl -u shinra --since "5 minutes ago" --no-pager | grep -iE "riassunti|sogno|programmat"
+sudo sqlite3 /opt/Shinra/data/scheduler.db   "select id, datetime(next_run_time,'unixepoch','localtime') from apscheduler_jobs where id like 'riassunti:%' or id like 'sogno:%'"
 ```
 
-- **Atteso:** compaiono `riassunti:purga`, `riassunti:rifinitura` (03:40) e `sogno:abitudini` (04:10).
+- **Atteso:** tre righe: `riassunti:purga` (fra 24 ore dall'avvio), `riassunti:rifinitura` (prossima 03:40) e `sogno:abitudini`
+  (prossima 04:10), con l'ora **locale** del server.
 
 **Esito / Prova:** ______
 
