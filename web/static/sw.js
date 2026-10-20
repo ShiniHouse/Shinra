@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shinra-v4';
+const CACHE_NAME = 'shinra-v5';
 const ASSETS = [
     '/',
     '/static/manifest.json',
