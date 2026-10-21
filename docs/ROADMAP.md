@@ -458,7 +458,7 @@ posizione, e la posizione resta sul server. La proposta, con le cinque fette e l
 
 ## v0.9.0 — Agenti che imparano
 
-> **Proposta, da accettare (2026-10-21).** Più agenti e più modelli lavorano dentro Shinra, imparano dalle istruzioni e si sistemano **proponendo**
+> **Accettata (2026-10-21).** Più agenti e più modelli lavorano dentro Shinra, imparano dalle istruzioni e si sistemano **proponendo**
 > (mai decidendo) per rispondere alle esigenze della famiglia; e Shinra diventa un assistente che, se serve, **si prende il tempo** per elaborare e
 > sviluppare una richiesta. La proposta completa è in [`docs/proposte/agenti-0.9.0/`](proposte/agenti-0.9.0/README.md) e le tre scelte di fondo
 > nell'[ADR 0013](adr/0013-agenti-e-modelli-che-imparano.md) (modelli per scopo con un esterno **facoltativo e spento**; propone e tu confermi; «ci penso»
@@ -468,7 +468,7 @@ posizione, e la posizione resta sul server. La proposta, con le cinque fette e l
 sceglie uno strumento, e piu' agenti non vuol dire piu' intelligenza. Poi cio' che da' valore subito (la coda dei lavori, i piani), poi i modelli esterni
 (opzionali), e solo alla fine l'imparare, che e' la parte piu' delicata su una casa vera.
 
-**Cosa assorbe.** Tre schede oggi «dopo la `1.0.0`»: `#191` (piani a piu' passaggi), `#194` (modello esterno opzionale), `#240` (Ollama su un'altra macchina).
+**Cosa assorbe.** Tre schede che erano «dopo la `1.0.0`»: `#191` (piani a piu' passaggi), `#194` (modello esterno opzionale), `#240` (Ollama su un'altra macchina). Le altre sono `#430`–`#438`.
 
 **Criteri di uscita (proposti)**
 - Il **banco dei piani** ha numeri misurati con il modello locale (e con quello esterno, se acceso): dice dove il multi-agente aiuta e dove no, e dove non aiuta non si usa.

@@ -1,10 +1,10 @@
 # Proposta — «Agenti che imparano» (v0.9.0)
 
-> **Stato: proposta, da discutere (2026-10-21).** Nasce dalla richiesta del proprietario: prima della `1.0.0` una `0.9.0` in cui
+> **Stato: accettata (2026-10-21).** E' la `0.9.0` della [ROADMAP](../../ROADMAP.md). Le schede sono le issue **#191, #194, #240 e #430–#438**, in
+> [`docs/backlog/v0.9.0/`](../../backlog/v0.9.0/). Nasce dalla richiesta del proprietario: prima della `1.0.0` una `0.9.0` in cui
 > **più agenti e più modelli lavorano dentro Shinra**, imparano dalle istruzioni e si sistemano da soli per rispondere alle esigenze
 > della famiglia, e Shinra diventa **un assistente vero**: risponde alle richieste e, se serve, **si prende il tempo** per elaborarle
 > e svilupparle. Le tre scelte di fondo le ha già fatte il proprietario (sotto), e sono fissate nell'[ADR 0013](../../adr/0013-agenti-e-modelli-che-imparano.md).
-> Le schede di lavoro non sono ancora issue: si aprono dopo l'accettazione.
 
 ## Cosa si è deciso (2026-10-21)
 
@@ -97,19 +97,19 @@ L'ordine va dal sicuro al rischioso: prima le decisioni e le misure, poi ciò ch
 
 | # | Scheda | Dipende da | Note |
 | :-- | :--- | :--- | :--- |
-| 1 | ADR 0013 accettato: modelli per scopo, cosa esce, propone-non-decide | — | decisione |
-| 2 | Banco dei piani e dei compiti lunghi: quante richieste a più passi riesce a fare il modello locale | — | **misura**: dice se il resto ha senso |
-| 3 | Modelli per scopo: configurazione, stato nel Cervello, ripiego locale (*#240*) | 1 | modelli |
-| 4 | Coda dei lavori in background e «ci penso»: stati, tetti, avanzamento, annulla, esito notificato | 1 | assistente |
-| 5 | Piani a più passaggi, validati e verificati, con tetto (*#191*) | 2, 4 | agenti |
-| 6 | Il client esterno facoltativo, con il consenso per scopo e i test che provano cosa non esce (*#194*) | 3 | modelli |
-| 7 | Orchestratore e agente revisore, con i messaggi fra agenti tracciati nel Cervello | 5 | agenti |
-| 8 | Il registro dell'imparare e il ciclo osserva→proponi (lo stesso del sogno, esteso) | 1 | imparare |
-| 9 | Le fonti: frasi corrette dall'utente, routine fallite, dispositivi che non rispondono | 8 | imparare |
-| 10 | «Cosa ho imparato»: la scheda, l'annulla e la prova sul banco prima di proporre | 8 | imparare |
-| 11 | Guardie: contenuti esterni come dati, tetti, interruttore generale, concorrenza uno | 4, 7 | sicurezza |
-| 12 | Domande di chiarimento e riprendere un lavoro: l'assistente | 4, 5 | assistente |
-| 13 | Guida d'uso e `SECURITY.md` aggiornato (cosa esce, cosa può cambiare da sola: niente) | tutte | documentazione |
+| 1 | ADR 0013 accettato: modelli per scopo, cosa esce, propone-non-decide | — | **fatto** (2026-10-21) |
+| 2 | **#430** Banco dei piani e dei compiti lunghi: quante richieste a più passi riesce a fare il modello locale | — | **misura**: dice se il resto ha senso |
+| 3 | **#240** Modelli per scopo: configurazione, stato nel Cervello, ripiego locale | 1 | modelli |
+| 4 | **#431** Coda dei lavori in background e «ci penso»: stati, tetti, avanzamento, annulla, esito notificato | 1 | assistente |
+| 5 | **#191** Piani a più passaggi, validati e verificati, con tetto | 2, 4 | agenti |
+| 6 | **#194** Il client esterno facoltativo, con il consenso per scopo e i test che provano cosa non esce | 3 | modelli |
+| 7 | **#432** Orchestratore e agente revisore, con i messaggi fra agenti tracciati nel Cervello | 5 | agenti |
+| 8 | **#433** Il registro dell'imparare e il ciclo osserva→proponi (lo stesso del sogno, esteso) | 1 | imparare |
+| 9 | **#434** Le fonti: frasi corrette dall'utente, routine fallite, dispositivi che non rispondono | 8 | imparare |
+| 10 | **#435** «Cosa ho imparato»: la scheda e l'annulla a un clic | 8 | imparare |
+| 11 | **#436** Guardie: contenuti esterni come dati, tetti, interruttore generale, concorrenza uno | 4, 7 | sicurezza |
+| 12 | **#437** Domande di chiarimento e riprendere un lavoro: l'assistente | 4, 5 | assistente |
+| 13 | **#438** Guida d'uso e `SECURITY.md` aggiornato (cosa esce, cosa può cambiare da sola: niente) | tutte | documentazione |
 
 ## Criteri di uscita (proposti)
 

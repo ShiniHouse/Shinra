@@ -1,8 +1,8 @@
 # 0013 — Agenti e modelli che imparano: propongono, non decidono
 
-- **Stato:** Proposto
-- **Data:** 2026-10-21
-- **Attuazione:** milestone `v0.9.0` (proposta in [`docs/proposte/agenti-0.9.0/`](../proposte/agenti-0.9.0/README.md))
+- **Stato:** Accettato
+- **Data:** 2026-10-21 (accettato dal proprietario lo stesso giorno)
+- **Attuazione:** milestone `v0.9.0`, issue #191, #194, #240 e #430–#438 (proposta in [`docs/proposte/agenti-0.9.0/`](../proposte/agenti-0.9.0/README.md))
 
 ## Contesto
 

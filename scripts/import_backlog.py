@@ -39,6 +39,7 @@ MILESTONE = {
     "v0.6.0": "Il Cervello — il grafo vivo della casa, agenti per dominio, piani a piu' passaggi con conferma",
     "v0.7.0": "Rifinitura — lingue, intervista, voce, plugin; il modello su una macchina dedicata; aiutanti locali",
     "v0.8.0": "Memoria viva — ricordi visibili e correggibili, storia compressa, il sogno notturno, canali esterni opzionali",
+    "v0.9.0": "Agenti che imparano — piu' agenti e modelli per scopo, lavori che prendono tempo, imparare proponendo (ADR 0013)",
 }
 
 LABEL = {
