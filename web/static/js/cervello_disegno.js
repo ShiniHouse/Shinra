@@ -21,6 +21,7 @@ import { FORZE_PREDEFINITE, centroDi, disponi, passo, quieta, riscalda } from '.
 import { COLORI, PREDEFINITO, RAGGI, STATO, ZOOM_MAX, ZOOM_MIN, movimentoRidotto } from './cervello_stile.js';
 import { disegnaAttivita } from './cervello_attivita.js';
 import { collega } from './cervello_interazione.js';
+import { disegnaCielo, disegnaFili, disegnaImpulsi, disegnaStelle, eStellare } from './cervello_stelle.js';
 
 export class Lavagna {
     constructor(canvas, eventi = {}) {
@@ -277,6 +278,10 @@ export class Lavagna {
         this.canvas.dataset.nodiVisibili = String(sim.punti.filter((p) => this.visibile(p)).length);
 
         const scuro = this._scuro();
+        // Con la tavolozza Jarvis il grafo e' una galassia (cervello_stelle.js): stesso grafo, un altro disegno.
+        const stellare = eStellare();
+        this.canvas.dataset.stile = stellare ? 'stelle' : 'piano';
+        if (stellare) disegnaCielo(ctx, w, h);
         ctx.setTransform(
             dpr * this.vista.k,
             0,
@@ -318,7 +323,9 @@ export class Lavagna {
         ctx.globalAlpha = 1;
 
         // I collegamenti: sottili, e piu' marcati quelli del nodo in primo piano.
-        for (const m of sim.molle) {
+        if (stellare)
+            disegnaFili(ctx, { sim, attivo, cerca: this.cerca, k, visibile: (p) => this.visibile(p) });
+        for (const m of stellare ? [] : sim.molle) {
             if (!this.visibile(m.a) || !this.visibile(m.b)) continue;
             const evidenziato = attivo && (m.a.id === attivo || m.b.id === attivo);
             ctx.strokeStyle = scuro ? '#94a3b8' : '#475569';
@@ -332,7 +339,17 @@ export class Lavagna {
         ctx.globalAlpha = 1;
 
         // I nodi.
-        for (const p of sim.punti) {
+        if (stellare) {
+            disegnaStelle(ctx, {
+                sim,
+                k,
+                visibile: (p) => this.visibile(p),
+                corrisponde: (p) => this.corrisponde(p),
+                colore: (cluster) => this._colore(cluster),
+                selezionata: (p) => p.id === this.selezionato || p.id === this.sopra,
+            });
+        }
+        for (const p of stellare ? [] : sim.punti) {
             if (!this.visibile(p)) continue;
             const r = RAGGI[p.nodo.tipo] || 5;
             const corrisponde = this.corrisponde(p);
@@ -358,6 +375,16 @@ export class Lavagna {
         ctx.globalAlpha = 1;
         if (this.attivita) {
             disegnaAttivita(ctx, sim, this.attivita, { k, scuro, visibile: (p) => this.visibile(p) });
+            if (stellare) {
+                disegnaImpulsi(ctx, {
+                    sim,
+                    quadro: this.attivita,
+                    k,
+                    visibile: (p) => this.visibile(p),
+                    adesso: performance.now(),
+                    ridotto: movimentoRidotto(),
+                });
+            }
         }
 
         // Le etichette dei nodi: tutte da vicino, solo quelle utili da lontano.
