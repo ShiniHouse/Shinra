@@ -41,7 +41,7 @@ I dettagli del flusso con le passkey e dei dispositivi fidati stanno nell'ADR
 l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 `/openapi.json`.
 
-## Le rotte (113)
+## Le rotte (114)
 
 ### `alexa`
 
@@ -289,6 +289,12 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 | Metodo | Percorso | Chi | Cosa fa |
 | :--- | :--- | :--- | :--- |
 | GET | `/api/status` | sessione aperta | Controlla lo stato dei servizi (Ollama, Home Assistant). |
+
+### `telemetria`
+
+| Metodo | Percorso | Chi | Cosa fa |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/telemetria` | sessione aperta | CPU, memoria, disco e temperatura adesso. `disponibile: false` dove non si possono leggere (non Linux). |
 
 ### `timers`
 
