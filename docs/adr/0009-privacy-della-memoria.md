@@ -35,8 +35,9 @@ nel prompt di un bambino né nella lista di un ospite, e un profilo deve poter c
      vorrebbe dire perderli in un ripristino;
    - i backup di `deploy.sh` si tengono gli ultimi 10; un salvataggio con un ricordo cancellato lo contiene finché non esce
      da quelli;
-   - **non c'è ancora** l'elenco degli id cancellati da non rimettere in un ripristino: restaurare un backup vecchio può
-     riportare un ricordo cancellato. È un limite noto, scritto nella guida, da chiudere con una scheda a parte.
+   - **l'elenco degli id cancellati** (tabella `ricordi_cancellati`, solo identificativo e momento, mai il testo) impedisce a un
+     ripristino di riportare un ricordo cancellato dopo quel salvataggio; l'anteprima dice quanti ne salta. Chiude il limite
+     noto, ma **solo per le cancellazioni fatte da questa versione in poi**: un ricordo cancellato prima non è nell'elenco.
 7. **Il grafo del Cervello** non mostra mai il testo di un ricordo.
 
 ## Alternative scartate
@@ -61,4 +62,4 @@ nel prompt di un bambino né nella lista di un ospite, e un profilo deve poter c
 
 ## Ancora aperto
 
-- L'elenco degli id cancellati da non rimettere in un ripristino (punto 6, terzo limite).
+- Nulla di noto. (L'elenco degli id cancellati da non rimettere in un ripristino è fatto: punto 6.)

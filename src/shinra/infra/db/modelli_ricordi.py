@@ -82,3 +82,16 @@ class EmbeddingFatto(Base):
     modello: Mapped[str] = mapped_column(String(120), default="")
     impronta: Mapped[str] = mapped_column(String(64), default="", index=True)
     calcolato_il: Mapped[datetime] = mapped_column(DateTime, default=adesso)
+
+
+class RicordoCancellato(Base):
+    """L'identificativo di un ricordo che qualcuno ha cancellato, e quando. **Niente altro**: ne' il testo ne' chi era.
+
+    Serve a una cosa: un ripristino da un salvataggio vecchio non deve riportare in casa cio' che e' stato dimenticato dopo
+    quel salvataggio (ADR 0009, punto 6). Un identificativo casuale non dice niente di cio' che era.
+    """
+
+    __tablename__ = "ricordi_cancellati"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    cancellato_il: Mapped[datetime] = mapped_column(DataOra, nullable=False, default=adesso)

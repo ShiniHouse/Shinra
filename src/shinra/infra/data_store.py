@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 from shinra.domain import stanze
-from shinra.infra.db import depositi
+from shinra.infra.db import depositi, lapidi
 from shinra.infra.db.proposte import proposte
 
 logger = logging.getLogger(__name__)
@@ -99,6 +99,8 @@ class DataStore:
         """
         cancellato = depositi.fatti.cancella(identificativo)
         if cancellato:
+            # Si ricorda **l'identificativo** (mai il testo), perche' un ripristino da un salvataggio vecchio non lo riporti.
+            lapidi.segna(identificativo)
             depositi.embedding.cancella(identificativo)
             # Le proposte del sogno che indicavano questo ricordo (due ricordi simili) non hanno piu' senso.
             proposte.dimentica_ricordo(identificativo)

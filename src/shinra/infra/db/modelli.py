@@ -472,4 +472,4 @@ class Passkey(Base):
 from shinra.infra.db.modelli_luoghi import Luogo  # noqa: E402, F401
 from shinra.infra.db.modelli_proposte import PropostaDelSogno  # noqa: E402, F401
 from shinra.infra.db.modelli_riassunti import RiassuntoConversazione  # noqa: E402, F401
-from shinra.infra.db.modelli_ricordi import EmbeddingFatto, Fatto  # noqa: E402, F401
+from shinra.infra.db.modelli_ricordi import EmbeddingFatto, Fatto, RicordoCancellato  # noqa: E402, F401
