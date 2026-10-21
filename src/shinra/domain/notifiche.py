@@ -62,8 +62,10 @@ SICUREZZA = "sicurezza"
 PRESENZA = "presenza"
 ENERGIA = "energia"
 MANUTENZIONE = "manutenzione"
+# Un lavoro lungo che Shinra ha finito («ci penso»): l'avviso dice solo che e' pronto, mai il contenuto.
+LAVORO = "lavoro"
 
-CATEGORIE = (PROMEMORIA, TIMER, SICUREZZA, PRESENZA, ENERGIA, MANUTENZIONE)
+CATEGORIE = (PROMEMORIA, TIMER, SICUREZZA, PRESENZA, ENERGIA, MANUTENZIONE, LAVORO)
 
 # Le categorie che il silenzioso non puo' spegnere. E' un elenco corto
 # apposta: piu' cose ci si mettono, meno significa il silenzioso, e una

@@ -25,6 +25,7 @@ const CATEGORIE = {
     presenza: 'Presenza',
     energia: 'Energia',
     manutenzione: 'Manutenzione e scadenze',
+    lavoro: 'Lavori lunghi finiti («ci penso»)',
 };
 const CANALI = { web: 'Nella dashboard', push: 'Sul telefono', voce: 'A voce' };
 // ntfy compare solo se il server di casa e' configurato (#389): spento finche' non lo accendi tu.

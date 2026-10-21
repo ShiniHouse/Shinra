@@ -30,6 +30,7 @@ from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.consegna import registra_canali
 from shinra.services.energia import servizio_energia
 from shinra.services.lavori import servizio_lavori
+from shinra.services.lavori_consegna import consegna as consegna_lavoro
 from shinra.services.manutenzione import servizio_manutenzione
 from shinra.services.notifiche import servizio_notifiche
 from shinra.services.presenza import presenza
@@ -231,6 +232,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
     # I lavori rimasti a meta' al riavvio non si riprendono da soli: si dichiarano interrotti (ADR 0013).
     servizio_lavori.riconcilia()
+    servizio_lavori.alla_fine(consegna_lavoro)
 
     # Le regole: la casa smette di aspettare la domanda. Dopo le
     # notifiche, perche' un ciclo fra regole va fermato **e** raccontato,

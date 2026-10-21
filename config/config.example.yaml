@@ -95,6 +95,8 @@ lavori:
   # Un lavoro in background (una richiesta che prende tempo) non dura piu' di cosi', in secondi: allo scadere e' fallito con il
   # motivo «tetto di tempo». Resta fra 10 secondi e un'ora.
   tetto_secondi: 900
+  # Dopo quanti secondi una richiesta della dashboard diventa un lavoro («ci sto lavorando») e la risposta arriva dopo. 0 = si aspetta sempre.
+  soglia_secondi: 25
 
 security:
   # Ogni familiare ha il proprio PIN, impostato dal suo profilo.

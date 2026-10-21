@@ -13,6 +13,10 @@ test difendono:
 
 from __future__ import annotations
 
+from typing import Any, Mapping
+
+from shinra.domain.eventi import Evento
+
 IN_CODA = "in_coda"
 IN_CORSO = "in_corso"
 FATTO = "fatto"
@@ -58,3 +62,62 @@ def tetto_valido(secondi: float) -> int:
 def avanzamento_valido(attuale: int, nuovo: int) -> int:
     """L'avanzamento sale e basta: 0-100, e un valore piu' basso di quello che c'e' gia' non lo abbassa."""
     return max(attuale, max(0, min(100, int(nuovo))))
+
+
+# ------------------------------------------------------------------ cosa si dice, e l'evento che lo porta
+
+LAVORO_FINITO = "lavoro.finito"
+
+# I testi che la persona legge, per lingua. Chi mostra li sceglie nella lingua del profilo; senza una lingua nota, l'italiano.
+TESTI = {
+    "it": {
+        "ci_penso": "Ci sto lavorando: ti avviso appena ho finito.",
+        "fatto_senza_testo": "Ho finito.",
+        "tetto": "Non sono riuscito a finire in tempo: ci stavo mettendo troppo. Puoi riprovare, magari in piu' richieste piu' semplici.",
+        "fallito": "Non sono riuscito a finire quello che mi hai chiesto.",
+        "avviso_fatto": "Ho finito",
+        "avviso_fatto_testo": "Il lavoro che mi hai chiesto e' pronto.",
+        "avviso_fallito": "Non sono riuscito a finire",
+        "avviso_fallito_testo": "Apri Shinra per vedere cosa e' successo.",
+    },
+    "en": {
+        "ci_penso": "I'm working on it: I'll let you know as soon as I'm done.",
+        "fatto_senza_testo": "Done.",
+        "tetto": "I couldn't finish in time: it was taking too long. You can try again, maybe as several simpler requests.",
+        "fallito": "I couldn't finish what you asked.",
+        "avviso_fatto": "Done",
+        "avviso_fatto_testo": "The job you asked for is ready.",
+        "avviso_fallito": "I couldn't finish",
+        "avviso_fallito_testo": "Open Shinra to see what happened.",
+    },
+}
+
+
+def testo(chiave: str, lingua: str = "") -> str:
+    """Un testo nella lingua della persona; se la lingua non c'e' (o la chiave), quello italiano."""
+    return TESTI.get(lingua or "", TESTI["it"]).get(chiave) or TESTI["it"][chiave]
+
+
+def testo_della_fine(lavoro: Mapping[str, Any], lingua: str = "") -> str:
+    """Cosa dire a chi aspettava: l'esito se c'e', altrimenti perche' non e' riuscito. Mai un errore tecnico."""
+    if lavoro.get("stato") == FATTO:
+        return str(lavoro.get("esito") or "").strip() or testo("fatto_senza_testo", lingua)
+    return testo("tetto" if lavoro.get("motivo") == MOTIVO_TETTO else "fallito", lingua)
+
+
+def da_consegnare(stato: str) -> bool:
+    """Si consegna solo cio' che la persona non sa gia': un lavoro riuscito o fallito. Annullato l'ha deciso lei; interrotto non ha nessuno ad ascoltare."""
+    return stato in (FATTO, FALLITO)
+
+
+def evento_finito(lavoro: Mapping[str, Any], lingua: str = "") -> Evento:
+    """L'evento che porta l'esito al browser di chi lo ha chiesto (e solo a lui: `profilo` lo dice al canale)."""
+    return Evento(
+        tipo=LAVORO_FINITO,
+        dati={
+            "profilo": lavoro["proprietario"],
+            "id": lavoro["id"],
+            "stato": lavoro["stato"],
+            "testo": testo_della_fine(lavoro, lingua),
+        },
+    )

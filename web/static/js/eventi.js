@@ -24,6 +24,7 @@ import { getAuthHeaders, mostraRifiuto } from './accesso.js';
 import { speakText } from './voce.js';
 import { loadReminders, loadTimers, playChimeAlert } from './timer.js';
 import { attivita } from './cervello_attivita.js';
+import { appendAssistantMessage } from './conversazione.js';
 
 let _eventiSocket = null;
 
@@ -141,6 +142,9 @@ function gestisciEvento(evento) {
         aggiornaStatoCasa(evento.dati);
     } else if (evento.tipo.startsWith('persona.') || evento.tipo.startsWith('casa.')) {
         caricaPresenza();
+    } else if (evento.tipo === 'lavoro.finito') {
+        // Un lavoro lungo e' finito: l'esito arriva in chat, come una risposta, solo a chi lo aveva chiesto.
+        if (evento.dati && evento.dati.testo) appendAssistantMessage(evento.dati.testo);
     } else if (evento.tipo.startsWith('agente.')) {
         // Il ciclo dell'agente che si racconta: il Cervello lo mostra (#189).
         attivita.registra(evento);

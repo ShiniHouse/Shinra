@@ -34,6 +34,7 @@ from shinra.config.settings import (
     settings,
 )
 from shinra.domain import contesto, eventi_agente
+from shinra.domain import lavori as dominio_lavori
 from shinra.domain.eventi import (
     AVVISO,
     CASA_ABITATA,
@@ -52,7 +53,9 @@ from shinra.infra.llm.ollama import OllamaClient
 from shinra.services import registro
 from shinra.services.agent import agent
 from shinra.services.consegna import descrivi
+from shinra.services.lavori import servizio_lavori
 from shinra.services.satelliti import registro_satelliti
+from shinra.services.user_manager import user_manager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 # I lavori di avvio che girano in sottofondo. Tenerne un riferimento e'
@@ -188,6 +191,9 @@ class ChatRequest(BaseModel):
     # si e' dichiarata satellite di una stanza; chi non lo manda continua a
     # funzionare come prima.
     satellite: Optional[str] = None
+    # La dashboard dichiara che puo' ricevere la risposta **piu' tardi** (evento `lavoro.finito`): una richiesta lenta diventa un lavoro
+    # in background («ci sto lavorando»). Chi non lo dichiara (Alexa, un satellite a voce) aspetta come sempre.
+    puo_attendere: bool = False
 
 
 from fastapi.responses import Response
@@ -226,7 +232,7 @@ async def index(request: Request):
 
 
 @app.post("/api/chat", dependencies=[Depends(sicurezza.richiedi_autenticazione)])
-async def chat_endpoint(payload: ChatRequest):
+async def chat_endpoint(payload: ChatRequest, request: Request):
     """Endpoint per richieste di chat / voce dall'interfaccia web o client locali."""
     if not payload.message.strip():
         raise HTTPException(status_code=400, detail="Il messaggio non può essere vuoto.")
@@ -239,6 +245,25 @@ async def chat_endpoint(payload: ChatRequest):
         if not registro_satelliti.prende_in_carico(payload.satellite, payload.message):
             return {"response": "", "gia_in_carico": True}
         contesto.dichiara_stanza(registro_satelliti.stanza_di(payload.satellite))
+
+    if payload.puo_attendere and settings.lavori.soglia_secondi > 0:
+        profilo = sicurezza.utente_corrente(request) or user_manager.get_user_by_id(payload.user_id or "")
+        proprietario = str(getattr(profilo, "id", "") or "")
+        if proprietario:
+            risposta, lavoro = await servizio_lavori.con_attesa_massima(
+                proprietario,
+                payload.message,
+                lambda: agent.process_user_input(user_text=payload.message, user_id=payload.user_id),
+                settings.lavori.soglia_secondi,
+            )
+            if lavoro is not None:
+                lingua = str(getattr(profilo, "lingua", "") or "")
+                return {
+                    "response": dominio_lavori.testo("ci_penso", lingua),
+                    "actions": [],
+                    "lavoro": {"id": lavoro["id"], "stato": lavoro["stato"]},
+                }
+            return risposta
 
     result = await agent.process_user_input(user_text=payload.message, user_id=payload.user_id)
     return result
@@ -429,7 +454,7 @@ async def eventi_websocket(websocket: WebSocket):
             AVVISO,
             CASA_INTRUSIONE,
         )
-    ] + [bus.sottoscrivi(t, accoda_agente) for t in eventi_agente.TIPI]
+    ] + [bus.sottoscrivi(t, accoda_agente) for t in (*eventi_agente.TIPI, dominio_lavori.LAVORO_FINITO)]
     # Questa rotta parlava e basta: restava ferma su `coda.get()` e non
     # leggeva mai dal socket. Un canale che non ascolta non si accorge di
     # niente — ne' del browser che chiude la scheda, ne' del server che

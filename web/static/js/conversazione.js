@@ -19,7 +19,7 @@ function appendUserMessage(text) {
     container.scrollTop = container.scrollHeight;
 }
 
-function appendAssistantMessage(text, actions = [], ricordi = []) {
+export function appendAssistantMessage(text, actions = [], ricordi = []) {
     // Una risposta e' un impulso del nucleo anche a voce spenta.
     impulso(0.8);
     const container = document.getElementById('messages-container');
@@ -199,6 +199,8 @@ export async function handleSend(e) {
                 // intende la luce della cucina esattamente come chi
                 // parla.
                 satellite: satelliteDiQuestoDispositivo(),
+                // Se la risposta tarda diventa un lavoro («ci sto lavorando») e arriva dopo, dal canale degli eventi (`lavoro.finito`).
+                puo_attendere: true,
             }),
         });
         hideTypingIndicator();

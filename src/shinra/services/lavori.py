@@ -23,7 +23,7 @@ import contextlib
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Coroutine, Optional
 
 from shinra.config import settings as impostazioni
 from shinra.domain import lavori as dominio
@@ -67,6 +67,11 @@ def _come_si_vede(lavoro: dict[str, Any]) -> dict[str, Any]:
         "creato_il": lavoro["creato_il"],
         "finito_il": lavoro["finito_il"],
     }
+
+
+def _per_la_consegna(lavoro: dict[str, Any]) -> dict[str, Any]:
+    """Come `_come_si_vede`, con il proprietario: serve a chi consegna, non esce mai verso un browser."""
+    return {**_come_si_vede(lavoro), "proprietario": lavoro["proprietario"]}
 
 
 class ServizioLavori:
@@ -170,10 +175,41 @@ class ServizioLavori:
         if self._alla_fine is None:
             return
         try:
-            await self._alla_fine(_come_si_vede(lavoro))
+            await self._alla_fine(_per_la_consegna(lavoro))
             deposito.segna_consegnato(lavoro["id"])
         except Exception:
             logger.exception("Consegna dell'esito del lavoro %s non riuscita", lavoro["id"])
+
+    async def con_attesa_massima(
+        self,
+        proprietario: str,
+        richiesta: str,
+        avvia: Callable[[], Coroutine[Any, Any, dict[str, Any]]],
+        soglia: float,
+    ) -> tuple[Optional[dict[str, Any]], Optional[dict[str, Any]]]:
+        """Fa partire la richiesta e aspetta al piu' `soglia` secondi: `(risposta, None)` se finisce in tempo, `(None, lavoro)` se no.
+
+        Se non finisce, **continua a girare** come lavoro: la stessa richiesta, senza rifarla e senza perdere cio' che ha gia' fatto.
+        Annullare il lavoro ferma la richiesta. Se non c'e' posto per un altro lavoro (`TroppiLavori`) o la soglia e' zero, si aspetta
+        come si e' sempre fatto: meglio una risposta lenta che nessuna.
+        """
+        compito = asyncio.get_running_loop().create_task(avvia())
+        if soglia <= 0:
+            return await compito, None
+        try:
+            return await asyncio.wait_for(asyncio.shield(compito), timeout=soglia), None
+        except asyncio.TimeoutError:
+            pass
+
+        async def prosegui(avanza: Avanza) -> str:
+            avanza(30, "")
+            risultato = await compito  # annullare il lavoro cancella anche la richiesta che aspetta qui
+            return str((risultato or {}).get("response") or "")
+
+        try:
+            return None, self.prendi_in_carico(proprietario, richiesta, prosegui)
+        except TroppiLavori:
+            return await compito, None
 
     # ------------------------------------------------------------------ letture e annullo
 
