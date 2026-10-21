@@ -456,10 +456,34 @@ posizione, e la posizione resta sul server. La proposta, con le cinque fette e l
 
 ---
 
+## v0.9.0 — Agenti che imparano
+
+> **Proposta, da accettare (2026-10-21).** Più agenti e più modelli lavorano dentro Shinra, imparano dalle istruzioni e si sistemano **proponendo**
+> (mai decidendo) per rispondere alle esigenze della famiglia; e Shinra diventa un assistente che, se serve, **si prende il tempo** per elaborare e
+> sviluppare una richiesta. La proposta completa è in [`docs/proposte/agenti-0.9.0/`](proposte/agenti-0.9.0/README.md) e le tre scelte di fondo
+> nell'[ADR 0013](adr/0013-agenti-e-modelli-che-imparano.md) (modelli per scopo con un esterno **facoltativo e spento**; propone e tu confermi; «ci penso»
+> con una coda di lavori).
+
+**Perche' in questo ordine.** Prima la **misura**: un modello da 3 miliardi di parametri su una CPU senza GPU pianifica a piu' passi molto peggio di quanto
+sceglie uno strumento, e piu' agenti non vuol dire piu' intelligenza. Poi cio' che da' valore subito (la coda dei lavori, i piani), poi i modelli esterni
+(opzionali), e solo alla fine l'imparare, che e' la parte piu' delicata su una casa vera.
+
+**Cosa assorbe.** Tre schede oggi «dopo la `1.0.0`»: `#191` (piani a piu' passaggi), `#194` (modello esterno opzionale), `#240` (Ollama su un'altra macchina).
+
+**Criteri di uscita (proposti)**
+- Il **banco dei piani** ha numeri misurati con il modello locale (e con quello esterno, se acceso): dice dove il multi-agente aiuta e dove no, e dove non aiuta non si usa.
+- Una richiesta lunga risponde subito «ci penso», mostra l'avanzamento, si puo' annullare, sopravvive a un riavvio, non blocca la chat e consegna l'esito; nessun lavoro supera il suo tetto.
+- Un piano non esegue mai un dispositivo che non esiste ne' uno strumento non consentito all'agente; le azioni sensibili passano **sempre** dalla conferma.
+- Con ogni modello esterno **spento**, nessuna richiesta esce dalla rete locale; con uno acceso, ricordi privati, segreti e coordinate non sono nella richiesta.
+- Shinra **non applica** nessuna correzione da sola: una proposta resta in attesa del sì ed e' annullabile; un corpus di tentativi di iniezione non produce nessuna azione.
+- Provato **in casa** con il modello vero, con l'esito scritto, compreso cio' che non funziona.
+
+---
+
 ## v1.0.0 — Stabile
 
-Si arriva qui dalla `0.8.0`, **se non ci sono intoppi**: nessuna fase nuova in mezzo. Se la `0.8.0`
-sposta troppo, i trenta giorni di esercizio (punto 4) la riconoscono prima di un utente.
+Si arriva qui dalla `0.9.0`, **se non ci sono intoppi**: nessuna fase nuova in mezzo. Se la `0.8.0` o la `0.9.0`
+spostano troppo, i trenta giorni di esercizio (punto 4) le riconoscono prima di un utente.
 
 Criteri di uscita, tutti obbligatori:
 

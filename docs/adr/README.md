@@ -26,3 +26,4 @@ state scartate alternative ragionevoli. Non serve per le decisioni ovvie.
 | [0010](0010-la-conversazione-si-conserva.md) | Si conserva la conversazione, e in che forma | Accettato |
 | [0011](0011-canali-esterni.md) | Canali esterni: cosa può passare da un servizio di terzi | Rifiutato |
 | [0012](0012-ricerca-vettoriale-a-scala.md) | La ricerca per vettori regge la casa? Si misura prima di cambiare | Accettato |
+| [0013](0013-agenti-e-modelli-che-imparano.md) | Agenti e modelli che imparano: propongono, non decidono | Proposto |
