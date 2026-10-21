@@ -45,6 +45,7 @@ from typing import Any, Optional
 from shinra import percorsi, versione
 from shinra.config import secrets as segreti
 from shinra.config import settings as impostazioni
+from shinra.infra.db import lapidi
 from shinra.infra.db.depositi import DEPOSITI
 
 logger = logging.getLogger("Shinra.Salvataggio")
@@ -80,6 +81,7 @@ FUORI: dict[str, str] = {
     "luoghi": "coordinate: un dato di posizione non deve stare in un archivio che si copia e si manda; si registrano di nuovo",
     "riassunti_conversazione": "conversazioni: un riassunto di cio' che si e' detto non deve stare in un archivio che si copia e si manda; scadono da soli e si dimenticano a richiesta",
     "proposte_del_sogno": "derivate: si rifanno ogni notte dal registro e dai ricordi, e sono private di chi le riceve",
+    "ricordi_cancellati": "la memoria di cio' che NON va rimesso: sta nel database vivo, e un ripristino la usa senza toccarla",
 }
 
 # Cosa si toglie da ogni riga prima di scriverla. La colonna `pin` e'
@@ -250,7 +252,15 @@ def anteprima(archivio: dict[str, Any]) -> dict[str, dict[str, int]]:
             "adesso": DEPOSITI[nome].conta(),
             "nell_archivio": len(archivio.get("tabelle", {}).get(nome, [])),
         }
+    if "knowledge" in quadro:
+        quadro["knowledge"]["da_non_rimettere"] = len(_ricordi_da_saltare(archivio))
     return quadro
+
+
+def _ricordi_da_saltare(archivio: dict[str, Any]) -> list[dict[str, Any]]:
+    """I ricordi di questo archivio che qualcuno ha cancellato dopo che e' stato scritto: non tornano (ADR 0009, punto 6)."""
+    morti = lapidi.cancellati()
+    return [r for r in archivio.get("tabelle", {}).get("knowledge", []) if str(r.get("id")) in morti]
 
 
 def ripristina(archivio: dict[str, Any]) -> dict[str, int]:
@@ -264,7 +274,12 @@ def ripristina(archivio: dict[str, Any]) -> dict[str, int]:
     for nome in TABELLE:
         if nome not in archivio.get("tabelle", {}) or nome not in DEPOSITI:
             continue
-        voci = [riga_pubblica(nome, riga) for riga in archivio["tabelle"][nome]]
+        morti = lapidi.cancellati() if nome == "knowledge" else set()
+        voci = [
+            riga_pubblica(nome, riga)
+            for riga in archivio["tabelle"][nome]
+            if str(riga.get("id")) not in morti
+        ]
         scritte[nome] = DEPOSITI[nome].sostituisci_tutto(voci)
     logger.info("Ripristino: %s", ", ".join(f"{n} {q}" for n, q in scritte.items()) or "niente")
     return scritte

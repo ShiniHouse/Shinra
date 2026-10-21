@@ -61,8 +61,9 @@ Due cose da sapere, perché oggi sono così:
 
 - **Il salvataggio contiene anche i ricordi privati di tutti**, non solo quelli della casa. Chi ha accesso ai file di questa
   macchina (per esempio chi amministra il server) può quindi leggerli aprendo l'archivio, anche se dall'interfaccia non può.
-- **Un ripristino da un backup vecchio può riportare un ricordo che avevi cancellato.** Non esiste ancora un elenco dei ricordi
-  cancellati da non rimettere. Se ripristini un archivio, ricontrolla i ricordi.
+- **Un ripristino non riporta i ricordi che hai cancellato.** Shinra tiene solo l'identificativo di ogni ricordo cancellato
+  (mai il testo) e lo salta quando ripristina un archivio; l'anteprima dice quanti ne salta. Un ricordo **cancellato prima di
+  questa versione** non è in quell'elenco, e un ripristino vecchio può ancora riportarlo.
 
 ## Cosa esce dalla rete di casa
 
