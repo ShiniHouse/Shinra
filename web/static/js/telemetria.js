@@ -1,54 +1,52 @@
-// Quanto lavora il server di casa: tre barre (processore, memoria, disco) e la temperatura, dalla console.
+// Quanto lavora il server di casa: una pillola nell'intestazione, accanto a Ollama e Home Assistant.
 //
-// Chiede `/api/telemetria` ogni dieci secondi (e subito appena il pannello e' in vista), e solo se la scheda Console e' in vista e la pagina non e' nascosta: un tablet
-// appeso al muro con un'altra scheda aperta non deve interrogare il server per un pannello che nessuno guarda. Se il server dice
-// `disponibile: false` (un PC di sviluppo, senza `/proc`), o la richiesta fallisce, il pannello resta nascosto: niente numeri
-// inventati e niente errore in faccia a chi non ha chiesto niente.
+// Chiede `/api/telemetria` ogni dieci secondi, e solo se la pagina non e' nascosta: un tablet con la schermata spenta non deve
+// interrogare il server per una pillola che nessuno guarda. Se il server dice `disponibile: false` (un PC di sviluppo, senza
+// `/proc`), o la richiesta fallisce, la pillola resta nascosta: niente numeri inventati e niente errore in faccia a chi non ha
+// chiesto niente.
+//
+// Sta nell'intestazione e non nella colonna della console di proposito: quella colonna e' tenuta leggera da una misura
+// (`test_la_colonna_della_console_resta_leggera`), e questo non e' cio' che succede in casa ma lo stato di un sistema, come gli
+// altri due pallini.
 import { getAuthHeaders } from './accesso.js';
 
 const OGNI_MS = 10_000;
 
-function barra(id, percentuale, testo) {
-    const riempimento = document.getElementById(id);
-    const valore = document.getElementById(`${id}-valore`);
-    if (!riempimento || !valore) return;
-    const p = Number.isFinite(percentuale) ? Math.min(100, Math.max(0, percentuale)) : 0;
-    riempimento.style.width = `${p}%`;
-    riempimento.dataset.livello = p >= 90 ? 'alto' : p >= 70 ? 'medio' : 'basso';
-    valore.textContent = testo;
+function livelloDi(percentuale) {
+    return percentuale >= 90 ? 'alto' : percentuale >= 70 ? 'medio' : 'basso';
 }
 
 function mostra(dati) {
-    const pannello = document.getElementById('pannello-server');
-    if (!pannello) return;
+    const pillola = document.getElementById('server-chip');
+    if (!pillola) return;
     if (!dati || dati.disponibile !== true) {
-        pannello.hidden = true;
+        pillola.style.display = 'none';
         return;
     }
-    barra('server-cpu', dati.cpu, dati.cpu == null ? '–' : `${dati.cpu}%`);
-    barra('server-memoria', dati.memoria?.percentuale, `${dati.memoria?.percentuale ?? '–'}%`);
-    barra(
-        'server-disco',
-        dati.disco?.percentuale,
-        dati.disco ? `${dati.disco.percentuale}% · ${dati.disco.libero_gb} GB liberi` : '–',
-    );
-    const caldo = document.getElementById('server-temperatura');
-    if (caldo) caldo.textContent = dati.temperatura_c == null ? '' : `${dati.temperatura_c.toFixed(0)}°C`;
-    pannello.hidden = false;
-}
-
-function inVista() {
-    const pannello = document.getElementById('pannello-server');
-    const scheda = document.getElementById('tab-console');
-    return !document.hidden && !!pannello && !!scheda && scheda.getClientRects().length > 0;
+    const cpu = Number.isFinite(dati.cpu) ? dati.cpu : null;
+    const memoria = dati.memoria?.percentuale ?? null;
+    const disco = dati.disco?.percentuale ?? null;
+    const valori = [cpu, memoria, disco].filter((v) => v !== null);
+    pillola.dataset.livello = livelloDi(Math.max(0, ...valori));
+    document.getElementById('server-testo').textContent = cpu === null ? 'Server' : `CPU ${cpu}%`;
+    const righe = [
+        cpu === null ? null : `Processore ${cpu}%`,
+        memoria === null ? null : `Memoria ${memoria}%`,
+        disco === null
+            ? null
+            : `Disco ${disco}%${dati.disco.libero_gb != null ? ` (${dati.disco.libero_gb} GB liberi)` : ''}`,
+        Number.isFinite(dati.temperatura_c) ? `Temperatura ${dati.temperatura_c.toFixed(0)}°C` : null,
+    ].filter(Boolean);
+    pillola.title = `Il server: ${righe.join(' · ')}`;
+    pillola.style.display = 'flex';
 }
 
 let ultimaRichiesta = 0;
 
-// Ogni secondo si guarda (senza rete) se il pannello e' in vista; la richiesta parte subito appena lo e', poi ogni dieci secondi.
-// Cosi' tornare alla Console o entrare dopo l'accesso mostra i numeri subito, senza aspettare il prossimo giro.
+// Ogni secondo si guarda (senza rete) se la pagina e' in vista; la richiesta parte subito appena lo e', poi ogni dieci secondi.
 async function aggiorna() {
-    if (!inVista() || Date.now() - ultimaRichiesta < OGNI_MS) return;
+    if (document.hidden || !document.getElementById('server-chip') || Date.now() - ultimaRichiesta < OGNI_MS)
+        return;
     ultimaRichiesta = Date.now();
     try {
         const res = await fetch('/api/telemetria', { headers: getAuthHeaders() });

@@ -56,6 +56,13 @@
                     <span>HA</span>
                 </div>
 
+                <!-- Quanto lavora il server (solo percentuali, da /api/telemetria). Nasconde se il server non le da'. Il pallino
+                     prende il colore del valore piu' alto fra processore, memoria e disco; il resto sta nel suggerimento. -->
+                <div id="server-chip" style="display:none" data-livello="basso" class="items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 border border-slate-700/80 text-slate-300">
+                    <span id="server-punto" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                    <span id="server-testo">Server</span>
+                </div>
+
                 <!-- Chi c'e' in casa (issue #22). `person` era fra i domini
                      visibili e nessuno lo guardava: e' l'informazione piu'
                      utile della domotica ed era l'unica che non si vedeva. -->
