@@ -105,3 +105,27 @@
     transition: none;
   }
 }
+
+/* ------------------------------------------------------------------ la pillola del server: il pallino segue il carico */
+
+#server-chip #server-punto {
+  background: #6366f1;
+}
+#server-chip[data-livello="medio"] #server-punto {
+  background: #f59e0b;
+}
+#server-chip[data-livello="alto"] #server-punto {
+  background: #f43f5e;
+}
+html[data-palette="jarvis"] #server-chip #server-punto {
+  background: #22d3ee;
+  box-shadow: 0 0 8px #22d3ee;
+}
+html[data-palette="jarvis"] #server-chip[data-livello="medio"] #server-punto {
+  background: #fbbf24;
+  box-shadow: 0 0 8px #fbbf24;
+}
+html[data-palette="jarvis"] #server-chip[data-livello="alto"] #server-punto {
+  background: #fb7185;
+  box-shadow: 0 0 8px #fb7185;
+}

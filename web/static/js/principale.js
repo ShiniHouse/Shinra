@@ -21,6 +21,7 @@ import './istruisci.js';
 import './fonti.js';
 import './dispositivi.js';
 import './timer.js';
+import './telemetria.js';
 import './eventi.js';
 import './routine.js';
 import './tela.js';
