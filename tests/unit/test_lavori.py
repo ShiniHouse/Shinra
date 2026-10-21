@@ -352,9 +352,12 @@ def test_il_proprietario_lo_annulla_dalla_rotta(due_persone):
 
 
 def test_senza_accesso_nessuno_vede_i_lavori():
+    prima = settings.security.auth_enabled
     settings.security.auth_enabled = True
     try:
         with TestClient(app) as anonimo:
             assert anonimo.get("/api/lavori").status_code in (401, 403)
     finally:
-        settings.security.auth_enabled = False
+        settings.security.auth_enabled = (
+            prima  # com'era: lasciarla spenta farebbe fallire i test che vengono dopo
+        )
