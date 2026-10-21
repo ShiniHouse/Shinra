@@ -308,7 +308,7 @@ export class Lavagna {
             ctx.globalAlpha = stato ? 0.95 : 0.5;
             ctx.fillStyle = stato ? STATO[stato] : this._colore(c.id);
             const mezza = ctx.measureText(testo).width / 2;
-            const altezza = Math.min(Math.max(15 / k, 12), 40) * 1.15;
+            const altezza = Math.min(Math.max(15 / k, 12), 40) * 1.6;
             let y = centro.alto - 16 / k;
             for (let giro = 0; giro < 8; giro++) {
                 const urta = occupate.some(
@@ -317,8 +317,13 @@ export class Lavagna {
                 if (!urta) break;
                 y -= altezza;
             }
-            occupate.push({ x: centro.x, y, mezza });
-            ctx.fillText(testo, centro.x, y);
+            // Un nome lungo ("DISPOSITIVI · NON RAGGIUNGIBILE") su uno schermo stretto non deve uscire dal bordo.
+            const schermoX = this.vista.x + centro.x * k;
+            const sporge =
+                Math.max(6 - (schermoX - mezza * k), 0) - Math.max(schermoX + mezza * k - (w - 6), 0);
+            const x = centro.x + sporge / k;
+            occupate.push({ x, y, mezza });
+            ctx.fillText(testo, x, y);
         }
         ctx.globalAlpha = 1;
 

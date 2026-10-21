@@ -108,24 +108,47 @@
 
 /* ------------------------------------------------------------------ la pillola del server: il pallino segue il carico */
 
-#server-chip #server-punto {
+[data-server-chip] [data-server-punto] {
   background: #6366f1;
 }
-#server-chip[data-livello="medio"] #server-punto {
+[data-server-chip][data-livello="medio"] [data-server-punto] {
   background: #f59e0b;
 }
-#server-chip[data-livello="alto"] #server-punto {
+[data-server-chip][data-livello="alto"] [data-server-punto] {
   background: #f43f5e;
 }
-html[data-palette="jarvis"] #server-chip #server-punto {
+html[data-palette="jarvis"] [data-server-chip] [data-server-punto] {
   background: #22d3ee;
   box-shadow: 0 0 8px #22d3ee;
 }
-html[data-palette="jarvis"] #server-chip[data-livello="medio"] #server-punto {
+html[data-palette="jarvis"] [data-server-chip][data-livello="medio"] [data-server-punto] {
   background: #fbbf24;
   box-shadow: 0 0 8px #fbbf24;
 }
-html[data-palette="jarvis"] #server-chip[data-livello="alto"] #server-punto {
+html[data-palette="jarvis"] [data-server-chip][data-livello="alto"] [data-server-punto] {
   background: #fb7185;
   box-shadow: 0 0 8px #fb7185;
+}
+
+/* ------------------------------------------------------------------ la testata: l'icona dell'app, non una sfera con una stella */
+
+html[data-palette="jarvis"] .living-core {
+  border-radius: 8px;
+  background: url("/static/favicon.svg") center / contain no-repeat;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.35);
+}
+html[data-palette="jarvis"] .living-core-halo,
+html[data-palette="jarvis"] .living-core svg {
+  display: none;
+}
+/* Ascolta e pensa non rimettono la sfera: cambia solo la luce attorno all'icona. */
+html[data-palette="jarvis"] .living-core.listening,
+html[data-palette="jarvis"] .living-core.thinking {
+  background: url("/static/favicon.svg") center / contain no-repeat;
+}
+html[data-palette="jarvis"] .living-core.listening {
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.7);
+}
+html[data-palette="jarvis"] .living-core.thinking {
+  box-shadow: 0 0 18px rgba(125, 211, 252, 0.8);
 }

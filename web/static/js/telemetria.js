@@ -17,18 +17,16 @@ function livelloDi(percentuale) {
 }
 
 function mostra(dati) {
-    const pillola = document.getElementById('server-chip');
-    if (!pillola) return;
+    // Una pillola nell'intestazione dei computer e una nel menu del telefono: si aggiornano insieme.
+    const pillole = document.querySelectorAll('[data-server-chip]');
     if (!dati || dati.disponibile !== true) {
-        pillola.style.display = 'none';
+        pillole.forEach((p) => (p.style.display = 'none'));
         return;
     }
     const cpu = Number.isFinite(dati.cpu) ? dati.cpu : null;
     const memoria = dati.memoria?.percentuale ?? null;
     const disco = dati.disco?.percentuale ?? null;
     const valori = [cpu, memoria, disco].filter((v) => v !== null);
-    pillola.dataset.livello = livelloDi(Math.max(0, ...valori));
-    document.getElementById('server-testo').textContent = cpu === null ? 'Server' : `CPU ${cpu}%`;
     const righe = [
         cpu === null ? null : `Processore ${cpu}%`,
         memoria === null ? null : `Memoria ${memoria}%`,
@@ -37,15 +35,30 @@ function mostra(dati) {
             : `Disco ${disco}%${dati.disco.libero_gb != null ? ` (${dati.disco.libero_gb} GB liberi)` : ''}`,
         Number.isFinite(dati.temperatura_c) ? `Temperatura ${dati.temperatura_c.toFixed(0)}°C` : null,
     ].filter(Boolean);
-    pillola.title = `Il server: ${righe.join(' · ')}`;
-    pillola.style.display = 'flex';
+    for (const pillola of pillole) {
+        pillola.dataset.livello = livelloDi(Math.max(0, ...valori));
+        const testo = pillola.querySelector('[data-server-testo]');
+        // Nel menu del telefono c'e' posto per tutto; accanto ai pallini dei computer solo la CPU, il resto nel suggerimento.
+        if (testo)
+            testo.textContent = pillola.closest('#mobile-menu-drawer')
+                ? righe.join(' · ')
+                : cpu === null
+                  ? 'Server'
+                  : `CPU ${cpu}%`;
+        pillola.title = `Il server: ${righe.join(' · ')}`;
+        pillola.style.display = 'flex';
+    }
 }
 
 let ultimaRichiesta = 0;
 
 // Ogni secondo si guarda (senza rete) se la pagina e' in vista; la richiesta parte subito appena lo e', poi ogni dieci secondi.
 async function aggiorna() {
-    if (document.hidden || !document.getElementById('server-chip') || Date.now() - ultimaRichiesta < OGNI_MS)
+    if (
+        document.hidden ||
+        !document.querySelector('[data-server-chip]') ||
+        Date.now() - ultimaRichiesta < OGNI_MS
+    )
         return;
     ultimaRichiesta = Date.now();
     try {

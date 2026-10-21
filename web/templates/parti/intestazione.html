@@ -58,9 +58,9 @@
 
                 <!-- Quanto lavora il server (solo percentuali, da /api/telemetria). Nasconde se il server non le da'. Il pallino
                      prende il colore del valore piu' alto fra processore, memoria e disco; il resto sta nel suggerimento. -->
-                <div id="server-chip" style="display:none" data-livello="basso" class="items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 border border-slate-700/80 text-slate-300">
-                    <span id="server-punto" class="w-2 h-2 rounded-full bg-slate-500"></span>
-                    <span id="server-testo">Server</span>
+                <div id="server-chip" data-server-chip style="display:none" data-livello="basso" class="items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800/70 border border-slate-700/80 text-slate-300">
+                    <span id="server-punto" data-server-punto class="w-2 h-2 rounded-full bg-slate-500"></span>
+                    <span id="server-testo" data-server-testo>Server</span>
                 </div>
 
                 <!-- Chi c'e' in casa (issue #22). `person` era fra i domini
@@ -167,6 +167,12 @@
                  diversi fra telefono e computer. Le tre di ogni giorno in
                  alto, le quattro di configurazione sotto, separate da una
                  riga che dice cosa sono. Riferimento: #128. -->
+            <!-- Lo stato del server, come la pillola dell'intestazione dei computer (che sul telefono non c'e'). -->
+            <div data-server-chip style="display:none" data-livello="basso" class="items-center gap-2 p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300">
+                <span data-server-punto class="w-2 h-2 rounded-full bg-slate-500"></span>
+                <span data-server-testo>Server</span>
+            </div>
+
             <div class="grid grid-cols-1 gap-2 text-xs font-semibold">
                 <button data-gesto="switchTabMobile" data-testo="console" class="tab-btn-m p-2.5 rounded-xl bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 flex items-center gap-2 text-left">
                     <i data-lucide="message-square" class="w-4 h-4"></i> Console Vocale

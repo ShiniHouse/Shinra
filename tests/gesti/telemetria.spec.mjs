@@ -38,6 +38,15 @@ test.describe('la pillola del server', () => {
         await expect(pillola).toHaveAttribute('data-livello', 'alto');
     });
 
+    test('anche il menu del telefono ha la sua pillola, con tutti i numeri', async ({ page }) => {
+        await apri(page, SERVER);
+        const nelMenu = page.locator('#mobile-menu-drawer [data-server-chip]');
+        await expect(nelMenu).toHaveCount(1);
+        await expect(nelMenu.locator('[data-server-testo]')).toHaveText(
+            'Processore 31% · Memoria 75% · Disco 92% (12.4 GB liberi) · Temperatura 48°C',
+        );
+    });
+
     test('con tutto basso il livello e basso', async ({ page }) => {
         await apri(page, {
             ...SERVER,
