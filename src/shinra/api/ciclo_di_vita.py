@@ -29,6 +29,7 @@ from shinra.services.allarme import allarme
 from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.consegna import registra_canali
 from shinra.services.energia import servizio_energia
+from shinra.services.lavori import servizio_lavori
 from shinra.services.manutenzione import servizio_manutenzione
 from shinra.services.notifiche import servizio_notifiche
 from shinra.services.presenza import presenza
@@ -228,6 +229,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # nessuno guarda non ha avvisato nessuno.
     servizio_notifiche.avvia()
 
+    # I lavori rimasti a meta' al riavvio non si riprendono da soli: si dichiarano interrotti (ADR 0013).
+    servizio_lavori.riconcilia()
+
     # Le regole: la casa smette di aspettare la domanda. Dopo le
     # notifiche, perche' un ciclo fra regole va fermato **e** raccontato,
     # e raccontarlo richiede un canale (issue #27).
@@ -293,6 +297,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     yield
 
     # Spegnimento: i job restano nell'archivio per la prossima accensione.
+    await servizio_lavori.ferma()
     scheduler.ferma()
     motore_regole.ferma()
     servizio_notifiche.ferma()

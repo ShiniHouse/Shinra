@@ -234,6 +234,14 @@ class NotificheConfig(BaseModel):
     ntfy_url: str = ""
 
 
+class LavoriConfig(BaseModel):
+    """I lavori in background (#431, ADR 0013): richieste che prendono tempo e consegnano l'esito dopo."""
+
+    # Un lavoro non puo' durare piu' di cosi' (secondi); allo scadere e' `fallito` con il motivo «tetto di tempo». Il valore si
+    # tiene comunque fra 10 secondi e un'ora (`domain/lavori.py`).
+    tetto_secondi: int = 900
+
+
 class PluginConfig(BaseModel):
     """I plugin abilitati (#193): i nomi delle cartelle in `plugins/`. Nessuno per difetto."""
 
@@ -253,6 +261,7 @@ class AppConfig(BaseModel):
     voce: VoceConfig = Field(default_factory=VoceConfig)
     salvataggio: SalvataggioConfig = Field(default_factory=SalvataggioConfig)
     notifiche: NotificheConfig = Field(default_factory=NotificheConfig)
+    lavori: LavoriConfig = Field(default_factory=LavoriConfig)
     plugin: PluginConfig = Field(default_factory=PluginConfig)
 
 

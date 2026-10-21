@@ -14,6 +14,12 @@ installabile e utilizzabile.
 
 ## [Non rilasciato]
 
+### Aggiunto
+- **I lavori in background** (#431, ADR 0013, prima parte: il servizio): una richiesta che prende tempo diventa un lavoro con proprietario, stato,
+  avanzamento, tetto di tempo (`lavori.tetto_secondi`) ed esito; uno alla volta, annullabile, privato per profilo, onesto al riavvio (un lavoro
+  rimasto a meta' diventa «interrotto», non si riprende da solo). Rotte `GET /api/lavori`, `GET /api/lavori/{id}`, `POST /api/lavori/{id}/annulla`;
+  migrazione 0022. **Non e' ancora collegato alla chat**: «ci penso» arriva nella parte successiva.
+
 ---
 
 ## [0.8.0] - 2026-10-21 - Memoria viva

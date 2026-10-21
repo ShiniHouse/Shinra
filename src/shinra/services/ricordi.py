@@ -237,6 +237,10 @@ def dimentica_tutto_di_me(profilo: Any) -> int:
     gestore_memorie.dimentica(mio)
     # E cio' che il sogno ha notato di lui: abitudini e ricordi simili sono suoi, e vanno via con il resto.
     quante_proposte = proposte.dimentica_profilo(mio)
+    # E i lavori in background che ha chiesto: la richiesta e l'esito sono parole sue.
+    from shinra.services.lavori import servizio_lavori
+
+    quanti_lavori = servizio_lavori.dimentica_profilo(mio)
     registro.registra(
         "ricordi.dimenticati",
         dettagli={
@@ -244,6 +248,7 @@ def dimentica_tutto_di_me(profilo: Any) -> int:
             "quanti": quanti,
             "riassunti": quanti_riassunti,
             "proposte": quante_proposte,
+            "lavori": quanti_lavori,
         },
     )
     return quanti

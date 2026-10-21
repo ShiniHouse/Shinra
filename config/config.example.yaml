@@ -91,6 +91,11 @@ voce:
   # Dove stanno le voci locali di Piper (docs/VOCE.md): una voce e' un `.onnx` col suo `.onnx.json`. Vuota, e' come non averle.
   cartella_voci: "data/voci"
 
+lavori:
+  # Un lavoro in background (una richiesta che prende tempo) non dura piu' di cosi', in secondi: allo scadere e' fallito con il
+  # motivo «tetto di tempo». Resta fra 10 secondi e un'ora.
+  tetto_secondi: 900
+
 security:
   # Ogni familiare ha il proprio PIN, impostato dal suo profilo.
   # Al primo avvio, se nessuno ne ha uno, viene generato un PIN per

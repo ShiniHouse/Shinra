@@ -469,6 +469,7 @@ class Passkey(Base):
 
 # I ricordi e i luoghi stanno in file loro; da qui restano raggiungibili come prima, e **registrano le loro tabelle** nel
 # catalogo: chi importa `modelli` (le migrazioni, i controlli di schema) le vede tutte, senza doverne conoscere i file.
+from shinra.infra.db.modelli_lavori import Lavoro  # noqa: E402, F401
 from shinra.infra.db.modelli_luoghi import Luogo  # noqa: E402, F401
 from shinra.infra.db.modelli_proposte import PropostaDelSogno  # noqa: E402, F401
 from shinra.infra.db.modelli_riassunti import RiassuntoConversazione  # noqa: E402, F401
