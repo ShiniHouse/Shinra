@@ -6,13 +6,19 @@ Il nome *Shinra* nasce dall'unione concettuale con **Shinigami** (死神 — ent
 
 ---
 
-## 🚧 Stato del progetto — beta, all'ultima release: la `0.7.0`
+## 🚧 Stato del progetto — beta, all'ultima release: la `0.8.0`
 
 Shinra è in **beta** e procede per fasi verso la `1.0.0`. Ogni versione minor
 corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino
 alla `1.0.0` una minor può introdurre modifiche incompatibili.
 
-**L'ultima release è la `0.7.0`**, *Rifinitura*: la casa impara a parlare con chi ci vive. L'intervista di
+**L'ultima release è la `0.8.0`**, *Memoria viva*: Shinra ricorda, e chi abita la casa può vedere cosa ricorda, correggerlo e
+fargli dimenticare. I ricordi sono per profilo (ognuno vede solo i propri privati), la storia vecchia diventa un riassunto, e
+di notte la casa «ci ripensa» — **proponendo**, mai decidendo. Sa dove si trova chi parla, e ha una faccia nuova: il tema
+**Ologramma**, con il nucleo che batte quando Shinra parla. Note complete, con **cosa è stato provato in casa e cosa no**:
+[`docs/release/v0.8.0.md`](docs/release/v0.8.0.md).
+
+**La release prima, la `0.7.0`**, *Rifinitura*: la casa impara a parlare con chi ci vive. L'intervista di
 apprendimento fa una domanda per volta, non chiede ciò che la casa sa già, dà un nome ai dispositivi veri e propone
 routine controllate sulla casa vera; i plugin hanno un manifesto con permessi dichiarati; timer e promemoria si
 capiscono anche in inglese. Note complete, con **cosa è stato provato in una casa vera e cosa no**:

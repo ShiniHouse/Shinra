@@ -16,6 +16,39 @@ installabile e utilizzabile.
 
 ---
 
+## [0.8.0] - 2026-10-21 - Memoria viva
+
+Note complete: [`docs/release/v0.8.0.md`](docs/release/v0.8.0.md).
+
+### Aggiunto
+- **La memoria per profilo** (#243, #245-#253, ADR 0009): un ricordo ha proprietario, origine, importanza e storia; ognuno vede solo i
+  propri ricordi privati (anche l'amministratore); si vedono, si correggono e si cancellano in Conoscenza; *Dimentica tutto di me*;
+  «Ho usato N ricordi» sotto la risposta.
+- **Esporta e importa i ricordi in Markdown** (#251), con anteprima e conferma; le righe che sembrano ordini entrano «da confermare» (#264).
+- **I riassunti delle conversazioni** (#244, #255-#257): fatti dal codice, per profilo e con scadenza; di notte il modello li riscrive e il codice
+  boccia le riscritture che inventano.
+- **Il sogno notturno** (#258-#263): abitudini e ricordi doppi o in contraddizione diventano proposte in *Stanotte ho notato*; «Prepara la
+  regola» crea una regola spenta; di notte non ha strumenti.
+- **I luoghi** (#342-#346): registro dei luoghi, «dove sono?», meteo e tramonto per il luogo giusto, posizione dall'app del telefono, ricordi
+  legati a un luogo, regole all'arrivo o alla partenza.
+- **L'intervista legge le abitudini col codice** (#210); un comando con piu' dispositivi li comanda tutti o nessuno.
+- **ntfy in casa** (#389), spento di default; **una voce locale con Piper** (facoltativa, `docs/VOCE.md`).
+- **Il tema Ologramma**: tavolozza Jarvis di serie, home come una scena, nucleo che batte con la voce, Cervello a stelle, icone della PWA, pillola
+  con lo stato del server (`GET /api/telemetria`).
+- Un ripristino non riporta i ricordi cancellati (tabella `ricordi_cancellati`, migrazione 0021).
+- Il banco della memoria (#269) e le misure del server (ADR 0012): con i vettori la soglia del recupero e' 0.40.
+- ADR 0009 (privacy della memoria), 0011 (canali esterni: non si fanno) e 0012 (ricerca per vettori).
+
+### Modificato
+- I cursori di velocita' e tono valgono anche per le voci del server (prima solo per quelle del browser).
+- Le notizie non fermano piu' la richiesta; «dove mi trovo» e il tramonto usano le frasi sentite davvero.
+
+### Corretto
+- Salvare un profilo dalla scheda Utenti non spegne la posizione collegata (#343); l'interfaccia su smartphone non si schiaccia e non si
+  allunga; cancellare un ricordo ne cancella subito il vettore (#253).
+
+---
+
 ## [0.7.0] - 2026-10-13 - Rifinitura
 
 Note complete: [`docs/release/v0.7.0.md`](docs/release/v0.7.0.md).

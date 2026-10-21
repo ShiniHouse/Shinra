@@ -386,7 +386,7 @@ provati**; cio' che non e' pronto si sposta e si scrive dove.
 
 ---
 
-## v0.8.0 — Memoria viva
+## v0.8.0 — Memoria viva — rilasciata il 21 ottobre 2026
 
 > Shinra ricorda, e chi abita la casa puo' vedere cosa ricorda, correggerlo e
 > farglielo dimenticare. La storia vecchia diventa un riassunto invece di sparire,
