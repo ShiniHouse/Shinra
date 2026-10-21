@@ -333,7 +333,14 @@ della casa principale: **non** deve usarlo. Chiedilo parlando della casa al mare
 Serve una **zona di Home Assistant** con lo **stesso nome** del luogo registrato in Shinra, e la persona (`person.…`) collegata.
 
 1. Crea la regola (dall'API, finché non c'è il campo nella schermata) con l'azione innocua «accendi una lampada» e leggi l'elenco:
-   se manca la zona o la persona, il campo `avviso` lo dice.
+   se manca la zona o la persona, il campo `avviso` lo dice. C'è uno script pronto (chiede il PIN, non lo scrivi nel comando):
+
+   ```bash
+   python scripts/regola_luogo.py --luogo "Casa al mare" --persona person.alessio --lampada light.cucina --rifiuto lock.ingresso
+   ```
+
+   Stampa la descrizione, l'avviso e, con `--rifiuto`, prova anche la serratura (deve essere rifiutata). Con `--evento partenza`
+   prova la partenza; con `--url http://IP-DEL-SERVER:8000` lo lanci da un altro PC.
 2. Esci dalla zona e rientra.
 
 - **Atteso:** una riga di registro `regola.eseguita` con motivo «arrivo <nome del luogo>» e **nessuna coordinata**.
