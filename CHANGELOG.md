@@ -18,7 +18,11 @@ installabile e utilizzabile.
 - **I lavori in background** (#431, ADR 0013, prima parte: il servizio): una richiesta che prende tempo diventa un lavoro con proprietario, stato,
   avanzamento, tetto di tempo (`lavori.tetto_secondi`) ed esito; uno alla volta, annullabile, privato per profilo, onesto al riavvio (un lavoro
   rimasto a meta' diventa «interrotto», non si riprende da solo). Rotte `GET /api/lavori`, `GET /api/lavori/{id}`, `POST /api/lavori/{id}/annulla`;
-  migrazione 0022. **Non e' ancora collegato alla chat**: «ci penso» arriva nella parte successiva.
+  migrazione 0022.
+- **«Ci penso»** (#431, seconda parte): una richiesta della dashboard che non finisce entro `lavori.soglia_secondi` (25, 0 la spegne) risponde subito
+  «ci sto lavorando», continua senza essere rifatta e l'esito arriva in chat dal canale degli eventi (`lavoro.finito`, solo a chi lo aveva chiesto), piu' un
+  avviso **senza contenuto** (categoria nuova `lavoro`). Annullare il lavoro ferma la richiesta. Chi non dichiara di poter aspettare (Alexa, satelliti a voce)
+  aspetta come sempre.
 
 ---
 

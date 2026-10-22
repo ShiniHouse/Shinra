@@ -240,6 +240,9 @@ class LavoriConfig(BaseModel):
     # Un lavoro non puo' durare piu' di cosi' (secondi); allo scadere e' `fallito` con il motivo «tetto di tempo». Il valore si
     # tiene comunque fra 10 secondi e un'ora (`domain/lavori.py`).
     tetto_secondi: int = 900
+    # Dopo quanti secondi senza risposta una richiesta della dashboard diventa un lavoro («ci sto lavorando») e la risposta arriva dopo.
+    # 0 spegne la funzione: si aspetta sempre, come prima. Vale solo per chi dichiara di poter ricevere la risposta piu' tardi (la dashboard).
+    soglia_secondi: int = 25
 
 
 class PluginConfig(BaseModel):
