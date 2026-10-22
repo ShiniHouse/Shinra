@@ -1,0 +1,1120 @@
+{
+ "intestazione": {
+  "data": "2026-10-23",
+  "modello": "qwen2.5:3b",
+  "macchina": "portatile Windows, CPU - scomposto",
+  "num_ctx": 4096,
+  "richieste": 18,
+  "ripetizioni": 1
+ },
+ "risultati": [
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-sera-salotto",
+    "categoria": "due_passi",
+    "frase": "chiudi la tapparella del salotto e accendi la luce del salotto",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "comanda_tapparella",
+      "args": {
+       "entity_id": "cover.salotto",
+       "azione": "chiudi"
+      }
+     },
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.salotto",
+       "action": "turn_on"
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 4,
+    "errore": "",
+    "pezzi": [
+     "chiudi la tapparella del salotto",
+     "accendi la luce del salotto"
+    ],
+    "scarti": [],
+    "secondi": 66.95,
+    "chiamate": [
+     {
+      "nome": "comanda_tapparella",
+      "args": {
+       "azione": "chiudi",
+       "entity_id": "cover.salotto"
+      }
+     },
+     {
+      "nome": "control_device",
+      "args": {
+       "action": "turn_on",
+       "entity_id": "light.salotto"
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": true,
+    "ok_argomenti": true,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": true
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-cucina-e-clima",
+    "categoria": "due_passi",
+    "frase": "spegni la luce della cucina e metti il clima della camera a 20 gradi",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.cucina",
+       "action": "turn_off"
+      }
+     },
+     {
+      "tool": "comanda_clima",
+      "args": {
+       "entity_id": "climate.camera",
+       "azione": "temperatura",
+       "temperatura": 20
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 4,
+    "errore": "",
+    "pezzi": [
+     "spegni la luce della cucina",
+     "metti il clima della camera a 20 gradi"
+    ],
+    "scarti": [],
+    "secondi": 50.61,
+    "chiamate": [
+     {
+      "nome": "control_device",
+      "args": {
+       "action": "turn_off",
+       "entity_id": "light.cucina"
+      }
+     },
+     {
+      "nome": "comanda_clima",
+      "args": {
+       "temperatura": 20,
+       "entity_id": "climate.camera"
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": true,
+    "ok_argomenti": false,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": false
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-meteo-e-promemoria",
+    "categoria": "due_passi",
+    "frase": "dimmi che tempo fa a Roma e ricordami di chiamare il dentista",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "get_weather",
+      "args": {
+       "location": {
+        "contiene": "roma"
+       }
+      }
+     },
+     {
+      "tool": "add_reminder",
+      "args": {
+       "text": {
+        "contiene": "dentista"
+       }
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 4,
+    "errore": "",
+    "pezzi": [
+     "dimmi che tempo fa a Roma",
+     "ricordami di chiamare il dentista"
+    ],
+    "scarti": [],
+    "secondi": 43.73,
+    "chiamate": [
+     {
+      "nome": "get_weather",
+      "args": {
+       "location": "Roma"
+      }
+     },
+     {
+      "nome": "add_reminder",
+      "args": {
+       "text": "Chiamare il dentista",
+       "time_info": "domani mattina"
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": true,
+    "ok_argomenti": true,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": true
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-film",
+    "categoria": "due_passi",
+    "frase": "spegni la luce del salotto e ventila lo studio",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.salotto",
+       "action": "turn_off"
+      }
+     },
+     {
+      "tool": "comanda_ventilatore",
+      "args": {
+       "entity_id": "fan.studio",
+       "azione": {
+        "una_di": [
+         "accendi",
+         true,
+         "turn_on",
+         "attiva"
+        ]
+       }
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 2,
+    "errore": "",
+    "pezzi": [
+     "spegni la luce del salotto e ventila lo studio"
+    ],
+    "scarti": [],
+    "secondi": 28.81,
+    "chiamate": [
+     {
+      "nome": "control_device",
+      "args": {
+       "action": "turn_off",
+       "entity_id": "light.salotto"
+      }
+     },
+     {
+      "nome": "control_device",
+      "args": {
+       "action": "fan.turn_on",
+       "entity_id": "fan.studio"
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": false,
+    "ok_argomenti": null,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": false
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-buonanotte",
+    "categoria": "tre_passi",
+    "frase": "vado a dormire: spegni le luci di salotto e cucina e attiva l'allarme",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.salotto",
+       "action": "turn_off"
+      }
+     },
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.cucina",
+       "action": "turn_off"
+      }
+     },
+     {
+      "tool": "comanda_allarme",
+      "args": {
+       "azione": {
+        "una_di": [
+         "arma_casa",
+         "arma_fuori"
+        ]
+       }
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 4,
+    "errore": "",
+    "pezzi": [
+     "vado a dormire spegni le luci di salotto e cucina",
+     "attiva l'allarme"
+    ],
+    "scarti": [],
+    "secondi": 41.36,
+    "chiamate": [
+     {
+      "nome": "activate_mode",
+      "args": {
+       "mode_name": "Notte"
+      }
+     },
+     {
+      "nome": "comanda_allarme",
+      "args": {
+       "azione": "arma_casa"
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": false,
+    "ok_argomenti": null,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": false
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-mattina",
+    "categoria": "tre_passi",
+    "frase": "buongiorno: apri la tapparella della camera, accendi la caffettiera e dimmi che tempo fa a Bologna",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "comanda_tapparella",
+      "args": {
+       "entity_id": "cover.camera",
+       "azione": "apri"
+      }
+     },
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "switch.caffettiera",
+       "action": "turn_on"
+      }
+     },
+     {
+      "tool": "get_weather",
+      "args": {
+       "location": {
+        "contiene": "bologna"
+       }
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 5,
+    "errore": "",
+    "pezzi": [
+     "buongiorno apri la tapparella della camera",
+     "accendi la caffettiera",
+     "dimmi che tempo fa a Bologna"
+    ],
+    "scarti": [],
+    "secondi": 70.2,
+    "chiamate": [
+     {
+      "nome": "comanda_tapparella",
+      "args": {
+       "entity_id": "cover.camera",
+       "azione": "apri"
+      }
+     },
+     {
+      "nome": "get_weather",
+      "args": {
+       "location": "Bologna",
+       "days": 1
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": false,
+    "ok_argomenti": null,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": false
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-pulizie",
+    "categoria": "tre_passi",
+    "frase": "avvia l'aspirapolvere, spegni la tv del salotto e accendi la luce del corridoio",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "comanda_aspirapolvere",
+      "args": {
+       "entity_id": "vacuum.robot",
+       "azione": {
+        "una_di": [
+         "avvia",
+         "start",
+         "pulisci"
+        ]
+       }
+      }
+     },
+     {
+      "tool": "comanda_media",
+      "args": {
+       "entity_id": "media_player.tv_salotto",
+       "azione": {
+        "una_di": [
+         "spegni",
+         false,
+         "turn_off"
+        ]
+       }
+      }
+     },
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.corridoio",
+       "action": "turn_on"
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 6,
+    "errore": "",
+    "pezzi": [
+     "avvia l'aspirapolvere",
+     "spegni la tv del salotto",
+     "accendi la luce del corridoio"
+    ],
+    "scarti": [],
+    "secondi": 87.49,
+    "chiamate": [
+     {
+      "nome": "comanda_aspirapolvere",
+      "args": {
+       "azione": "avvia",
+       "entity_id": "vacuum.robot"
+      }
+     },
+     {
+      "nome": "comanda_media",
+      "args": {
+       "entity_id": "media_player.tv_salotto",
+       "azione": "spegni"
+      }
+     },
+     {
+      "nome": "control_device",
+      "args": {
+       "action": "turn_on",
+       "entity_id": "light.corridoio"
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": true,
+    "ok_argomenti": true,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": true
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-due-luci-e-clima",
+    "categoria": "tre_passi",
+    "frase": "accendi le luci del bagno e della camera e porta il clima del salotto a 22",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.bagno",
+       "action": "turn_on"
+      }
+     },
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.camera",
+       "action": "turn_on"
+      }
+     },
+     {
+      "tool": "comanda_clima",
+      "args": {
+       "entity_id": "climate.salotto",
+       "azione": "temperatura",
+       "temperatura": 22
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 4,
+    "errore": "",
+    "pezzi": [
+     "accendi le luci del bagno e della camera",
+     "porta il clima del salotto a 22"
+    ],
+    "scarti": [],
+    "secondi": 59.22,
+    "chiamate": [
+     {
+      "nome": "control_device",
+      "args": {
+       "entity_id": "light.camera",
+       "brightness": 255,
+       "action": "turn_on"
+      }
+     },
+     {
+      "nome": "comanda_clima",
+      "args": {
+       "entity_id": "climate.salotto",
+       "temperatura": 22
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": false,
+    "ok_argomenti": null,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": false
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-serata-film",
+    "categoria": "quattro_e_piu",
+    "frase": "serata film: chiudi le tapparelle del salotto e della camera, spegni la luce del salotto e accendi quella del corridoio",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "comanda_tapparella",
+      "args": {
+       "entity_id": "cover.salotto",
+       "azione": "chiudi"
+      }
+     },
+     {
+      "tool": "comanda_tapparella",
+      "args": {
+       "entity_id": "cover.camera",
+       "azione": "chiudi"
+      }
+     },
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.salotto",
+       "action": "turn_off"
+      }
+     },
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.corridoio",
+       "action": "turn_on"
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 6,
+    "errore": "",
+    "pezzi": [
+     "serata film chiudi le tapparelle del salotto e della camera",
+     "spegni la luce del salotto",
+     "accendi quella del corridoio"
+    ],
+    "scarti": [],
+    "secondi": 87.16,
+    "chiamate": [
+     {
+      "nome": "comanda_tapparella",
+      "args": {
+       "entity_id": "tapparella camera",
+       "azione": "chiudi"
+      }
+     },
+     {
+      "nome": "control_device",
+      "args": {
+       "action": "turn_off",
+       "entity_id": "light.salotto"
+      }
+     },
+     {
+      "nome": "control_device",
+      "args": {
+       "action": "turn_on",
+       "entity_id": "light.corridoio"
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": false,
+    "ok_argomenti": null,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": false
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-esco-di-casa",
+    "categoria": "quattro_e_piu",
+    "frase": "esco di casa: spegni le luci di cucina, salotto e camera, e attiva l'allarme",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.cucina",
+       "action": "turn_off"
+      }
+     },
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.salotto",
+       "action": "turn_off"
+      }
+     },
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.camera",
+       "action": "turn_off"
+      }
+     },
+     {
+      "tool": "comanda_allarme",
+      "args": {
+       "azione": {
+        "una_di": [
+         "arma_casa",
+         "arma_fuori"
+        ]
+       }
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 4,
+    "errore": "",
+    "pezzi": [
+     "esco di casa spegni le luci di cucina e salotto e camera",
+     "attiva l'allarme"
+    ],
+    "scarti": [],
+    "secondi": 58.69,
+    "chiamate": [
+     {
+      "nome": "control_device",
+      "args": {
+       "entity_id": "light.cucina",
+       "action": "turn_off"
+      }
+     },
+     {
+      "nome": "control_device",
+      "args": {
+       "entity_id": "light.salotto",
+       "action": "turn_off"
+      }
+     },
+     {
+      "nome": "control_device",
+      "args": {
+       "entity_id": "light.camera",
+       "action": "turn_off"
+      }
+     },
+     {
+      "nome": "comanda_allarme",
+      "args": {
+       "azione": "arma_casa"
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": true,
+    "ok_argomenti": true,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": true
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-giornata",
+    "categoria": "quattro_e_piu",
+    "frase": "organizza la serata: accendi la luce della cucina, metti il clima del salotto a 21, ricordami di comprare il pane e dimmi che tempo fa a Roma",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.cucina",
+       "action": "turn_on"
+      }
+     },
+     {
+      "tool": "comanda_clima",
+      "args": {
+       "entity_id": "climate.salotto",
+       "azione": "temperatura",
+       "temperatura": 21
+      }
+     },
+     {
+      "tool": "add_reminder",
+      "args": {
+       "text": {
+        "contiene": "pane"
+       }
+      }
+     },
+     {
+      "tool": "get_weather",
+      "args": {
+       "location": {
+        "contiene": "roma"
+       }
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 8,
+    "errore": "",
+    "pezzi": [
+     "organizza la serata accendi la luce della cucina",
+     "metti il clima del salotto a 21",
+     "ricordami di comprare il pane",
+     "dimmi che tempo fa a Roma"
+    ],
+    "scarti": [],
+    "secondi": 95.78,
+    "chiamate": [
+     {
+      "nome": "control_device",
+      "args": {
+       "action": "turn_on",
+       "entity_id": "light.cucina"
+      }
+     },
+     {
+      "nome": "comanda_clima",
+      "args": {
+       "entity_id": "climate.salotto",
+       "temperatura": 21
+      }
+     },
+     {
+      "nome": "add_reminder",
+      "args": {
+       "text": "comprare il pane",
+       "time_info": "domani mattina"
+      }
+     },
+     {
+      "nome": "get_weather",
+      "args": {
+       "location": "Roma"
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": true,
+    "ok_argomenti": false,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": false
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-tutte-le-luci",
+    "categoria": "quattro_e_piu",
+    "frase": "spegni le luci della cucina, del salotto, della camera e dello studio",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.cucina",
+       "action": "turn_off"
+      }
+     },
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.salotto",
+       "action": "turn_off"
+      }
+     },
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.camera",
+       "action": "turn_off"
+      }
+     },
+     {
+      "tool": "control_device",
+      "args": {
+       "entity_id": "light.studio",
+       "action": "turn_off"
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 2,
+    "errore": "",
+    "pezzi": [
+     "spegni le luci della cucina e del salotto e della camera e dello studio"
+    ],
+    "scarti": [],
+    "secondi": 40.86,
+    "chiamate": [
+     {
+      "nome": "control_device",
+      "args": {
+       "action": "turn_off",
+       "entity_id": "light.cucina"
+      }
+     },
+     {
+      "nome": "control_device",
+      "args": {
+       "entity_id": "light.salotto",
+       "action": "turn_off"
+      }
+     },
+     {
+      "nome": "control_device",
+      "args": {
+       "entity_id": "light.studio",
+       "action": "turn_off"
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": false,
+    "ok_argomenti": null,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": false
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-se-piove-no",
+    "categoria": "con_dipendenza",
+    "frase": "se domani piove chiudi la tapparella del salotto",
+    "attesi": [
+     {
+      "tool": "get_weather",
+      "args": {
+       "location": {
+        "presente": true
+       }
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 2,
+    "errore": "",
+    "pezzi": [
+     "se domani piove chiudi la tapparella del salotto"
+    ],
+    "scarti": [],
+    "secondi": 42.69,
+    "chiamate": [
+     {
+      "nome": "comanda_tapparella",
+      "args": {
+       "azione": "chiudi",
+       "entity_id": "tapparella salotto"
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": false,
+    "ok_argomenti": null,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": false
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-se-caldo-ventilatore",
+    "categoria": "con_dipendenza",
+    "frase": "guarda com'e' il clima del salotto e, se e' acceso, mettilo a 19 gradi",
+    "ordine": "libero",
+    "attesi": [
+     {
+      "tool": "stato_clima",
+      "args": {
+       "entity_id": "climate.salotto"
+      }
+     },
+     {
+      "tool": "comanda_clima",
+      "args": {
+       "entity_id": "climate.salotto",
+       "azione": "temperatura",
+       "temperatura": 19
+      }
+     }
+    ]
+   },
+   "esito": {
+    "giri": 3,
+    "errore": "",
+    "pezzi": [
+     "guarda com'e' il clima del salotto e e se e' acceso",
+     "mettilo a 19 gradi"
+    ],
+    "scarti": [],
+    "secondi": 38.41,
+    "chiamate": [
+     {
+      "nome": "comanda_clima",
+      "args": {
+       "entity_id": "climate.salotto",
+       "temperatura": 19
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": false,
+    "ok_argomenti": null,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": false
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-stato-e-spegni",
+    "categoria": "con_dipendenza",
+    "frase": "controlla se ci sono aperture e poi dimmi se posso inserire l'allarme",
+    "attesi": [
+     {
+      "tool": "stato_aperture"
+     }
+    ]
+   },
+   "esito": {
+    "giri": 2,
+    "errore": "",
+    "pezzi": [
+     "controlla se ci sono aperture dimmi se posso inserire l'allarme"
+    ],
+    "scarti": [],
+    "secondi": 23.89,
+    "chiamate": [
+     {
+      "nome": "stato_aperture",
+      "args": {}
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": true,
+    "ok_argomenti": true,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": true
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-ambigua-luci",
+    "categoria": "ambigua",
+    "frase": "accendi la luce e metti il clima a 21",
+    "attesi": []
+   },
+   "esito": {
+    "giri": 4,
+    "errore": "",
+    "pezzi": [
+     "accendi la luce",
+     "metti il clima a 21"
+    ],
+    "scarti": [],
+    "secondi": 61.44,
+    "chiamate": [
+     {
+      "nome": "control_device",
+      "args": {
+       "action": "turn_on",
+       "entity_id": "light.salotto"
+      }
+     },
+     {
+      "nome": "comanda_clima",
+      "args": {
+       "entity_id": "climate.salotto",
+       "temperatura": 21
+      }
+     }
+    ]
+   },
+   "verdetto": {
+    "ok_strumento": false,
+    "ok_argomenti": null,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": false
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-ambigua-serratura",
+    "categoria": "ambigua",
+    "frase": "apri e chiudi quella cosa all'ingresso un paio di volte",
+    "attesi": []
+   },
+   "esito": {
+    "giri": 2,
+    "errore": "",
+    "pezzi": [
+     "apri",
+     "chiudi quella cosa all'ingresso un paio di volte"
+    ],
+    "scarti": [],
+    "secondi": 6.2,
+    "chiamate": []
+   },
+   "verdetto": {
+    "ok_strumento": true,
+    "ok_argomenti": null,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": true
+   }
+  },
+  {
+   "giro": 0,
+   "strategia": "scomposto",
+   "voce": {
+    "id": "p-sconosciuta-garage",
+    "categoria": "sconosciuta",
+    "frase": "alza la basculante del garage e accendi la luce del garage",
+    "attesi": []
+   },
+   "esito": {
+    "giri": 3,
+    "errore": "",
+    "pezzi": [
+     "alza la basculante del garage",
+     "accendi la luce del garage"
+    ],
+    "scarti": [
+     "passo 1: il dispositivo «light.garage» non c'e' in casa"
+    ],
+    "secondi": 32.28,
+    "chiamate": []
+   },
+   "verdetto": {
+    "ok_strumento": true,
+    "ok_argomenti": null,
+    "inventate": [],
+    "inesistenti": [],
+    "riuscita": true
+   }
+  }
+ ]
+}
