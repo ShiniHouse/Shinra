@@ -14,6 +14,9 @@ Tre strategie sulle stesse richieste (`banco/piani/corpus.yaml`) e lo stesso ver
             **valida** (strumento esistente, dispositivo vero, tetto di passi) e solo allora lo esegue. E' la forma che la #191 vorrebbe
             costruire: se non batte il ciclo di produzione, non vale la pena di costruirla cosi'.
 
+- `scomposto`  il **codice** (non il modello) spezza la frase in pezzi, uno per cosa da fare; ogni pezzo va al suo agente di dominio (il router
+            sceglie, il modello vede solo 2-3 strumenti), e il risultato passa dal validatore. Il modello non pianifica: fa una cosa piccola per volta.
+
 Un caso conta piu' degli altri: `con_dipendenza` («se domani piove chiudi la tapparella») chiede di **leggere prima e decidere dopo**.
 Un piano scritto tutto in anticipo non puo' farlo; il ciclo che rilegge il risultato forse si'.
 
@@ -47,7 +50,7 @@ import banco_tool_calling as bt
 
 BANCO_PIANI = bt.BANCO / "piani"
 MAX_PASSI = 8  # il tetto dell'ADR 0013: un modello che continua ad aggiungere passi si ferma qui
-STRATEGIE = ("solo", "agenti", "piano")
+STRATEGIE = ("solo", "agenti", "piano", "scomposto")
 
 ISTRUZIONI_PIANIFICATORE = """Sei il pianificatore di una casa intelligente. Ricevi UNA richiesta e rispondi SOLO con un oggetto JSON, senza altro testo:
 
@@ -206,6 +209,98 @@ async def esegui_piano(
     return esito
 
 
+# ------------------------------------------------------------------ la strategia «scomposto»
+
+# Dove il codice taglia una frase: virgole, due punti, «e», «poi». Un pezzo senza una parola d'azione non e' un'azione (e' «vado a dormire», o «della
+# camera» di «accendi le luci del bagno e della camera»): si riattacca al vicino invece di diventare un pezzo a se'.
+SEPARATORI = re.compile(
+    r"\s*(?:[,;:]|(?<!\S)e(?!\S)|(?<!\S)poi(?!\S)|(?<!\S)inoltre(?!\S))\s*", re.IGNORECASE
+)
+MASSIMO_PEZZI = 6
+
+
+def spezza(frase: str, parole_azione: tuple[str, ...]) -> list[str]:
+    """I pezzi di una frase, uno per cosa da fare. Senza parole d'azione riconoscibili, la frase intera: non si inventa niente."""
+    parole = tuple(p.lower() for p in parole_azione)
+
+    def ha_azione(pezzo: str) -> bool:
+        return any(k in pezzo.lower() for k in parole)
+
+    pezzi = [p.strip() for p in SEPARATORI.split(frase or "") if p and p.strip()]
+    risultato: list[str] = []
+    in_attesa = ""  # i pezzi senza azione all'inizio («vado a dormire»): si attaccano al primo che ce l'ha
+    for pezzo in pezzi:
+        if ha_azione(pezzo):
+            risultato.append(f"{in_attesa} {pezzo}".strip())
+            in_attesa = ""
+        elif risultato:
+            risultato[-1] = f"{risultato[-1]} e {pezzo}"  # «... luci del bagno» + «della camera»
+        else:
+            in_attesa = f"{in_attesa} {pezzo}".strip()
+    if in_attesa:
+        if risultato:
+            risultato[-1] = f"{risultato[-1]} {in_attesa}"
+        else:
+            risultato = [in_attesa]
+    return (risultato or [frase])[:MASSIMO_PEZZI]
+
+
+async def esegui_scomposto(
+    cliente: httpx.AsyncClient,
+    url: str,
+    modello: str,
+    voce: dict[str, Any],
+    mondo: bt.Mondo,
+    prompt: str,
+    schemi_tutti: list[dict[str, Any]],
+    strumenti: set[str],
+    num_ctx: int,
+    temperatura: float,
+    parole: tuple[str, ...],
+) -> dict[str, Any]:
+    """Una richiesta spezzata dal codice: ogni pezzo passa dal ciclo con il router per dominio, i risultati si uniscono e si validano."""
+    esito: dict[str, Any] = {"giri": 0, "errore": "", "pezzi": [], "scarti": []}
+    inizio = time.monotonic()
+    pezzi = spezza(voce["frase"], parole)
+    esito["pezzi"] = pezzi
+    chiamate: list[bt.Chiamata] = []
+    for pezzo in pezzi:
+        parziale = await bt.esegui_voce(
+            cliente,
+            url,
+            modello,
+            {**voce, "frase": pezzo},
+            mondo,
+            prompt,
+            schemi_tutti,
+            strumenti,
+            num_ctx,
+            temperatura,
+            parole,
+            False,
+            agenti=True,
+            contesto=bt.contesto_di_richiesta(mondo),
+        )
+        esito["giri"] += parziale.get("giri", 0)
+        if parziale.get("errore") and not esito["errore"]:
+            esito["errore"] = parziale["errore"]
+        chiamate.extend(bt.Chiamata(c["nome"], c["args"]) for c in parziale.get("chiamate", []))
+    # Lo stesso validatore del piano: strumento esistente, dispositivo vero, tetto di passi. E niente doppioni fra pezzi.
+    visti: set[str] = set()
+    uniche = []
+    for c in chiamate:
+        chiave = json.dumps([c.nome, c.args], sort_keys=True, ensure_ascii=False)
+        if chiave not in visti:
+            visti.add(chiave)
+            uniche.append(c)
+    accettate, esito["scarti"] = valida_piano(
+        {"passi": [{"strumento": c.nome, "argomenti": c.args} for c in uniche]}, strumenti, mondo
+    )
+    esito["secondi"] = round(time.monotonic() - inizio, 2)
+    esito["chiamate"] = [{"nome": c.nome, "args": c.args} for c in accettate]
+    return esito
+
+
 # ------------------------------------------------------------------ verdetto e report
 
 
@@ -346,7 +441,21 @@ async def principale(args: argparse.Namespace) -> int:
         for giro in range(args.ripetizioni):
             for voce in corpus:
                 for strategia in args.strategie:
-                    if strategia == "piano":
+                    if strategia == "scomposto":
+                        esito = await esegui_scomposto(
+                            cliente,
+                            args.url,
+                            modello,
+                            voce,
+                            mondo,
+                            prompt,
+                            TOOLS_SCHEMA,
+                            strumenti,
+                            num_ctx,
+                            args.temperatura,
+                            parole,
+                        )
+                    elif strategia == "piano":
                         esito = await esegui_piano(
                             cliente,
                             args.url,
