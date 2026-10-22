@@ -1,0 +1,253 @@
+"""Il banco dei piani misura quello che dice di misurare (#430).
+
+Gira in CI senza rete e senza modello: il corpus e' valido (ogni strumento e ogni dispositivo esiste), la lettura e la validazione di un
+piano sono giuste (anche con un modello che scrive male o inventa), il verdetto e' quello del banco del tool calling, e il report si scrive.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+from pathlib import Path
+
+import pytest
+
+RADICE = Path(__file__).resolve().parents[2]
+
+
+@pytest.fixture(scope="module")
+def banco():
+    sys.path.insert(0, str(RADICE / "scripts"))
+    spec = importlib.util.spec_from_file_location("banco_piani", RADICE / "scripts" / "banco_piani.py")
+    modulo = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = modulo
+    spec.loader.exec_module(modulo)
+    return modulo
+
+
+@pytest.fixture(scope="module")
+def mondo(banco):
+    return banco.bt.Mondo.carica()
+
+
+@pytest.fixture(scope="module")
+def strumenti():
+    from shinra.skills.registry import TOOLS_SCHEMA
+
+    return {s["function"]["name"] for s in TOOLS_SCHEMA}
+
+
+# ------------------------------------------------------------------ il corpus
+
+
+def test_il_corpus_e_valido(banco, mondo, strumenti):
+    corpus = banco.carica_corpus()
+    ids = [v["id"] for v in corpus]
+    assert len(ids) == len(set(ids)), "richieste con lo stesso id"
+    categorie = {v["categoria"] for v in corpus}
+    assert {
+        "due_passi",
+        "tre_passi",
+        "quattro_e_piu",
+        "con_dipendenza",
+        "ambigua",
+        "sconosciuta",
+    } <= categorie
+    for v in corpus:
+        for attesa in v.get("attesi") or []:
+            assert attesa["tool"] in strumenti, f"{v['id']}: lo strumento {attesa['tool']} non esiste"
+            dispositivo = (attesa.get("args") or {}).get("entity_id")
+            if isinstance(dispositivo, str):
+                assert (
+                    dispositivo in mondo.entita
+                ), f"{v['id']}: il dispositivo {dispositivo} non e' nella casa finta"
+    for v in corpus:
+        if v["categoria"] in ("due_passi", "tre_passi", "quattro_e_piu"):
+            minimo = {"due_passi": 2, "tre_passi": 3, "quattro_e_piu": 4}[v["categoria"]]
+            assert len(v["attesi"]) >= minimo, f"{v['id']}: meno passi di quelli della sua categoria"
+        if v["categoria"] in ("ambigua", "sconosciuta"):
+            assert not v["attesi"], f"{v['id']}: una richiesta da fermare non ha uno strumento giusto"
+
+
+# ------------------------------------------------------------------ leggere il piano
+
+
+@pytest.mark.parametrize(
+    "testo",
+    [
+        '{"passi": [{"strumento": "control_device", "argomenti": {"entity_id": "light.cucina", "action": "turn_on"}}], "chiedi": null}',
+        '```json\n{"passi": [{"strumento": "control_device", "argomenti": {}}]}\n```',
+        'Ecco il piano: {"passi": [{"strumento": "stato_aperture"}], "chiedi": null} spero vada bene',
+        '{"x": 1} {"passi": []}',
+    ],
+)
+def test_un_piano_si_legge_anche_se_il_modello_ci_scrive_attorno(banco, testo):
+    assert isinstance(banco.leggi_piano(testo)["passi"], list)
+
+
+@pytest.mark.parametrize(
+    "testo", ["", "nessun piano", "{non json}", '{"passi": "uno"}', '{"altro": []}', "[1, 2]"]
+)
+def test_un_piano_illeggibile_e_none(banco, testo):
+    assert banco.leggi_piano(testo) is None
+
+
+# ------------------------------------------------------------------ validare il piano
+
+
+def piano(*passi):
+    return {"passi": [{"strumento": n, "argomenti": a} for n, a in passi]}
+
+
+def test_un_piano_giusto_passa_intero(banco, mondo, strumenti):
+    accettati, scarti = banco.valida_piano(
+        piano(
+            ("control_device", {"entity_id": "light.cucina", "action": "turn_off"}),
+            (
+                "comanda_tapparella",
+                {"entity_id": "tapparella salotto", "azione": "chiudi"},
+            ),  # un alias e' valido
+        ),
+        strumenti,
+        mondo,
+    )
+    assert [c.nome for c in accettati] == ["control_device", "comanda_tapparella"] and scarti == []
+
+
+def test_il_modello_non_e_fidato_strumenti_e_dispositivi_inventati_si_scartano(banco, mondo, strumenti):
+    accettati, scarti = banco.valida_piano(
+        piano(
+            ("apri_il_garage", {"entity_id": "cover.garage"}),
+            ("control_device", {"entity_id": "light.mansarda", "action": "turn_on"}),
+            ("control_device", {"entity_id": "light.cucina", "action": "turn_on"}),
+        ),
+        strumenti,
+        mondo,
+    )
+    assert [c.args["entity_id"] for c in accettati] == ["light.cucina"]
+    assert len(scarti) == 2 and "non esiste" in scarti[0] and "non c'e' in casa" in scarti[1]
+
+
+def test_passi_che_non_sono_oggetti_si_scartano_senza_rompere_niente(banco, mondo, strumenti):
+    accettati, scarti = banco.valida_piano(
+        {
+            "passi": [
+                "accendi",
+                7,
+                {"strumento": "stato_aperture", "argomenti": "tutte"},
+                {"strumento": "stato_aperture"},
+            ]
+        },
+        strumenti,
+        mondo,
+    )
+    assert [c.nome for c in accettati] == ["stato_aperture"] and len(scarti) == 3
+
+
+def test_un_modello_che_continua_ad_aggiungere_passi_si_ferma_al_tetto(banco, mondo, strumenti):
+    passi = [("control_device", {"entity_id": "light.cucina", "action": "turn_on"})] * 30
+    accettati, scarti = banco.valida_piano(piano(*passi), strumenti, mondo)
+    assert len(accettati) == banco.MAX_PASSI
+    assert any("tetto" in s for s in scarti)
+
+
+def test_il_catalogo_compatto_e_corto_e_segna_gli_obbligatori(banco):
+    from shinra.skills.registry import TOOLS_SCHEMA
+
+    catalogo = banco.catalogo_compatto(TOOLS_SCHEMA)
+    assert "- control_device(entity_id*, action*" in catalogo
+    assert (
+        len(catalogo) // 4 < 1500
+    ), "il catalogo compatto deve costare poche centinaia di token, non migliaia"
+
+
+# ------------------------------------------------------------------ il verdetto
+
+
+def esito(*chiamate):
+    return {"chiamate": [{"nome": n, "args": a} for n, a in chiamate], "secondi": 1.0}
+
+
+def voce_di(banco, id_):
+    return next(v for v in banco.carica_corpus() if v["id"] == id_)
+
+
+def test_il_verdetto_e_quello_del_banco_del_tool_calling(banco, mondo, strumenti):
+    v = voce_di(banco, "p-cucina-e-clima")
+    giusto = esito(
+        ("control_device", {"entity_id": "light.cucina", "action": "turn_off"}),
+        ("comanda_clima", {"entity_id": "climate.camera", "azione": "temperatura", "temperatura": 20}),
+    )
+    assert banco.verdetto(v, giusto, mondo, strumenti)["riuscita"] is True
+    una_sola = esito(("control_device", {"entity_id": "light.cucina", "action": "turn_off"}))
+    assert banco.verdetto(v, una_sola, mondo, strumenti)["riuscita"] is False
+
+
+def test_il_se_piove_vuole_leggere_e_non_chiudere(banco, mondo, strumenti):
+    """Nella casa finta domani e' sereno: chiudere comunque la tapparella e' sbagliato, anche se «sembra» coerente."""
+    v = voce_di(banco, "p-se-piove-no")
+    assert banco.verdetto(v, esito(("get_weather", {"location": "Bologna"})), mondo, strumenti)["riuscita"]
+    chiude = esito(
+        ("get_weather", {"location": "Bologna"}),
+        ("comanda_tapparella", {"entity_id": "cover.salotto", "azione": "chiudi"}),
+    )
+    assert not banco.verdetto(v, chiude, mondo, strumenti)["riuscita"]
+
+
+def test_una_richiesta_da_fermare_passa_solo_se_non_comanda_niente(banco, mondo, strumenti):
+    v = voce_di(banco, "p-ambigua-luci")
+    assert banco.verdetto(v, esito(), mondo, strumenti)["riuscita"]
+    assert not banco.verdetto(
+        v, esito(("control_device", {"entity_id": "light.cucina", "action": "turn_on"})), mondo, strumenti
+    )["riuscita"]
+
+
+def test_un_dispositivo_inventato_o_un_errore_non_e_mai_una_riuscita(banco, mondo, strumenti):
+    v = voce_di(banco, "p-tutte-le-luci")
+    inventato = esito(
+        *[
+            ("control_device", {"entity_id": f"light.{n}", "action": "turn_off"})
+            for n in ("cucina", "salotto", "camera", "mansarda")
+        ]
+    )
+    assert not banco.verdetto(v, inventato, mondo, strumenti)["riuscita"]
+    con_errore = {**esito(), "errore": "ReadTimeout: lento"}
+    assert not banco.verdetto(voce_di(banco, "p-ambigua-luci"), con_errore, mondo, strumenti)["riuscita"]
+
+
+# ------------------------------------------------------------------ il report
+
+
+def test_il_report_conta_e_si_scrive(banco, mondo, strumenti):
+    corpus = {v["id"]: v for v in banco.carica_corpus()}
+    risultati = []
+    perfetto = esito(
+        ("control_device", {"entity_id": "light.cucina", "action": "turn_off"}),
+        ("comanda_clima", {"entity_id": "climate.camera", "azione": "temperatura", "temperatura": 20}),
+    )
+    sbagliato = esito(("control_device", {"entity_id": "light.cucina", "action": "turn_off"}))
+    for strategia, e in (("solo", sbagliato), ("piano", perfetto)):
+        v = corpus["p-cucina-e-clima"]
+        risultati.append(
+            {
+                "giro": 0,
+                "strategia": strategia,
+                "voce": v,
+                "esito": e,
+                "verdetto": banco.verdetto(v, e, mondo, strumenti),
+            }
+        )
+    testo = banco.markdown(
+        {
+            "data": "2026-10-21",
+            "modello": "finto",
+            "macchina": "prova",
+            "num_ctx": 4096,
+            "richieste": 1,
+            "ripetizioni": 1,
+        },
+        risultati,
+    )
+    assert "| due_passi | 0/1 (0%) | 1/1 (100%) |" in testo
+    assert "Dove sbaglia" in testo and "`solo` · p-cucina-e-clima" in testo
+    assert banco.riepilogo(risultati[:1])["riuscite"] == 0 and banco.riepilogo(risultati[1:])["riuscite"] == 1
