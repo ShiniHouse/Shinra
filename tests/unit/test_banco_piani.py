@@ -373,3 +373,67 @@ async def test_ogni_pezzo_passa_dal_ciclo_con_il_router_e_il_risultato_si_valida
     ], "un doppione e un'invenzione non entrano"
     assert len(esito["scarti"]) == 1 and "mansarda" in esito["scarti"][0]
     assert esito["pezzi"] == ["chiudi la tapparella del salotto", "accendi la luce del salotto"]
+
+
+# ------------------------------------------------------------------ le due migliorie senza modello
+
+
+def test_un_obbligatorio_ovvio_si_completa_e_uno_incerto_no(banco):
+    from shinra.skills.registry import TOOLS_SCHEMA
+
+    schemi = banco.schemi_per_nome(TOOLS_SCHEMA)
+    # «metti il clima a 20 gradi»: c'e' `temperatura`, e `temperatura` e' una delle scelte di `azione`
+    completato, mancanti = banco.completa_argomenti(
+        {"entity_id": "climate.camera", "temperatura": 20}, schemi["comanda_clima"]
+    )
+    assert completato["azione"] == "temperatura" and mancanti == []
+    # niente da cui dedurlo: non si indovina
+    _, mancanti = banco.completa_argomenti({"entity_id": "climate.camera"}, schemi["comanda_clima"])
+    assert mancanti == ["azione"]
+    # due scelte possibili (due nomi di argomento che sono valori di `azione`): ambiguo, non si completa
+    _, mancanti = banco.completa_argomenti(
+        {"entity_id": "climate.camera", "temperatura": 20, "umidita": 40}, schemi["comanda_clima"]
+    )
+    assert mancanti == ["azione"]
+    # un parametro gia' dato non si tocca
+    completato, _ = banco.completa_argomenti(
+        {"entity_id": "climate.camera", "azione": "spegni", "temperatura": 20}, schemi["comanda_clima"]
+    )
+    assert completato["azione"] == "spegni"
+
+
+def test_un_passo_senza_i_suoi_obbligatori_si_scarta_dicendo_cosa_manca(banco, mondo, strumenti):
+    from shinra.skills.registry import TOOLS_SCHEMA
+
+    schemi = banco.schemi_per_nome(TOOLS_SCHEMA)
+    accettati, scarti = banco.valida_piano(
+        piano(
+            ("comanda_clima", {"entity_id": "climate.camera"}),
+            ("comanda_clima", {"entity_id": "climate.camera", "temperatura": 20}),
+        ),
+        strumenti,
+        mondo,
+        schemi=schemi,
+    )
+    assert [c.args.get("azione") for c in accettati] == ["temperatura"]
+    assert len(scarti) == 1 and "azione" in scarti[0] and "obbligatorio" in scarti[0]
+
+
+def test_senza_gli_schemi_la_validazione_e_quella_di_prima(banco, mondo, strumenti):
+    accettati, scarti = banco.valida_piano(
+        piano(("comanda_clima", {"entity_id": "climate.camera"})), strumenti, mondo
+    )
+    assert len(accettati) == 1 and scarti == []
+
+
+def test_il_pronome_prende_il_nome_dell_ultimo_dispositivo_detto(banco, parole):
+    pezzi = banco.spezza("spegni la luce del salotto e accendi quella del corridoio", parole)
+    assert pezzi == ["spegni la luce del salotto", "accendi la luce del corridoio"]
+    # senza un nome prima, il pronome resta com'e': non si inventa
+    assert banco.spezza("accendi quella del corridoio", parole) == ["accendi quella del corridoio"]
+
+
+def test_ventila_e_una_parola_d_azione_nell_esperimento(banco, parole):
+    senza = banco.spezza("spegni la luce del salotto e ventila lo studio", parole)
+    con = banco.spezza("spegni la luce del salotto e ventila lo studio", (*parole, *banco.PAROLE_IN_PIU))
+    assert len(senza) == 1 and len(con) == 2

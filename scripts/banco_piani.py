@@ -92,8 +92,42 @@ def leggi_piano(testo: str) -> dict[str, Any] | None:
     return None
 
 
+def schemi_per_nome(schemi: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {s["function"]["name"]: s["function"] for s in schemi}
+
+
+def completa_argomenti(
+    argomenti: dict[str, Any], funzione: dict[str, Any]
+) -> tuple[dict[str, Any], list[str]]:
+    """Completa cio' che e' ovvio e dice cosa manca: `(argomenti, obbligatori_mancanti)`.
+
+    Un modello piccolo a volte dimentica un parametro obbligatorio che la frase ha gia' detto: «metti il clima a 20 gradi» arriva con
+    `temperatura: 20` e **senza** `azione`. Se il parametro che manca e' una scelta fra valori (`enum`) e **uno solo** di quei valori e' anche il
+    nome di un altro argomento che c'e' (`temperatura`, `posizione`, `volume`...), e' quello: si completa. Altrimenti non si indovina: il passo
+    resta senza, e chi chiama lo scarta dicendo cosa manca.
+    """
+    parametri = (funzione.get("parameters") or {}).get("properties") or {}
+    obbligatori = (funzione.get("parameters") or {}).get("required") or []
+    completati = dict(argomenti)
+    mancanti = []
+    for nome in obbligatori:
+        if completati.get(nome) not in (None, ""):
+            continue
+        scelte = parametri.get(nome, {}).get("enum") or []
+        candidati = [v for v in scelte if v in completati and v != nome]
+        if len(candidati) == 1:
+            completati[nome] = candidati[0]
+        else:
+            mancanti.append(nome)
+    return completati, mancanti
+
+
 def valida_piano(
-    piano: dict[str, Any], strumenti: set[str], mondo: bt.Mondo, massimo: int = MAX_PASSI
+    piano: dict[str, Any],
+    strumenti: set[str],
+    mondo: bt.Mondo,
+    massimo: int = MAX_PASSI,
+    schemi: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[list[bt.Chiamata], list[str]]:
     """I passi che il codice accetterebbe di eseguire, e i motivi degli scarti.
 
@@ -125,6 +159,11 @@ def valida_piano(
         ):
             scarti.append(f"passo {numero}: il dispositivo «{dispositivo}» non c'e' in casa")
             continue
+        if schemi is not None and nome in schemi:
+            argomenti, mancanti = completa_argomenti(argomenti, schemi[nome])
+            if mancanti:
+                scarti.append(f"passo {numero}: a «{nome}» manca il parametro obbligatorio «{mancanti[0]}»")
+                continue
         accettati.append(bt.Chiamata(nome, argomenti))
     return accettati, scarti
 
@@ -199,7 +238,7 @@ async def esegui_piano(
         if piano is not None:
             esito["piano_leggibile"] = True
             esito["chiede"] = piano.get("chiedi")
-            chiamate, esito["scarti"] = valida_piano(piano, strumenti, mondo)
+            chiamate, esito["scarti"] = valida_piano(piano, strumenti, mondo, schemi=schemi_per_nome(schemi))
     except (httpx.HTTPError, ValueError) as errore:
         esito["errore"] = f"{type(errore).__name__}: {errore}"
     esito["secondi"] = round(time.monotonic() - inizio, 2)
@@ -217,6 +256,20 @@ SEPARATORI = re.compile(
     r"\s*(?:[,;:]|(?<!\S)e(?!\S)|(?<!\S)poi(?!\S)|(?<!\S)inoltre(?!\S))\s*", re.IGNORECASE
 )
 MASSIMO_PEZZI = 6
+
+# Parole d'azione che il lessico della lingua non ha ancora (esperimento: in produzione starebbero in `it.yaml`).
+PAROLE_IN_PIU = ("ventil",)
+# «accendi la luce della cucina e accendi quella del corridoio»: il pronome si sostituisce con il nome dell'ultimo dispositivo detto.
+NOMI_DEI_DISPOSITIVI = {
+    "luce": "la luce",
+    "luci": "le luci",
+    "tapparella": "la tapparella",
+    "tapparelle": "le tapparelle",
+    "clima": "il clima",
+    "tv": "la tv",
+    "ventilatore": "il ventilatore",
+}
+PRONOMI = re.compile(r"\bquell[aeoi]\b", re.IGNORECASE)
 
 
 def spezza(frase: str, parole_azione: tuple[str, ...]) -> list[str]:
@@ -242,7 +295,20 @@ def spezza(frase: str, parole_azione: tuple[str, ...]) -> list[str]:
             risultato[-1] = f"{risultato[-1]} {in_attesa}"
         else:
             risultato = [in_attesa]
-    return (risultato or [frase])[:MASSIMO_PEZZI]
+    return [_con_il_nome(pezzo, risultato[:i]) for i, pezzo in enumerate(risultato or [frase])][
+        :MASSIMO_PEZZI
+    ]
+
+
+def _con_il_nome(pezzo: str, precedenti: list[str]) -> str:
+    """«accendi quella del corridoio» dopo «spegni la luce del salotto» diventa «accendi la luce del corridoio»: senza il nome il modello non sa cosa."""
+    if not PRONOMI.search(pezzo) or not precedenti:
+        return pezzo
+    for prima in reversed(precedenti):
+        trovati = [p for p in re.findall(r"[a-zàèéìòù]+", prima.lower()) if p in NOMI_DEI_DISPOSITIVI]
+        if trovati:
+            return PRONOMI.sub(NOMI_DEI_DISPOSITIVI[trovati[-1]], pezzo, count=1)
+    return pezzo
 
 
 async def esegui_scomposto(
@@ -261,7 +327,7 @@ async def esegui_scomposto(
     """Una richiesta spezzata dal codice: ogni pezzo passa dal ciclo con il router per dominio, i risultati si uniscono e si validano."""
     esito: dict[str, Any] = {"giri": 0, "errore": "", "pezzi": [], "scarti": []}
     inizio = time.monotonic()
-    pezzi = spezza(voce["frase"], parole)
+    pezzi = spezza(voce["frase"], (*parole, *PAROLE_IN_PIU))
     esito["pezzi"] = pezzi
     chiamate: list[bt.Chiamata] = []
     for pezzo in pezzi:
@@ -294,7 +360,10 @@ async def esegui_scomposto(
             visti.add(chiave)
             uniche.append(c)
     accettate, esito["scarti"] = valida_piano(
-        {"passi": [{"strumento": c.nome, "argomenti": c.args} for c in uniche]}, strumenti, mondo
+        {"passi": [{"strumento": c.nome, "argomenti": c.args} for c in uniche]},
+        strumenti,
+        mondo,
+        schemi=schemi_per_nome(schemi_tutti),
     )
     esito["secondi"] = round(time.monotonic() - inizio, 2)
     esito["chiamate"] = [{"nome": c.nome, "args": c.args} for c in accettate]
