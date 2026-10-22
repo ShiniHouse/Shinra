@@ -41,7 +41,7 @@ I dettagli del flusso con le passkey e dei dispositivi fidati stanno nell'ADR
 l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 `/openapi.json`.
 
-## Le rotte (114)
+## Le rotte (117)
 
 ### `alexa`
 
@@ -121,6 +121,14 @@ l'applicazione stessa, quando e' in funzione, su `/docs` (Swagger) e
 | GET | `/api/knowledge` | sessione aperta | Elenca i fatti che chi chiede puo' vedere: quelli della casa e i **propri** privati (ADR 0009). |
 | POST | `/api/knowledge` | permesso `conoscenza.scrivi` | Aggiunge o aggiorna un fatto. Uno privato si scrive solo a nome proprio; il proprietario non si cambia. |
 | DELETE | `/api/knowledge/{item_id}` | permesso `conoscenza.scrivi` | Cancella un fatto della casa o un proprio ricordo privato, con il suo vettore. Il registro scrive che e' successo, non cosa. |
+
+### `lavori`
+
+| Metodo | Percorso | Chi | Cosa fa |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/lavori` | sessione aperta | I miei lavori, i piu' recenti per primi. |
+| GET | `/api/lavori/{identificativo}` | sessione aperta | Un mio lavoro: a che punto e', e l'esito quando c'e'. |
+| POST | `/api/lavori/{identificativo}/annulla` | sessione aperta | Annulla un mio lavoro in coda o in corso. Uno gia' finito resta com'e'. |
 
 ### `learning`
 

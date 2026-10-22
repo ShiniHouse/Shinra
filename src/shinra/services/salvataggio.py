@@ -81,6 +81,7 @@ FUORI: dict[str, str] = {
     "luoghi": "coordinate: un dato di posizione non deve stare in un archivio che si copia e si manda; si registrano di nuovo",
     "riassunti_conversazione": "conversazioni: un riassunto di cio' che si e' detto non deve stare in un archivio che si copia e si manda; scadono da soli e si dimenticano a richiesta",
     "proposte_del_sogno": "derivate: si rifanno ogni notte dal registro e dai ricordi, e sono private di chi le riceve",
+    "lavori": "contengono il testo di cio' che si e' chiesto e l'esito: parole di una persona, che non devono stare in un archivio che si copia e si manda; sono per profilo e si cancellano a richiesta",
     "ricordi_cancellati": "la memoria di cio' che NON va rimesso: sta nel database vivo, e un ripristino la usa senza toccarla",
 }
 

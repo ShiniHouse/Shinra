@@ -325,6 +325,9 @@ def test_ogni_rotta_che_cambia_qualcosa_dichiara_un_permesso():
         # regola chiede il permesso di creare routine, dentro il servizio.
         ("POST", "/api/sogno/proposte/{identificativo}/scarta"),
         ("POST", "/api/sogno/proposte/{identificativo}/accetta"),
+        # I lavori in background sono di chi li ha chiesti (per gli altri «non esistono», 404): annullare il proprio e' un diritto di chi lo
+        # possiede, e un permesso statico non protegge niente. Il controllo sta nel servizio, con i suoi test su ogni rotta.
+        ("POST", "/api/lavori/{identificativo}/annulla"),
         ("POST", "/api/posizione/segnala"),  # l'app dice dove e': vale solo per chi l'ha scelta come fonte
         ("POST", "/api/notifiche/sottoscrivi"),
         ("POST", "/api/notifiche/dimentica"),
