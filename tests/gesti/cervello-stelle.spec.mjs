@@ -70,9 +70,10 @@ test.describe('il Cervello a stelle', () => {
         });
         await expect(page.locator('#cervello-canvas')).toHaveAttribute('data-nodi-accesi', /light\.cucina/);
         await expect(page.locator('#cervello-canvas')).toHaveAttribute('data-animando', 'si');
-        // L'accensione dura pochi secondi, poi il ciclo si ferma da solo: niente animazione senza motivo.
+        // L'accensione dura pochi secondi e poi il ciclo si ferma da solo: niente animazione senza motivo. Il tempo e' largo apposta: in CI
+        // la fisica del grafo puo' metterci piu' di nove secondi ad assestarsi, e il ciclo non si ferma finche' qualcosa si muove.
         await expect(page.locator('#cervello-canvas')).toHaveAttribute('data-animando', 'no', {
-            timeout: 9000,
+            timeout: 25_000,
         });
     });
 });
