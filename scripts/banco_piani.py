@@ -31,18 +31,18 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import re
 import statistics
 import sys
 import time
 from datetime import date
-from pathlib import Path
 from typing import Any
 
 import httpx
 import yaml
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # accanto a `banco_tool_calling.py`
 import banco_tool_calling as bt
 
 BANCO_PIANI = bt.BANCO / "piani"
