@@ -15,6 +15,7 @@ from shinra.api.routes_attivita import router as attivita_router
 from shinra.api.routes_auth import router as auth_router
 from shinra.api.routes_casa import router as casa_router
 from shinra.api.routes_cervello import router as cervello_router
+from shinra.api.routes_chat import router as chat_router
 from shinra.api.routes_conoscenza import router as conoscenza_router
 from shinra.api.routes_impostazioni import router as impostazioni_router
 from shinra.api.routes_lavori import router as lavori_router
@@ -33,7 +34,7 @@ from shinra.channels.alexa.verifica_firma import FirmaNonValida, verifica_richie
 from shinra.config.settings import (
     settings,
 )
-from shinra.domain import contesto, eventi_agente
+from shinra.domain import eventi_agente
 from shinra.domain import lavori as dominio_lavori
 from shinra.domain.eventi import (
     AVVISO,
@@ -51,11 +52,9 @@ from shinra.domain.eventi import (
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.llm.ollama import OllamaClient
 from shinra.services import registro
-from shinra.services.agent import agent
+from shinra.services.agent import agent  # noqa: F401  (i test lo sostituiscono da qui: `app.agent`)
 from shinra.services.consegna import descrivi
-from shinra.services.lavori import servizio_lavori
 from shinra.services.satelliti import registro_satelliti
-from shinra.services.user_manager import user_manager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 # I lavori di avvio che girano in sottofondo. Tenerne un riferimento e'
@@ -178,22 +177,11 @@ app.include_router(sogno_router)  # protetto per difetto
 app.include_router(posizione_router)  # protetto per difetto
 app.include_router(telemetria_router)  # protetto per difetto
 app.include_router(lavori_router)  # protetto per difetto
+app.include_router(chat_router)  # protetto per difetto
 app.include_router(voci_router)  # protetto per difetto
 app.include_router(voce_router)  # protetto per difetto
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-
-
-class ChatRequest(BaseModel):
-    message: str
-    user_id: Optional[str] = None
-    # Da quale punto di ascolto arriva (issue #33). La dashboard lo manda se
-    # si e' dichiarata satellite di una stanza; chi non lo manda continua a
-    # funzionare come prima.
-    satellite: Optional[str] = None
-    # La dashboard dichiara che puo' ricevere la risposta **piu' tardi** (evento `lavoro.finito`): una richiesta lenta diventa un lavoro
-    # in background («ci sto lavorando»). Chi non lo dichiara (Alexa, un satellite a voce) aspetta come sempre.
-    puo_attendere: bool = False
 
 
 from fastapi.responses import Response
@@ -229,44 +217,6 @@ async def index(request: Request):
             "mappa_moduli": moduli_web.mappa_dei_moduli(versione.dettaglio().get("descrizione", "")),
         },
     )
-
-
-@app.post("/api/chat", dependencies=[Depends(sicurezza.richiedi_autenticazione)])
-async def chat_endpoint(payload: ChatRequest, request: Request):
-    """Endpoint per richieste di chat / voce dall'interfaccia web o client locali."""
-    if not payload.message.strip():
-        raise HTTPException(status_code=400, detail="Il messaggio non può essere vuoto.")
-
-    if payload.satellite:
-        # Chi ha sentito la frase per primo risponde; agli altri si dice che
-        # e' gia' stata presa in carico, e non si esegue niente. Due
-        # dispositivi sullo stesso tavolo sentono la stessa cosa, e due
-        # esecuzioni della stessa richiesta su una serranda si notano.
-        if not registro_satelliti.prende_in_carico(payload.satellite, payload.message):
-            return {"response": "", "gia_in_carico": True}
-        contesto.dichiara_stanza(registro_satelliti.stanza_di(payload.satellite))
-
-    if payload.puo_attendere and settings.lavori.soglia_secondi > 0:
-        profilo = sicurezza.utente_corrente(request) or user_manager.get_user_by_id(payload.user_id or "")
-        proprietario = str(getattr(profilo, "id", "") or "")
-        if proprietario:
-            risposta, lavoro = await servizio_lavori.con_attesa_massima(
-                proprietario,
-                payload.message,
-                lambda: agent.process_user_input(user_text=payload.message, user_id=payload.user_id),
-                settings.lavori.soglia_secondi,
-            )
-            if lavoro is not None:
-                lingua = str(getattr(profilo, "lingua", "") or "")
-                return {
-                    "response": dominio_lavori.testo("ci_penso", lingua),
-                    "actions": [],
-                    "lavoro": {"id": lavoro["id"], "stato": lavoro["stato"]},
-                }
-            return risposta
-
-    result = await agent.process_user_input(user_text=payload.message, user_id=payload.user_id)
-    return result
 
 
 class SatelliteIn(BaseModel):
