@@ -107,6 +107,11 @@ class ConversationMemory:
         return fuori
 
 
+def memoria_a_perdere() -> ConversationMemory:
+    """Una conversazione che non e' di nessuno: serve a un giro dell'agente che non deve lasciare traccia (i pezzi dell'orchestratore, #432)."""
+    return ConversationMemory()
+
+
 class GestoreMemorie:
     """Tiene una conversazione per persona e libera quelle ferme.
 

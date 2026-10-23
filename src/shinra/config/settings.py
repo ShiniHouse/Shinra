@@ -245,6 +245,15 @@ class LavoriConfig(BaseModel):
     soglia_secondi: int = 25
 
 
+class AgentiConfig(BaseModel):
+    """Piu' agenti che lavorano insieme (#432, ADR 0013)."""
+
+    # Una frase con piu' cose da fare («chiudi la tapparella e accendi la luce, poi dimmi che tempo fa») si spezza **col codice** in una cosa per pezzo, ognuna al suo
+    # agente di dominio, e un revisore dice cosa e' riuscito. **Spento di serie**: l'ADR 0013 vuole che il multi-agente si usi solo dove il banco dei piani
+    # (`scripts/banco_piani.py`) mostra un vantaggio con il modello di casa; accendilo dopo aver misurato.
+    orchestratore: bool = False
+
+
 class PluginConfig(BaseModel):
     """I plugin abilitati (#193): i nomi delle cartelle in `plugins/`. Nessuno per difetto."""
 
@@ -265,6 +274,7 @@ class AppConfig(BaseModel):
     salvataggio: SalvataggioConfig = Field(default_factory=SalvataggioConfig)
     notifiche: NotificheConfig = Field(default_factory=NotificheConfig)
     lavori: LavoriConfig = Field(default_factory=LavoriConfig)
+    agenti: AgentiConfig = Field(default_factory=AgentiConfig)
     plugin: PluginConfig = Field(default_factory=PluginConfig)
 
 

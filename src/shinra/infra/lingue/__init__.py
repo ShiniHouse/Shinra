@@ -177,6 +177,7 @@ CHIAVI_MESSAGGI: Tuple[str, ...] = (
     "argomento_vietato",
     "errore_ollama",
     "operazione_completata",
+    "orchestratore_non_riuscito",
     "dati_verificati",
     "risultato_operazione",
     "conferma_richiesta",

@@ -639,6 +639,7 @@ messaggi:
   argomento_vietato: "Di questo preferisco non parlare. Se ti serve, chiedilo a un adulto di casa."
   errore_ollama: "Si è verificato un problema di comunicazione con il motore IA: {errore}. Assicurati che Ollama sia avviato e il modello sia pronto."
   operazione_completata: "Operazione completata."
+  orchestratore_non_riuscito: "Non sono riuscito a: {pezzi}."
   dati_verificati: "Ho elaborato la tua richiesta e verificato i dati."
   risultato_operazione: "Risultato operazione {tool}: {risultato}. Formula ora una risposta breve e naturale per l'utente."
   conferma_richiesta: "Sto per eseguire: {azione}. Confermi? Rispondi «sì» o «no» entro {minuti} minuti."
