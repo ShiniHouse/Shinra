@@ -167,7 +167,7 @@ html[data-palette="jarvis"] button[class*="bg-gradient-to-"]:hover {
   background-color: rgba(14, 150, 185, 0.42) !important;
   box-shadow: 0 0 22px rgba(34, 211, 238, 0.38) !important;
 }
-html[data-palette="jarvis"] div[class*="bg-gradient-to-"].from-amber-500 {
+html[data-palette="jarvis"] div.w-10[class*="bg-gradient-to-br"] {
   background-image: linear-gradient(135deg, #0e7490, #22d3ee) !important;
 }
 html[data-palette="jarvis"] #learning-progress-bar {

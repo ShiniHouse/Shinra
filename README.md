@@ -6,7 +6,7 @@ Il nome *Shinra* nasce dall'unione concettuale con **Shinigami** (死神 — ent
 
 ---
 
-## 🚧 Stato del progetto — beta, all'ultima release: la `0.8.0`
+## 🚧 Stato del progetto — beta, all'ultima release: la `0.8.0` (e si lavora alla `0.9.0`)
 
 Shinra è in **beta** e procede per fasi verso la `1.0.0`. Ogni versione minor
 corrisponde a una fase della roadmap ed è installabile e utilizzabile; fino
@@ -17,6 +17,31 @@ fargli dimenticare. I ricordi sono per profilo (ognuno vede solo i propri privat
 di notte la casa «ci ripensa» — **proponendo**, mai decidendo. Sa dove si trova chi parla, e ha una faccia nuova: il tema
 **Ologramma**, con il nucleo che batte quando Shinra parla. Note complete, con **cosa è stato provato in casa e cosa no**:
 [`docs/release/v0.8.0.md`](docs/release/v0.8.0.md).
+
+**Dentro la `0.8.0`:**
+
+- **La memoria per profilo** ([guida](docs/MEMORIA.md)): ogni ricordo ha un proprietario, ognuno vede solo i propri privati (anche l'amministratore), si vedono in
+  Conoscenza, si correggono, si esportano e importano in un file, e «Dimentica tutto di me» toglie anche i riassunti e le proposte. Sotto ogni risposta c'è «Ho usato N ricordi».
+- **Il sogno notturno**: di notte la casa nota le abitudini e i ricordi doppi e li **propone** in «Stanotte ho notato»; «Prepara la regola» ne crea una **spenta**. Di notte non ha strumenti.
+- **I luoghi**: più abitazioni, «dove sono?», meteo e tramonto per il luogo giusto, ricordi legati a un luogo e regole all'arrivo o alla partenza.
+- **L'intervista che legge le abitudini col codice**, ntfy in casa (spento di serie, [guida](docs/ntfy.md)) e **una voce che gira sul server** (Piper, [guida](docs/VOCE.md)).
+- **Il tema Ologramma**: nuova faccia della dashboard e della pagina del PIN, con il nucleo che batte quando Shinra parla, il Cervello disegnato a stelle, una pillola con lo stato del
+  server (CPU, memoria, disco), le icone dell'app e della PWA rifatte.
+
+**Si lavora alla `0.9.0`, *Agenti che imparano*** ([proposta](docs/proposte/agenti-0.9.0/README.md), [ADR 0013](docs/adr/0013-agenti-e-modelli-che-imparano.md), [ROADMAP](docs/ROADMAP.md)): più
+agenti e più modelli dentro Shinra, che imparano e si sistemano **proponendo** (mai decidendo) per rispondere alle esigenze della famiglia, e un assistente che, se serve, **si prende il tempo** per
+elaborare una richiesta. Il cambio di rotta è stato deciso con tre scelte: un modello esterno **facoltativo e spento di serie**, Shinra **propone e tu confermi**, e «ci penso» con una coda di lavori.
+Com'è messa oggi:
+
+| | Stato |
+| :--- | :--- |
+| **«Ci penso»** ([guida](docs/LAVORI.md)): una richiesta che prende più di 25 secondi risponde subito «ci sto lavorando», continua in background, e l'esito arriva in chat; si vede e si annulla dal Cervello | **Fatto, sul server** |
+| **Il banco dei piani** (`scripts/banco_piani.py`): misura se il modello locale riesce nelle richieste a più passi, con quattro strategie | **Fatto, due giri** (portatile e server): con il modello da 3 miliardi di parametri nessuna strategia supera il 40%, e il multi-agente **non si costruisce** finché i numeri non lo giustificano |
+| **Il validatore dei piani** (`shinra.domain.piani`): controlla un piano del modello prima di eseguirlo (strumento e dispositivo veri, parametri obbligatori ovvi completati, tetto di passi) | **Fatto**, non ancora usato dall'agente |
+| I piani a più passaggi, i modelli per scopo e il modello esterno facoltativo | Aspettano la misura sul server e tre decisioni del proprietario |
+| Imparare e sistemarsi **proponendo** (osserva → prova a secco → misura → propone → conferma → annulla) | Non iniziato |
+
+Nessuna delle due metà di questa fase è dichiarata **provata in casa**: il banco è misurato, «ci penso» gira sul server ma ha pochi giorni di uso.
 
 **La release prima, la `0.7.0`**, *Rifinitura*: la casa impara a parlare con chi ci vive. L'intervista di
 apprendimento fa una domanda per volta, non chiede ciò che la casa sa già, dà un nome ai dispositivi veri e propone
@@ -106,13 +131,16 @@ scattare in una casa vera. Note: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.
 | [`docs/INSTALLAZIONE.md`](docs/INSTALLAZIONE.md) | Docker o a mano su Debian, il token di Home Assistant, cosa sopravvive a un aggiornamento |
 | [`docs/PRIMI-PASSI.md`](docs/PRIMI-PASSI.md) | Dal primo accesso alla prima automazione: profili, Home Assistant, alias, routine |
 | [`docs/PROBLEMI.md`](docs/PROBLEMI.md) | Cosa fare quando qualcosa non funziona, guasto per guasto — tutti successi davvero |
+| [`docs/MEMORIA.md`](docs/MEMORIA.md) | La memoria di Shinra: cosa ricorda, chi la vede, come si corregge e si fa dimenticare, il sogno notturno, i luoghi |
+| [`docs/LAVORI.md`](docs/LAVORI.md) | «Ci penso»: le richieste che prendono tempo, il pannello Lavori, come si annullano e cosa succede se qualcosa va storto |
+| [`docs/VOCE.md`](docs/VOCE.md) | Una voce che gira sul server (Piper), senza rete e senza testo che esce di casa |
 | [`docs/CERVELLO.md`](docs/CERVELLO.md) | Il grafo della casa: cosa si vede, i colori, come ci si muove, cosa si accende quando Shinra lavora |
 | [`docs/AGENTI.md`](docs/AGENTI.md) | Gli otto agenti di dominio, come sceglie il router, cosa succede quando sbaglia, cosa regolare |
 | [`docs/PLUGIN.md`](docs/PLUGIN.md) | Aggiungere strumenti con un plugin: il manifesto, i permessi dichiarati, e cosa **non** garantiscono (solo codice tuo) |
 | [`docs/CONFERME.md`](docs/CONFERME.md) | Le azioni che chiedono conferma (serrature, allarme, garage), come si risponde, cosa succede se scadono |
 | [`docs/VERIFICA-IN-CASA.md`](docs/VERIFICA-IN-CASA.md) | La lista delle prove da fare in una casa vera (regole, conferme), con l'esito accanto: chi vive qui la compila |
 | [`docs/ALEXA.md`](docs/ALEXA.md) | Come configurare la skill Alexa (Interaction Model, endpoint HTTPS, test) |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le fasi da `0.1.0` a `1.0.0` — con la `0.7.0` e la `0.8.0` — e i criteri di uscita di ciascuna |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Le fasi da `0.1.0` a `1.0.0` — fino alla `0.9.0` — e i criteri di uscita di ciascuna |
 | [`docs/storia-delle-fasi.md`](docs/storia-delle-fasi.md) | Le schede di lavoro delle fasi chiuse (0.1.0–0.7.0): perché, cosa, com'è andata |
 | [`docs/SVILUPPO.md`](docs/SVILUPPO.md) | Come si aggiunge uno strumento, un intento, una lingua, una rotta, una colonna, un'area della dashboard — e quale test ti dice cosa hai dimenticato |
 | [`docs/API.md`](docs/API.md) | Le rotte HTTP e chi le può chiamare. Generato dal codice: non invecchia |
@@ -150,24 +178,37 @@ scattare in una casa vera. Note: [`docs/release/v0.4.0.md`](docs/release/v0.4.0.
 ## 📸 Anteprima Dashboard
 
 <p align="center">
-  <img src="docs/screenshots/console.png" alt="La console vocale di Shinra: la chat con l'assistente a sinistra, a destra i timer attivi e cosa succede adesso in casa" width="100%">
+  <img src="docs/screenshots/home-computer.png" alt="La console vocale di Shinra nel tema Ologramma: il nucleo al centro, la conversazione, la barra di comando, a destra i timer e cosa succede in casa, in alto lo stato di Ollama, Home Assistant, CPU e presenza" width="100%">
 </p>
 
-<p align="center"><sub><b>La console vocale.</b> Si parla o si scrive; a destra la colonna dice cosa sta per succedere in casa, non la diagnostica.</sub></p>
+<p align="center"><sub><b>La console vocale</b> (computer). Il nucleo al centro batte quando Shinra pensa e parla; sotto la conversazione e la barra di comando; a destra cosa sta per succedere in casa. In alto lo stato dei sistemi, compresa la CPU del server.</sub></p>
 
 <p align="center">
-  <img src="docs/screenshots/cervello.png" alt="Il Cervello: il grafo della casa con stanze, dispositivi, alias, routine, conoscenza, strumenti e agenti, e a destra lo stato dei sistemi" width="100%">
+  <img src="docs/screenshots/cervello-computer.png" alt="Il Cervello: il grafo della casa disegnato a stelle — stanze, dispositivi, alias, routine, regole, conoscenza, strumenti e agenti — con il percorso di una richiesta acceso, e a destra il registro, i lavori in corso e lo stato dei sistemi" width="100%">
 </p>
 
-<p align="center"><sub><b>Il Cervello</b> — cosa sa e cosa fa la casa, come grafo interattivo: 81 nodi e 97 collegamenti in questa casa, con lo stato di ogni sistema (Home Assistant, modello, regole, notizie). <i>Fa parte della <code>0.6.0</code>.</i></sub></p>
+<p align="center"><sub><b>Il Cervello</b> — cosa sa e cosa fa la casa, come una galassia: ogni nodo è una stella, e mentre Shinra lavora un impulso corre lungo il percorso della richiesta (qui dal modello allo strumento al dispositivo). A destra «Cosa sta facendo Shinra», i <b>Lavori</b> in corso con l'avanzamento e <i>Annulla</i>, e lo stato dei sistemi.</sub></p>
 
 <p align="center">
-  <img src="docs/screenshots/automazioni.png" alt="Le routine che si disegnano: Buonanotte, Buongiorno, Cinema, Lavoro e Studio, ciascuna con le frasi che la attivano e il pulsante Esegui" width="100%">
+  <img src="docs/screenshots/automazioni-computer.png" alt="Automazioni e routine: una regola che accende la luce della cucina alle 07:30 con la prossima volta, e le routine Buonanotte, Cinema e Buongiorno con le frasi che le attivano" width="100%">
 </p>
 
-<p align="center"><sub><b>Automazioni e routine.</b> Blocchi collegati — un innesco, poi azioni, attese e risposte vocali — con le frasi che le attivano e un pulsante per eseguirle.</sub></p>
+<p align="center"><sub><b>Automazioni e routine.</b> Cosa fa la casa da sola e con quale prossima volta; le routine partono solo se le chiami, con le frasi che le attivano.</sub></p>
 
-<p align="center"><sub>Le schermate sono della <code>0.6.0</code> su una casa di prova.</sub></p>
+### Dal telefono
+
+La stessa interfaccia, installabile come app (PWA) dallo smartphone:
+
+<table align="center">
+  <tr>
+    <td align="center"><img src="docs/screenshots/accesso-telefono.png" alt="La pagina del PIN sul telefono, nello stile Ologramma" width="200"><br><sub><b>L'accesso</b></sub></td>
+    <td align="center"><img src="docs/screenshots/home-telefono.png" alt="La console sul telefono: il nucleo, i suggerimenti rapidi, la conversazione e la barra di comando" width="200"><br><sub><b>La console</b></sub></td>
+    <td align="center"><img src="docs/screenshots/menu-telefono.png" alt="Il menu sul telefono: utente attivo, console, automazioni, dispositivi, la configurazione e lo stato di Ollama e Home Assistant" width="200"><br><sub><b>Il menu</b></sub></td>
+    <td align="center"><img src="docs/screenshots/cervello-telefono.png" alt="Il Cervello sul telefono: i contatori e il grafo a stelle" width="200"><br><sub><b>Il Cervello</b></sub></td>
+  </tr>
+</table>
+
+<p align="center"><sub>Le schermate sono della versione in lavorazione (<code>0.9.0</code>, sopra la <code>0.8.0</code>) e mostrano <b>una casa di esempio</b>: nomi, orari e dispositivi sono finti. Si rifanno con <code>scripts/genera_screenshot.mjs</code>.</sub></p>
 
 ---
 
@@ -180,10 +221,11 @@ Il traguardo è la `1.0.0`, e il cammino ha un ordine. Ogni fase è rilasciabile
 | :--- | :--- | :--- |
 | **`0.6.0`** *(rilasciata l'8 ottobre 2026)* | **Il Cervello** | Il grafo vivo della casa, le azioni sensibili — serrature, allarme, garage — che chiedono sempre conferma, un banco di prova che misura quale modello sceglie lo strumento giusto, gli agenti di dominio, le notifiche push dal telefono |
 | **`0.7.0`** *(rilasciata il 13 ottobre 2026)* | **Rifinitura** | L'intervista rifatta (una domanda per volta, nomi ai dispositivi veri, routine controllate sulla casa vera, una conferma per argomento), i plugin con permessi dichiarati, timer e promemoria in inglese e gli strumenti nella lingua di chi parla (in parte) |
-| **`0.8.0`** | **Memoria viva** | Shinra ricorda — e tu vedi cosa, lo correggi, glielo fai dimenticare. La storia vecchia diventa un riassunto, di notte la casa «ci ripensa» **proponendo** (mai decidendo), e un canale di messaggistica esterno è un'opzione spenta di default |
+| **`0.8.0`** *(rilasciata il 21 ottobre 2026)* | **Memoria viva** | Shinra ricorda — e tu vedi cosa, lo correggi, glielo fai dimenticare. La storia vecchia diventa un riassunto, di notte la casa «ci ripensa» **proponendo** (mai decidendo), e un canale di messaggistica esterno è un'opzione spenta di default |
+| **`0.9.0`** *(in lavorazione)* | **Agenti che imparano** | Più agenti e più modelli (uno esterno, facoltativo e spento di serie), richieste che «prendono tempo» in background con «ci penso» (già sul server), piani a più passaggi controllati dal codice, e un assistente che impara e si sistema **proponendo** — mai decidendo. Parte dalla misura: con il modello locale il multi-agente non è dimostrato, e non si costruisce senza dati |
 | **`1.0.0`** | **Stabile** | Se non ci sono intoppi, subito dopo: trenta giorni di esercizio reale senza regressioni, installazione da zero verificata, nessun difetto grave aperto |
 
-Le idee non ancora accettate stanno in [`docs/proposte/`](docs/proposte/memoria-viva/README.md) con le loro schede, e dicono
+Le idee e le proposte (anche quella della `0.9.0`) stanno in [`docs/proposte/`](docs/proposte/agenti-0.9.0/README.md) con le loro schede, e dicono
 anche dove l'idea va corretta prima di costruirla.
 
 ---
