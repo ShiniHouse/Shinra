@@ -13,6 +13,7 @@ import { disegnaScorciatoia, loadRegole } from './regole.js';
 import { loadUsers } from './utenti.js';
 import { loadSettings } from './impostazioni.js';
 import { fermaCervello, loadCervello } from './cervello.js';
+import { aggiornaLavori } from './lavori.js';
 import { caricaNotifiche } from './notifiche.js';
 
 const tabDisplayMap = {
@@ -185,8 +186,10 @@ export function switchTab(tabId) {
     }
     if (tabId === 'users') loadUsers();
     // Il Cervello si rinnova da solo mentre e' aperto; uscendo smette.
-    if (tabId === 'cervello') loadCervello();
-    else fermaCervello();
+    if (tabId === 'cervello') {
+        loadCervello();
+        aggiornaLavori();
+    } else fermaCervello();
     if (tabId === 'settings') {
         loadSettings();
         preparaSezioniImpostazioni();
