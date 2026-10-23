@@ -458,7 +458,7 @@ posizione, e la posizione resta sul server. La proposta, con le cinque fette e l
 
 ## v0.9.0 — Agenti che imparano
 
-> **Proposta, da accettare (2026-10-21).** Più agenti e più modelli lavorano dentro Shinra, imparano dalle istruzioni e si sistemano **proponendo**
+> **Accettata (2026-10-21), in lavorazione.** Più agenti e più modelli lavorano dentro Shinra, imparano dalle istruzioni e si sistemano **proponendo**
 > (mai decidendo) per rispondere alle esigenze della famiglia; e Shinra diventa un assistente che, se serve, **si prende il tempo** per elaborare e
 > sviluppare una richiesta. La proposta completa è in [`docs/proposte/agenti-0.9.0/`](proposte/agenti-0.9.0/README.md) e le tre scelte di fondo
 > nell'[ADR 0013](adr/0013-agenti-e-modelli-che-imparano.md) (modelli per scopo con un esterno **facoltativo e spento**; propone e tu confermi; «ci penso»
@@ -467,6 +467,17 @@ posizione, e la posizione resta sul server. La proposta, con le cinque fette e l
 **Perche' in questo ordine.** Prima la **misura**: un modello da 3 miliardi di parametri su una CPU senza GPU pianifica a piu' passi molto peggio di quanto
 sceglie uno strumento, e piu' agenti non vuol dire piu' intelligenza. Poi cio' che da' valore subito (la coda dei lavori, i piani), poi i modelli esterni
 (opzionali), e solo alla fine l'imparare, che e' la parte piu' delicata su una casa vera.
+
+**A che punto siamo (2026-10-23).**
+
+| Scheda | Stato |
+| :--- | :--- |
+| #431 «Ci penso»: coda dei lavori, soglia, esito in chat, pannello nel Cervello | **Fatta e sul server** ([`docs/LAVORI.md`](LAVORI.md)); da provare con un lavoro lungo vero |
+| #430 Banco dei piani | **Fatta**: due giri (portatile e server), quattro strategie, analisi in `banco/piani/risultati/` |
+| #191 Piani a più passaggi | Il **validatore** (`shinra.domain.piani`) è fatto; manca la forma del piano, che aspetta la misura sul server con più ripetizioni |
+| #432 Orchestratore e revisore | **Non si costruisce** finché il banco non mostra un vantaggio (regola dell'ADR 0013) |
+| #194 Modello esterno, #240 Modelli per scopo | Aspettano tre decisioni: l'elenco dei modelli esterni, il tetto di costo, il momento di partenza |
+| #433–#438 Imparare proponendo, fonti, «Cosa ho imparato», guardie, assistente, guida | Non iniziate: dipendono dalle precedenti |
 
 **Cosa assorbe.** Tre schede oggi «dopo la `1.0.0`»: `#191` (piani a piu' passaggi), `#194` (modello esterno opzionale), `#240` (Ollama su un'altra macchina).
 

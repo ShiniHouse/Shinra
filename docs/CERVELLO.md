@@ -110,6 +110,18 @@ vede soltanto le richieste fatte da lui.
 
 ---
 
+
+## 4 bis. I lavori in corso
+
+Quando una richiesta prende tempo («ci penso», [guida](LAVORI.md)), nel riquadro a destra, sotto «Cosa sta facendo Shinra», compare **Lavori**: la tua richiesta, a che punto è
+(fase e percentuale) e **Annulla**. Compare solo se c'è qualcosa da dire e sparisce da solo. Annullare ferma anche la richiesta.
+
+## 4 ter. Il grafo a stelle
+
+Con il tema Ologramma (quello di serie) il grafo si disegna come una galassia: ogni nodo è una stella del colore del suo gruppo, i collegamenti sono fili di luce, e **mentre Shinra
+lavora un puntino di luce corre dal nodo acceso lungo i suoi collegamenti e lungo il percorso della richiesta**. Senza richieste in corso non si anima niente. Con il movimento ridotto non
+ci sono impulsi in corsa, e con le altre tavolozze o il tema chiaro il disegno è quello di prima.
+
 ## 5. Se non è come te lo aspetti
 
 | Vedi | Probabilmente |

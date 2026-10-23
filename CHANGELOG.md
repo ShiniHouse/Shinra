@@ -15,6 +15,9 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **La documentazione della `0.8.0` e della `0.9.0` in lavorazione**: il README racconta cosa c'e' nella `0.8.0` e a che punto e' la `0.9.0`; nuova guida [`docs/LAVORI.md`](docs/LAVORI.md) («ci penso»); `docs/CERVELLO.md` con i lavori e il grafo a stelle;
+  la ROADMAP con lo stato scheda per scheda; **schermate rifatte** (computer e telefono: console, Cervello, automazioni, menu, accesso) con `scripts/genera_screenshot.mjs`, su una casa di esempio.
+- Pulsanti a sfumatura ambra-viola e icone colorate del tema Ologramma uniformati al ciano.
 - **I lavori nel Cervello** (#431, parte finale): un pannello «Lavori» accanto a «Cosa sta facendo Shinra», con la richiesta, la fase, l'avanzamento e «Annulla» a un clic;
   compare solo se c'e' un lavoro in corso o finito da poco, si aggiorna da solo (ogni quattro secondi finche' c'e' qualcosa in corso e la scheda e' in vista) e quando un lavoro finisce.
   La voce annuncia l'esito come una risposta qualunque (rispetta il silenzio).
