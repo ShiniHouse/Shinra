@@ -82,7 +82,7 @@ jobs:
   gesti:
     name: Frontend — gesti
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -99,8 +99,28 @@ jobs:
       - run: npm ci
       - run: pip install -e .
 
+      # Il browser pesa e il runner a volte e' lento: due volte l'installazione ha
+      # mangiato quasi tutti i quindici minuti, con i test gia' verdi. Si tiene in
+      # cache (per versione di Playwright) e si installano sempre le librerie di
+      # sistema, che in cache non stanno.
+      - name: Versione di Playwright
+        id: playwright
+        run: echo "versione=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Browser in cache
+        id: browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.versione }}
+
       - name: Scarica il browser
+        if: steps.browser.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
+
+      - name: Librerie di sistema del browser
+        if: steps.browser.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       # Due difetti sono arrivati fino in casa passando davanti a tutte
       # le guardie che leggono il sorgente: la crocetta di un nodo che
