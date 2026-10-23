@@ -48,6 +48,8 @@ import yaml
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # accanto a `banco_tool_calling.py`
 import banco_tool_calling as bt
 
+from shinra.domain import piani
+
 BANCO_PIANI = bt.BANCO / "piani"
 MAX_PASSI = 8  # il tetto dell'ADR 0013: un modello che continua ad aggiungere passi si ferma qui
 STRATEGIE = ("solo", "agenti", "piano", "scomposto")
@@ -96,30 +98,16 @@ def schemi_per_nome(schemi: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return {s["function"]["name"]: s["function"] for s in schemi}
 
 
-def completa_argomenti(
-    argomenti: dict[str, Any], funzione: dict[str, Any]
-) -> tuple[dict[str, Any], list[str]]:
-    """Completa cio' che e' ovvio e dice cosa manca: `(argomenti, obbligatori_mancanti)`.
-
-    Un modello piccolo a volte dimentica un parametro obbligatorio che la frase ha gia' detto: «metti il clima a 20 gradi» arriva con
-    `temperatura: 20` e **senza** `azione`. Se il parametro che manca e' una scelta fra valori (`enum`) e **uno solo** di quei valori e' anche il
-    nome di un altro argomento che c'e' (`temperatura`, `posizione`, `volume`...), e' quello: si completa. Altrimenti non si indovina: il passo
-    resta senza, e chi chiama lo scarta dicendo cosa manca.
-    """
-    parametri = (funzione.get("parameters") or {}).get("properties") or {}
-    obbligatori = (funzione.get("parameters") or {}).get("required") or []
-    completati = dict(argomenti)
-    mancanti = []
-    for nome in obbligatori:
-        if completati.get(nome) not in (None, ""):
-            continue
-        scelte = parametri.get(nome, {}).get("enum") or []
-        candidati = [v for v in scelte if v in completati and v != nome]
-        if len(candidati) == 1:
-            completati[nome] = candidati[0]
-        else:
-            mancanti.append(nome)
-    return completati, mancanti
+MOTIVI = {
+    piani.NON_E_UN_OGGETTO: lambda s: f"passo {s.numero}: non e' un oggetto",
+    piani.STRUMENTO_INESISTENTE: lambda s: f"passo {s.numero}: lo strumento «{s.dettaglio}» non esiste",
+    piani.ARGOMENTI_NON_VALIDI: lambda s: f"passo {s.numero}: gli argomenti non sono un oggetto",
+    piani.DISPOSITIVO_INESISTENTE: lambda s: f"passo {s.numero}: il dispositivo «{s.dettaglio}» non c'e' in casa",
+    piani.OBBLIGATORIO_MANCANTE: lambda s: (
+        f"passo {s.numero}: a «{s.dettaglio.split(':')[0]}» manca il parametro obbligatorio «{s.dettaglio.split(':')[-1]}»"
+    ),
+    piani.OLTRE_IL_TETTO: lambda s: f"oltre il tetto di {s.dettaglio} passi: dal {s.numero} in poi non si esegue",
+}
 
 
 def valida_piano(
@@ -129,43 +117,15 @@ def valida_piano(
     massimo: int = MAX_PASSI,
     schemi: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[list[bt.Chiamata], list[str]]:
-    """I passi che il codice accetterebbe di eseguire, e i motivi degli scarti.
+    """Il controllo del codice vero (`shinra.domain.piani`) sul piano di un modello, con gli scarti detti a parole per il report.
 
-    Un passo si scarta se lo strumento non esiste, se i suoi argomenti non sono un oggetto, o se nomina un dispositivo che la casa non ha:
-    e' il controllo che la #191 chiede («il modello non e' fidato»). Oltre `massimo` passi si taglia, e lo si dice.
+    Senza `schemi` non si controllano i parametri obbligatori (la validazione di prima): serve ai test e ai confronti.
     """
-    accettati: list[bt.Chiamata] = []
-    scarti: list[str] = []
-    for numero, passo in enumerate(piano.get("passi") or [], start=1):
-        if numero > massimo:
-            scarti.append(f"oltre il tetto di {massimo} passi: dal {numero} in poi non si esegue")
-            break
-        if not isinstance(passo, dict):
-            scarti.append(f"passo {numero}: non e' un oggetto")
-            continue
-        nome = str(passo.get("strumento") or "")
-        argomenti = passo.get("argomenti")
-        if nome not in strumenti:
-            scarti.append(f"passo {numero}: lo strumento «{nome}» non esiste")
-            continue
-        if argomenti is None:
-            argomenti = {}
-        if not isinstance(argomenti, dict):
-            scarti.append(f"passo {numero}: gli argomenti non sono un oggetto")
-            continue
-        dispositivo = argomenti.get("entity_id")
-        if isinstance(dispositivo, str) and dispositivo.strip().casefold() not in (
-            {e.casefold() for e in mondo.entita} | mondo.nomi
-        ):
-            scarti.append(f"passo {numero}: il dispositivo «{dispositivo}» non c'e' in casa")
-            continue
-        if schemi is not None and nome in schemi:
-            argomenti, mancanti = completa_argomenti(argomenti, schemi[nome])
-            if mancanti:
-                scarti.append(f"passo {numero}: a «{nome}» manca il parametro obbligatorio «{mancanti[0]}»")
-                continue
-        accettati.append(bt.Chiamata(nome, argomenti))
-    return accettati, scarti
+    funzioni = {n: (schemi or {}).get(n, {}) for n in strumenti}
+    accettati, scarti = piani.valida_passi(
+        piano.get("passi"), funzioni, set(mondo.entita) | mondo.nomi, massimo=massimo
+    )
+    return [bt.Chiamata(p.nome, p.argomenti) for p in accettati], [MOTIVI[s.codice](s) for s in scarti]
 
 
 def catalogo_compatto(schemi: list[dict[str, Any]]) -> str:

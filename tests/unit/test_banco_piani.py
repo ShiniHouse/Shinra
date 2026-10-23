@@ -12,6 +12,8 @@ from pathlib import Path
 
 import pytest
 
+from shinra.domain import piani
+
 RADICE = Path(__file__).resolve().parents[2]
 
 
@@ -383,20 +385,20 @@ def test_un_obbligatorio_ovvio_si_completa_e_uno_incerto_no(banco):
 
     schemi = banco.schemi_per_nome(TOOLS_SCHEMA)
     # «metti il clima a 20 gradi»: c'e' `temperatura`, e `temperatura` e' una delle scelte di `azione`
-    completato, mancanti = banco.completa_argomenti(
+    completato, mancanti = piani.completa_argomenti(
         {"entity_id": "climate.camera", "temperatura": 20}, schemi["comanda_clima"]
     )
     assert completato["azione"] == "temperatura" and mancanti == []
     # niente da cui dedurlo: non si indovina
-    _, mancanti = banco.completa_argomenti({"entity_id": "climate.camera"}, schemi["comanda_clima"])
+    _, mancanti = piani.completa_argomenti({"entity_id": "climate.camera"}, schemi["comanda_clima"])
     assert mancanti == ["azione"]
     # due scelte possibili (due nomi di argomento che sono valori di `azione`): ambiguo, non si completa
-    _, mancanti = banco.completa_argomenti(
+    _, mancanti = piani.completa_argomenti(
         {"entity_id": "climate.camera", "temperatura": 20, "umidita": 40}, schemi["comanda_clima"]
     )
     assert mancanti == ["azione"]
     # un parametro gia' dato non si tocca
-    completato, _ = banco.completa_argomenti(
+    completato, _ = piani.completa_argomenti(
         {"entity_id": "climate.camera", "azione": "spegni", "temperatura": 20}, schemi["comanda_clima"]
     )
     assert completato["azione"] == "spegni"
