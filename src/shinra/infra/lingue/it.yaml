@@ -148,6 +148,21 @@ notizie:
 # la frase va al modello senza tool: serve a non dargli il catalogo intero
 # per una chiacchierata.
 agente:
+  # Come si spezza una frase in una cosa per pezzo (#432, ADR 0013): dove si taglia, le parole d'azione in piu' rispetto a `parole_azione` ("ventil" prende
+  # ventila e ventilatore), il pronome («quella») che prende il nome dell'ultimo dispositivo detto, e quali nomi (con l'articolo). Lo legge `domain/scomposizione.py`.
+  scomposizione:
+    separatori: '\s*(?:[,;:]|(?<!\S)e(?!\S)|(?<!\S)poi(?!\S)|(?<!\S)inoltre(?!\S))\s*'
+    unione: e
+    parole_in_piu: [ventil]
+    pronomi: '\bquell[aeoi]\b'
+    nomi:
+      luce: la luce
+      luci: le luci
+      tapparella: la tapparella
+      tapparelle: le tapparelle
+      clima: il clima
+      tv: la tv
+      ventilatore: il ventilatore
   # Quale agente di dominio prende la richiesta (ADR 0008, issue #190): le
   # parole che la riportano a un dominio, in minuscolo e senza la desinenza,
   # cosi' «tapparell» prende tapparella e tapparelle. Le parole generiche

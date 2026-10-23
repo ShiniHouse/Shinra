@@ -57,6 +57,7 @@ RICHIESTE: Tuple[Tuple[str, ...], ...] = (
     ("notizie", "inneschi"),
     ("agente", "parole_azione"),
     ("agente", "domini"),
+    ("agente", "scomposizione"),
     ("conferma", "accetta"),
     ("conferma", "rifiuta"),
     ("calendario", "giorni"),
@@ -241,6 +242,8 @@ class Schemi:
     parole_azione: Tuple[str, ...]
     # Dal nome del dominio alle parole che portano a quell'agente (ADR 0008).
     domini_agente: Mapping[str, Tuple[str, ...]]
+    # Come si spezza una frase in una cosa per pezzo (#432): separatori, parole in piu', pronomi, nomi.
+    scomposizione: Mapping[str, Any]
     conferma_accetta: Tuple[str, ...]
     conferma_rifiuta: Tuple[str, ...]
     giorni: Tuple[str, ...]
@@ -366,6 +369,7 @@ def _compila(lingua: str) -> Schemi:
         stanza=re.compile(dati["casa"]["preposizioni_stanza"], re.IGNORECASE),
         inneschi_notizie=tuple(dati["notizie"]["inneschi"]),
         parole_azione=tuple(dati["agente"]["parole_azione"]),
+        scomposizione=dict(dati["agente"]["scomposizione"]),
         domini_agente={
             str(nome): tuple(str(p).lower() for p in parole)
             for nome, parole in dati["agente"]["domini"].items()

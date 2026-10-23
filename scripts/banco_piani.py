@@ -48,7 +48,8 @@ import yaml
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # accanto a `banco_tool_calling.py`
 import banco_tool_calling as bt
 
-from shinra.domain import piani
+from shinra.domain import piani, scomposizione
+from shinra.infra.lingue import schemi as lingue
 
 BANCO_PIANI = bt.BANCO / "piani"
 MAX_PASSI = 8  # il tetto dell'ADR 0013: un modello che continua ad aggiungere passi si ferma qui
@@ -210,65 +211,7 @@ async def esegui_piano(
 
 # ------------------------------------------------------------------ la strategia «scomposto»
 
-# Dove il codice taglia una frase: virgole, due punti, «e», «poi». Un pezzo senza una parola d'azione non e' un'azione (e' «vado a dormire», o «della
-# camera» di «accendi le luci del bagno e della camera»): si riattacca al vicino invece di diventare un pezzo a se'.
-SEPARATORI = re.compile(
-    r"\s*(?:[,;:]|(?<!\S)e(?!\S)|(?<!\S)poi(?!\S)|(?<!\S)inoltre(?!\S))\s*", re.IGNORECASE
-)
-MASSIMO_PEZZI = 6
-
-# Parole d'azione che il lessico della lingua non ha ancora (esperimento: in produzione starebbero in `it.yaml`).
-PAROLE_IN_PIU = ("ventil",)
-# «accendi la luce della cucina e accendi quella del corridoio»: il pronome si sostituisce con il nome dell'ultimo dispositivo detto.
-NOMI_DEI_DISPOSITIVI = {
-    "luce": "la luce",
-    "luci": "le luci",
-    "tapparella": "la tapparella",
-    "tapparelle": "le tapparelle",
-    "clima": "il clima",
-    "tv": "la tv",
-    "ventilatore": "il ventilatore",
-}
-PRONOMI = re.compile(r"\bquell[aeoi]\b", re.IGNORECASE)
-
-
-def spezza(frase: str, parole_azione: tuple[str, ...]) -> list[str]:
-    """I pezzi di una frase, uno per cosa da fare. Senza parole d'azione riconoscibili, la frase intera: non si inventa niente."""
-    parole = tuple(p.lower() for p in parole_azione)
-
-    def ha_azione(pezzo: str) -> bool:
-        return any(k in pezzo.lower() for k in parole)
-
-    pezzi = [p.strip() for p in SEPARATORI.split(frase or "") if p and p.strip()]
-    risultato: list[str] = []
-    in_attesa = ""  # i pezzi senza azione all'inizio («vado a dormire»): si attaccano al primo che ce l'ha
-    for pezzo in pezzi:
-        if ha_azione(pezzo):
-            risultato.append(f"{in_attesa} {pezzo}".strip())
-            in_attesa = ""
-        elif risultato:
-            risultato[-1] = f"{risultato[-1]} e {pezzo}"  # «... luci del bagno» + «della camera»
-        else:
-            in_attesa = f"{in_attesa} {pezzo}".strip()
-    if in_attesa:
-        if risultato:
-            risultato[-1] = f"{risultato[-1]} {in_attesa}"
-        else:
-            risultato = [in_attesa]
-    return [_con_il_nome(pezzo, risultato[:i]) for i, pezzo in enumerate(risultato or [frase])][
-        :MASSIMO_PEZZI
-    ]
-
-
-def _con_il_nome(pezzo: str, precedenti: list[str]) -> str:
-    """«accendi quella del corridoio» dopo «spegni la luce del salotto» diventa «accendi la luce del corridoio»: senza il nome il modello non sa cosa."""
-    if not PRONOMI.search(pezzo) or not precedenti:
-        return pezzo
-    for prima in reversed(precedenti):
-        trovati = [p for p in re.findall(r"[a-zàèéìòù]+", prima.lower()) if p in NOMI_DEI_DISPOSITIVI]
-        if trovati:
-            return PRONOMI.sub(NOMI_DEI_DISPOSITIVI[trovati[-1]], pezzo, count=1)
-    return pezzo
+# Lo spezzatore e' del codice vero: `shinra.domain.scomposizione` (separatori, pronomi e nomi stanno nel file della lingua, `agente.scomposizione`).
 
 
 async def esegui_scomposto(
@@ -287,7 +230,7 @@ async def esegui_scomposto(
     """Una richiesta spezzata dal codice: ogni pezzo passa dal ciclo con il router per dominio, i risultati si uniscono e si validano."""
     esito: dict[str, Any] = {"giri": 0, "errore": "", "pezzi": [], "scarti": []}
     inizio = time.monotonic()
-    pezzi = spezza(voce["frase"], (*parole, *PAROLE_IN_PIU))
+    pezzi = scomposizione.spezza(voce["frase"], parole, lingue("it").scomposizione)
     esito["pezzi"] = pezzi
     chiamate: list[bt.Chiamata] = []
     for pezzo in pezzi:
