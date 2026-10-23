@@ -123,6 +123,21 @@ notizie:
     - what's happening
 
 agente:
+  # How a sentence is split into one thing per piece (#432, ADR 0013): where it is cut, the action words beyond `parole_azione`, the pronoun ("that one") that takes the
+  # name of the last device mentioned, and which names (with their article). Read by `domain/scomposizione.py`.
+  scomposizione:
+    separatori: '\s*(?:[,;:]|(?<!\S)and(?!\S)|(?<!\S)then(?!\S)|(?<!\S)also(?!\S))\s*'
+    unione: and
+    parole_in_piu: []
+    pronomi: '\bthat one\b'
+    nomi:
+      light: the light
+      lights: the lights
+      blind: the blind
+      blinds: the blinds
+      thermostat: the thermostat
+      tv: the tv
+      fan: the fan
   # Which domain agent takes the request (ADR 0008, issue #190): the words that
   # tie it to a domain, lowercase and without the ending. Generic words (put,
   # start) are not here: they do not say what is being talked about.

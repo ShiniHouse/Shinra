@@ -255,60 +255,6 @@ def test_il_report_conta_e_si_scrive(banco, mondo, strumenti):
     assert banco.riepilogo(risultati[:1])["riuscite"] == 0 and banco.riepilogo(risultati[1:])["riuscite"] == 1
 
 
-# ------------------------------------------------------------------ «scomposto»: il codice spezza la frase
-
-
-@pytest.fixture(scope="module")
-def parole():
-    from shinra.infra.lingue import schemi
-
-    return schemi("it").parole_azione
-
-
-@pytest.mark.parametrize(
-    ("frase", "attesi"),
-    [
-        (
-            "chiudi la tapparella del salotto e accendi la luce del salotto",
-            ["chiudi la tapparella del salotto", "accendi la luce del salotto"],
-        ),
-        (
-            "dimmi che tempo fa a Roma e ricordami di chiamare il dentista",
-            ["dimmi che tempo fa a Roma", "ricordami di chiamare il dentista"],
-        ),
-        # un pezzo senza azione non e' un'azione: si riattacca al vicino
-        (
-            "accendi le luci del bagno e della camera e porta il clima del salotto a 22",
-            ["accendi le luci del bagno e della camera", "porta il clima del salotto a 22"],
-        ),
-        (
-            "vado a dormire: spegni le luci di salotto e cucina e attiva l'allarme",
-            ["vado a dormire spegni le luci di salotto e cucina", "attiva l'allarme"],
-        ),
-        # una sola cosa da fare: la frase intera
-        ("accendi la luce della cucina", ["accendi la luce della cucina"]),
-    ],
-)
-def test_il_codice_spezza_una_frase_in_una_cosa_per_pezzo(banco, parole, frase, attesi):
-    assert banco.spezza(frase, parole) == attesi
-
-
-def test_una_e_dentro_una_parola_o_con_l_apostrofo_non_taglia(banco, parole):
-    assert len(banco.spezza("guarda com'e' il clima del salotto", parole)) == 1
-    assert banco.spezza("spegni la tv e basta", parole)[0].startswith("spegni la tv")
-
-
-@pytest.mark.parametrize("frase", ["", "ciao come stai", "e e e", ", ,"])
-def test_senza_azioni_riconoscibili_non_si_inventa_niente(banco, parole, frase):
-    assert banco.spezza(frase, parole) in ([frase], [])  # la frase com'e': mai pezzi inventati
-    assert len(banco.spezza(frase, parole)) <= 1
-
-
-def test_i_pezzi_hanno_un_tetto(banco, parole):
-    frase = " e ".join(f"accendi la luce {n}" for n in range(30))
-    assert len(banco.spezza(frase, parole)) == banco.MASSIMO_PEZZI
-
-
 async def test_ogni_pezzo_passa_dal_ciclo_con_il_router_e_il_risultato_si_valida(
     banco, mondo, strumenti, monkeypatch
 ):
@@ -426,16 +372,3 @@ def test_senza_gli_schemi_la_validazione_e_quella_di_prima(banco, mondo, strumen
         piano(("comanda_clima", {"entity_id": "climate.camera"})), strumenti, mondo
     )
     assert len(accettati) == 1 and scarti == []
-
-
-def test_il_pronome_prende_il_nome_dell_ultimo_dispositivo_detto(banco, parole):
-    pezzi = banco.spezza("spegni la luce del salotto e accendi quella del corridoio", parole)
-    assert pezzi == ["spegni la luce del salotto", "accendi la luce del corridoio"]
-    # senza un nome prima, il pronome resta com'e': non si inventa
-    assert banco.spezza("accendi quella del corridoio", parole) == ["accendi quella del corridoio"]
-
-
-def test_ventila_e_una_parola_d_azione_nell_esperimento(banco, parole):
-    senza = banco.spezza("spegni la luce del salotto e ventila lo studio", parole)
-    con = banco.spezza("spegni la luce del salotto e ventila lo studio", (*parole, *banco.PAROLE_IN_PIU))
-    assert len(senza) == 1 and len(con) == 2
