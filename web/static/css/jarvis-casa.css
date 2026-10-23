@@ -152,3 +152,30 @@ html[data-palette="jarvis"] .living-core.listening {
 html[data-palette="jarvis"] .living-core.thinking {
   box-shadow: 0 0 18px rgba(125, 211, 252, 0.8);
 }
+
+/* ------------------------------------------------------------------ i pulsanti a sfumatura ambra-viola e le barre: ciano, come il resto */
+
+html[data-palette="jarvis"] button[class*="bg-gradient-to-"] {
+  background-image: none !important;
+  background-color: rgba(8, 120, 150, 0.28) !important;
+  border: 1px solid var(--j-linea-forte) !important;
+  border-radius: 6px !important;
+  color: var(--j-ghiaccio) !important;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.18) !important;
+}
+html[data-palette="jarvis"] button[class*="bg-gradient-to-"]:hover {
+  background-color: rgba(14, 150, 185, 0.42) !important;
+  box-shadow: 0 0 22px rgba(34, 211, 238, 0.38) !important;
+}
+html[data-palette="jarvis"] div[class*="bg-gradient-to-"].from-amber-500 {
+  background-image: linear-gradient(135deg, #0e7490, #22d3ee) !important;
+}
+html[data-palette="jarvis"] #learning-progress-bar {
+  background-image: linear-gradient(90deg, #0891b2, #67e8f9) !important;
+}
+
+/* Le icone dei menu e delle schede: un solo colore (ghiaccio), non una per voce. */
+html[data-palette="jarvis"] #mobile-menu-drawer svg:not(.text-rose-400),
+html[data-palette="jarvis"] header .tab-btn svg {
+  color: #7be4f8 !important;
+}

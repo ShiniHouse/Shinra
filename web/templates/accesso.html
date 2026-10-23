@@ -8,76 +8,129 @@
 <style>
   /* Pagina volutamente autonoma: nessuna risorsa esterna, nessuno script
      della dashboard. Serve a chi non e' ancora autenticato, quindi non deve
-     portare con se' nulla che appartenga alla parte protetta. */
-  :root{ color-scheme: dark; }
+     portare con se' nulla che appartenga alla parte protetta.
+     Lo stile e' quello della dashboard (tavolozza «Jarvis», tema Ologramma): fondo notte, filo ciano, angoli tagliati. */
+  :root{ color-scheme: dark; --ciano:#22d3ee; --ghiaccio:#bdeefa; --testo:#cdeaf4; --testo2:#7ea7b9; --linea:rgba(34,211,238,.22); --linea-forte:rgba(103,232,249,.55); }
   *{ box-sizing:border-box; }
   body{
     margin:0; min-height:100dvh; display:grid; place-items:center; padding:24px;
-    background:#0b1120; color:#e2e8f0;
+    background-color:#02060b;
+    background-image:
+      radial-gradient(ellipse 70% 45% at 50% 0%, rgba(34,211,238,.16), transparent 70%),
+      linear-gradient(rgba(34,211,238,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,211,238,.05) 1px, transparent 1px);
+    background-size:auto, 56px 56px, 56px 56px;
+    color:var(--testo);
     font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   }
   .riquadro{
-    width:100%; max-width:400px; background:#111a2e; border:1px solid #1e293b;
-    border-radius:24px; padding:32px 28px; box-shadow:0 24px 60px -30px #000;
+    width:100%; max-width:400px; padding:32px 28px;
+    background:linear-gradient(160deg, rgba(6,40,60,.6), rgba(2,14,26,.45));
+    border:1px solid var(--linea);
+    box-shadow:0 0 40px rgba(34,211,238,.1), inset 0 0 30px rgba(34,211,238,.05);
+    clip-path:polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
   }
-  .segno{
-    width:56px; height:56px; margin:0 auto 20px; border-radius:18px;
-    background:linear-gradient(135deg,#f59e0b,#4f46e5);
-    display:grid; place-items:center; font-size:26px;
-  }
-  h1{ font-size:20px; margin:0 0 6px; text-align:center; letter-spacing:-.01em; }
-  p.guida{ margin:0 0 22px; text-align:center; font-size:13px; color:#94a3b8; }
+  .segno{ width:64px; height:64px; margin:0 auto 18px; filter:drop-shadow(0 0 14px rgba(34,211,238,.45)); }
+  .segno svg{ width:100%; height:100%; display:block; }
+  h1{ font-size:15px; margin:0 0 6px; text-align:center; font-weight:600; letter-spacing:.32em; text-transform:uppercase; color:var(--ghiaccio); text-shadow:0 0 14px rgba(34,211,238,.5); padding-left:.32em; }
+  p.guida{ margin:0 0 22px; text-align:center; font-size:13px; color:var(--testo2); }
   .profili{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .profilo{
     display:flex; align-items:center; gap:10px; padding:12px;
-    background:#0b1120; border:1px solid #1e293b; border-radius:16px;
-    color:#e2e8f0; font-size:14px; font-weight:600; cursor:pointer; text-align:left;
+    background:rgba(1,10,18,.7); border:1px solid var(--linea); border-radius:4px;
+    color:var(--testo); font-size:14px; font-weight:600; cursor:pointer; text-align:left;
     font-family:inherit;
   }
-  .profilo:hover, .profilo:focus-visible{ border-color:#4f46e5; outline:none; }
+  .profilo:hover, .profilo:focus-visible{ border-color:var(--ciano); box-shadow:0 0 16px rgba(34,211,238,.25); outline:none; }
   .iniziale{
-    width:32px; height:32px; border-radius:11px; flex:none; display:grid;
-    place-items:center; background:#312e81; color:#c7d2fe; font-size:14px;
+    width:32px; height:32px; border-radius:4px; flex:none; display:grid;
+    place-items:center; background:rgba(8,120,150,.28); border:1px solid var(--linea-forte); color:var(--ghiaccio); font-size:14px;
   }
   form{ display:none; }
   form.visibile{ display:block; }
   .chi{ text-align:center; font-size:14px; margin:0 0 14px; }
   .chi button{
-    background:none; border:none; color:#818cf8; font-size:12px;
+    background:none; border:none; color:#7be4f8; font-size:12px;
     text-decoration:underline; cursor:pointer; font-family:inherit; padding:0 0 0 6px;
   }
   input[type=password]{
     width:100%; padding:14px; text-align:center; font-size:22px;
     letter-spacing:.5em; text-indent:.5em;
-    background:#0b1120; border:1px solid #334155; border-radius:16px;
-    color:#fbbf24; font-family:ui-monospace,monospace;
+    background:rgba(1,10,18,.7); border:1px solid var(--linea); border-radius:4px;
+    color:var(--ghiaccio); font-family:ui-monospace,"JetBrains Mono",monospace;
   }
-  input[type=password]:focus{ outline:none; border-color:#f59e0b; }
+  input[type=password]:focus{ outline:none; border-color:var(--ciano); box-shadow:0 0 0 1px var(--ciano), 0 0 18px rgba(34,211,238,.25); }
   button.entra{
-    width:100%; margin-top:14px; padding:14px; border:none; border-radius:16px;
-    background:linear-gradient(90deg,#f59e0b,#4f46e5); color:#fff;
-    font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;
+    width:100%; margin-top:14px; padding:14px; border:1px solid var(--linea-forte); border-radius:4px;
+    background:rgba(8,120,150,.28); color:var(--ghiaccio); box-shadow:0 0 14px rgba(34,211,238,.18);
+    font-size:13px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; cursor:pointer; font-family:inherit;
   }
+  button.entra:hover, button.entra:focus-visible{ background:rgba(14,150,185,.42); box-shadow:0 0 22px rgba(34,211,238,.38); outline:none; }
   .errore{ margin-top:12px; font-size:12.5px; color:#fda4af; text-align:center; min-height:1.2em; }
-  .nota{ margin-top:22px; font-size:11.5px; color:#64748b; text-align:center; line-height:1.5; }
+  .nota{ margin-top:22px; font-size:11.5px; color:#53798a; text-align:center; line-height:1.5; }
   @media (max-width:400px){ .profili{ grid-template-columns:1fr; } }
   @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
   .ricorda { display:flex; align-items:center; gap:.5rem; justify-content:center;
-              font-size:.85rem; color:#94a3b8; margin:.2rem 0 .8rem; cursor:pointer; }
-  .ricorda input { width:auto; margin:0; }
+              font-size:.85rem; color:var(--testo2); margin:.2rem 0 .8rem; cursor:pointer; }
+  .ricorda input { width:auto; margin:0; accent-color:var(--ciano); }
   button.passkey{
-    width:100%; margin-top:16px; padding:14px; border-radius:16px; cursor:pointer;
-    background:#0b1120; border:1px solid #4f46e5; color:#c7d2fe;
-    font-size:14.5px; font-weight:700; font-family:inherit;
+    width:100%; margin-top:16px; padding:14px; border-radius:4px; cursor:pointer;
+    background:rgba(1,10,18,.7); border:1px solid var(--linea-forte); color:var(--ghiaccio);
+    font-size:14px; font-weight:700; font-family:inherit;
   }
-  button.passkey:hover, button.passkey:focus-visible{ background:#1e1b4b; outline:none; }
+  button.passkey:hover, button.passkey:focus-visible{ background:rgba(8,120,150,.28); outline:none; }
   button.passkey[disabled]{ opacity:.6; cursor:progress; }
-  p.oppure{ margin:14px 0 0; text-align:center; font-size:11.5px; color:#64748b; }
+  p.oppure{ margin:14px 0 0; text-align:center; font-size:11.5px; color:#53798a; }
 </style>
 </head>
 <body>
   <main class="riquadro">
-    <div class="segno" aria-hidden="true">🔒</div>
+    <div class="segno" aria-hidden="true"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="nucleo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#67e8f9"/>
+      <stop offset="70%" stop-color="#0e7490" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0891b2" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="fondo" cx="50%" cy="42%" r="75%">
+      <stop offset="0%" stop-color="#06283a"/>
+      <stop offset="100%" stop-color="#010a12"/>
+    </radialGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#fondo)"/>
+  <rect x="2.75" y="2.75" width="58.5" height="58.5" rx="15.25" fill="none" stroke="#22d3ee" stroke-opacity="0.5" stroke-width="1.5"/>
+  <g stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" fill="none">
+    <line x1="32.00" y1="10.50" x2="32.00" y2="5.90" opacity="0.95"/>
+    <line x1="37.56" y1="11.23" x2="38.34" y2="8.33" opacity="0.55"/>
+    <line x1="42.75" y1="13.38" x2="44.25" y2="10.78" opacity="0.55"/>
+    <line x1="47.20" y1="16.80" x2="49.32" y2="14.68" opacity="0.55"/>
+    <line x1="50.62" y1="21.25" x2="53.22" y2="19.75" opacity="0.55"/>
+    <line x1="52.77" y1="26.44" x2="55.67" y2="25.66" opacity="0.55"/>
+    <line x1="53.50" y1="32.00" x2="58.10" y2="32.00" opacity="0.95"/>
+    <line x1="52.77" y1="37.56" x2="55.67" y2="38.34" opacity="0.55"/>
+    <line x1="50.62" y1="42.75" x2="53.22" y2="44.25" opacity="0.55"/>
+    <line x1="47.20" y1="47.20" x2="49.32" y2="49.32" opacity="0.55"/>
+    <line x1="42.75" y1="50.62" x2="44.25" y2="53.22" opacity="0.55"/>
+    <line x1="37.56" y1="52.77" x2="38.34" y2="55.67" opacity="0.55"/>
+    <line x1="32.00" y1="53.50" x2="32.00" y2="58.10" opacity="0.95"/>
+    <line x1="26.44" y1="52.77" x2="25.66" y2="55.67" opacity="0.55"/>
+    <line x1="21.25" y1="50.62" x2="19.75" y2="53.22" opacity="0.55"/>
+    <line x1="16.80" y1="47.20" x2="14.68" y2="49.32" opacity="0.55"/>
+    <line x1="13.38" y1="42.75" x2="10.78" y2="44.25" opacity="0.55"/>
+    <line x1="11.23" y1="37.56" x2="8.33" y2="38.34" opacity="0.55"/>
+    <line x1="10.50" y1="32.00" x2="5.90" y2="32.00" opacity="0.95"/>
+    <line x1="11.23" y1="26.44" x2="8.33" y2="25.66" opacity="0.55"/>
+    <line x1="13.38" y1="21.25" x2="10.78" y2="19.75" opacity="0.55"/>
+    <line x1="16.80" y1="16.80" x2="14.68" y2="14.68" opacity="0.55"/>
+    <line x1="21.25" y1="13.38" x2="19.75" y2="10.78" opacity="0.55"/>
+    <line x1="26.44" y1="11.23" x2="25.66" y2="8.33" opacity="0.55"/>
+    <circle cx="32" cy="32" r="18" stroke-opacity="0.55" stroke-width="1"/>
+    <path d="M 32 14 A 18 18 0 0 1 50 32" stroke="#67e8f9" stroke-width="2.4"/>
+  </g>
+  <circle cx="32" cy="32" r="13" fill="url(#nucleo)"/>
+  <circle cx="32" cy="32" r="3.2" fill="#ffffff"/>
+</svg></div>
     <h1 id="titolo">Chi sei?</h1>
     <p class="guida" id="guida">Scegli il tuo profilo per accedere.</p>
 
@@ -95,7 +148,7 @@
          puo': un pulsante che fallisce con un errore del browser e' peggio
          di un pulsante assente, perche' chi lo preme crede che sia rotto. -->
     <button type="button" id="passkey" class="passkey" style="display:none" onclick="entraConPasskey()">
-      <span aria-hidden="true">👤</span> Entra con una passkey
+      Entra con una passkey
     </button>
     <p class="oppure" id="oppure" style="display:none">oppure con il PIN</p>
 
