@@ -48,6 +48,8 @@ import yaml
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # accanto a `banco_tool_calling.py`
 import banco_tool_calling as bt
 
+from shinra.domain import piani
+
 BANCO_PIANI = bt.BANCO / "piani"
 MAX_PASSI = 8  # il tetto dell'ADR 0013: un modello che continua ad aggiungere passi si ferma qui
 STRATEGIE = ("solo", "agenti", "piano", "scomposto")
@@ -92,41 +94,38 @@ def leggi_piano(testo: str) -> dict[str, Any] | None:
     return None
 
 
-def valida_piano(
-    piano: dict[str, Any], strumenti: set[str], mondo: bt.Mondo, massimo: int = MAX_PASSI
-) -> tuple[list[bt.Chiamata], list[str]]:
-    """I passi che il codice accetterebbe di eseguire, e i motivi degli scarti.
+def schemi_per_nome(schemi: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {s["function"]["name"]: s["function"] for s in schemi}
 
-    Un passo si scarta se lo strumento non esiste, se i suoi argomenti non sono un oggetto, o se nomina un dispositivo che la casa non ha:
-    e' il controllo che la #191 chiede («il modello non e' fidato»). Oltre `massimo` passi si taglia, e lo si dice.
+
+MOTIVI = {
+    piani.NON_E_UN_OGGETTO: lambda s: f"passo {s.numero}: non e' un oggetto",
+    piani.STRUMENTO_INESISTENTE: lambda s: f"passo {s.numero}: lo strumento «{s.dettaglio}» non esiste",
+    piani.ARGOMENTI_NON_VALIDI: lambda s: f"passo {s.numero}: gli argomenti non sono un oggetto",
+    piani.DISPOSITIVO_INESISTENTE: lambda s: f"passo {s.numero}: il dispositivo «{s.dettaglio}» non c'e' in casa",
+    piani.OBBLIGATORIO_MANCANTE: lambda s: (
+        f"passo {s.numero}: a «{s.dettaglio.split(':')[0]}» manca il parametro obbligatorio «{s.dettaglio.split(':')[-1]}»"
+    ),
+    piani.OLTRE_IL_TETTO: lambda s: f"oltre il tetto di {s.dettaglio} passi: dal {s.numero} in poi non si esegue",
+}
+
+
+def valida_piano(
+    piano: dict[str, Any],
+    strumenti: set[str],
+    mondo: bt.Mondo,
+    massimo: int = MAX_PASSI,
+    schemi: dict[str, dict[str, Any]] | None = None,
+) -> tuple[list[bt.Chiamata], list[str]]:
+    """Il controllo del codice vero (`shinra.domain.piani`) sul piano di un modello, con gli scarti detti a parole per il report.
+
+    Senza `schemi` non si controllano i parametri obbligatori (la validazione di prima): serve ai test e ai confronti.
     """
-    accettati: list[bt.Chiamata] = []
-    scarti: list[str] = []
-    for numero, passo in enumerate(piano.get("passi") or [], start=1):
-        if numero > massimo:
-            scarti.append(f"oltre il tetto di {massimo} passi: dal {numero} in poi non si esegue")
-            break
-        if not isinstance(passo, dict):
-            scarti.append(f"passo {numero}: non e' un oggetto")
-            continue
-        nome = str(passo.get("strumento") or "")
-        argomenti = passo.get("argomenti")
-        if nome not in strumenti:
-            scarti.append(f"passo {numero}: lo strumento «{nome}» non esiste")
-            continue
-        if argomenti is None:
-            argomenti = {}
-        if not isinstance(argomenti, dict):
-            scarti.append(f"passo {numero}: gli argomenti non sono un oggetto")
-            continue
-        dispositivo = argomenti.get("entity_id")
-        if isinstance(dispositivo, str) and dispositivo.strip().casefold() not in (
-            {e.casefold() for e in mondo.entita} | mondo.nomi
-        ):
-            scarti.append(f"passo {numero}: il dispositivo «{dispositivo}» non c'e' in casa")
-            continue
-        accettati.append(bt.Chiamata(nome, argomenti))
-    return accettati, scarti
+    funzioni = {n: (schemi or {}).get(n, {}) for n in strumenti}
+    accettati, scarti = piani.valida_passi(
+        piano.get("passi"), funzioni, set(mondo.entita) | mondo.nomi, massimo=massimo
+    )
+    return [bt.Chiamata(p.nome, p.argomenti) for p in accettati], [MOTIVI[s.codice](s) for s in scarti]
 
 
 def catalogo_compatto(schemi: list[dict[str, Any]]) -> str:
@@ -199,7 +198,7 @@ async def esegui_piano(
         if piano is not None:
             esito["piano_leggibile"] = True
             esito["chiede"] = piano.get("chiedi")
-            chiamate, esito["scarti"] = valida_piano(piano, strumenti, mondo)
+            chiamate, esito["scarti"] = valida_piano(piano, strumenti, mondo, schemi=schemi_per_nome(schemi))
     except (httpx.HTTPError, ValueError) as errore:
         esito["errore"] = f"{type(errore).__name__}: {errore}"
     esito["secondi"] = round(time.monotonic() - inizio, 2)
@@ -217,6 +216,20 @@ SEPARATORI = re.compile(
     r"\s*(?:[,;:]|(?<!\S)e(?!\S)|(?<!\S)poi(?!\S)|(?<!\S)inoltre(?!\S))\s*", re.IGNORECASE
 )
 MASSIMO_PEZZI = 6
+
+# Parole d'azione che il lessico della lingua non ha ancora (esperimento: in produzione starebbero in `it.yaml`).
+PAROLE_IN_PIU = ("ventil",)
+# «accendi la luce della cucina e accendi quella del corridoio»: il pronome si sostituisce con il nome dell'ultimo dispositivo detto.
+NOMI_DEI_DISPOSITIVI = {
+    "luce": "la luce",
+    "luci": "le luci",
+    "tapparella": "la tapparella",
+    "tapparelle": "le tapparelle",
+    "clima": "il clima",
+    "tv": "la tv",
+    "ventilatore": "il ventilatore",
+}
+PRONOMI = re.compile(r"\bquell[aeoi]\b", re.IGNORECASE)
 
 
 def spezza(frase: str, parole_azione: tuple[str, ...]) -> list[str]:
@@ -242,7 +255,20 @@ def spezza(frase: str, parole_azione: tuple[str, ...]) -> list[str]:
             risultato[-1] = f"{risultato[-1]} {in_attesa}"
         else:
             risultato = [in_attesa]
-    return (risultato or [frase])[:MASSIMO_PEZZI]
+    return [_con_il_nome(pezzo, risultato[:i]) for i, pezzo in enumerate(risultato or [frase])][
+        :MASSIMO_PEZZI
+    ]
+
+
+def _con_il_nome(pezzo: str, precedenti: list[str]) -> str:
+    """«accendi quella del corridoio» dopo «spegni la luce del salotto» diventa «accendi la luce del corridoio»: senza il nome il modello non sa cosa."""
+    if not PRONOMI.search(pezzo) or not precedenti:
+        return pezzo
+    for prima in reversed(precedenti):
+        trovati = [p for p in re.findall(r"[a-zàèéìòù]+", prima.lower()) if p in NOMI_DEI_DISPOSITIVI]
+        if trovati:
+            return PRONOMI.sub(NOMI_DEI_DISPOSITIVI[trovati[-1]], pezzo, count=1)
+    return pezzo
 
 
 async def esegui_scomposto(
@@ -261,7 +287,7 @@ async def esegui_scomposto(
     """Una richiesta spezzata dal codice: ogni pezzo passa dal ciclo con il router per dominio, i risultati si uniscono e si validano."""
     esito: dict[str, Any] = {"giri": 0, "errore": "", "pezzi": [], "scarti": []}
     inizio = time.monotonic()
-    pezzi = spezza(voce["frase"], parole)
+    pezzi = spezza(voce["frase"], (*parole, *PAROLE_IN_PIU))
     esito["pezzi"] = pezzi
     chiamate: list[bt.Chiamata] = []
     for pezzo in pezzi:
@@ -294,7 +320,10 @@ async def esegui_scomposto(
             visti.add(chiave)
             uniche.append(c)
     accettate, esito["scarti"] = valida_piano(
-        {"passi": [{"strumento": c.nome, "argomenti": c.args} for c in uniche]}, strumenti, mondo
+        {"passi": [{"strumento": c.nome, "argomenti": c.args} for c in uniche]},
+        strumenti,
+        mondo,
+        schemi=schemi_per_nome(schemi_tutti),
     )
     esito["secondi"] = round(time.monotonic() - inizio, 2)
     esito["chiamate"] = [{"nome": c.nome, "args": c.args} for c in accettate]
