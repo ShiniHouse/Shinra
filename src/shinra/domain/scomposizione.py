@@ -41,7 +41,9 @@ def _con_il_nome(pezzo: str, precedenti: Sequence[str], lessico: Mapping[str, An
     return pezzo
 
 
-def spezza(frase: str, parole_azione: Sequence[str], lessico: Mapping[str, Any], massimo: int = MASSIMO_PEZZI) -> list[str]:
+def spezza(
+    frase: str, parole_azione: Sequence[str], lessico: Mapping[str, Any], massimo: int = MASSIMO_PEZZI
+) -> list[str]:
     """I pezzi di una frase, uno per cosa da fare. Con una sola azione, o nessuna riconoscibile, la frase intera.
 
     `parole_azione` sono le radici che dicono «qui c'e' qualcosa da fare» (`agente.parole_azione` della lingua) e `lessico` la sezione `agente.scomposizione`
@@ -64,7 +66,9 @@ def spezza(frase: str, parole_azione: Sequence[str], lessico: Mapping[str, Any],
             risultato.append(f"{in_attesa} {pezzo}".strip())
             in_attesa = ""
         elif risultato:
-            risultato[-1] = f"{risultato[-1]} {lessico.get('unione', 'e')} {pezzo}"  # «... luci del bagno» + «della camera»
+            risultato[-1] = (
+                f"{risultato[-1]} {lessico.get('unione', 'e')} {pezzo}"  # «... luci del bagno» + «della camera»
+            )
         else:
             in_attesa = f"{in_attesa} {pezzo}".strip()
     if in_attesa:
