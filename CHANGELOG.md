@@ -15,6 +15,9 @@ installabile e utilizzabile.
 ## [Non rilasciato]
 
 ### Aggiunto
+- **I lavori nel Cervello** (#431, parte finale): un pannello «Lavori» accanto a «Cosa sta facendo Shinra», con la richiesta, la fase, l'avanzamento e «Annulla» a un clic;
+  compare solo se c'e' un lavoro in corso o finito da poco, si aggiorna da solo (ogni quattro secondi finche' c'e' qualcosa in corso e la scheda e' in vista) e quando un lavoro finisce.
+  La voce annuncia l'esito come una risposta qualunque (rispetta il silenzio).
 - **I lavori in background** (#431, ADR 0013, prima parte: il servizio): una richiesta che prende tempo diventa un lavoro con proprietario, stato,
   avanzamento, tetto di tempo (`lavori.tetto_secondi`) ed esito; uno alla volta, annullabile, privato per profilo, onesto al riavvio (un lavoro
   rimasto a meta' diventa «interrotto», non si riprende da solo). Rotte `GET /api/lavori`, `GET /api/lavori/{id}`, `POST /api/lavori/{id}/annulla`;

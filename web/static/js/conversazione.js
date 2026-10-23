@@ -9,6 +9,7 @@ import { getAuthHeaders, updateLivingCoreState } from './accesso.js';
 import { speakText } from './voce.js';
 import { _testoDelDettaglio } from './ruoli.js';
 import { showModal } from './impostazioni.js';
+import { aggiornaLavori } from './lavori.js';
 
 function appendUserMessage(text) {
     const container = document.getElementById('messages-container');
@@ -214,6 +215,7 @@ export async function handleSend(e) {
         }
         const data = await res.json();
         appendAssistantMessage(data.response, data.actions, data.ricordi_usati);
+        if (data.lavoro) aggiornaLavori();
         if (data.actions) data.actions.forEach((a) => logAction(a.tool, a.args, a.result));
     } catch (err) {
         hideTypingIndicator();

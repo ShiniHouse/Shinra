@@ -25,6 +25,7 @@ import { speakText } from './voce.js';
 import { loadReminders, loadTimers, playChimeAlert } from './timer.js';
 import { attivita } from './cervello_attivita.js';
 import { appendAssistantMessage } from './conversazione.js';
+import { aggiornaLavori } from './lavori.js';
 
 let _eventiSocket = null;
 
@@ -145,6 +146,7 @@ function gestisciEvento(evento) {
     } else if (evento.tipo === 'lavoro.finito') {
         // Un lavoro lungo e' finito: l'esito arriva in chat, come una risposta, solo a chi lo aveva chiesto.
         if (evento.dati && evento.dati.testo) appendAssistantMessage(evento.dati.testo);
+        aggiornaLavori();
     } else if (evento.tipo.startsWith('agente.')) {
         // Il ciclo dell'agente che si racconta: il Cervello lo mostra (#189).
         attivita.registra(evento);

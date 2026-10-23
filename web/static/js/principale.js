@@ -41,4 +41,5 @@ import './cervello_interazione.js';
 import './cervello_stelle.js';
 import './cervello_disegno.js';
 import './cervello.js';
+import './lavori.js';
 import './notifiche.js';
