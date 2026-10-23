@@ -91,6 +91,11 @@ voce:
   # Dove stanno le voci locali di Piper (docs/VOCE.md): una voce e' un `.onnx` col suo `.onnx.json`. Vuota, e' come non averle.
   cartella_voci: "data/voci"
 
+agenti:
+  # Una frase con piu' cose da fare si spezza col codice, una cosa per pezzo, ognuna al suo agente di dominio (#432). Spento di serie: accendilo solo dopo aver
+  # misurato con `scripts/banco_piani.py` che con il tuo modello aiuta.
+  orchestratore: false
+
 lavori:
   # Un lavoro in background (una richiesta che prende tempo) non dura piu' di cosi', in secondi: allo scadere e' fallito con il
   # motivo «tetto di tempo». Resta fra 10 secondi e un'ora.

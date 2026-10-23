@@ -5,17 +5,17 @@ from typing import Any, Dict, List, Optional
 
 from shinra.config.prompt_templates import get_contesto_della_richiesta, get_system_prompt
 from shinra.config.settings import settings
-from shinra.domain import budget
+from shinra.domain import budget, scomposizione
 from shinra.domain.contesto import come_modello, dichiara_lingua
 from shinra.infra.data_store import data_store
 from shinra.infra.homeassistant.client import client_home_assistant
 from shinra.infra.lingue import schemi
 from shinra.infra.llm.ollama import OllamaClient, contesto_in_uso, risposta_massima
-from shinra.services import agenti, prompt_nel_budget, riassunti
+from shinra.services import agenti, orchestratore, prompt_nel_budget, riassunti
 from shinra.services.conoscenza import servizio_conoscenza
 from shinra.services.cronaca import Cronaca
 from shinra.services.intenti import Richiesta, instrada
-from shinra.services.memory import ConversationMemory, gestore_memorie
+from shinra.services.memory import ConversationMemory, gestore_memorie, memoria_a_perdere
 from shinra.services.user_manager import UserProfile, user_manager
 from shinra.skills.registry import execute_tool
 
@@ -149,6 +149,32 @@ class ShinraAgent:
             return []
         return list((risposta.get("message") or {}).get("tool_calls") or [])
 
+    async def _orchestra(
+        self, testo: str, pezzi: List[str], profile: Any, mem: Any, lingua: Any
+    ) -> Dict[str, Any]:
+        """Un giro dell'agente per pezzo, con una memoria a perdere; nella conversazione entrano la frase intera e la risposta unita."""
+
+        async def un_pezzo(pezzo: str) -> Dict[str, Any]:
+            return await self.process_user_input(
+                pezzo, user_profile=profile, session_memory=memoria_a_perdere(), scomposta=True
+            )
+
+        esito = await orchestratore.orchestra(
+            pezzi,
+            un_pezzo,
+            lambda elenco: lingua.dice("orchestratore_non_riuscito", pezzi=elenco),
+            lingua.dice("operazione_completata"),
+        )
+        mem.add_user_message(testo)
+        mem.add_assistant_message(esito["response"])
+        return {
+            "response": esito["response"],
+            "actions": esito["actions"],
+            "user": profile.model_dump() if profile else None,
+            "success": esito["success"],
+            "pezzi": esito["pezzi"],
+        }
+
     async def process_user_input(
         self,
         user_text: str,
@@ -156,6 +182,7 @@ class ShinraAgent:
         user_profile: Optional[UserProfile] = None,
         session_memory: Optional[ConversationMemory] = None,
         max_tool_iterations: int = 4,
+        scomposta: bool = False,
     ) -> Dict[str, Any]:
         """
         Elabora l'input dell'utente calibrando il comportamento sul profilo (adulto/bambino/ospite).
@@ -208,6 +235,13 @@ class ShinraAgent:
                 "user": profile.model_dump() if profile else None,
                 "success": True,
             }
+
+        # 1c. Una frase con piu' cose da fare si spezza col codice, un giro per pezzo (#432): spento di serie (`agenti.orchestratore`).
+        # `scomposta` evita che un pezzo si spezzi di nuovo.
+        if not scomposta and orchestratore.attiva():
+            pezzi = scomposizione.spezza(user_text, lingua.parole_azione, lingua.scomposizione)
+            if len(pezzi) >= 2:
+                return await self._orchestra(user_text, pezzi, profile, mem, lingua)
 
         # 2. Instradamento sugli intenti.
         #

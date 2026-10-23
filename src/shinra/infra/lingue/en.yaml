@@ -581,6 +581,7 @@ messaggi:
   argomento_vietato: "I'd rather not talk about that. If you need it, ask an adult at home."
   errore_ollama: "There was a problem talking to the AI engine: {errore}. Make sure Ollama is running and the model is ready."
   operazione_completata: "Done."
+  orchestratore_non_riuscito: "I could not do: {pezzi}."
   conferma_richiesta: "I'm about to do this: {azione}. Do you confirm? Answer yes or no within {minuti} minutes."
   conferma_vietata: "This action can't be started by an assistant: it has to be done by a person, from the dashboard."
   conferma_senza_identita: "I won't do it: I don't know who is speaking. Link your voice to a profile in the settings, or do it from the dashboard."
