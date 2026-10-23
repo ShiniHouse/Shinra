@@ -42,7 +42,7 @@ function lvRiga(l) {
     return _html`<li class="py-2 space-y-1" data-lavoro="${l.id}" data-stato="${l.stato}">
         <div class="flex items-start justify-between gap-2">
             <span class="text-slate-200 break-words min-w-0">${richiesta}</span>
-            ${attivo ? _html`<button type="button" data-gesto="annullaLavoro" data-args="${_args(l.id)}" class="shrink-0 text-[11px] text-rose-300 hover:text-rose-200 underline decoration-dotted">Annulla</button>` : ''}
+            ${attivo ? _html`<button type="button" data-gesto="annullaLavoro" data-args="${_args(l.id)}" class="shrink-0 text-[11px] text-rose-300 hover:text-rose-400 underline decoration-dotted">Annulla</button>` : ''}
         </div>
         <div class="flex items-center justify-between text-[11px] text-slate-500">
             <span>${ETICHETTE[l.stato] || l.stato}${dettaglio ? ` · ${dettaglio}` : ''}</span>
