@@ -50,13 +50,14 @@ test.describe('il Cervello a stelle', () => {
     test('con la tavolozza Jarvis il grafo e una galassia, e il canvas non e vuoto', async ({ page }) => {
         await apri(page);
         await expect(page.locator('#cervello-canvas')).toHaveAttribute('data-stile', 'stelle');
-        expect(await pixelAccesi(page)).toBeGreaterThan(500);
+        // Si aspetta invece di leggere una volta: dopo un ridimensionamento la tela e' vuota fino al fotogramma dopo, e in CI ci si puo' cadere in mezzo.
+        await expect.poll(() => pixelAccesi(page)).toBeGreaterThan(500);
     });
 
     test("con un'altra tavolozza il disegno e quello di sempre", async ({ page }) => {
         await apri(page, { shinra_palette: 'aurora', shinra_palette_scelta: '1' });
         await expect(page.locator('#cervello-canvas')).toHaveAttribute('data-stile', 'piano');
-        expect(await pixelAccesi(page)).toBeGreaterThan(100);
+        await expect.poll(() => pixelAccesi(page)).toBeGreaterThan(100);
     });
 
     test('un nodo acceso manda un impulso sui fili e il ciclo resta vivo, poi si ferma', async ({ page }) => {
