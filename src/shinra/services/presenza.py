@@ -89,6 +89,20 @@ class ServizioPresenza:
         self._creduto = dominio.persone_dagli_stati(stati)
         self._ultimo = self.stato
 
+    def conosci(self, entita: str, valore: str) -> None:
+        """Una persona che si viene a sapere ora (l'app del telefono): si registra senza annunciare arrivi, come all'avvio."""
+        self._creduto[entita] = valore
+        if self._ultimo is not None:
+            self._ultimo = self.stato
+
+    def dimentica(self, entita: str) -> None:
+        """La persona non e' piu' tracciata: ne' presente ne' assente, e nessuna uscita annunciata."""
+        attesa = self._attese.pop(entita, None)
+        if attesa is not None:
+            attesa.cancel()
+        if self._creduto.pop(entita, None) is not None and self._ultimo is not None:
+            self._ultimo = self.stato
+
     def azzera(self) -> None:
         """Solo per i test."""
         self._creduto.clear()

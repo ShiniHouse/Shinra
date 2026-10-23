@@ -251,6 +251,9 @@ def collega(profilo_id: str, entita: str) -> DoveSei:
         )
     # Cambiando fonte o spegnendo, l'ultima posizione segnalata dall'app non vale piu'.
     dimentica_segnalazione(profilo_id)
+    from shinra.services import posizione_eventi
+
+    posizione_eventi.dimentica(profilo_id)
     depositi.utenti.aggiorna(profilo_id, {"entita_posizione": entita})
     registro.registra(
         "posizione.collegata" if entita else "posizione.spenta", dettagli={"profilo": profilo_id}

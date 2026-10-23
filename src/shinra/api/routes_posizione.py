@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from shinra.api.sicurezza import richiedi_autenticazione, utente_corrente
 from shinra.domain import luoghi as dominio
-from shinra.services import posizione
+from shinra.services import posizione, posizione_eventi
 
 router = APIRouter(
     prefix="/api/posizione",
@@ -80,4 +80,6 @@ async def segnala(corpo: SegnalazioneIn, request: Request) -> Dict[str, Any]:
         posizione.segnala(utente.id, corpo.latitudine, corpo.longitudine, corpo.precisione_m)
     except dominio.LuogoNonValido as errore:
         raise HTTPException(status_code=422, detail=str(errore)) from errore
-    return posizione.dove_sei(utente.entita_posizione, profilo_id=utente.id).come_dizionario()
+    dove = posizione.dove_sei(utente.entita_posizione, profilo_id=utente.id)
+    posizione_eventi.annuncia(utente.id, dove, utente.name)
+    return dove.come_dizionario()
